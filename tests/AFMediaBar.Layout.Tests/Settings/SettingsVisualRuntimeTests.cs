@@ -132,8 +132,8 @@ public sealed class SettingsVisualRuntimeTests
         app.Resources["AppTextStrongFontWeight"] = FontWeights.SemiBold;
         var root = FindRepository();
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
-        var eventNames = new HashSet<string> { "Loaded", "Unloaded", "Click", "SelectionChanged", "Checked", "Unchecked", "SizeChanged" };
-        foreach (var name in new[] { "DisplayModes", "ScreenAndPlacement", "Appearance", "ApplicationAppearance", "Interaction", "Lyrics", "ComponentsSettings", "WidgetsSettings", "ExtraFeatures", "Application", "ReleaseHighlights", "About" })
+        var eventNames = new HashSet<string> { "Loaded", "Unloaded", "Click", "SelectionChanged", "Checked", "Unchecked", "SizeChanged", "MouseLeftButtonDown", "KeyDown", "IsVisibleChanged", "PreviewKeyDown", "LostKeyboardFocus" };
+        foreach (var name in new[] { "DisplayModes", "ScreenAndPlacement", "Appearance", "ApplicationAppearance", "Interaction", "Lyrics", "ComponentsSettings", "WidgetsSettings", "ExtraFeatures", "Application", "DeviceManagement", "Experimental", "ReleaseHighlights", "About" })
         {
             var document = XDocument.Load(Path.Combine(root, "src", "AFMediaBar", "Views", "Pages", name + "Page.xaml"));
             document.Root!.Attribute(x + "Class")!.Remove();
@@ -236,11 +236,31 @@ public sealed class SettingsVisualRuntimeTests
         Assert.AreEqual(160d, editor.Value);
         Assert.AreEqual("160", input.Text, "External resets refresh the displayed value.");
         Assert.IsFalse(editor.HasInputError, "An external reset also clears stale validation feedback.");
+
+        var percentEditor = new SettingsNumericEditor
+        {
+            Style = (Style)app.Resources[typeof(SettingsNumericEditor)],
+            Minimum = 50d,
+            Maximum = 95d,
+            Step = 1d
+        };
+        BindingOperations.SetBinding(percentEditor, SettingsNumericEditor.ValueProperty,
+            new Binding(nameof(NumericFixture.Percent)) { Source = fixture, Mode = BindingMode.TwoWay });
+        percentEditor.ApplyTemplate();
+        var percentInput = (TextBox)percentEditor.Template.FindName("PART_Input", percentEditor);
+        Assert.AreEqual(75, fixture.Percent, "Loading an integer percentage must not write a slider default.");
+        percentInput.Text = "NaN";
+        Assert.IsFalse(percentEditor.TryCommit());
+        Assert.AreEqual(75, fixture.Percent, "Invalid percentage input must preserve the saved integer.");
+        percentInput.Text = "90";
+        Assert.IsTrue(percentEditor.TryCommit());
+        Assert.AreEqual(90, fixture.Percent, "A committed percentage must update the integer binding.");
     }
 
     private sealed class NumericFixture : INotifyPropertyChanged
     {
         private double _value = 300d;
+        public int Percent { get; set; } = 75;
         public int Writes { get; private set; }
         public double Value
         {

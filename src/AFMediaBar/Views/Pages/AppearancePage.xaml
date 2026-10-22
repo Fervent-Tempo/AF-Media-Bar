@@ -63,7 +63,7 @@
                             Icon="{ui:SymbolIcon Color24}"
                             Title="{DynamicResource Loc.Appearance.Row.Theme.Title}">
                             <ComboBox
-                                MinWidth="180"
+                                MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                 SelectedValue="{Binding ViewModel.ApplicationThemeMode, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
                                 <ComboBoxItem
@@ -81,7 +81,7 @@
                             Description="{DynamicResource Loc.Appearance.Row.Backdrop.Description}"
                             Icon="{ui:SymbolIcon WindowConsole20}"
                             Title="{DynamicResource Loc.Appearance.Row.Backdrop.Title}">
-                            <ComboBox MinWidth="180" SelectedValue="{Binding ViewModel.BackdropMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.BackdropMode, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Appearance.Backdrop.Solid}"
                                     Tag="{x:Static settings:ApplicationBackdropMode.FluentSolid}" />
@@ -105,7 +105,7 @@
                             Description="{DynamicResource Loc.Appearance.Row.Accent.Description}"
                             Icon="{ui:SymbolIcon ColorBackground20}"
                             Title="{DynamicResource Loc.Appearance.Row.Accent.Title}">
-                            <ComboBox MinWidth="180" SelectedValue="{Binding ViewModel.AccentColorMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.AccentColorMode, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Appearance.Accent.FollowSystem}"
                                     Tag="{x:Static settings:AccentColorMode.System}" />
@@ -268,7 +268,7 @@
                                 </StackPanel>
                             </ui:CardExpander.Header>
                             <StackPanel>
-                                <components:SettingsRow
+                                <components:SettingsRow IsNested="True"
                                     Description="{DynamicResource Loc.Appearance.Row.BackdropTint.Description}"
                                     Icon="{ui:SymbolIcon CircleHalfFill24}"
                                     Title="{DynamicResource Loc.Appearance.Row.BackdropTint.Title}">
@@ -297,7 +297,7 @@
                             Icon="{ui:SymbolIcon TextFont24}"
                             Title="{DynamicResource Loc.Appearance.Row.LatinFont.Title}">
                             <ComboBox
-                                MinWidth="200"
+                                MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                 MaxDropDownHeight="360"
                                 ItemsSource="{Binding ViewModel.LatinFontChoices}"
                                 SelectedValue="{Binding ViewModel.LatinFontFamily, Mode=TwoWay}"
@@ -328,7 +328,7 @@
                             Icon="{ui:SymbolIcon LocalLanguage24}"
                             Title="{DynamicResource Loc.Appearance.Row.CjkFont.Title}">
                             <ComboBox
-                                MinWidth="200"
+                                MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                 MaxDropDownHeight="360"
                                 ItemsSource="{Binding ViewModel.CjkFontChoices}"
                                 SelectedValue="{Binding ViewModel.CjkFontFamily, Mode=TwoWay}"
@@ -422,7 +422,7 @@
                             Description="{DynamicResource Loc.Appearance.Row.TextColor.Description}"
                             Icon="{ui:SymbolIcon TextColor24}"
                             Title="{DynamicResource Loc.Appearance.Row.TextColor.Title}">
-                            <ComboBox MinWidth="200" SelectedValue="{Binding Taskbar.PlayerForegroundMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding Taskbar.PlayerForegroundMode, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Appearance.TextColor.Automatic}"
                                     Tag="{x:Static settings:PlayerForegroundMode.Automatic}" />
@@ -464,9 +464,10 @@
                         <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,8,0,0">
                             <TextBlock Style="{StaticResource AfSettingsHintTextStyle}" Text="{DynamicResource Loc.Appearance.Preview.Hint}" />
                         </Border>
-                    <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextLayout}" Destination="Components" GroupId="Appearance.Group.RestLayout" Margin="0,0,8,4"/>
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.LyricsPresentation}" Destination="Lyrics" GroupId="Lyrics.Group.Presentation" Margin="0,0,8,4"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextLayout}" Destination="Components" GroupId="Appearance.Group.RestLayout"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.LyricsPresentation}" Destination="Lyrics" GroupId="Lyrics.Group.Presentation"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
@@ -498,17 +499,18 @@
                                     <Button Background="#FFFFFF" ToolTip="#FFFFFF" Style="{StaticResource AfSettingsColorSwatchStyle}"
                                             Command="{Binding Taskbar.SetIdleNoteColorCommand}" CommandParameter="#FFFFFF" />
                                 </WrapPanel>
-                                <StackPanel Orientation="Horizontal">
+                                <WrapPanel Style="{StaticResource AfSettingsActionsStyle}">
                                     <TextBlock Text="{DynamicResource Loc.Appearance.Accent.HexLabel}" VerticalAlignment="Center" />
                                     <TextBox Width="110" Margin="8,0,0,0" MaxLength="9"
-                                             Text="{Binding Taskbar.IdleNoteColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <ui:Button Margin="8,0,0,0" Content="{DynamicResource Loc.Appearance.IdleNote.FollowAccent}"
-                                            Command="{Binding Taskbar.ResetIdleNoteColorCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
-                                </StackPanel>
+                                        Text="{Binding Taskbar.IdleNoteColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Appearance.IdleNote.FollowAccent}"
+                                        Command="{Binding Taskbar.ResetIdleNoteColorCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
+                                </WrapPanel>
                             </StackPanel>
                         </Border>
-                    <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestContent}" Destination="Components" GroupId="Common.RestLayer" Margin="0,0,8,4"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestContent}" Destination="Components" GroupId="Common.RestLayer"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
@@ -588,7 +590,7 @@
                                     IsNested="True"
                                     Title="{DynamicResource Loc.Appearance.Row.TaskbarFrostedStyle.Title}">
                                     <ComboBox
-                                        MinWidth="180"
+                                        MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                         SelectedValue="{Binding Taskbar.TaskbarFrostedStyle, Mode=TwoWay}"
                                         SelectedValuePath="Tag">
                                         <ComboBoxItem

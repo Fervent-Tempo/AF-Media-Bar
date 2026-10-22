@@ -143,14 +143,12 @@
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
-                        <components:SettingsRow
-                            Title="{DynamicResource Loc.ContentLayout.Text.Shortcut.Title}"
-                            Description="{DynamicResource Loc.ContentLayout.Text.Shortcut.Description}"
-                            Icon="{ui:SymbolIcon TextAlignCenter24}">
-                            <components:SettingsNavigationButton
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton ToolTip="{DynamicResource Loc.ContentLayout.Text.Shortcut.Description}"
                                 Destination="Components" GroupId="Appearance.Group.RestLayout"
                                 Content="{DynamicResource Loc.ContentLayout.Text.Shortcut.Action}" />
-                        </components:SettingsRow>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup
@@ -188,7 +186,7 @@
                             IsNested="True"
                             Title="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Direction.Title}">
                             <ComboBox
-                                MinWidth="160"
+                                MinWidth="{StaticResource AfSettingsSelectShortWidth}"
                                 IsEnabled="{Binding ViewModel.CanConfigureChineseConversion}"
                                 SelectedValue="{Binding ViewModel.ChineseConversion, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
@@ -215,7 +213,7 @@
                                 </StackPanel>
                             </ui:CardExpander.Header>
                             <StackPanel>
-                                <components:SettingsRow
+                                <components:SettingsRow IsNested="True"
                                     Description="{DynamicResource Loc.Lyrics.Row.UnsungOpacity.Description}"
                                     Icon="{ui:SymbolIcon CircleHalfFill24}"
                                     Style="{StaticResource UnsungOpacityRowStyle}"
@@ -228,7 +226,7 @@
                                         IsEnabled="{Binding ViewModel.CanConfigureUnsungOpacity}"
                                         Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
                                 </components:SettingsRow>
-                                <components:SettingsRow
+                                <components:SettingsRow IsNested="True"
                                     Description="{DynamicResource Loc.Lyrics.Row.LineGap.Description}"
                                     Icon="{ui:SymbolIcon TextAlignJustify24}"
                                     Style="{StaticResource LineGapRowStyle}"
@@ -241,7 +239,7 @@
                                         IsEnabled="{Binding ViewModel.CanConfigureLineGap}"
                                         Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
                                 </components:SettingsRow>
-                                <components:SettingsRow
+                                <components:SettingsRow IsNested="True"
                                     Description="{DynamicResource Loc.Lyrics.Row.CharacterSpacing.Description}"
                                     Icon="{ui:SymbolIcon TextFont24}"
                                     Title="{DynamicResource Loc.Lyrics.Row.CharacterSpacing.Title}">
@@ -254,9 +252,10 @@
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
-                    <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextLayout}" Destination="Components" GroupId="Appearance.Group.RestLayout" Margin="0,0,8,4"/>
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextAppearance}" Destination="Appearance" GroupId="Common.Group.MediaBarText" Margin="0,0,8,4"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextLayout}" Destination="Components" GroupId="Appearance.Group.RestLayout"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextAppearance}" Destination="Appearance" GroupId="Common.Group.MediaBarText"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>

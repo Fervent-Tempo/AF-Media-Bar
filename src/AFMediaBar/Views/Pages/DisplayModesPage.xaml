@@ -110,7 +110,6 @@
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
 
-
                 <components:SettingsGroup GroupId="Common.Group.ChooseDisplayMode" Header="{DynamicResource Loc.Common.Group.ChooseDisplayMode}" Icon="{ui:SymbolIcon WindowConsole20}">
                     <StackPanel>
 
@@ -223,8 +222,6 @@
                 <StackPanel
                     x:Name="TaskbarModeSection"
                     Visibility="{Binding ViewModel.IsTaskbarMode, Converter={StaticResource BooleanToVisibilityConverter}}">
-
-
 
                     <components:SettingsGroup GroupId="Common.RestLayer"
                         Description="{DynamicResource Loc.DisplayModes.Rest.Group.Description}"
@@ -400,17 +397,16 @@
                                         Icon="{ui:SymbolIcon ArrowSync24}"
                                         IsNested="True"
                                         Title="{DynamicResource Loc.DisplayModes.Full.Row.Preset.Title}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <ui:Button
-                                                Margin="0,0,8,0"
+                                        <WrapPanel Style="{StaticResource AfSettingsActionsStyle}">
+                                            <ui:Button Margin="{StaticResource AfSettingsActionGap}"
                                                 Command="{Binding ViewModel.ApplyCompactFullPanelPresetCommand}"
                                                 Content="{DynamicResource Loc.DisplayModes.Full.Preset.Compact}"
                                                 Style="{StaticResource AfSettingsButtonStyle}" />
-                                            <ui:Button
+                                            <ui:Button Margin="{StaticResource AfSettingsActionGap}"
                                                 Command="{Binding ViewModel.ApplyFullFullPanelPresetCommand}"
                                                 Content="{DynamicResource Loc.DisplayModes.Full.Preset.Full}"
                                                 Style="{StaticResource AfSettingsButtonStyle}" />
-                                        </StackPanel>
+                                        </WrapPanel>
                                     </components:SettingsRow>
                                     <components:SettingsRow
                                         Icon="{ui:SymbolIcon Info24}"
@@ -452,11 +448,7 @@
 
                 <!--  ============ 灵动岛模式 ============  -->
 
-
                 <!--  ============ 桌面卡片 / 悬浮球：未实现 ============  -->
-
-
-
 
                 <ui:Button
                     Margin="0,16,0,40"

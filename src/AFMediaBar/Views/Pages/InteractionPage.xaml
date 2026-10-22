@@ -40,7 +40,7 @@
                             Description="{DynamicResource Loc.Interaction.Row.ArtworkClick.Description}"
                             Icon="{ui:SymbolIcon Play24}"
                             Title="{DynamicResource Loc.Interaction.Row.ArtworkClick.Title}">
-                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.ArtworkClickAction, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.ArtworkClickAction, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Common.PlayPause}"
                                     Tag="{x:Static settings:PlayerClickAction.TogglePlayPause}" />
@@ -56,7 +56,7 @@
                             </ComboBox>
                         </components:SettingsRow>
                         <components:SettingsRow Icon="{ui:SymbolIcon TextQuote24}" Title="{DynamicResource Loc.Interaction.Row.TextClick.Title}">
-                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.TextClickAction, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.TextClickAction, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Common.ActivateSourceApplication}"
                                     Tag="{x:Static settings:PlayerClickAction.ActivateSource}" />
@@ -75,7 +75,7 @@
                             Description="{DynamicResource Loc.Interaction.Row.ArtworkHover.Description}"
                             Icon="{ui:SymbolIcon ZoomIn24}"
                             Title="{DynamicResource Loc.Interaction.Row.ArtworkHover.Title}">
-                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.ArtworkHoverMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.ArtworkHoverMode, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Interaction.Row.ArtworkHover.Mode.Off}"
                                     Tag="{x:Static settings:ArtworkHoverMode.Off}" />
@@ -87,8 +87,9 @@
                                     Tag="{x:Static settings:ArtworkHoverMode.Preview}" />
                             </ComboBox>
                         </components:SettingsRow>
-                    <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestContent}" Destination="Components" GroupId="Common.RestLayer" Margin="0,0,8,4"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestContent}" Destination="Components" GroupId="Common.RestLayer"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
@@ -102,7 +103,7 @@
                             Description="{DynamicResource Loc.Interaction.Row.PrimaryWheel.Description}"
                             Icon="{ui:SymbolIcon Cursor24}"
                             Title="{DynamicResource Loc.Interaction.Wheel.Primary.Title}">
-                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.PrimaryWheelAction, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.PrimaryWheelAction, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Common.PreviousNextTrack}"
                                     Tag="{x:Static settings:WheelAction.PreviousNext}" />
@@ -127,7 +128,7 @@
                             Description="{DynamicResource Loc.Interaction.Row.ChordWheel.Description}"
                             Icon="{ui:SymbolIcon Keyboard24}"
                             Title="{DynamicResource Loc.Interaction.Wheel.Chord.Title}">
-                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.ChordWheelAction, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.ChordWheelAction, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Common.SwitchPlayer}"
                                     Tag="{x:Static settings:WheelAction.SwitchMediaSource}" />
@@ -152,7 +153,7 @@
                             Description="{DynamicResource Loc.Interaction.Row.Modifier.Description}"
                             Icon="{ui:SymbolIcon Keyboard24}"
                             Title="{DynamicResource Loc.Interaction.Row.Modifier.Title}">
-                            <ComboBox MinWidth="150" SelectedValue="{Binding ViewModel.Modifier, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectShortWidth}" SelectedValue="{Binding ViewModel.Modifier, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Common.Modifier.Shift}"
                                     Tag="{x:Static settings:InteractionModifier.Shift}" />
@@ -184,7 +185,7 @@
                             Description="{DynamicResource Loc.Interaction.Row.TrayClick.Description}"
                             Icon="{ui:SymbolIcon CursorClick24}"
                             Title="{DynamicResource Loc.Interaction.Row.TrayClick.Title}">
-                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.TrayClickAction, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.TrayClickAction, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.Interaction.TrayAction.OpenAudioControl}"
                                     Tag="{x:Static settings:TrayClickAction.OpenAudioControl}" />
@@ -213,7 +214,7 @@
                             Icon="{ui:SymbolIcon Cursor24}"
                             Title="{DynamicResource Loc.Interaction.Wheel.Primary.Title}">
                             <ComboBox
-                                MinWidth="200"
+                                MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                 SelectedValue="{Binding ViewModel.TrayPrimaryWheelAction, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
                                 <ComboBoxItem
@@ -236,14 +237,14 @@
                 <components:SettingsGroup GroupId="Audio.Settings.Advanced" Header="{DynamicResource Loc.Audio.Settings.Advanced}"
                     Description="{DynamicResource Loc.Audio.Settings.AdvancedDescription}" Icon="{ui:SymbolIcon Options24}">
                     <StackPanel>
-                        <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.OutputClick}">
+                        <components:SettingsRow Icon="{ui:SymbolIcon Options24}" Title="{DynamicResource Loc.Audio.Settings.OutputClick}">
                             <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValuePath="Tag" SelectedValue="{Binding ViewModel.OutputDeviceClickTarget, Mode=TwoWay}">
                                 <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.System}" Tag="{x:Static settings:AudioDeviceSwitchTarget.SystemDefault}"/>
                                 <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.Foreground}" Tag="{x:Static settings:AudioDeviceSwitchTarget.ForegroundApplication}"/>
                                 <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}" Tag="{x:Static settings:AudioDeviceSwitchTarget.Disabled}"/>
                             </ComboBox>
                         </components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.OutputWheel}">
+                        <components:SettingsRow Icon="{ui:SymbolIcon Options24}" Title="{DynamicResource Loc.Audio.Settings.OutputWheel}">
                             <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValuePath="Tag" SelectedValue="{Binding ViewModel.OutputDeviceWheelTarget, Mode=TwoWay}">
                                 <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.System}" Tag="{x:Static settings:AudioDeviceSwitchTarget.SystemDefault}"/>
                                 <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.Foreground}" Tag="{x:Static settings:AudioDeviceSwitchTarget.ForegroundApplication}"/>
@@ -251,32 +252,38 @@
                             </ComboBox>
                         </components:SettingsRow>
                         <TextBlock Text="{DynamicResource Loc.Common.InputDevice}" Style="{StaticResource AfSettingsCardTitleStyle}" Margin="0,16,0,8" />
-                        <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.InputClick}">
+                        <components:SettingsRow Icon="{ui:SymbolIcon Options24}" Title="{DynamicResource Loc.Audio.Settings.InputClick}">
                             <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValuePath="Tag" SelectedValue="{Binding ViewModel.InputDeviceClickTarget, Mode=TwoWay}">
                                 <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.System}" Tag="{x:Static settings:AudioDeviceSwitchTarget.SystemDefault}"/>
                                 <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.Foreground}" Tag="{x:Static settings:AudioDeviceSwitchTarget.ForegroundApplication}"/>
                                 <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}" Tag="{x:Static settings:AudioDeviceSwitchTarget.Disabled}"/>
                             </ComboBox>
                         </components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.InputWheel}">
+                        <components:SettingsRow Icon="{ui:SymbolIcon Options24}" Title="{DynamicResource Loc.Audio.Settings.InputWheel}">
                             <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValuePath="Tag" SelectedValue="{Binding ViewModel.InputDeviceWheelTarget, Mode=TwoWay}">
                                 <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.System}" Tag="{x:Static settings:AudioDeviceSwitchTarget.SystemDefault}"/>
                                 <ComboBoxItem Content="{DynamicResource Loc.Audio.Target.Foreground}" Tag="{x:Static settings:AudioDeviceSwitchTarget.ForegroundApplication}"/>
                                 <ComboBoxItem Content="{DynamicResource Loc.Interaction.Disabled}" Tag="{x:Static settings:AudioDeviceSwitchTarget.Disabled}"/>
                             </ComboBox>
                         </components:SettingsRow>
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.DeviceOrder}" Destination="DeviceManagement" GroupId="Common.OutputDevice" HorizontalAlignment="Left" Margin="16,8"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.DeviceOrder}" Destination="DeviceManagement" GroupId="Common.OutputDevice" HorizontalAlignment="Left"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Device.Hotkeys" Header="{DynamicResource Loc.Device.Hotkeys}" Description="{DynamicResource Loc.Device.Cycle.Hint}" Icon="{ui:SymbolIcon Keyboard24}">
                     <StackPanel>
                         <StackPanel IsEnabled="{Binding ViewModel.Hotkeys.IsEnabled}">
-                        <components:SettingsRow HorizontalAlignment="Stretch" Title="{DynamicResource Loc.Device.Hotkey.CycleOutput}"><components:HotkeyRecorder Hotkey="{Binding ViewModel.Hotkeys.OutputCycleHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsRecording="{Binding ViewModel.Hotkeys.IsRecordingOutputCycle, Mode=TwoWay}" Width="240" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.CycleOutput}" ToolTip="{DynamicResource Loc.Device.Hotkey.RecordHint}"/></components:SettingsRow>
+                        <components:SettingsRow Icon="{ui:SymbolIcon Keyboard24}" HorizontalAlignment="Stretch" Title="{DynamicResource Loc.Device.Hotkey.CycleOutput}"><components:HotkeyRecorder Hotkey="{Binding ViewModel.Hotkeys.OutputCycleHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsRecording="{Binding ViewModel.Hotkeys.IsRecordingOutputCycle, Mode=TwoWay}" Width="240" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.CycleOutput}" ToolTip="{DynamicResource Loc.Device.Hotkey.RecordHint}"/></components:SettingsRow>
                         <TextBlock Text="{Binding ViewModel.Hotkeys.OutputCycleStatus}" Style="{StaticResource AfSettingsHintTextStyle}" TextWrapping="Wrap" Margin="16,4"/>
-                        <components:SettingsRow HorizontalAlignment="Stretch" Title="{DynamicResource Loc.Device.Hotkey.CycleInput}"><components:HotkeyRecorder Hotkey="{Binding ViewModel.Hotkeys.InputCycleHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsRecording="{Binding ViewModel.Hotkeys.IsRecordingInputCycle, Mode=TwoWay}" Width="240" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.CycleInput}" ToolTip="{DynamicResource Loc.Device.Hotkey.RecordHint}"/></components:SettingsRow>
+                        <components:SettingsRow Icon="{ui:SymbolIcon Keyboard24}" HorizontalAlignment="Stretch" Title="{DynamicResource Loc.Device.Hotkey.CycleInput}"><components:HotkeyRecorder Hotkey="{Binding ViewModel.Hotkeys.InputCycleHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsRecording="{Binding ViewModel.Hotkeys.IsRecordingInputCycle, Mode=TwoWay}" Width="240" AutomationProperties.Name="{DynamicResource Loc.Device.Hotkey.CycleInput}" ToolTip="{DynamicResource Loc.Device.Hotkey.RecordHint}"/></components:SettingsRow>
                         <TextBlock Text="{Binding ViewModel.Hotkeys.InputCycleStatus}" Style="{StaticResource AfSettingsHintTextStyle}" TextWrapping="Wrap" Margin="16,4"/>
                         </StackPanel>
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.DeviceOrder}" Destination="DeviceManagement" GroupId="Common.OutputDevice" HorizontalAlignment="Left" Margin="16,8"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.DeviceOrder}" Destination="DeviceManagement" GroupId="Common.OutputDevice" HorizontalAlignment="Left"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <ui:Button

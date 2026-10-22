@@ -142,9 +142,10 @@
                             IsAccent="True"
                             Symbol="DataHistogram24"
                             Text="{DynamicResource Loc.DisplayModes.Rest.Notice}" />
-                    <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer" Margin="0,0,8,4"/>
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.IdleNote}" Destination="Appearance" GroupId="Appearance.IdleNote.Title" Margin="0,0,8,4"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.IdleNote}" Destination="Appearance" GroupId="Appearance.IdleNote.Title"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
@@ -197,7 +198,10 @@
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Page.Widgets}" Destination="Widgets" GroupId="Widgets.Spectrum" HorizontalAlignment="Left" Margin="16,8"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Page.Widgets}" Destination="Widgets" GroupId="Widgets.Spectrum" HorizontalAlignment="Left"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup
@@ -211,7 +215,7 @@
                             Title="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Title}"
                             Visibility="{Binding ViewModel.Layout.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <ComboBox
-                                MinWidth="200"
+                                MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                 SelectedValue="{Binding ViewModel.Layout.ContentLayout, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
                                 <ComboBoxItem
@@ -234,13 +238,13 @@
                                 </StackPanel>
                             </ui:CardExpander.Header>
                             <StackPanel>
-                                <components:SettingsRow
+                                <components:SettingsRow IsNested="True"
                                     Description="{DynamicResource Loc.DisplayModes.Rest.Row.Alignment.Description}"
                                     Icon="{ui:SymbolIcon TextAlignLeft24}"
                                     Title="{DynamicResource Loc.DisplayModes.Rest.Row.Alignment.Title}"
                                     Visibility="{Binding ViewModel.Layout.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                                     <ComboBox
-                                        MinWidth="200"
+                                        MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                         SelectedValue="{Binding ViewModel.Layout.MediaTextAlignment, Mode=TwoWay}"
                                         SelectedValuePath="Tag">
                                         <ComboBoxItem
@@ -254,12 +258,12 @@
                                             Tag="{x:Static settings:TaskbarMediaTextAlignment.Right}" />
                                     </ComboBox>
                                 </components:SettingsRow>
-                                <components:SettingsRow
+                                <components:SettingsRow IsNested="True"
                                     Description="{DynamicResource Loc.Lyrics.Row.Alignment.Description}"
                                     Icon="{ui:SymbolIcon TextAlignLeft24}"
                                     Title="{DynamicResource Loc.Lyrics.Row.Alignment.Title}">
                                     <ComboBox
-                                        MinWidth="160"
+                                        MinWidth="{StaticResource AfSettingsSelectShortWidth}"
                                         SelectedValue="{Binding ViewModel.Lyrics.TextAlignment, Mode=TwoWay}"
                                         SelectedValuePath="Tag">
                                         <ComboBoxItem
@@ -273,13 +277,13 @@
                                             Tag="{x:Static settings:LyricsTextAlignment.Right}" />
                                     </ComboBox>
                                 </components:SettingsRow>
-                                <components:SettingsRow
+                                <components:SettingsRow IsNested="True"
                                     Visibility="{Binding ViewModel.Layers.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}"
                                     Description="{DynamicResource Loc.DisplayModes.Placement.Row.Arrangement.Description}"
                                     Icon="{ui:SymbolIcon ArrowMove24}"
                                     Title="{DynamicResource Loc.DisplayModes.Placement.Row.Arrangement.Title}">
                                     <ComboBox
-                                        MinWidth="200"
+                                        MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                         x:Name="ArrangementPicker"
                                         SelectedIndex="{Binding ViewModel.Layers.TaskbarArrangementIndex, Mode=TwoWay}">
                                         <ComboBoxItem Content="{DynamicResource Loc.ContentLayout.Arrangement.Auto}" Tag="{x:Null}" />
@@ -293,9 +297,10 @@
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
-                    <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextAppearance}" Destination="Appearance" GroupId="Common.Group.MediaBarText" Margin="0,0,8,4"/>
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.LyricsPresentation}" Destination="Lyrics" GroupId="Lyrics.Group.Presentation" Margin="0,0,8,4"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextAppearance}" Destination="Appearance" GroupId="Common.Group.MediaBarText"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.LyricsPresentation}" Destination="Lyrics" GroupId="Lyrics.Group.Presentation"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
@@ -310,7 +315,7 @@
                             Description="{DynamicResource Loc.ContentLayout.LengthMode.Description}"
                             Icon="{ui:SymbolIcon ArrowAutofitWidth24}"
                             Title="{DynamicResource Loc.ContentLayout.LengthMode.Title}">
-                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.Layout.LengthMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.Layout.LengthMode, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.ContentLayout.LengthMode.Follow}"
                                     Tag="{x:Static settings:TaskbarLengthMode.FollowContent}" />
@@ -353,7 +358,7 @@
                                 </StackPanel>
                             </ui:CardExpander.Header>
                             <StackPanel>
-                                <components:SettingsRow
+                                <components:SettingsRow IsNested="True"
                                     Description="{DynamicResource Loc.DisplayModes.Width.Row.Spacing.Description}"
                                     Icon="{ui:SymbolIcon PaddingLeft24}"
                                     Title="{DynamicResource Loc.DisplayModes.Width.Row.Spacing.Title}">
@@ -378,14 +383,14 @@
                                 </StackPanel>
                             </ui:CardExpander.Header>
                             <StackPanel>
-                                <components:SettingsRow
+                                <components:SettingsRow IsNested="True"
                                     Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Description}"
                                     Icon="{ui:SymbolIcon ResizeLarge24}"
                                     Style="{StaticResource FixedWidthRowStyle}"
                                     Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Title}">
                                     <ui:ToggleSwitch IsChecked="{Binding ViewModel.Lyrics.FixedWidthEnabled, Mode=TwoWay}" />
                                 </components:SettingsRow>
-                                <components:SettingsRow
+                                <components:SettingsRow IsNested="True"
                                     Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Length.Description}"
                                     Icon="{ui:SymbolIcon ArrowAutofitWidth24}"
                                     Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Length.Title}"
@@ -412,7 +417,7 @@
                             Icon="{ui:SymbolIcon TextAlignJustify24}"
                             Title="{DynamicResource Loc.Appearance.Row.InteractionButtonSize.Title}">
                             <ComboBox
-                                MinWidth="200"
+                                MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                 SelectedValue="{Binding ViewModel.Layout.InteractionButtonSize, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
                                 <ComboBoxItem
@@ -437,8 +442,9 @@
                                 Step="1"
                                 Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
                         </components:SettingsRow>
-                    <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer" Margin="0,0,8,4"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
@@ -500,8 +506,9 @@
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
-                    <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer" Margin="0,0,8,4"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
@@ -541,17 +548,16 @@
                                     Icon="{ui:SymbolIcon ArrowSync24}"
                                     IsNested="True"
                                     Title="{DynamicResource Loc.DisplayModes.Full.Row.Preset.Title}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:Button
-                                            Margin="0,0,8,0"
+                                    <WrapPanel Style="{StaticResource AfSettingsActionsStyle}">
+                                        <ui:Button Margin="{StaticResource AfSettingsActionGap}"
                                             Command="{Binding ViewModel.Layers.ApplyCompactFullPanelPresetCommand}"
                                             Content="{DynamicResource Loc.DisplayModes.Full.Preset.Compact}"
                                             Style="{StaticResource AfSettingsButtonStyle}" />
-                                        <ui:Button
+                                        <ui:Button Margin="{StaticResource AfSettingsActionGap}"
                                             Command="{Binding ViewModel.Layers.ApplyFullFullPanelPresetCommand}"
                                             Content="{DynamicResource Loc.DisplayModes.Full.Preset.Full}"
                                             Style="{StaticResource AfSettingsButtonStyle}" />
-                                    </StackPanel>
+                                    </WrapPanel>
                                 </components:SettingsRow>
                                 <components:SettingsRow
                                     Icon="{ui:SymbolIcon Info24}"

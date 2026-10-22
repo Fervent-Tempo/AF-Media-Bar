@@ -37,7 +37,7 @@
                             Description="{DynamicResource Loc.About.Language.Description}"
                             Icon="{ui:SymbolIcon Globe24}"
                             Title="{DynamicResource Loc.About.Language.Title}">
-                            <ComboBox MinWidth="150" SelectedValue="{Binding ViewModel.InterfaceLanguage, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectShortWidth}" SelectedValue="{Binding ViewModel.InterfaceLanguage, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
                                     Content="{DynamicResource Loc.About.Language.FollowSystem}"
                                     Tag="{x:Static localization:InterfaceLanguage.System}" />
@@ -72,28 +72,21 @@
                             Description="{DynamicResource Loc.About.Row.Version.Description}"
                             Icon="{ui:SymbolIcon Info24}"
                             Title="{DynamicResource Loc.About.Row.Version.Title}">
-                            <StackPanel Orientation="Horizontal">
+                            <WrapPanel Style="{StaticResource AfSettingsActionsStyle}">
                                 <TextBlock
                                     Margin="0,0,12,0"
                                     VerticalAlignment="Center"
                                     Style="{StaticResource AfSettingsRowValueStyle}"
                                     Text="{Binding ViewModel.CurrentVersion, StringFormat=v{0}}" />
-                                <ui:Button
+                                <ui:Button Margin="{StaticResource AfSettingsActionGap}"
                                     Command="{Binding ViewModel.CheckForUpdatesCommand}"
                                     Content="{DynamicResource Loc.About.Row.Version.Check}"
                                     Icon="{ui:SymbolIcon ArrowSync24}"
                                     IsEnabled="{Binding ViewModel.CanCheck}"
                                     Style="{StaticResource AfSettingsButtonStyle}" />
-                            </StackPanel>
+                            </WrapPanel>
                         </components:SettingsRow>
-                        <components:SettingsRow
-                            Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}"
-                            Description="{DynamicResource Loc.ReleaseHighlights.Application.Description}"
-                            Icon="{ui:SymbolIcon Sparkle24}">
-                            <components:SettingsNavigationButton
-                                Content="{DynamicResource Loc.ReleaseHighlights.Application.Open}"
-                                Destination="ReleaseHighlights" />
-                        </components:SettingsRow>
+
                         <components:SettingsRow
                             Description="{DynamicResource Loc.About.Row.AutoCheck.Description}"
                             Icon="{ui:SymbolIcon ArrowSync24}"
@@ -117,20 +110,19 @@
                                 Description="{Binding ViewModel.HighlightDate}"
                                 Icon="{ui:SymbolIcon Sparkle24}"
                                 Title="{Binding ViewModel.HighlightTitle}">
-                                <StackPanel Orientation="Horizontal">
-                                    <ui:Button
+                                <WrapPanel Style="{StaticResource AfSettingsActionsStyle}">
+                                    <ui:Button Margin="{StaticResource AfSettingsActionGap}"
                                         Command="{Binding ViewModel.DownloadUpdateCommand}"
                                         Content="{DynamicResource Loc.About.Row.Download.Download}"
                                         Icon="{ui:SymbolIcon ArrowDownload24}"
                                         IsEnabled="{Binding ViewModel.CanDownload}"
                                         Style="{StaticResource AfSettingsButtonStyle}" />
-                                    <ui:Button
-                                        Margin="8,0,0,0"
+                                    <ui:Button Margin="{StaticResource AfSettingsActionGap}"
                                         Command="{Binding ViewModel.CancelDownloadCommand}"
                                         Content="{DynamicResource Loc.Common.Cancel}"
                                         IsEnabled="{Binding ViewModel.CanCancel}"
                                         Style="{StaticResource AfSettingsButtonStyle}" />
-                                </StackPanel>
+                                </WrapPanel>
                             </components:SettingsRow>
                             <components:SettingsCallout Margin="0,0,0,8" IsAccent="True" Symbol="Info24" Text="{Binding ViewModel.StatusText}" />
                             <components:SettingsRow
@@ -168,42 +160,45 @@
                                 Description="{DynamicResource Loc.About.Row.Skip.Description}"
                                 Icon="{ui:SymbolIcon Dismiss24}"
                                 Title="{DynamicResource Loc.Common.SkipVersion}">
-                                <StackPanel Orientation="Horizontal">
-                                    <ui:Button
+                                <WrapPanel Style="{StaticResource AfSettingsActionsStyle}">
+                                    <ui:Button Margin="{StaticResource AfSettingsActionGap}"
                                         Command="{Binding ViewModel.SkipVersionCommand}"
                                         Content="{DynamicResource Loc.Common.SkipVersion}"
                                         IsEnabled="{Binding ViewModel.CanSkip}"
                                         Style="{StaticResource AfSettingsButtonStyle}" />
-                                    <ui:Button
-                                        Margin="8,0,0,0"
+                                    <ui:Button Margin="{StaticResource AfSettingsActionGap}"
                                         Command="{Binding ViewModel.ClearSkippedVersionCommand}"
                                         Content="{DynamicResource Loc.About.Row.Skip.Clear}"
                                         IsEnabled="{Binding ViewModel.HasSkippedVersion}"
                                         Style="{StaticResource AfSettingsButtonStyle}" />
-                                </StackPanel>
+                                </WrapPanel>
                             </components:SettingsRow>
                             <components:SettingsRow
                                 Description="{DynamicResource Loc.About.Row.DownloadPage.Description}"
                                 Icon="{ui:SymbolIcon Globe24}"
                                 Title="{DynamicResource Loc.About.Row.DownloadPage.Title}">
-                                <StackPanel Orientation="Horizontal">
-                                    <ui:Button
+                                <WrapPanel Style="{StaticResource AfSettingsActionsStyle}">
+                                    <ui:Button Margin="{StaticResource AfSettingsActionGap}"
                                         Command="{Binding ViewModel.OpenDownloadPageCommand}"
                                         Content="GitHub"
                                         Icon="{ui:SymbolIcon Globe24}"
                                         Style="{StaticResource AfSettingsButtonStyle}" />
-                                    <ui:Button
-                                        Margin="8,0,0,0"
+                                    <ui:Button Margin="{StaticResource AfSettingsActionGap}"
                                         Command="{Binding ViewModel.OpenAcceleratedDownloadPageCommand}"
                                         Content="{DynamicResource Loc.About.Row.DownloadPage.Mirror}"
                                         Icon="{ui:SymbolIcon ArrowDownload24}"
                                         Style="{StaticResource AfSettingsButtonStyle}" />
-                                </StackPanel>
+                                </WrapPanel>
                             </components:SettingsRow>
                         </StackPanel>
-                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="16,4,0,0">
-                            <TextBlock Style="{StaticResource AfSettingsHintTextStyle}" Text="{Binding ViewModel.StartupStatusText}" />
+                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,4,0,0">
+                            <TextBlock Style="{StaticResource AfSettingsStatusTextStyle}" Text="{Binding ViewModel.StartupStatusText}" />
                         </Border>
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton ToolTip="{DynamicResource Loc.ReleaseHighlights.Application.Description}"
+                                Content="{DynamicResource Loc.ReleaseHighlights.Application.Open}"
+                                Destination="ReleaseHighlights" />
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup
@@ -243,7 +238,7 @@
                                 </StackPanel>
                             </ui:CardExpander.Header>
                             <StackPanel>
-                                <components:SettingsRow
+                                <components:SettingsRow IsNested="True"
                                     Description="{Binding ViewModel.UserDefaultsStatusText}"
                                     Icon="{ui:SymbolIcon Bookmark24}"
                                     Title="{DynamicResource Loc.About.Row.SaveDefaults.Title}">
@@ -253,7 +248,7 @@
                                         Icon="{ui:SymbolIcon Save24}"
                                         Style="{StaticResource AfSettingsButtonStyle}" />
                                 </components:SettingsRow>
-                                <components:SettingsRow
+                                <components:SettingsRow IsNested="True"
                                     Description="{DynamicResource Loc.About.Row.ClearDefaults.Description}"
                                     Icon="{ui:SymbolIcon Delete24}"
                                     IsEnabled="{Binding ViewModel.HasUserDefaults}"
@@ -284,13 +279,13 @@
                             </StackPanel>
                         </ui:CardExpander.Header>
                         <StackPanel>
-                            <components:SettingsRow Title="{DynamicResource Loc.Developer.Mode.Title}" Description="{DynamicResource Loc.Developer.Mode.Description}" Icon="{ui:SymbolIcon Bug24}">
+                            <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Developer.Mode.Title}" Description="{DynamicResource Loc.Developer.Mode.Description}" Icon="{ui:SymbolIcon Bug24}">
                                 <ui:ToggleSwitch IsChecked="{Binding ViewModel.DeveloperModeEnabled, Mode=TwoWay}" />
                             </components:SettingsRow>
-                            <components:SettingsRow Title="{DynamicResource Loc.Developer.Tools.Title}" Description="{DynamicResource Loc.Developer.Tools.Description}" Visibility="{Binding ViewModel.DeveloperModeEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" Icon="{ui:SymbolIcon Bug24}">
+                            <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Developer.Tools.Title}" Description="{DynamicResource Loc.Developer.Tools.Description}" Visibility="{Binding ViewModel.DeveloperModeEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" Icon="{ui:SymbolIcon Bug24}">
                                 <ui:Button Content="{DynamicResource Loc.Developer.Open}" Command="{Binding ViewModel.OpenDeveloperToolsCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
                             </components:SettingsRow>
-                            <components:SettingsRow
+                            <components:SettingsRow IsNested="True"
                                 Description="{DynamicResource Loc.About.Row.LogFolder.Description}"
                                 Icon="{ui:SymbolIcon FolderOpen24}"
                                 Title="{DynamicResource Loc.About.Row.LogFolder.Title}">
@@ -300,7 +295,7 @@
                                     Icon="{ui:SymbolIcon FolderOpen24}"
                                     Style="{StaticResource AfSettingsButtonStyle}" />
                             </components:SettingsRow>
-                            <components:SettingsRow
+                            <components:SettingsRow IsNested="True"
                                 Description="{DynamicResource Loc.About.Row.TrimMemory.Description}"
                                 Icon="{ui:SymbolIcon ArrowMinimize24}"
                                 Title="{DynamicResource Loc.Memory.OptimizeAf}"
@@ -319,65 +314,69 @@
                 <components:SettingsGroup GroupId="Memory.Title" Header="{DynamicResource Loc.Memory.Title}" Description="{DynamicResource Loc.Memory.ToolsDescription}" Icon="{ui:SymbolIcon ArrowMinimize24}"
                     Visibility="{Binding ViewModel.MemoryTools.IsEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                     <StackPanel>
-                        <components:SettingsRow Title="{DynamicResource Loc.Memory.OptimizeAf}" Description="{DynamicResource Loc.Memory.Deep.Description}">
+                        <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" Title="{DynamicResource Loc.Memory.OptimizeAf}" Description="{DynamicResource Loc.Memory.Deep.Description}">
                             <ui:Button Content="{DynamicResource Loc.Memory.OptimizeAf}" Command="{Binding ViewModel.MemoryTools.DeepCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
                         <ui:Button Content="{DynamicResource Loc.Memory.Result.ViewLatest}" Command="{Binding ViewModel.MemoryTools.ShowLastResultCommand}"
-                            Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="16,8"
+                            Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="0,8,0,4"
                             Visibility="{Binding ViewModel.MemoryTools.HasManualResult, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                        <Expander Header="{DynamicResource Loc.Memory.Metrics.Title}" Margin="0,8,0,0">
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon ArrowMinimize24}">
+                            <ui:CardExpander.Header><TextBlock Text="{DynamicResource Loc.Memory.Metrics.Title}" Style="{StaticResource AfSettingsRowTitleStyle}" /></ui:CardExpander.Header>
                             <StackPanel>
-                                <components:SettingsRow Title="{DynamicResource Loc.Memory.WorkingSet}"><TextBlock Text="{Binding ViewModel.MemoryTools.WorkingSetText}" /></components:SettingsRow>
-                                <components:SettingsRow Title="{DynamicResource Loc.Memory.PrivateCommit}"><TextBlock Text="{Binding ViewModel.MemoryTools.PrivateCommitText}" /></components:SettingsRow>
-                                <components:SettingsRow Title="{DynamicResource Loc.Memory.ManagedHeap}"><TextBlock Text="{Binding ViewModel.MemoryTools.ManagedHeapText}" /></components:SettingsRow>
-                                <components:SettingsRow Title="{DynamicResource Loc.Memory.Handles}"><TextBlock Text="{Binding ViewModel.MemoryTools.HandlesText}" /></components:SettingsRow>
-                                <components:SettingsRow Title="{DynamicResource Loc.Memory.Threads}"><TextBlock Text="{Binding ViewModel.MemoryTools.ThreadsText}" /></components:SettingsRow>
-                                <components:SettingsRow Title="{DynamicResource Loc.Memory.Available}"><TextBlock Text="{Binding ViewModel.MemoryTools.AvailableMemoryText}" /></components:SettingsRow>
-                                <components:SettingsRow Title="{DynamicResource Loc.Memory.SampleTime}"><TextBlock Text="{Binding ViewModel.MemoryTools.SampleTimeText}" /></components:SettingsRow>
-                                <TextBlock Text="{DynamicResource Loc.Memory.Explanation}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="16,8" />
+                                <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.WorkingSet}"><TextBlock Text="{Binding ViewModel.MemoryTools.WorkingSetText}" Style="{StaticResource AfSettingsRowValueStyle}" /></components:SettingsRow>
+                                <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.PrivateCommit}"><TextBlock Text="{Binding ViewModel.MemoryTools.PrivateCommitText}" Style="{StaticResource AfSettingsRowValueStyle}" /></components:SettingsRow>
+                                <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.ManagedHeap}"><TextBlock Text="{Binding ViewModel.MemoryTools.ManagedHeapText}" Style="{StaticResource AfSettingsRowValueStyle}" /></components:SettingsRow>
+                                <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.Handles}"><TextBlock Text="{Binding ViewModel.MemoryTools.HandlesText}" Style="{StaticResource AfSettingsRowValueStyle}" /></components:SettingsRow>
+                                <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.Threads}"><TextBlock Text="{Binding ViewModel.MemoryTools.ThreadsText}" Style="{StaticResource AfSettingsRowValueStyle}" /></components:SettingsRow>
+                                <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.Available}"><TextBlock Text="{Binding ViewModel.MemoryTools.AvailableMemoryText}" Style="{StaticResource AfSettingsRowValueStyle}" /></components:SettingsRow>
+                                <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.SampleTime}"><TextBlock Text="{Binding ViewModel.MemoryTools.SampleTimeText}" Style="{StaticResource AfSettingsRowValueStyle}" /></components:SettingsRow>
+                                <TextBlock Text="{DynamicResource Loc.Memory.Explanation}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,4" />
                             </StackPanel>
-                        </Expander>
-                        <Expander Header="{DynamicResource Loc.Memory.LastResult}" IsExpanded="True" Margin="0,8,0,0" Visibility="{Binding ViewModel.MemoryTools.HasResult, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                            <TextBlock Text="{Binding ViewModel.MemoryTools.ResultText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="16,8" />
-                        </Expander>
-                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Margin="0,12,0,0" Visibility="{Binding ViewModel.MemoryTools.IsSystemCleanupEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                        </ui:CardExpander>
+                        <ui:CardExpander IsExpanded="True" Visibility="{Binding ViewModel.MemoryTools.HasResult, Converter={StaticResource AfBooleanToVisibilityConverter}}" Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon ArrowMinimize24}">
+                            <ui:CardExpander.Header><TextBlock Text="{DynamicResource Loc.Memory.LastResult}" Style="{StaticResource AfSettingsRowTitleStyle}" /></ui:CardExpander.Header>
+                            <TextBlock Text="{Binding ViewModel.MemoryTools.ResultText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsResultTextStyle}" />
+                        </ui:CardExpander>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon ArrowMinimize24}" Visibility="{Binding ViewModel.MemoryTools.IsSystemCleanupEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <ui:CardExpander.Header><StackPanel>
                                 <TextBlock Text="{DynamicResource Loc.Memory.System.Title}" Style="{StaticResource AfSettingsRowTitleStyle}" />
                                 <TextBlock Text="{DynamicResource Loc.Memory.System.Scope}" TextWrapping="Wrap" Style="{StaticResource AfSettingsRowDescriptionStyle}" />
                             </StackPanel></ui:CardExpander.Header>
                             <StackPanel>
-                                <components:SettingsRow Title="{DynamicResource Loc.Memory.System.Clean}" Description="{DynamicResource Loc.Memory.System.Description}">
+                                <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.System.Clean}" Description="{DynamicResource Loc.Memory.System.Description}">
                                     <ui:Button Content="{DynamicResource Loc.Memory.System.Run}" Command="{Binding ViewModel.MemoryTools.CleanSystemCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
                                 </components:SettingsRow>
-                                <components:SettingsRow Title="{DynamicResource Loc.Memory.System.Deep}" Description="{DynamicResource Loc.Memory.System.DeepDescription}">
+                                <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.System.Deep}" Description="{DynamicResource Loc.Memory.System.DeepDescription}">
                                     <ui:Button Content="{DynamicResource Loc.Memory.System.Deep}" Command="{Binding ViewModel.MemoryTools.CleanSystemDeepCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
                                 </components:SettingsRow>
-                                <components:SettingsRow Title="{DynamicResource Loc.Memory.Authorization.Title}" Description="{Binding ViewModel.MemoryTools.AuthorizationText}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:Button Content="{DynamicResource Loc.Memory.Authorization.Remember}" Command="{Binding ViewModel.MemoryTools.AuthorizeCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
-                                        <ui:Button Content="{DynamicResource Loc.Memory.Authorization.Revoke}" Command="{Binding ViewModel.MemoryTools.RevokeAuthorizationCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0" />
-                                    </StackPanel>
+                                <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.Authorization.Title}" Description="{Binding ViewModel.MemoryTools.AuthorizationText}">
+                                    <WrapPanel Style="{StaticResource AfSettingsActionsStyle}">
+                                        <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Memory.Authorization.Remember}" Command="{Binding ViewModel.MemoryTools.AuthorizeCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
+                                        <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Memory.Authorization.Revoke}" Command="{Binding ViewModel.MemoryTools.RevokeAuthorizationCommand}" IsEnabled="{Binding ViewModel.MemoryTools.CanRun}" Style="{StaticResource AfSettingsButtonStyle}" />
+                                    </WrapPanel>
                                 </components:SettingsRow>
-                                <Expander Header="{DynamicResource Loc.Memory.Auto.Title}" Margin="16,8">
+                                <ui:CardExpander Style="{StaticResource AfSettingsNestedExpanderStyle}" Icon="{ui:SymbolIcon ArrowMinimize24}">
+                                    <ui:CardExpander.Header><TextBlock Text="{DynamicResource Loc.Memory.Auto.Title}" Style="{StaticResource AfSettingsRowTitleStyle}" /></ui:CardExpander.Header>
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource Loc.Memory.Auto.Description}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8" />
-                                        <components:SettingsRow Title="{DynamicResource Loc.Memory.Auto.Timer}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.MemoryTools.TimerEnabled, Mode=TwoWay}" /></components:SettingsRow>
-                                        <components:SettingsRow Title="{DynamicResource Loc.Memory.Auto.Interval}"><ui:NumberBox Minimum="{Binding ViewModel.MemoryTools.MinimumAutomaticInterval}" Maximum="{Binding ViewModel.MemoryTools.MaximumAutomaticInterval}" Value="{Binding ViewModel.MemoryTools.IntervalMinutes, Mode=TwoWay}" Width="150" /></components:SettingsRow>
-                                        <components:SettingsRow Title="{DynamicResource Loc.Memory.Auto.Threshold}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.MemoryTools.ThresholdEnabled, Mode=TwoWay}" /></components:SettingsRow>
-                                        <components:SettingsRow Title="{DynamicResource Loc.Memory.Auto.Percent}"><ui:NumberBox Minimum="{Binding ViewModel.MemoryTools.MinimumAutomaticThreshold}" Maximum="{Binding ViewModel.MemoryTools.MaximumAutomaticThreshold}" Value="{Binding ViewModel.MemoryTools.ThresholdPercent, Mode=TwoWay}" Width="150" /></components:SettingsRow>
-                                        <components:SettingsRow Title="{DynamicResource Loc.Memory.Auto.Level}"><ComboBox SelectedValuePath="Tag" SelectedValue="{Binding ViewModel.MemoryTools.AutomaticLevel, Mode=TwoWay}" MinWidth="180">
+                                        <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.Auto.Timer}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.MemoryTools.TimerEnabled, Mode=TwoWay}" /></components:SettingsRow>
+                                        <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.Auto.Interval}"><WrapPanel><ui:NumberBox Minimum="{Binding ViewModel.MemoryTools.MinimumAutomaticInterval}" Maximum="{Binding ViewModel.MemoryTools.MaximumAutomaticInterval}" Value="{Binding ViewModel.MemoryTools.IntervalMinutes, Mode=TwoWay}" Width="150" /><TextBlock Text="{DynamicResource Loc.Settings.Numeric.Minutes}" Style="{StaticResource AfSettingsRowValueStyle}" Margin="8,0,0,0" VerticalAlignment="Center" /></WrapPanel></components:SettingsRow>
+                                        <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.Auto.Threshold}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.MemoryTools.ThresholdEnabled, Mode=TwoWay}" /></components:SettingsRow>
+                                        <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.Auto.Percent}"><components:SettingsNumericEditor Minimum="{Binding ViewModel.MemoryTools.MinimumAutomaticThreshold}" Maximum="{Binding ViewModel.MemoryTools.MaximumAutomaticThreshold}" Value="{Binding ViewModel.MemoryTools.ThresholdPercent, Mode=TwoWay}" Step="1" Unit="{DynamicResource Loc.Settings.Numeric.Percent}" /></components:SettingsRow>
+                                        <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{DynamicResource Loc.Memory.Auto.Level}"><ComboBox SelectedValuePath="Tag" SelectedValue="{Binding ViewModel.MemoryTools.AutomaticLevel, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}">
                                             <ComboBoxItem Content="{DynamicResource Loc.Memory.System.Standard}" Tag="{x:Static memory:SystemMemoryOptimizationLevel.Standard}" />
                                             <ComboBoxItem Content="{DynamicResource Loc.Memory.System.Deep}" Tag="{x:Static memory:SystemMemoryOptimizationLevel.Deep}" />
                                         </ComboBox></components:SettingsRow>
-                                        <components:SettingsRow Title="{Binding ViewModel.MemoryTools.AutomaticStatusText}"><ui:Button Content="{DynamicResource Loc.Memory.Auto.Resume}" Command="{Binding ViewModel.MemoryTools.ResumeAutomaticCommand}" Style="{StaticResource AfSettingsButtonStyle}" /></components:SettingsRow>
+                                        <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" IsNested="True" Title="{Binding ViewModel.MemoryTools.AutomaticStatusText}"><ui:Button Content="{DynamicResource Loc.Memory.Auto.Resume}" Command="{Binding ViewModel.MemoryTools.ResumeAutomaticCommand}" Style="{StaticResource AfSettingsButtonStyle}" /></components:SettingsRow>
                                     </StackPanel>
-                                </Expander>
-                                <TextBlock Text="{Binding ViewModel.MemoryTools.SystemResultText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="16,8" Visibility="{Binding ViewModel.MemoryTools.HasSystemResult, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                                </ui:CardExpander>
+                                <TextBlock Text="{Binding ViewModel.MemoryTools.SystemResultText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsResultTextStyle}" Visibility="{Binding ViewModel.MemoryTools.HasSystemResult, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
                             </StackPanel>
                         </ui:CardExpander>
-                    <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.WidgetLayout}" Destination="Components" GroupId="Common.Group.ComponentOrder" Margin="0,0,8,4"/>
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Memory.Title" Margin="0,0,8,4"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.WidgetLayout}" Destination="Components" GroupId="Common.Group.ComponentOrder"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Memory.Title"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>

@@ -43,14 +43,14 @@
             <StackPanel x:Name="PageRoot" MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded">
                 <components:SettingsGroup GroupId="Widgets.Note" Header="{DynamicResource Loc.Widgets.Note}" Icon="{ui:SymbolIcon MusicNote220}">
                     <StackPanel>
-                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Note.Interaction.Title}"
+                        <components:SettingsRow Icon="{ui:SymbolIcon MusicNote220}" Title="{DynamicResource Loc.Widgets.Note.Interaction.Title}"
                             Description="{DynamicResource Loc.Widgets.Note.Interaction.Description}">
-                            <ComboBox SelectedValue="{Binding ViewModel.Note.InteractionMode, Mode=TwoWay}" SelectedValuePath="Tag" MinWidth="200">
+                            <ComboBox SelectedValue="{Binding ViewModel.Note.InteractionMode, Mode=TwoWay}" SelectedValuePath="Tag" MinWidth="{StaticResource AfSettingsSelectMinWidth}">
                                 <ComboBoxItem Content="{DynamicResource Loc.Widgets.Note.Interaction.List}" Tag="{x:Static settings:QuickLaunchInteractionMode.ListLaunch}"/>
                                 <ComboBoxItem Content="{DynamicResource Loc.Widgets.Note.Interaction.Select}" Tag="{x:Static settings:QuickLaunchInteractionMode.SelectThenLaunch}"/>
                             </ComboBox>
                         </components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Note.HoverIcon.Title}"
+                        <components:SettingsRow Icon="{ui:SymbolIcon MusicNote220}" Title="{DynamicResource Loc.Widgets.Note.HoverIcon.Title}"
                             Description="{DynamicResource Loc.Widgets.Note.HoverIcon.Description}"
                             Visibility="{Binding ViewModel.Note.IsSelectThenLaunch, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.Note.ShowApplicationIconOnHover, Mode=TwoWay}"/>
@@ -101,7 +101,7 @@
                         </AdornerDecorator>
 
                         <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,4,0,0"><TextBlock
-                            Style="{StaticResource AfSettingsHintTextStyle}"
+                            Style="{StaticResource AfSettingsStatusTextStyle}"
                             Text="{Binding ViewModel.Note.StatusText}" /></Border>
                     </StackPanel>
                 </components:SettingsGroup>
@@ -134,7 +134,7 @@
                                     Style="{StaticResource SpectrumParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Spectrum.CaptureSource.Title}">
                                     <ComboBox
-                                        MinWidth="160"
+                                        MinWidth="{StaticResource AfSettingsSelectShortWidth}"
                                         SelectedValue="{Binding ViewModel.Components.SpectrumCaptureSource, Mode=TwoWay}"
                                         SelectedValuePath="Tag">
                                         <ComboBoxItem
@@ -156,10 +156,10 @@
                                     Visibility="{Binding ViewModel.Components.IsDeviceCapture, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                                     <ComboBox ItemsSource="{Binding ViewModel.Components.SpectrumCaptureDevices}"
                                         SelectedItem="{Binding ViewModel.Components.SelectedSpectrumCaptureDevice, Mode=TwoWay}"
-                                        DisplayMemberPath="DisplayName" MinWidth="{StaticResource AfSettingsSelectMinWidth}" MaxWidth="300"/>
+                                        DisplayMemberPath="DisplayName" MinWidth="{StaticResource AfSettingsSelectMinWidth}" MaxWidth="{StaticResource AfSettingsSelectLongMaxWidth}"/>
                                 </components:SettingsRow>
-                                <TextBlock Text="{Binding ViewModel.Components.SpectrumCaptureDeviceStatus}" Style="{StaticResource AfSettingsHintTextStyle}"
-                                    TextWrapping="Wrap" Margin="16,4" Visibility="{Binding ViewModel.Components.IsDeviceCapture, Converter={StaticResource AfBooleanToVisibilityConverter}}"/>
+                                <TextBlock Text="{Binding ViewModel.Components.SpectrumCaptureDeviceStatus}" Style="{StaticResource AfSettingsStatusTextStyle}"
+                                    TextWrapping="Wrap" Visibility="{Binding ViewModel.Components.IsDeviceCapture, Converter={StaticResource AfBooleanToVisibilityConverter}}"/>
 
                                 <TextBlock
                                     Margin="0,0,0,8"
@@ -176,7 +176,7 @@
                                     Style="{StaticResource SpectrumParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Spectrum.Style.Title}">
                                     <ComboBox
-                                        MinWidth="160"
+                                        MinWidth="{StaticResource AfSettingsSelectShortWidth}"
                                         SelectedValue="{Binding ViewModel.Components.SpectrumStyle, Mode=TwoWay}"
                                         SelectedValuePath="Tag">
                                         <ComboBoxItem
@@ -333,7 +333,7 @@
                                     Style="{StaticResource PerformanceParameterRowStyle}"
                                     Title="{DynamicResource Loc.Media.Performance.DisplayMode.Title}">
                                     <ComboBox SelectedValue="{Binding ViewModel.Components.PerformanceMode, Mode=TwoWay}"
-                                              SelectedValuePath="Tag" MinWidth="160">
+                                              SelectedValuePath="Tag" MinWidth="{StaticResource AfSettingsSelectShortWidth}">
                                         <ComboBoxItem Content="{DynamicResource Loc.Media.Performance.DisplayMode.Cycle}"
                                                       Tag="{x:Static settings:PerformanceDisplayMode.Cycle}" />
                                         <ComboBoxItem Content="{DynamicResource Loc.Media.Performance.DisplayMode.Parallel}"
@@ -364,29 +364,33 @@
                                 </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.WidgetLayout}"
+                                Destination="Components" GroupId="Common.Group.ComponentOrder" HorizontalAlignment="Left"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Battery.Title" Header="{DynamicResource Loc.Battery.Title}" Description="{DynamicResource Loc.Battery.SelectHint}" Icon="{ui:SymbolIcon Bluetooth24}">
                     <StackPanel DataContext="{Binding ViewModel.Battery}" IsEnabled="{Binding IsExperimentEnabled}">
-                        <components:SettingsRow Title="{DynamicResource Loc.Battery.Select}"><ComboBox ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice, Mode=TwoWay}" DisplayMemberPath="DisplayName" MinWidth="200" MaxWidth="300"/></components:SettingsRow>
-                        <StackPanel Orientation="Horizontal" Margin="16,8">
-                            <ui:Button Content="{DynamicResource Loc.Battery.ListRefresh}" Command="{Binding RefreshDevicesListCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
-                            <ui:Button Content="{DynamicResource Loc.Battery.Clear}" Command="{Binding ClearSelectionCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0"/>
-                        </StackPanel>
-                        <components:SettingsRow Title="{DynamicResource Loc.Battery.WidgetEnabled}"><ui:ToggleSwitch IsChecked="{Binding Enabled, Mode=TwoWay}"/></components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Battery.DisplayMode}"><ComboBox SelectedValuePath="Tag" SelectedValue="{Binding DisplayMode, Mode=TwoWay}" MinWidth="200">
+                        <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.Select}"><ComboBox ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice, Mode=TwoWay}" DisplayMemberPath="DisplayName" MinWidth="{StaticResource AfSettingsSelectMinWidth}" MaxWidth="{StaticResource AfSettingsSelectLongMaxWidth}"/></components:SettingsRow>
+                        <WrapPanel Style="{StaticResource AfSettingsStandaloneActionsStyle}">
+                            <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Battery.ListRefresh}" Command="{Binding RefreshDevicesListCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                            <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Battery.Clear}" Command="{Binding ClearSelectionCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                        </WrapPanel>
+                        <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.WidgetEnabled}"><ui:ToggleSwitch IsChecked="{Binding Enabled, Mode=TwoWay}"/></components:SettingsRow>
+                        <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.DisplayMode}"><ComboBox SelectedValuePath="Tag" SelectedValue="{Binding DisplayMode, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}">
                             <ComboBoxItem Content="{DynamicResource Loc.Battery.WhenConnected}" Tag="{x:Static settings:BluetoothBatteryDisplayMode.WhenConnected}"/>
                             <ComboBoxItem Content="{DynamicResource Loc.Battery.WhenLow}" Tag="{x:Static settings:BluetoothBatteryDisplayMode.WhenLow}"/>
                         </ComboBox></components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Battery.Notify}"><ui:ToggleSwitch IsChecked="{Binding Notifications, Mode=TwoWay}"/></components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Battery.Threshold}"><ui:NumberBox Minimum="{Binding MinimumLowThreshold}" Maximum="{Binding MaximumLowThreshold}" Value="{Binding LowThreshold, Mode=TwoWay}" Width="150"/></components:SettingsRow>
-                        <TextBlock Text="{Binding CurrentDetails}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="16,8"/>
-                        <components:SettingsRow Title="{DynamicResource Loc.Battery.RefreshHint}"><ui:Button Content="{DynamicResource Loc.Battery.Refresh}" Command="{Binding RefreshCommand}" Style="{StaticResource AfSettingsButtonStyle}"/></components:SettingsRow>
+                        <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.Notify}"><ui:ToggleSwitch IsChecked="{Binding Notifications, Mode=TwoWay}"/></components:SettingsRow>
+                        <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.Threshold}"><components:SettingsNumericEditor Minimum="{Binding MinimumLowThreshold}" Maximum="{Binding MaximumLowThreshold}" Value="{Binding LowThreshold, Mode=TwoWay}" Step="1" Unit="{DynamicResource Loc.Settings.Numeric.Percent}"/></components:SettingsRow>
+                        <TextBlock Text="{Binding CurrentDetails}" TextWrapping="Wrap" Style="{StaticResource AfSettingsStatusTextStyle}"/>
+                        <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.RefreshHint}"><ui:Button Content="{DynamicResource Loc.Battery.Refresh}" Command="{Binding RefreshCommand}" Style="{StaticResource AfSettingsButtonStyle}"/></components:SettingsRow>
 
                     </StackPanel>
                 </components:SettingsGroup>
-                <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.WidgetLayout}"
-                    Destination="Components" GroupId="Common.Group.ComponentOrder" HorizontalAlignment="Left" Margin="0,12,0,0"/>
+
                 <ui:Button Click="ResetButton_Click" Content="{DynamicResource Loc.Common.ResetPageDefaults}"
                     Icon="{ui:SymbolIcon ArrowReset24}" Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="0,16,0,40"/>
             </StackPanel>

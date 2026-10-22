@@ -2996,7 +2996,7 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Battery.Title" xml:space="preserve"><value>Bluetooth battery</value></data>
   <data name="Battery.Hint" xml:space="preserve"><value>Tracks one manually selected Bluetooth device using Windows properties and standard BLE battery data. One alert per low-battery cycle; startup, selection changes and reconnection establish a baseline first.</value></data>
   <data name="Battery.Notify" xml:space="preserve"><value>Low-battery alerts for selected device</value></data>
-  <data name="Battery.Threshold" xml:space="preserve"><value>Low-battery threshold (%)</value></data>
+  <data name="Battery.Threshold" xml:space="preserve"><value>Low-battery threshold</value></data>
   <data name="Battery.Unknown" xml:space="preserve"><value>Battery unknown</value></data>
   <data name="Battery.Stale" xml:space="preserve"><value>not current</value></data>
   <data name="Battery.Details" xml:space="preserve"><value>Battery: {0}
@@ -3051,9 +3051,9 @@ Source: {2}</value></data>
   <data name="Memory.Auto.Title" xml:space="preserve"><value>Automatic system optimization</value></data>
   <data name="Memory.Auto.Description" xml:space="preserve"><value>Runs while AF is open, awake and unlocked. The threshold must persist for 30 seconds. Attempts have a 15-minute cooldown; threshold triggers rearm after a 5-point drop. No success notifications.</value></data>
   <data name="Memory.Auto.Timer" xml:space="preserve"><value>Optimize periodically</value></data>
-  <data name="Memory.Auto.Interval" xml:space="preserve"><value>Interval (minutes)</value></data>
+  <data name="Memory.Auto.Interval" xml:space="preserve"><value>Interval</value></data>
   <data name="Memory.Auto.Threshold" xml:space="preserve"><value>Memory threshold trigger</value></data>
-  <data name="Memory.Auto.Percent" xml:space="preserve"><value>Physical memory usage (%)</value></data>
+  <data name="Memory.Auto.Percent" xml:space="preserve"><value>Physical memory usage</value></data>
   <data name="Memory.Auto.Level" xml:space="preserve"><value>Automatic optimization level</value></data>
   <data name="Memory.Auto.Resume" xml:space="preserve"><value>Resume automation</value></data>
   <data name="Memory.Auto.Disabled" xml:space="preserve"><value>Automation is off</value></data>
@@ -3186,4 +3186,5 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Developer.Resources.Scope" xml:space="preserve"><value>AF main process only; excludes WebView2 child processes. No forced GC or memory trimming. Growth alone does not prove a leak. Disabling developer mode clears the baseline.</value></data>
   <data name="Lyrics.Row.FuriganaFilter.Title" xml:space="preserve"><value>Hide Japanese furigana annotations</value></data>
   <data name="Lyrics.Row.FuriganaFilter.Description" xml:space="preserve"><value>On by default. Hides annotations in lyric text only when everything inside () or （） is kana. Keeps English, Chinese and mixed text; leaves source lyrics, timing, translations and romanization unchanged.</value></data>
+  <data name="Settings.Numeric.Minutes" xml:space="preserve"><value>minutes</value></data>
 </root>

@@ -6,7 +6,7 @@
     Loaded="OnPageLoaded" Unloaded="OnPageUnloaded" ScrollViewer.CanContentScroll="False">
     <Page.Resources>
         <DataTemplate x:Key="ReleaseBody">
-            <StackPanel Margin="20,12,20,20">
+            <StackPanel>
                 <TextBlock Text="{Binding OriginalNotice}" Style="{StaticResource AfSettingsRowDescriptionStyle}" />
                 <TextBlock Text="{DynamicResource Loc.ReleaseHighlights.NoHighlights}" TextWrapping="Wrap">
                     <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource AfSettingsRowDescriptionStyle}">
@@ -22,7 +22,7 @@
                     </DataTemplate></ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <ui:Button Content="{DynamicResource Loc.ReleaseHighlights.FullNotes}" Click="OnOpenReleaseNotes" Margin="0,12,0,0"
-                           HorizontalAlignment="Left" Visibility="{Binding HasReleaseNotes, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                           Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Visibility="{Binding HasReleaseNotes, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
             </StackPanel>
         </DataTemplate>
         <DataTemplate x:Key="ReleaseHeader">
@@ -56,7 +56,7 @@
                 <components:SettingsGroup GroupId="ReleaseHighlights.History" Header="{DynamicResource Loc.ReleaseHighlights.History}" Icon="{ui:SymbolIcon History24}">
                     <ItemsControl ItemsSource="{Binding ViewModel.History}">
                         <ItemsControl.ItemTemplate><DataTemplate>
-                            <ui:CardExpander Content="{Binding}" Margin="0,0,0,8">
+                            <ui:CardExpander Content="{Binding}">
                                 <ui:CardExpander.Header><ContentControl Content="{Binding}" ContentTemplate="{StaticResource ReleaseHeader}" /></ui:CardExpander.Header>
                                 <ui:CardExpander.Style><Style TargetType="{x:Type ui:CardExpander}" BasedOn="{StaticResource AfSettingsExpanderStyle}">
                                     <Style.Triggers><Trigger Property="IsExpanded" Value="True"><Setter Property="ContentTemplate" Value="{StaticResource ReleaseBody}" /></Trigger></Style.Triggers>

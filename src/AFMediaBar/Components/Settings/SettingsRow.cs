@@ -50,7 +50,7 @@ public class SettingsRow : HeaderedContentControl
         typeof(SettingsRow),
         new PropertyMetadata(null));
 
-    /// <summary>行表面的圆角。嵌套行把它设为 0，因为它只保留一条发丝线。/ Corner radius of the row surface. A nested row sets it to zero because it keeps only a hairline.</summary>
+    /// <summary>行表面的圆角，嵌套行使用共享小卡片圆角。</summary>
     public static readonly DependencyProperty CornerRadiusProperty = DependencyProperty.Register(
         nameof(CornerRadius),
         typeof(CornerRadius),
@@ -86,10 +86,7 @@ public class SettingsRow : HeaderedContentControl
         new PropertyMetadata(SettingsChipTone.Neutral));
 
     /// <summary>
-    /// 该行是否嵌在 <c>ui:CardExpander</c> 内部。嵌套行用更小的图标、左侧缩进与发丝线分隔，
-    /// 因此它读起来属于上方那一行，而不是又一张卡片。
-    /// Whether this row is nested inside a <c>ui:CardExpander</c>. A nested row uses a smaller icon, a left
-    /// indent, and a hairline separator, so it reads as belonging to the row above rather than as another card.
+    /// 该行是否位于展开体内。子卡片使用较小的图标、圆角与内边距表达层级。
     /// </summary>
     public static readonly DependencyProperty IsNestedProperty = DependencyProperty.Register(
         nameof(IsNested),

@@ -15,8 +15,6 @@
         Media sources, quick launch, and track notifications stay here; rest-layer components have their own page.
     -->
 
-
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -41,7 +39,6 @@
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
 
-
                 <components:SettingsGroup GroupId="Common.MediaSource" Header="{DynamicResource Loc.Common.MediaSource}" Icon="{ui:SymbolIcon Filter24}">
                     <StackPanel>
                         <components:SettingsRow
@@ -49,7 +46,7 @@
                             Icon="{ui:SymbolIcon ArrowSwap24}"
                             Title="{DynamicResource Loc.Media.Selection.Title}">
                             <ComboBox
-                                MinWidth="220"
+                                MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                 SelectedValue="{Binding ViewModel.SelectionMode, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
                                 <ComboBoxItem Content="{DynamicResource Loc.Media.Selection.Mode.Automatic}" Tag="{x:Static settings:MediaSelectionMode.Automatic}" />
@@ -65,7 +62,7 @@
                                 <ComboBox
                                     DisplayMemberPath="DisplayName"
                                     ItemsSource="{Binding ViewModel.PreferredSourceOptions}"
-                                    MinWidth="220"
+                                    MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                     SelectedValue="{Binding ViewModel.PreferredSourceId, Mode=TwoWay}"
                                     SelectedValuePath="SourceId" />
                             </components:SettingsRow>
@@ -99,33 +96,34 @@
                                             Description="{Binding Descriptor.SourceId}"
                                             IsNested="True"
                                             Title="{Binding Descriptor.DisplayName}">
-                                            <StackPanel Orientation="Horizontal">
-                                                <ui:ToggleSwitch
+                                            <WrapPanel Style="{StaticResource AfSettingsActionsStyle}">
+                                                <ui:ToggleSwitch Margin="{StaticResource AfSettingsActionGap}"
                                                     Content="{DynamicResource Loc.Media.SourceList.Allow}"
                                                     IsChecked="{Binding IsAllowed, Mode=TwoWay}" />
-                                                <ui:Button
-                                                    Margin="12,0,0,0"
+                                                <ui:Button Margin="{StaticResource AfSettingsActionGap}"
                                                     Click="AddDetectedSource_Click"
                                                     Content="{DynamicResource Loc.Media.SourceList.AddToQuickLaunch}"
                                                     Style="{StaticResource AfSettingsButtonStyle}"
                                                     ToolTip="{DynamicResource Loc.Media.SourceList.AddToQuickLaunch.ToolTip}"
                                                     ToolTipService.ShowOnDisabled="True" />
-                                            </StackPanel>
+                                            </WrapPanel>
                                         </components:SettingsRow>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ui:CardExpander>
+                        <TextBlock Text="{Binding ViewModel.StatusText}" TextWrapping="Wrap">
+                            <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource AfSettingsResultTextStyle}">
+                                <Style.Triggers><Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed"/></Trigger></Style.Triggers>
+                            </Style></TextBlock.Style>
+                        </TextBlock>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Widgets.Note.Manage}"
+                                Destination="Widgets" GroupId="Widgets.Note"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
-
-                <TextBlock Text="{Binding ViewModel.StatusText}" TextWrapping="Wrap" Margin="0,4,0,8">
-                    <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource AfSettingsHintTextStyle}">
-                        <Style.Triggers><Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed"/></Trigger></Style.Triggers>
-                    </Style></TextBlock.Style>
-                </TextBlock>
-                <components:SettingsNavigationButton Content="{DynamicResource Loc.Widgets.Note.Manage}"
-                    Destination="Widgets" GroupId="Widgets.Note" Margin="0,8,0,16"/>
 
                 <components:SettingsGroup GroupId="Common.Group.TrackChangeNotification" Header="{DynamicResource Loc.Common.Group.TrackChangeNotification}" Icon="{ui:SymbolIcon MusicNote220}">
                     <StackPanel>
@@ -160,7 +158,7 @@
                                     IsNested="True"
                                     Title="{DynamicResource Loc.Media.Notification.Position.Title}">
                                     <ComboBox
-                                        MinWidth="140"
+                                        MinWidth="{StaticResource AfSettingsSelectShortWidth}"
                                         SelectedValue="{Binding ViewModel.TrackChangeNotificationPosition, Mode=TwoWay}"
                                         SelectedValuePath="Tag">
                                         <ComboBoxItem Content="{DynamicResource Loc.Media.Notification.Position.TopLeft}" Tag="{x:Static settings:TrackChangeNotificationPosition.TopLeft}" />
@@ -188,7 +186,7 @@
                                     IsNested="True"
                                     Title="{DynamicResource Loc.Common.TargetMonitor}">
                                     <ComboBox
-                                        MinWidth="200"
+                                        MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                         SelectedValue="{Binding ViewModel.TrackChangeNotificationTargetMode, Mode=TwoWay}"
                                         SelectedValuePath="Tag">
                                         <ComboBoxItem Content="{DynamicResource Loc.Media.Notification.TargetMode.Fixed}" Tag="{x:Static settings:NotificationTargetMode.Fixed}" />
@@ -203,7 +201,7 @@
                                     <ComboBox
                                         DisplayMemberPath="DisplayName"
                                         ItemsSource="{Binding ViewModel.MonitorOptions}"
-                                        MinWidth="240"
+                                        MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                         SelectedValue="{Binding ViewModel.TrackChangeNotificationFixedMonitorDeviceId, Mode=TwoWay}"
                                         SelectedValuePath="DeviceId" />
                                 </components:SettingsRow>

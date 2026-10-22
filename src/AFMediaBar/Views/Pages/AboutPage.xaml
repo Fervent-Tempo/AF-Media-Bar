@@ -39,7 +39,6 @@
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
                 Loaded="OnPageLoaded">
 
-
                 <components:SettingsGroup GroupId="Common.Group.ProjectInfo" Header="{DynamicResource Loc.Common.Group.ProjectInfo}" Icon="{ui:SymbolIcon Info24}">
                     <components:SettingsRow
                         Description="{DynamicResource Loc.About.Row.Project.Description}"
@@ -254,19 +253,19 @@
                                     Description="{Binding Note}"
                                     Icon="{ui:SymbolIcon DocumentText24}"
                                     Title="{Binding Name}">
-                                    <StackPanel Orientation="Horizontal">
+                                    <WrapPanel Style="{StaticResource AfSettingsActionsStyle}">
                                         <TextBlock
                                             Margin="0,0,12,0"
                                             VerticalAlignment="Center"
                                             Style="{StaticResource AfSettingsRowValueStyle}"
                                             Text="{Binding License}" />
-                                        <ui:Button
+                                        <ui:Button Margin="{StaticResource AfSettingsActionGap}"
                                             Command="{Binding DataContext.ViewModel.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                             CommandParameter="{Binding Url}"
                                             Content="{DynamicResource Loc.About.Licenses.Open}"
                                             Icon="{ui:SymbolIcon Open24}"
                                             Style="{StaticResource AfSettingsButtonStyle}" />
-                                    </StackPanel>
+                                    </WrapPanel>
                                 </components:SettingsRow>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

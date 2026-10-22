@@ -2996,7 +2996,7 @@
   <data name="Battery.Title" xml:space="preserve"><value>藍牙電量</value></data>
   <data name="Battery.Hint" xml:space="preserve"><value>僅追蹤手動選擇的一個藍牙裝置，讀取 Windows 屬性和標準 BLE 電量。低電量同一週期提醒一次，啟動、改選和重新連線先建立基準。</value></data>
   <data name="Battery.Notify" xml:space="preserve"><value>所選裝置低電量提醒</value></data>
-  <data name="Battery.Threshold" xml:space="preserve"><value>低電量門檻（%）</value></data>
+  <data name="Battery.Threshold" xml:space="preserve"><value>低電量門檻</value></data>
   <data name="Battery.Unknown" xml:space="preserve"><value>電量未知</value></data>
   <data name="Battery.Stale" xml:space="preserve"><value>非即時</value></data>
   <data name="Battery.Details" xml:space="preserve"><value>電量：{0}
@@ -3051,9 +3051,9 @@
   <data name="Memory.Auto.Title" xml:space="preserve"><value>自動系統最佳化</value></data>
   <data name="Memory.Auto.Description" xml:space="preserve"><value>僅在 AF 執行且未鎖定螢幕或睡眠時執行。門檻需持續 30 秒；每次嘗試後冷卻 15 分鐘，門檻回落 5 個百分點後才重新允許觸發。自動執行不顯示成功通知。</value></data>
   <data name="Memory.Auto.Timer" xml:space="preserve"><value>定時最佳化</value></data>
-  <data name="Memory.Auto.Interval" xml:space="preserve"><value>間隔（分鐘）</value></data>
+  <data name="Memory.Auto.Interval" xml:space="preserve"><value>間隔</value></data>
   <data name="Memory.Auto.Threshold" xml:space="preserve"><value>記憶體門檻觸發</value></data>
-  <data name="Memory.Auto.Percent" xml:space="preserve"><value>實體記憶體使用率（%）</value></data>
+  <data name="Memory.Auto.Percent" xml:space="preserve"><value>實體記憶體使用率</value></data>
   <data name="Memory.Auto.Level" xml:space="preserve"><value>自動最佳化等級</value></data>
   <data name="Memory.Auto.Resume" xml:space="preserve"><value>恢復自動執行</value></data>
   <data name="Memory.Auto.Disabled" xml:space="preserve"><value>自動最佳化已關閉</value></data>
@@ -3186,4 +3186,5 @@
   <data name="Developer.Resources.Scope" xml:space="preserve"><value>僅統計 AF 主處理程序，不含 WebView2 子處理程序；不強制 GC 或整理記憶體。讀數成長本身不代表洩漏。關閉開發者模式會清除基準。</value></data>
   <data name="Lyrics.Row.FuriganaFilter.Title" xml:space="preserve"><value>隱藏日語振假名標註</value></data>
   <data name="Lyrics.Row.FuriganaFilter.Description" xml:space="preserve"><value>預設開啟。僅隱藏原文中 () 或（）內全部為假名的標註；保留英文、中文及混合內容，不變更原始歌詞、時間軸、譯文或音譯。</value></data>
+  <data name="Settings.Numeric.Minutes" xml:space="preserve"><value>分鐘</value></data>
 </root>

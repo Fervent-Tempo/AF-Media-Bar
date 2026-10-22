@@ -160,8 +160,9 @@
                                                         Badge="{DynamicResource Loc.Common.NotImplemented}" Icon="{ui:SymbolIcon Options24}" IsEnabled="False" />
                             </StackPanel>
                         </ui:CardExpander>
-                    <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Experimental.Floating.Title" Margin="0,0,8,4"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Experimental.Floating.Title"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
@@ -200,7 +201,7 @@
                             Description="{DynamicResource Loc.DisplayModes.Placement.Row.Alignment.Description}"
                             Icon="{ui:SymbolIcon ArrowMove24}"
                             Title="{DynamicResource Loc.DisplayModes.Placement.Row.Alignment.Title}">
-                            <ComboBox MinWidth="200" SelectedValue="{Binding ViewModel.TaskbarPosition, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.TaskbarPosition, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
                                     Content="{Binding ViewModel.AxisStartText}"
                                     Tag="{x:Static settings:TaskbarBarPosition.Start}" />
@@ -245,8 +246,9 @@
                                 Icon="{ui:SymbolIcon ArrowReset24}"
                                 Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
-                    <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Experimental.Vertical.Title" Margin="0,0,8,4"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Experimental.Vertical.Title"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
@@ -262,18 +264,18 @@
                             </ItemsControl>
                         </components:SettingsRow>
                         <components:SettingsRow Title="{DynamicResource Loc.Experimental.Floating.Orientation}" Icon="{ui:SymbolIcon Orientation24}">
-                            <ComboBox SelectedIndex="{Binding ViewModel.FloatingOrientation, Mode=TwoWay}" MinWidth="200">
+                            <ComboBox SelectedIndex="{Binding ViewModel.FloatingOrientation, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}">
                                 <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Horizontal}" />
                                 <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Vertical}" />
                             </ComboBox>
                         </components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Floating.Layer}">
-                            <ComboBox SelectedIndex="{Binding ViewModel.FloatingLayer, Mode=TwoWay}" MinWidth="200">
+                        <components:SettingsRow Icon="{ui:SymbolIcon Desktop24}" Title="{DynamicResource Loc.Experimental.Floating.Layer}">
+                            <ComboBox SelectedIndex="{Binding ViewModel.FloatingLayer, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}">
                                 <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Desktop}" />
                                 <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Topmost}" />
                             </ComboBox>
                         </components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Floating.Lock}">
+                        <components:SettingsRow Icon="{ui:SymbolIcon Desktop24}" Title="{DynamicResource Loc.Experimental.Floating.Lock}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.IsTaskbarPositionLocked, Mode=TwoWay}" />
                         </components:SettingsRow>
                         <components:SettingsRow Title="{DynamicResource Loc.Common.ResetPosition}" Icon="{ui:SymbolIcon ArrowReset24}">

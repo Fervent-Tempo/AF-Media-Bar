@@ -11,8 +11,6 @@
 
     <!-- Application-wide theme, materials and interface typography. -->
 
-
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -38,9 +36,6 @@
                 Loaded="OnPageLoaded"
                 Unloaded="OnPageUnloaded">
 
-
-
-
                 <components:SettingsGroup GroupId="Common.Group.ThemeAndBackdrop" Header="{DynamicResource Loc.Common.Group.ThemeAndBackdrop}" Icon="{ui:SymbolIcon Color24}">
                     <StackPanel>
                         <components:SettingsRow
@@ -48,7 +43,7 @@
                             Icon="{ui:SymbolIcon Color24}"
                             Title="{DynamicResource Loc.Appearance.Row.Theme.Title}">
                             <ComboBox
-                                MinWidth="180"
+                                MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                 SelectedValue="{Binding ViewModel.ApplicationThemeMode, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
                                 <ComboBoxItem Content="{DynamicResource Loc.Appearance.Theme.Automatic}" Tag="{x:Static settings:ApplicationThemeMode.Automatic}" />
@@ -62,7 +57,7 @@
                             Icon="{ui:SymbolIcon WindowConsole20}"
                             Title="{DynamicResource Loc.Appearance.Row.Backdrop.Title}">
                             <ComboBox
-                                MinWidth="180"
+                                MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                 SelectedValue="{Binding ViewModel.BackdropMode, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
                                 <ComboBoxItem Content="{DynamicResource Loc.Appearance.Backdrop.Solid}" Tag="{x:Static settings:ApplicationBackdropMode.FluentSolid}" />
@@ -89,7 +84,7 @@
                             Icon="{ui:SymbolIcon ColorBackground20}"
                             Title="{DynamicResource Loc.Appearance.Row.Accent.Title}">
                             <ComboBox
-                                MinWidth="180"
+                                MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                 SelectedValue="{Binding ViewModel.AccentColorMode, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
                                 <ComboBoxItem Content="{DynamicResource Loc.Appearance.Accent.FollowSystem}" Tag="{x:Static settings:AccentColorMode.System}" />
@@ -252,12 +247,12 @@
                             Icon="{ui:SymbolIcon ArrowSync24}"
                             Title="{DynamicResource Loc.Appearance.Row.Motion.Title}" />
                     <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon CircleHalfFill24}">
-                            <ui:CardExpander.Header><StackPanel>
+                        <ui:CardExpander.Header><StackPanel>
                                 <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Backdrop.Title}" />
                                 <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Settings.Advanced.Backdrop.Description}" />
                             </StackPanel></ui:CardExpander.Header>
                             <StackPanel>
-<components:SettingsRow
+<components:SettingsRow IsNested="True"
                             Description="{DynamicResource Loc.Appearance.Row.BackdropTint.Description}"
                             Icon="{ui:SymbolIcon CircleHalfFill24}"
                             Title="{DynamicResource Loc.Appearance.Row.BackdropTint.Title}">
@@ -279,7 +274,7 @@
                             Icon="{ui:SymbolIcon TextFont24}"
                             Title="{DynamicResource Loc.Appearance.Row.LatinFont.Title}">
                             <ComboBox
-                                MinWidth="200"
+                                MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                 MaxDropDownHeight="360"
                                 ItemsSource="{Binding ViewModel.LatinFontChoices}"
                                 SelectedValue="{Binding ViewModel.LatinFontFamily, Mode=TwoWay}"
@@ -311,7 +306,7 @@
                             Icon="{ui:SymbolIcon LocalLanguage24}"
                             Title="{DynamicResource Loc.Appearance.Row.CjkFont.Title}">
                             <ComboBox
-                                MinWidth="200"
+                                MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                 MaxDropDownHeight="360"
                                 ItemsSource="{Binding ViewModel.CjkFontChoices}"
                                 SelectedValue="{Binding ViewModel.CjkFontFamily, Mode=TwoWay}"

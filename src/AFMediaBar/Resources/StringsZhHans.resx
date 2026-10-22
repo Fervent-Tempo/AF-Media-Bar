@@ -2996,7 +2996,7 @@
   <data name="Battery.Title" xml:space="preserve"><value>蓝牙电量</value></data>
   <data name="Battery.Hint" xml:space="preserve"><value>仅追踪手动选择的一个蓝牙设备，读取 Windows 属性和标准 BLE 电量。低电量同一周期提醒一次，启动、改选和重连先建立基线。</value></data>
   <data name="Battery.Notify" xml:space="preserve"><value>所选设备低电量提醒</value></data>
-  <data name="Battery.Threshold" xml:space="preserve"><value>低电量阈值（%）</value></data>
+  <data name="Battery.Threshold" xml:space="preserve"><value>低电量阈值</value></data>
   <data name="Battery.Unknown" xml:space="preserve"><value>电量未知</value></data>
   <data name="Battery.Stale" xml:space="preserve"><value>非实时</value></data>
   <data name="Battery.Details" xml:space="preserve"><value>电量：{0}
@@ -3051,9 +3051,9 @@
   <data name="Memory.Auto.Title" xml:space="preserve"><value>自动系统优化</value></data>
   <data name="Memory.Auto.Description" xml:space="preserve"><value>仅在 AF 运行且未锁屏或睡眠时执行。阈值需持续 30 秒；每次尝试后冷却 15 分钟，阈值回落 5 个百分点后才重新允许触发。自动执行不弹成功通知。</value></data>
   <data name="Memory.Auto.Timer" xml:space="preserve"><value>定时优化</value></data>
-  <data name="Memory.Auto.Interval" xml:space="preserve"><value>间隔（分钟）</value></data>
+  <data name="Memory.Auto.Interval" xml:space="preserve"><value>间隔</value></data>
   <data name="Memory.Auto.Threshold" xml:space="preserve"><value>内存阈值触发</value></data>
-  <data name="Memory.Auto.Percent" xml:space="preserve"><value>物理内存使用率（%）</value></data>
+  <data name="Memory.Auto.Percent" xml:space="preserve"><value>物理内存使用率</value></data>
   <data name="Memory.Auto.Level" xml:space="preserve"><value>自动优化档位</value></data>
   <data name="Memory.Auto.Resume" xml:space="preserve"><value>恢复自动执行</value></data>
   <data name="Memory.Auto.Disabled" xml:space="preserve"><value>自动优化已关闭</value></data>
@@ -3186,4 +3186,5 @@
   <data name="Developer.Resources.Scope" xml:space="preserve"><value>仅统计 AF 主进程，不含 WebView2 子进程；不强制 GC 或整理内存。读数增长本身不代表泄漏。关闭开发者模式会清除基线。</value></data>
   <data name="Lyrics.Row.FuriganaFilter.Title" xml:space="preserve"><value>隐藏日语振假名标注</value></data>
   <data name="Lyrics.Row.FuriganaFilter.Description" xml:space="preserve"><value>默认开启。仅隐藏正文中 () 或（）内全部为假名的标注；保留英文、中文及混合内容，不改原始歌词、时间轴、译文或音译。</value></data>
+  <data name="Settings.Numeric.Minutes" xml:space="preserve"><value>分钟</value></data>
 </root>

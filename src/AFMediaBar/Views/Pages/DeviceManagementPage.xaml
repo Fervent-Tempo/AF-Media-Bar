@@ -8,7 +8,7 @@
             <Style.Triggers><DataTrigger Binding="{Binding ViewModel.IsPersonalizationEnabled}" Value="False"><Setter Property="HeaderHint" Value="" /></DataTrigger></Style.Triggers>
         </Style>
         <DataTemplate x:Key="DeviceRow">
-            <Border Padding="12,8" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+            <Border Style="{StaticResource AfSettingsDeviceSurfaceStyle}">
                 <StackPanel>
                     <Grid MinHeight="44">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -29,7 +29,7 @@
                                     </TextBox>
                                 </Grid>
                             </Border>
-                            <TextBlock Text="{Binding StateText}"><TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource AfSettingsHintTextStyle}"><Style.Triggers>
+                            <TextBlock Text="{Binding StateText}"><TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource AfSettingsRowDescriptionStyle}"><Style.Triggers>
                                 <DataTrigger Binding="{Binding StateText}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
                             </Style.Triggers></Style></TextBlock.Style></TextBlock>
                         </StackPanel>
@@ -38,16 +38,17 @@
                         <components:SettingsReorderHandle Grid.Column="2" ItemKey="{Binding EndpointId}" AutomationProperties.Name="{Binding DisplayName}"
                             Visibility="{Binding CanReorder, Converter={StaticResource AfBooleanToVisibilityConverter}}"/>
                     </Grid>
-                    <Expander Header="{DynamicResource Loc.Device.Rebind}" Visibility="{Binding CanRebind, Converter={StaticResource AfBooleanToVisibilityConverter}}" Margin="0,4">
+                    <ui:CardExpander Visibility="{Binding CanRebind, Converter={StaticResource AfBooleanToVisibilityConverter}}" Style="{StaticResource AfSettingsNestedExpanderStyle}" Icon="{ui:SymbolIcon ArrowSync24}">
+                        <ui:CardExpander.Header><TextBlock Text="{DynamicResource Loc.Device.Rebind}" Style="{StaticResource AfSettingsRowTitleStyle}" /></ui:CardExpander.Header>
                         <StackPanel>
                             <TextBlock Text="{DynamicResource Loc.Device.RebindHint}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8"/>
-                            <ComboBox ItemsSource="{Binding Replacements}" SelectedItem="{Binding Replacement}" DisplayMemberPath="DisplayName" MinWidth="180" MaxWidth="280" HorizontalAlignment="Left"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,8">
-                                <ui:Button Content="{DynamicResource Loc.Device.Rebind}" Command="{Binding RebindCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
-                                <ui:Button Content="{DynamicResource Loc.Device.Forget}" Command="{Binding ForgetCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="8,0,0,0"/>
-                            </StackPanel>
+                            <ComboBox ItemsSource="{Binding Replacements}" SelectedItem="{Binding Replacement}" DisplayMemberPath="DisplayName" MinWidth="{StaticResource AfSettingsSelectMinWidth}" MaxWidth="{StaticResource AfSettingsSelectLongMaxWidth}" HorizontalAlignment="Left"/>
+                            <WrapPanel Style="{StaticResource AfSettingsStandaloneActionsStyle}">
+                                <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Device.Rebind}" Command="{Binding RebindCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                                <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Device.Forget}" Command="{Binding ForgetCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                            </WrapPanel>
                         </StackPanel>
-                    </Expander>
+                    </ui:CardExpander>
                 </StackPanel>
             </Border>
         </DataTemplate>
@@ -58,28 +59,47 @@
             PageIcon="{ui:SymbolIcon Headphones24}" Title="{DynamicResource Loc.Device.Management.Title}" Subtitle="{DynamicResource Loc.Device.Management.Description}" Target="{Binding ElementName=PageScroll}"/>
         <ScrollViewer x:Name="PageScroll" Grid.Row="1" Margin="{StaticResource AfSettingsScrollMargin}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded">
-                <WrapPanel Margin="0,0,0,12">
-                    <components:SettingsNavigationButton Content="{DynamicResource Loc.Device.Hotkeys}" Destination="Interaction" GroupId="Device.Hotkeys" Margin="0,0,8,4"/>
-                    <components:SettingsNavigationButton Content="{DynamicResource Loc.Audio.Settings.Advanced}" Destination="Interaction" GroupId="Audio.Settings.Advanced" Margin="0,0,8,4"/>
-                </WrapPanel>
+
                 <components:SettingsGroup Style="{StaticResource DeviceGroupStyle}" GroupId="Common.OutputDevice" Header="{DynamicResource Loc.Common.OutputDevice}" Icon="{ui:SymbolIcon Speaker224}" IsEnabled="{Binding ViewModel.IsEnabled}">
                     <StackPanel>
                         <AdornerDecorator><ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.ReorderDevicesCommand}" ItemsSource="{Binding ViewModel.OutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></AdornerDecorator>
-                        <Expander Header="{DynamicResource Loc.Device.Disabled}" Margin="12,8"><ItemsControl ItemsSource="{Binding ViewModel.DisabledOutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></Expander>
-                        <Expander Header="{DynamicResource Loc.Device.Offline}" Margin="12,8"><ItemsControl ItemsSource="{Binding ViewModel.OtherOutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></Expander>
-                        <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.OutputCommunications}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.SwitchOutputCommunications, Mode=TwoWay}"/></components:SettingsRow>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Speaker224}">
+                            <ui:CardExpander.Header><TextBlock Text="{DynamicResource Loc.Device.Disabled}" Style="{StaticResource AfSettingsRowTitleStyle}" /></ui:CardExpander.Header>
+                            <ItemsControl ItemsSource="{Binding ViewModel.DisabledOutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/>
+                        </ui:CardExpander>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Speaker224}">
+                            <ui:CardExpander.Header><TextBlock Text="{DynamicResource Loc.Device.Offline}" Style="{StaticResource AfSettingsRowTitleStyle}" /></ui:CardExpander.Header>
+                            <ItemsControl ItemsSource="{Binding ViewModel.OtherOutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/>
+                        </ui:CardExpander>
+                        <components:SettingsRow Icon="{ui:SymbolIcon Speaker224}" Title="{DynamicResource Loc.Audio.Settings.OutputCommunications}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.SwitchOutputCommunications, Mode=TwoWay}"/></components:SettingsRow>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Device.Hotkeys}" Destination="Interaction" GroupId="Device.Hotkeys"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Audio.Settings.Advanced}" Destination="Interaction" GroupId="Audio.Settings.Advanced"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup Style="{StaticResource DeviceGroupStyle}" GroupId="Common.InputDevice" Header="{DynamicResource Loc.Common.InputDevice}" Icon="{ui:SymbolIcon Mic24}" IsEnabled="{Binding ViewModel.IsEnabled}">
                     <StackPanel>
                         <AdornerDecorator><ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.ReorderDevicesCommand}" ItemsSource="{Binding ViewModel.InputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></AdornerDecorator>
-                        <Expander Header="{DynamicResource Loc.Device.Disabled}" Margin="12,8"><ItemsControl ItemsSource="{Binding ViewModel.DisabledInputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></Expander>
-                        <Expander Header="{DynamicResource Loc.Device.Offline}" Margin="12,8"><ItemsControl ItemsSource="{Binding ViewModel.OtherInputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></Expander>
-                        <components:SettingsRow Title="{DynamicResource Loc.Audio.Settings.InputCommunications}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.SwitchInputCommunications, Mode=TwoWay}"/></components:SettingsRow>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Mic24}">
+                            <ui:CardExpander.Header><TextBlock Text="{DynamicResource Loc.Device.Disabled}" Style="{StaticResource AfSettingsRowTitleStyle}" /></ui:CardExpander.Header>
+                            <ItemsControl ItemsSource="{Binding ViewModel.DisabledInputDevices}" ItemTemplate="{StaticResource DeviceRow}"/>
+                        </ui:CardExpander>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Mic24}">
+                            <ui:CardExpander.Header><TextBlock Text="{DynamicResource Loc.Device.Offline}" Style="{StaticResource AfSettingsRowTitleStyle}" /></ui:CardExpander.Header>
+                            <ItemsControl ItemsSource="{Binding ViewModel.OtherInputDevices}" ItemTemplate="{StaticResource DeviceRow}"/>
+                        </ui:CardExpander>
+                        <components:SettingsRow Icon="{ui:SymbolIcon Mic24}" Title="{DynamicResource Loc.Audio.Settings.InputCommunications}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.SwitchInputCommunications, Mode=TwoWay}"/></components:SettingsRow>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Device.Hotkeys}" Destination="Interaction" GroupId="Device.Hotkeys"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Audio.Settings.Advanced}" Destination="Interaction" GroupId="Audio.Settings.Advanced"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <TextBlock Text="{Binding ViewModel.StatusText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}"/>
+                <TextBlock Text="{Binding ViewModel.StatusText}" TextWrapping="Wrap" Style="{StaticResource AfSettingsStatusTextStyle}"/>
                 <ui:Button Click="ResetButton_Click" Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="0,16,0,40"/>
             </StackPanel>
         </ScrollViewer>

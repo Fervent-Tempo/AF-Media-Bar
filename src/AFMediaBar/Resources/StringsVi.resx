@@ -3034,7 +3034,7 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Battery.Title" xml:space="preserve"><value>Pin Bluetooth</value></data>
   <data name="Battery.Hint" xml:space="preserve"><value>Theo dõi một thiết bị Bluetooth được chọn bằng thuộc tính Windows và pin BLE chuẩn. Mỗi chu kỳ pin yếu chỉ cảnh báo một lần; khởi động, đổi chọn và kết nối lại thiết lập mốc trước.</value></data>
   <data name="Battery.Notify" xml:space="preserve"><value>Cảnh báo pin yếu cho thiết bị đã chọn</value></data>
-  <data name="Battery.Threshold" xml:space="preserve"><value>Ngưỡng pin yếu (%)</value></data>
+  <data name="Battery.Threshold" xml:space="preserve"><value>Ngưỡng pin yếu</value></data>
   <data name="Battery.Unknown" xml:space="preserve"><value>Không rõ mức pin</value></data>
   <data name="Battery.Stale" xml:space="preserve"><value>không cập nhật</value></data>
   <data name="Battery.Details" xml:space="preserve"><value>Pin: {0}
@@ -3089,9 +3089,9 @@ Nguồn: {2}</value></data>
   <data name="Memory.Auto.Title" xml:space="preserve"><value>Tự động tối ưu hệ thống</value></data>
   <data name="Memory.Auto.Description" xml:space="preserve"><value>Chỉ chạy khi AF mở, máy không ngủ hoặc khóa. Ngưỡng phải duy trì 30 giây. Mỗi lần thử cách nhau 15 phút; kích hoạt lại khi giảm 5 điểm phần trăm. Không thông báo thành công.</value></data>
   <data name="Memory.Auto.Timer" xml:space="preserve"><value>Tối ưu định kỳ</value></data>
-  <data name="Memory.Auto.Interval" xml:space="preserve"><value>Khoảng thời gian (phút)</value></data>
+  <data name="Memory.Auto.Interval" xml:space="preserve"><value>Khoảng thời gian</value></data>
   <data name="Memory.Auto.Threshold" xml:space="preserve"><value>Kích hoạt theo ngưỡng bộ nhớ</value></data>
-  <data name="Memory.Auto.Percent" xml:space="preserve"><value>Mức sử dụng bộ nhớ vật lý (%)</value></data>
+  <data name="Memory.Auto.Percent" xml:space="preserve"><value>Mức sử dụng bộ nhớ vật lý</value></data>
   <data name="Memory.Auto.Level" xml:space="preserve"><value>Mức tối ưu tự động</value></data>
   <data name="Memory.Auto.Resume" xml:space="preserve"><value>Tiếp tục tự động</value></data>
   <data name="Memory.Auto.Disabled" xml:space="preserve"><value>Đã tắt tự động tối ưu</value></data>
@@ -3224,4 +3224,5 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Developer.Resources.Scope" xml:space="preserve"><value>Chỉ tính tiến trình chính AF, không gồm tiến trình con WebView2. Không ép GC hay dọn bộ nhớ. Số liệu tăng chưa chứng minh rò rỉ. Tắt chế độ nhà phát triển sẽ xóa mốc.</value></data>
   <data name="Lyrics.Row.FuriganaFilter.Title" xml:space="preserve"><value>Ẩn chú thích furigana tiếng Nhật</value></data>
   <data name="Lyrics.Row.FuriganaFilter.Description" xml:space="preserve"><value>Mặc định bật. Chỉ ẩn chú thích trong lời gốc khi toàn bộ nội dung trong () hoặc （） là kana. Giữ nguyên tiếng Anh, tiếng Trung và nội dung hỗn hợp; không đổi lời nguồn, thời gian, bản dịch hay phiên âm.</value></data>
+  <data name="Settings.Numeric.Minutes" xml:space="preserve"><value>phút</value></data>
 </root>

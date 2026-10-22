@@ -17,57 +17,58 @@
                     IsAccent="True" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,16" />
                 <components:SettingsGroup GroupId="Battery.Title" Header="{DynamicResource Loc.Battery.Title}" Description="{DynamicResource Loc.Battery.SelectHint}" Icon="{ui:SymbolIcon Bluetooth24}">
                     <StackPanel>
-                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Enable}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.BluetoothBattery, Mode=TwoWay}"/></components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Battery.Open}"><components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Settings}" Destination="Widgets" GroupId="Battery.Title"/></components:SettingsRow>
+                        <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Experimental.Enable}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.BluetoothBattery, Mode=TwoWay}"/></components:SettingsRow>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Battery.Open}" Destination="Widgets" GroupId="Battery.Title"/>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Memory.Title" Header="{DynamicResource Loc.Memory.Title}" Description="{DynamicResource Loc.Memory.Explanation}" Icon="{ui:SymbolIcon ArrowMinimize24}">
                     <StackPanel>
-                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Enable}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.MemoryTools, Mode=TwoWay}" /></components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Memory.System.Title}" Description="{DynamicResource Loc.Memory.System.Description}" Visibility="{Binding ViewModel.MemoryTools, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                        <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" Title="{DynamicResource Loc.Experimental.Enable}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.MemoryTools, Mode=TwoWay}" /></components:SettingsRow>
+                        <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" Title="{DynamicResource Loc.Memory.System.Title}" Description="{DynamicResource Loc.Memory.System.Description}" Visibility="{Binding ViewModel.MemoryTools, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.SystemMemoryCleanup, Mode=TwoWay}" />
                         </components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Memory.Open}" Visibility="{Binding ViewModel.MemoryTools, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}" Visibility="{Binding ViewModel.MemoryTools, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <components:SettingsNavigationButton Content="{DynamicResource Loc.Memory.Open}" Destination="Application" GroupId="Memory.Title" />
-                        </components:SettingsRow>
+                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Experimental.Vertical.Title" Header="{DynamicResource Loc.Experimental.Vertical.Title}"
                     Description="{DynamicResource Loc.Experimental.Vertical.Description}" Icon="{ui:SymbolIcon ArrowSort24}">
                     <StackPanel>
-                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Enable}">
+                        <components:SettingsRow Icon="{ui:SymbolIcon ArrowSort24}" Title="{DynamicResource Loc.Experimental.Enable}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.VerticalTaskbar, Mode=TwoWay}" />
                         </components:SettingsRow>
                         <StackPanel Visibility="{Binding ViewModel.VerticalTaskbar, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <TextBlock Text="{DynamicResource Loc.Experimental.Vertical.Shared}" TextWrapping="Wrap" Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,8,0,12" />
-                            <components:SettingsRow Title="{DynamicResource Loc.Common.Page.ContentLayout}"
-                                Description="{DynamicResource Loc.ContentLayout.Header.Subtitle}" Icon="{ui:SymbolIcon Grid24}">
-                                <components:SettingsNavigationButton Content="{DynamicResource Loc.Experimental.OpenContentLayout}"
-                                    Destination="Components" />
-                            </components:SettingsRow>
-                            <components:SettingsRow Title="{DynamicResource Loc.Common.Page.Appearance}"
-                                Description="{DynamicResource Loc.Appearance.Unified.Header.Subtitle}" Icon="{ui:SymbolIcon PaintBrush24}">
-                                <components:SettingsNavigationButton Content="{DynamicResource Loc.Experimental.OpenAppearance}"
-                                    Destination="Appearance" />
-                            </components:SettingsRow>
+
                         </StackPanel>
-                    <WrapPanel Margin="16,8,16,12">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Page.ScreenAndPlacement}" Destination="ScreenAndPlacement" GroupId="Common.Group.ScreenAndPlacement" Margin="0,0,8,4"/>
+
+                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton ToolTip="{DynamicResource Loc.ContentLayout.Header.Subtitle}" Content="{DynamicResource Loc.Experimental.OpenContentLayout}"
+                                Visibility="{Binding ViewModel.VerticalTaskbar, Converter={StaticResource AfBooleanToVisibilityConverter}}" Destination="Components" />
+                            <components:SettingsNavigationButton ToolTip="{DynamicResource Loc.Appearance.Unified.Header.Subtitle}" Content="{DynamicResource Loc.Experimental.OpenAppearance}"
+                                Visibility="{Binding ViewModel.VerticalTaskbar, Converter={StaticResource AfBooleanToVisibilityConverter}}" Destination="Appearance" />
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Page.ScreenAndPlacement}" Destination="ScreenAndPlacement" GroupId="Common.Group.ScreenAndPlacement"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Experimental.Floating.Title" Header="{DynamicResource Loc.Experimental.Floating.Title}"
                     Description="{DynamicResource Loc.Experimental.Floating.Description}" Icon="{ui:SymbolIcon Desktop24}">
                     <StackPanel>
-                        <components:SettingsRow Title="{DynamicResource Loc.Experimental.Enable}">
+                        <components:SettingsRow Icon="{ui:SymbolIcon Desktop24}" Title="{DynamicResource Loc.Experimental.Enable}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.FloatingBar, Mode=TwoWay}" />
                         </components:SettingsRow>
                         <StackPanel Visibility="{Binding ViewModel.FloatingBar, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                             <components:SettingsCallout Text="{DynamicResource Loc.Experimental.Floating.Independent}" Symbol="Info24" />
-                            <components:SettingsRow Title="{DynamicResource Loc.Common.Page.ScreenAndPlacement}" Icon="{ui:SymbolIcon Desktop24}">
+
+                            <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
                                 <components:SettingsNavigationButton Content="{DynamicResource Loc.Experimental.Floating.OpenDisplay}"
                                     Destination="ScreenAndPlacement" GroupId="Common.Group.ChooseDisplayMode" />
-                            </components:SettingsRow>
+                            </WrapPanel>
                         </StackPanel>
                     </StackPanel>
                 </components:SettingsGroup>
