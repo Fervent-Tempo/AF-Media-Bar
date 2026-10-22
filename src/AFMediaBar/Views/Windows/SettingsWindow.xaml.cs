@@ -342,7 +342,25 @@ namespace AFMediaBar.Views.Windows
         /// <summary>导航到指定页面类型。/ Navigates to the specified page type.</summary>
         public bool Navigate(Type pageType)
         {
-            return RootNavigation.Navigate(SettingsPageProvider.ResolvePageType(pageType));
+            var resolved = SettingsPageProvider.ResolvePageType(pageType);
+            if (!RootNavigation.Navigate(resolved)) return false;
+            HighlightSidebarItem(resolved);
+            return true;
+        }
+
+        /// <summary>
+        /// 程序化导航之后把左侧高亮挪到对应菜单项。NavigationView 的 SelectedItem 只在用户点击时更新，
+        /// 快捷跳转、搜索跳转与系统通知跳转走的都是程序化导航，不补这一下，高亮与强调色会留在原来那一页。
+        /// Moves the sidebar highlight onto the matching menu item after a programmatic navigation. NavigationView
+        /// only updates SelectedItem when the user clicks, so shortcut, search and notification jumps would leave
+        /// the highlight and accent colours on the previous page.
+        /// </summary>
+        private void HighlightSidebarItem(Type pageType)
+        {
+            var item = RootNavigation.MenuItems.OfType<NavigationViewItem>()
+                .Concat(RootNavigation.FooterMenuItems.OfType<NavigationViewItem>())
+                .FirstOrDefault(candidate => candidate.TargetPageType == pageType);
+            _sidebarSelection.Highlight(item);
         }
 
         private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
@@ -401,6 +419,10 @@ namespace AFMediaBar.Views.Windows
             _navigationMode = _contexts.Current.Mode;
             RootNavigation.MenuItems.Clear();
             RootNavigation.FooterMenuItems.Clear();
+            // 菜单项是重新建的，之前程序化指定的那一个已经不在树里，高亮交回给 SelectedItem。
+            // The items are rebuilt, so the one named by an earlier programmatic navigation is gone; hand the
+            // highlight back to SelectedItem.
+            _sidebarSelection.Highlight(null);
             foreach (var definition in SettingsPageCatalog.ForMode(_contexts.Current.Mode))
             {
                 var item = definition.Key == SettingsPageKey.ReleaseHighlights ? UpdateNoticeNavItem : new NavigationViewItem
