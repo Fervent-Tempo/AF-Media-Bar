@@ -58,6 +58,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private int _lyricsLineGapPercent = LyricsLineGap.DefaultPercent;
     private bool _lyricsFixedWidthEnabled;
     private int _lyricsFixedWidthDip = LyricsFixedWidth.DefaultDip;
+    private bool _lyricsLongLineScrollEnabled = true;
     private bool _lyricsInfoLineFilterEnabled = true;
     private bool _lyricsFuriganaFilterEnabled;
     private bool _lyricsBracketSymbolsHidden = true;
@@ -146,6 +147,13 @@ public sealed class AppSettings : INotifyPropertyChanged
 
     /// <summary>歌词框固定长度（DIP）。/ Fixed lyric-box length in DIP.</summary>
     public int LyricsFixedWidthDip { get => _lyricsFixedWidthDip; set => Set(ref _lyricsFixedWidthDip, value); }
+
+    /// <summary>
+    /// 长歌词动态滚动：跟随内容模式下，逐字歌词超过封顶宽度时随演唱进度横向滚动，不再撑开媒体栏。
+    /// Long-lyric auto-scroll: in follow-content mode a syllable-timed line wider than the cap scrolls with the
+    /// playback progress instead of stretching the media bar.
+    /// </summary>
+    public bool LyricsLongLineScrollEnabled { get => _lyricsLongLineScrollEnabled; set => Set(ref _lyricsLongLineScrollEnabled, value); }
 
     /// <summary>是否丢弃作者、作曲、制作等信息行。/ Whether credit lines such as writer, composer, and producer are dropped.</summary>
     public bool LyricsInfoLineFilterEnabled { get => _lyricsInfoLineFilterEnabled; set => Set(ref _lyricsInfoLineFilterEnabled, value); }
@@ -326,6 +334,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         LyricsLineGapPercent = LyricsLineGapPercent,
         LyricsFixedWidthEnabled = LyricsFixedWidthEnabled,
         LyricsFixedWidthDip = LyricsFixedWidthDip,
+        LyricsLongLineScrollEnabled = LyricsLongLineScrollEnabled,
         LyricsInfoLineFilterEnabled = LyricsInfoLineFilterEnabled,
         LyricsFuriganaFilterEnabled = LyricsFuriganaFilterEnabled,
         LyricsBracketSymbolsHidden = LyricsBracketSymbolsHidden,

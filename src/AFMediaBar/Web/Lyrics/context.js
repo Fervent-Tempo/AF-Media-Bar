@@ -46,6 +46,8 @@ let transitionBaseNextOpacity = 0.72;
 let transitionPromotedLine = "";
 let transitionPromotedLineIndex = -1;
 let transitionWordScanProgress = null;
+// 过渡期间推广行的横向滚动进度：与擦亮进度分开存放，关掉擦亮后滚动照常工作。
+let transitionScrollProgress = null;
 let transitionUsesTranslationPair = false;
 let isPlaybackPlaying = false;
 let wordScanFreezeState = null;

@@ -29,17 +29,38 @@ public sealed class SettingsIntegrationTests
                 using var viewModel = new LyricsViewModel(localization, new LegacySettingsConfiguration(context));
                 var notifications = new List<string?>();
                 viewModel.PropertyChanged += (_, e) => notifications.Add(e.PropertyName);
-                viewModel.ChineseConversionEnabled = true;
-                CollectionAssert.AreEquivalent(new[] { nameof(viewModel.ChineseConversionEnabled),
-                    nameof(viewModel.ChineseConversion), nameof(viewModel.CanConfigureChineseConversion) }, notifications);
+                viewModel.ChineseConversion = LyricsChineseConversionMode.TraditionalToSimplified;
+                CollectionAssert.AreEquivalent(new[] { nameof(viewModel.ChineseConversion) }, notifications);
                 notifications.Clear();
-                viewModel.ChineseConversionEnabled = true;
                 viewModel.ChineseConversion = viewModel.ChineseConversion;
                 Assert.AreEqual(0, notifications.Count);
                 context.Deactivate();
-                viewModel.ChineseConversionEnabled = false;
-                Assert.AreEqual(LyricsChineseConversionMode.SimplifiedToTraditional, SettingsManager.Current.LyricsChineseConversion);
+                viewModel.ChineseConversion = LyricsChineseConversionMode.SimplifiedToTraditional;
+                Assert.AreEqual(LyricsChineseConversionMode.TraditionalToSimplified, SettingsManager.Current.LyricsChineseConversion);
                 Assert.AreEqual(0, notifications.Count);
+            }
+            finally { SettingsManager.Current = previous; }
+            return Task.CompletedTask;
+        });
+    }
+
+    [TestMethod]
+    public void LongLineScrollIsOnlyConfigurableWhileTheBarFollowsContent()
+    {
+        StaTest.Run(_ =>
+        {
+            var previous = SettingsManager.Current;
+            using var context = new SettingsPageContext();
+            using var localization = new LocalizationService();
+            try
+            {
+                SettingsManager.Current = new AppSettings();
+                using var viewModel = new LyricsViewModel(localization, new LegacySettingsConfiguration(context));
+                Assert.IsTrue(viewModel.CanConfigureLongLineScroll, "默认「随内容变化」，长歌词动态滚动应当可操作。");
+                SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { LengthMode = TaskbarLengthMode.Fixed };
+                Assert.IsFalse(viewModel.CanConfigureLongLineScroll, "固定长度下封顶没有落点，开关必须置灰。");
+                SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { LengthMode = TaskbarLengthMode.FollowContent };
+                Assert.IsTrue(viewModel.CanConfigureLongLineScroll, "切回「随内容变化」后开关应当放行。");
             }
             finally { SettingsManager.Current = previous; }
             return Task.CompletedTask;

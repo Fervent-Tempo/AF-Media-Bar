@@ -9,7 +9,7 @@ function setTrackOffset(rowCount) {
   trackEl.style.transform = `translateY(${offset}px)`;
 }
 
-function setIncomingTranslationPair(original, translation, wordScanProgress) {
+function setIncomingTranslationPair(original, translation, wordScanProgress, scrollProgress) {
   const translationDisplay = resolveTranslationDisplay(translation);
   setLineText(
     incomingTranslationOriginalLineEl,
@@ -25,6 +25,7 @@ function setIncomingTranslationPair(original, translation, wordScanProgress) {
     "translation-placeholder",
     translationDisplay.isPlaceholder);
   setLineWordScanProgress(incomingTranslationOriginalLineEl, wordScanProgress, false);
+  setLineScrollProgress(incomingTranslationOriginalLineEl, scrollProgress);
 }
 
 function clearIncomingTranslationPair() {
@@ -32,6 +33,7 @@ function clearIncomingTranslationPair() {
   incomingTranslationPairEl.style.opacity = "";
   incomingTranslationPairEl.style.transform = "";
   setLineWordScanProgress(incomingTranslationOriginalLineEl, null);
+  setLineScrollProgress(incomingTranslationOriginalLineEl, null);
   setLineText(incomingTranslationOriginalLineEl, incomingTranslationOriginalTextEl, incomingTranslationOriginalScanTextEl, " ");
   setLineText(incomingTranslationLineEl, incomingTranslationTextEl, null, " ");
   incomingTranslationLineEl.classList.remove("translation-placeholder");
@@ -357,6 +359,7 @@ function applyFrameAfterSearchTransition(frame) {
     target.progress,
     target.currentLineIndex,
     target.wordScanProgress,
+    target.scrollProgress,
     target.currentTranslation,
     target.nextTranslation,
     target.translationMode,
@@ -425,6 +428,7 @@ function executeRollTransition(_plan, parameters) {
     frame.progress,
     frame.currentLineIndex,
     frame.wordScanProgress,
+    frame.scrollProgress,
     frame.currentTranslation,
     frame.nextTranslation,
     frame.layout === presentationApi.LAYOUTS.TRANSLATION_PAIR,
@@ -488,6 +492,7 @@ function renderLyricsFrameContent(frame, allowWordScanSmoothing = true) {
   setIncomingLine("");
   setCurrentLine(safeCurrent);
   setWordScanProgress(normalized.wordScanProgress, allowWordScanSmoothing);
+  setScrollProgress(normalized.scrollProgress);
   setSecondaryLine(visibleSecondary);
   updateSecondaryOpacity(normalized.progress);
   lastCurrentLineIndex = normalized.currentLineIndex >= 0
@@ -515,6 +520,7 @@ function applyProgressPatch(frame) {
 
   setTranslationMode(useTranslationPair);
   setWordScanProgress(normalized.wordScanProgress);
+  setScrollProgress(normalized.scrollProgress);
   setSecondaryLine(visibleSecondary);
   updateSecondaryOpacity(normalized.progress);
   lastCurrentLineIndex = normalized.currentLineIndex >= 0
@@ -543,10 +549,12 @@ function cancelActiveTransition() {
   currentLineEl.classList.remove("leaving");
   nextLineEl.classList.remove("promoting");
   setLineWordScanProgress(nextLineEl, null);
+  setLineScrollProgress(nextLineEl, null);
   trackEl.classList.remove("word-scan-transition");
   transitionPromotedLine = "";
   transitionPromotedLineIndex = -1;
   transitionWordScanProgress = null;
+  transitionScrollProgress = null;
   transitionUsesTranslationPair = false;
   setTrackOffset(0);
   currentLineEl.style.opacity = "";
@@ -567,6 +575,7 @@ function resetForTrackSwitch(
   currentLineIndex,
   trackId,
   wordScanProgress,
+  scrollProgress,
   currentTranslation,
   nextTranslation,
   translationMode,
@@ -619,6 +628,7 @@ function resetForTrackSwitch(
       0,
       -1,
       null,
+      null,
       "",
       "",
       false,
@@ -634,6 +644,7 @@ function resetForTrackSwitch(
       searchFrame.progress,
       searchFrame.currentLineIndex,
       searchFrame.wordScanProgress,
+      searchFrame.scrollProgress,
       searchFrame.currentTranslation,
       searchFrame.nextTranslation,
       searchFrame.translationMode,
@@ -673,6 +684,7 @@ function applyFrame(
   progress,
   currentLineIndex,
   wordScanProgress,
+  scrollProgress,
   currentTranslation = "",
   nextTranslation = "",
   translationMode = false,
@@ -693,6 +705,7 @@ function applyFrame(
       : safeCurrent === transitionPromotedLine;
     if (updatesPromotedLine) {
       updateTransitionWordScanProgress(wordScanProgress);
+      updateTransitionScrollProgress(scrollProgress);
     }
     return;
   }
@@ -717,6 +730,7 @@ function finalizeTransition(
   progress,
   promotedLineIndex = -1,
   wordScanProgress = null,
+  scrollProgress = null,
   targetFrame = null) {
   const incomingEndOpacity = Number.parseFloat(window.getComputedStyle(incomingLineEl).opacity || "0.72");
   trackSwitchSearchTransitionActive = false;
@@ -729,8 +743,10 @@ function finalizeTransition(
   void trackEl.offsetHeight;
   setCurrentLine(promotedCurrent);
   setWordScanProgress(wordScanProgress, false);
+  setScrollProgress(scrollProgress);
   setSecondaryLine(upcomingNext);
   setLineWordScanProgress(nextLineEl, null);
+  setLineScrollProgress(nextLineEl, null);
   setIncomingLine("");
   trackEl.classList.remove("animating");
   currentLineEl.classList.remove("leaving");
@@ -739,6 +755,7 @@ function finalizeTransition(
   transitionPromotedLine = "";
   transitionPromotedLineIndex = -1;
   transitionWordScanProgress = null;
+  transitionScrollProgress = null;
   transitionUsesTranslationPair = false;
   setTrackOffset(0);
   // Reset inline opacity channels while transitions are disabled; otherwise a brief flash can appear.
@@ -757,7 +774,8 @@ function finalizeTransition(
     next: upcomingNext,
     progress,
     currentLineIndex: promotedLineIndex,
-    wordScanProgress
+    wordScanProgress,
+    scrollProgress
   }));
   lastLineProgress = clamp01(progress);
   if (Number.isInteger(promotedLineIndex) && promotedLineIndex >= 0) {
@@ -779,6 +797,7 @@ function startTransition(
   progress,
   currentLineIndex = -1,
   wordScanProgress = null,
+  scrollProgress = null,
   currentTranslation = "",
   nextTranslation = "",
   translationMode = false,
@@ -805,11 +824,12 @@ function startTransition(
       progress,
       currentLineIndex,
       wordScanProgress,
+      scrollProgress,
       resolvedTargetFrame);
     return;
   }
 
-  startStandardTransition(newCurrent, newNext, progress, currentLineIndex, wordScanProgress, resolvedTargetFrame);
+  startStandardTransition(newCurrent, newNext, progress, currentLineIndex, wordScanProgress, scrollProgress, resolvedTargetFrame);
 }
 
 function finalizeTranslationPairTransition(
@@ -818,20 +838,24 @@ function finalizeTranslationPairTransition(
   progress,
   promotedLineIndex,
   wordScanProgress,
+  scrollProgress,
   targetFrame = null) {
   trackEl.classList.add("no-anim");
   incomingTranslationPairEl.classList.add("no-anim");
   stopTransitionOpacityAnimation();
   setCurrentLine(promotedCurrent);
   setWordScanProgress(wordScanProgress, false);
+  setScrollProgress(scrollProgress);
   setSecondaryLine(promotedTranslation);
   setLineWordScanProgress(nextLineEl, null);
+  setLineScrollProgress(nextLineEl, null);
   trackEl.classList.remove("translation-pair-animating", "animating", "word-scan-transition");
   currentLineEl.classList.remove("leaving");
   nextLineEl.classList.remove("promoting");
   transitionPromotedLine = "";
   transitionPromotedLineIndex = -1;
   transitionWordScanProgress = null;
+  transitionScrollProgress = null;
   transitionUsesTranslationPair = false;
   setTrackOffset(0);
   currentLineEl.style.opacity = "";
@@ -847,6 +871,7 @@ function finalizeTranslationPairTransition(
     progress,
     currentLineIndex: promotedLineIndex,
     wordScanProgress,
+    scrollProgress,
     translationMode: true
   }));
   lastLineProgress = clamp01(progress);
@@ -869,6 +894,7 @@ function startTranslationPairTransition(
   progress,
   currentLineIndex,
   wordScanProgress,
+  scrollProgress,
   targetFrame = null) {
   transitionUsesTranslationPair = true;
   const promoted = toDisplayLine(newCurrent, SEARCHING_TEXT);
@@ -876,6 +902,7 @@ function startTranslationPairTransition(
   transitionPromotedLine = promoted;
   transitionPromotedLineIndex = currentLineIndex;
   transitionWordScanProgress = wordScanProgress;
+  transitionScrollProgress = scrollProgress;
   stopTransitionOpacityAnimation();
 
   const context = presentationCoordinator.beginTransition(
@@ -890,6 +917,7 @@ function startTranslationPairTransition(
         progress,
         currentLineIndex,
         transitionWordScanProgress,
+        transitionScrollProgress,
         targetFrame)
     });
   trackEl.classList.add("no-anim");
@@ -899,7 +927,7 @@ function startTranslationPairTransition(
   setTrackOffset(0);
   clearIncomingTranslationPair();
   incomingTranslationPairEl.classList.add("preparing", "no-anim");
-  setIncomingTranslationPair(promoted, promotedTranslation, wordScanProgress);
+  setIncomingTranslationPair(promoted, promotedTranslation, wordScanProgress, scrollProgress);
   currentLineEl.style.opacity = "";
   nextLineEl.style.opacity = "";
   void incomingTranslationPairEl.offsetHeight;
@@ -953,6 +981,7 @@ function startStandardTransition(
   progress,
   currentLineIndex = -1,
   wordScanProgress = null,
+  scrollProgress = null,
   targetFrame = null) {
   transitionUsesTranslationPair = false;
   const promoted = toDisplayLine(newCurrent, SEARCHING_TEXT);
@@ -960,6 +989,7 @@ function startStandardTransition(
   transitionPromotedLine = promoted;
   transitionPromotedLineIndex = currentLineIndex;
   transitionWordScanProgress = wordScanProgress;
+  transitionScrollProgress = scrollProgress;
   transitionBaseNextOpacity = secondaryOpacity;
   const nextFontSize = Number.parseFloat(window.getComputedStyle(nextLineEl).fontSize || "12");
   const currentFontSize = Number.parseFloat(window.getComputedStyle(currentLineEl).fontSize || "13");
@@ -981,6 +1011,7 @@ function startStandardTransition(
         progress,
         currentLineIndex,
         transitionWordScanProgress,
+        transitionScrollProgress,
         targetFrame)
     });
 
@@ -998,6 +1029,7 @@ function startStandardTransition(
   nextLineEl.style.setProperty("--promotion-scale", promotionStartScale.toFixed(6));
   nextLineEl.style.transform = "translateY(0px) scale(var(--promotion-scale))";
   updateTransitionWordScanProgress(wordScanProgress, false);
+  updateTransitionScrollProgress(scrollProgress);
   incomingLineEl.style.opacity = secondaryOpacity.toFixed(3);
   void trackEl.offsetHeight;
   trackEl.classList.remove("no-anim");
@@ -1040,6 +1072,7 @@ function applySpectrumFrame(targetFrame, isPlaying) {
   setTranslationMode(false);
   clearSpectrumTransitionStyles();
   setWordScanProgress(null, false);
+  setScrollProgress(null);
   setSecondaryLine(" ");
   setIncomingLine("");
   lastCurrentLineIndex = -1;

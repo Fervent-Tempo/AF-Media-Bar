@@ -74,7 +74,7 @@ internal static class SmallTaskbarPresentationChecks
             // 强制相同当前行、不同下一行；小任务栏栏长不得再被隐藏副信息撑长。
             SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { MediaFontSizePercent = 100 };
             control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal, 100, 100, 24);
-            var raw = new LyricsPresentationFrame(true, "track", 0, "Current", new string('W', 180), "", "", false, .2, .3, false);
+            var raw = new LyricsPresentationFrame(true, "track", 0, "Current", new string('W', 180), "", "", false, .2, .3, null, false);
             var field = MediaBarTestAccess.GetField("_lyricsFrame", BindingFlags.Instance | BindingFlags.NonPublic)!;
             field.SetValue(control, raw);
             var refresh = MediaBarTestAccess.GetMethod("RefreshTaskbarTextBudget", BindingFlags.Instance | BindingFlags.NonPublic)!;

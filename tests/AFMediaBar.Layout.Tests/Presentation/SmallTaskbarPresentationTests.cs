@@ -27,11 +27,12 @@ public sealed class SmallTaskbarPresentationTests
     public void HiddenSecondaryDoesNotChangeRawTextTimingOrScan()
     {
         var raw = new LyricsPresentationFrame(true, "track", 2, "中文 Mixed 🎵", "A long following line",
-            "Translation", "Following translation", true, .3, .42, true);
+            "Translation", "Following translation", true, .3, .42, .55, true);
         var projected = SmallTaskbarPresentationPolicy.Project(raw, true);
         Assert.AreEqual(raw.Current, projected.Current);
         Assert.AreEqual(raw.TrackId, projected.TrackId);
         Assert.AreEqual(raw.WordScanProgress, projected.WordScanProgress);
+        Assert.AreEqual(raw.ScrollProgress, projected.ScrollProgress);
         Assert.AreEqual(raw.LineProgress, projected.LineProgress);
         Assert.AreEqual(string.Empty, projected.Next);
         Assert.AreEqual(string.Empty, projected.CurrentTranslation);

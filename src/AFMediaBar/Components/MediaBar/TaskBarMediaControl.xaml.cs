@@ -2097,12 +2097,16 @@ namespace AFMediaBar.Components
             //
             // 字距同样决定文字宽度：显示文本本身不变（改的是渲染宽度），因此它 MUST 参与指纹，
             // 否则拉大字距后尺寸请求会被去重挡掉，媒体栏不跟着变宽、文字右侧被省略号截断。
-            // 固定歌词框的两个设置也在这里参与指纹：它们直接决定文字区宽度。
             // Character spacing decides the text width as well: the display text itself is unchanged (only the rendered width is), so it
             // MUST be part of the fingerprint; otherwise widening the spacing would be deduplicated away, the bar would keep its old
             // length, and the right side of the line would be clipped with an ellipsis.
-            // The two fixed-box settings belong here as well: they decide the text area's width directly.
-            var fingerprint = $"{orientation}|{visibleText}|{secondaryText}|{artist}|{SongTitle.FontSize:0.##}|{SongArtist.FontSize:0.##}|{PresentationSettings.LayoutLengthScalePercent:0.##}|{PresentationSettings.LayoutThicknessScalePercent:0.##}|{PresentationSettings.LyricsEnabled}|{PresentationSettings.TwoLineLyricsEnabled}|{PresentationSettings.LyricsSecondaryLine}|{string.Join(',', LyricsSecondaryLinePolicy.ResolveOrder(PresentationSettings.LyricsSecondaryLine))}|{PresentationSettings.TaskbarExperience}|{SpectrumSurfaceWidth:0.##}|{PresentationSettings.SpectrumComponent.ContentHeightDip:0.##}|{_snapshot.IsConnected}|{_snapshot.Duration > 0}|{_isRestLayerEmpty}|{string.Join(',', PresentationSettings.TaskbarExperience.IdleComponents ?? [])}|{PresentationSettings.LyricsCharacterSpacingPercent}|{PresentationSettings.LyricsFixedWidthEnabled}|{PresentationSettings.LyricsFixedWidthDip}";
+            // 固定歌词框的两个设置也在这里参与指纹：它们直接决定文字区宽度。
+            // 「长歌词动态滚动」同样直接决定文字区宽度（超过封顶时长歌词不再撑开媒体栏），因此也必须参与指纹，
+            // 否则切换开关时刻意相同的尺寸请求会被去重挡掉，媒体栏停在旧长度上。
+            // The two fixed-box settings belong here as well: they decide the text area's width directly. So does the
+            // long-lyric auto-scroll (past the cap a long line no longer stretches the bar), so it must join the
+            // fingerprint as well; otherwise toggling it would be deduplicated away and the bar would keep its old length.
+            var fingerprint = $"{orientation}|{visibleText}|{secondaryText}|{artist}|{SongTitle.FontSize:0.##}|{SongArtist.FontSize:0.##}|{PresentationSettings.LayoutLengthScalePercent:0.##}|{PresentationSettings.LayoutThicknessScalePercent:0.##}|{PresentationSettings.LyricsEnabled}|{PresentationSettings.TwoLineLyricsEnabled}|{PresentationSettings.LyricsSecondaryLine}|{string.Join(',', LyricsSecondaryLinePolicy.ResolveOrder(PresentationSettings.LyricsSecondaryLine))}|{PresentationSettings.TaskbarExperience}|{SpectrumSurfaceWidth:0.##}|{PresentationSettings.SpectrumComponent.ContentHeightDip:0.##}|{_snapshot.IsConnected}|{_snapshot.Duration > 0}|{_isRestLayerEmpty}|{string.Join(',', PresentationSettings.TaskbarExperience.IdleComponents ?? [])}|{PresentationSettings.LyricsCharacterSpacingPercent}|{PresentationSettings.LyricsFixedWidthEnabled}|{PresentationSettings.LyricsFixedWidthDip}|{PresentationSettings.LyricsLongLineScrollEnabled}";
 
             // 没有订阅者的请求不会被任何宿主消费，因此不能记入指纹；否则订阅后的首次请求会被去重丢弃，
             // 媒体栏在上一次媒体连接之前一直停留在预设长度。
@@ -2120,10 +2124,25 @@ namespace AFMediaBar.Components
             // A fixed lyric box: while enabled the lyric width no longer follows the content but uses the configured length; the layout
             // engine clamps it to the available taskbar room when there is not enough space.
             var isHorizontalMetadata = !lyricsVisible && IsBarPresentation && orientation == LayoutOrientation.Horizontal;
+            // 跟随内容模式下，逐字歌词按「长歌词动态滚动」封顶：超过封顶宽度后由 Web 层横向滚动承接，
+            // 已演唱部分逐渐前移，媒体栏不再被超长歌词撑开。行级歌词没有逐字时间轴，不封顶。
+            // 封顶只作用于主行：译文/次行没有逐字时间轴、也不会随进度滚动，封顶只会把它截断，
+            // 因此次行保持自然宽度，最终宽度取「封顶后的主行」与「自然宽度的次行」的较大值。
+            // In follow-content mode a syllable-timed line is capped by the long-lyric auto-scroll: past the cap the web
+            // layer's horizontal scroll takes over, the sung part moves forward, and the bar is no longer stretched by an
+            // over-long line. Line-level lyrics have no syllable timeline and are never capped.
+            // The cap applies to the primary line only: the translation/secondary line has no timeline and never scrolls
+            // with progress, so capping it would only clip it — it keeps its natural width, and the final width is the
+            // larger of the capped primary and the natural secondary.
             var lyricWidth = lyricsVisible
                 ? PresentationSettings.LyricsFixedWidthEnabled
                     ? LyricsFixedWidth.Normalize(PresentationSettings.LyricsFixedWidthDip)
-                    : Math.Max(_lyrics.MeasureWebLyricWidth(visibleText), _lyrics.MeasureWebLyricWidth(secondaryText))
+                    : LyricsLongLineScroll.ResolveFollowContentWidthPair(
+                        _lyrics.MeasureWebLyricWidth(visibleText),
+                        _lyrics.MeasureWebLyricWidth(secondaryText),
+                        PresentationSettings.LyricsLongLineScrollEnabled,
+                        effectiveLyrics.ScrollProgress is not null,
+                        EffectiveLyricFontSize)
                 : MeasureTextWidth(visibleText, SongTitle, isHorizontalMetadata);
             var textWidth = Math.Max(lyricWidth, MeasureTextWidth(artist, SongArtist, isHorizontalMetadata));
             var preset = LayoutPresets.GetLayout(_currentMode, orientation);

@@ -71,7 +71,7 @@ public partial class TaskBarMediaControl
         true, _actualTitle + "\n" + _actualArtist, -1,
         VisibleMetadataTitle(PresentationSettings.TaskbarExperience), _isSmallTaskbar || PresentationSettings.TaskbarExperience.ContentLayout == TaskbarContentLayout.CompactInline
             ? string.Empty : _actualArtist,
-        string.Empty, string.Empty, false, 0, null, _snapshot.IsPlaying);
+        string.Empty, string.Empty, false, 0, null, null, _snapshot.IsPlaying);
 
     private TaskbarRestLayout ResolveVerticalLayout(double primaryLength)
     {

@@ -53,6 +53,15 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="LongLineScrollRowStyle" BasedOn="{StaticResource {x:Type components:SettingsRow}}" TargetType="{x:Type components:SettingsRow}">
+            <Setter Property="Badge" Value="" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.CanConfigureLongLineScroll}" Value="False">
+                    <Setter Property="Badge" Value="{DynamicResource Loc.Lyrics.Row.LongLineScroll.Badge}" />
+                    <Setter Property="BadgeTone" Value="Attention" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Page.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -187,30 +196,39 @@
                             Title="{DynamicResource Loc.Lyrics.Row.BracketSymbols.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.BracketSymbolsHidden, Mode=TwoWay}" />
                         </components:SettingsRow>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Description}"
-                            Icon="{ui:SymbolIcon Translate24}"
-                            Title="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.ChineseConversionEnabled, Mode=TwoWay}" />
-                        </components:SettingsRow>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Direction.Description}"
-                            Icon="{ui:SymbolIcon ArrowSwap24}"
-                            IsNested="True"
-                            Title="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Direction.Title}">
-                            <ComboBox
-                                MinWidth="{StaticResource AfSettingsSelectShortWidth}"
-                                IsEnabled="{Binding ViewModel.CanConfigureChineseConversion}"
-                                SelectedValue="{Binding ViewModel.ChineseConversion, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Option.Off}"
-                                              Tag="{x:Static settings:LyricsChineseConversionMode.None}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Option.ToTraditional}"
-                                              Tag="{x:Static settings:LyricsChineseConversionMode.SimplifiedToTraditional}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Option.ToSimplified}"
-                                              Tag="{x:Static settings:LyricsChineseConversionMode.TraditionalToSimplified}" />
-                            </ComboBox>
-                        </components:SettingsRow>
+                        <ui:CardExpander
+                            Style="{StaticResource AfSettingsExpanderStyle}"
+                            IsExpanded="False"
+                            Icon="{ui:SymbolIcon Translate24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Title}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
+                                        Text="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Description}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsRow IsNested="True"
+                                    Description="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Direction.Description}"
+                                    Icon="{ui:SymbolIcon ArrowSwap24}"
+                                    Title="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Direction.Title}">
+                                    <ComboBox
+                                        MinWidth="{StaticResource AfSettingsSelectShortWidth}"
+                                        SelectedValue="{Binding ViewModel.ChineseConversion, Mode=TwoWay}"
+                                        SelectedValuePath="Tag">
+                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Option.Off}"
+                                                      Tag="{x:Static settings:LyricsChineseConversionMode.None}" />
+                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Option.ToTraditional}"
+                                                      Tag="{x:Static settings:LyricsChineseConversionMode.SimplifiedToTraditional}" />
+                                        <ComboBoxItem Content="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Option.ToSimplified}"
+                                                      Tag="{x:Static settings:LyricsChineseConversionMode.TraditionalToSimplified}" />
+                                    </ComboBox>
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
                         <ui:CardExpander
                             Style="{StaticResource AfSettingsExpanderStyle}"
                             IsExpanded="False"
@@ -263,12 +281,20 @@
                                         Step="{Binding Source={x:Static settings:LyricsCharacterSpacing.StepPercent}}"
                                         Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
                                 </components:SettingsRow>
+                                <components:SettingsRow IsNested="True"
+                                    Description="{DynamicResource Loc.Lyrics.Row.LongLineScroll.Description}"
+                                    Icon="{ui:SymbolIcon ArrowAutofitWidth24}"
+                                    Style="{StaticResource LongLineScrollRowStyle}"
+                                    Title="{DynamicResource Loc.Lyrics.Row.LongLineScroll.Title}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.LongLineScrollEnabled, Mode=TwoWay}" IsEnabled="{Binding ViewModel.CanConfigureLongLineScroll}" />
+                                </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
 
                         <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
                             <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextLayout}" Destination="Components" GroupId="Appearance.Group.RestLayout"/>
                             <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextAppearance}" Destination="Appearance" GroupId="Common.Group.MediaBarText"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.MediaBarLength}" Destination="Components" GroupId="Common.Group.MediaBarWidth"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>

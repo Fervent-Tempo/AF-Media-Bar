@@ -20,6 +20,7 @@ public sealed record LyricsPresentationFrame(
     bool TranslationMode,
     double LineProgress,
     double? WordScanProgress,
+    double? ScrollProgress,
     bool IsPlaying)
 {
     public static LyricsPresentationFrame Hidden { get; } = new(
@@ -32,6 +33,7 @@ public sealed record LyricsPresentationFrame(
         string.Empty,
         false,
         0,
+        null,
         null,
         false);
 }
@@ -91,9 +93,12 @@ public static class LyricsPresentationProjector
             ? nextSecondary.Value.Text
             : string.Empty;
         var lineProgress = ResolveLineProgress(currentLine, position);
-        var wordScanProgress = settings.LyricsSyllableHighlightEnabled
-            ? LyricHighlightPolicy.ResolveProgress(currentLine, position)
-            : null;
+        // 逐字时间轴进度同时驱动擦亮与长行横向滚动：擦亮只是叠在同一轨迹上的视觉层，
+        // 因此关闭擦亮不得让长歌词失去滚动——时间轴照常推进，只是不再绘制高亮。
+        // The syllable timeline drives both the highlight and the long-line scroll: the highlight is only a visual
+        // layer over that same trajectory, so turning it off must not stop a long line from scrolling.
+        var syllableProgress = LyricHighlightPolicy.ResolveProgress(currentLine, position);
+        var wordScanProgress = settings.LyricsSyllableHighlightEnabled ? syllableProgress : null;
 
         // 繁简转换落在"文本流向呈现层的最后一步"：当前行、下一句、译文与下一句译文都走同一个设置，
         // 因此不会出现"主行转了、第二行没转"的半截画面。逐字擦亮是 CSS 按渲染宽度百分比裁剪的，
@@ -115,6 +120,7 @@ public static class LyricsPresentationProjector
             translationMode,
             lineProgress,
             wordScanProgress,
+            syllableProgress,
             snapshot.IsPlaying);
     }
 

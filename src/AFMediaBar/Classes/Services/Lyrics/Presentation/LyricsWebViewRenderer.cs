@@ -167,6 +167,7 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
             isPureMusic = false,
             isPlaying = frame.IsVisible && frame.IsPlaying,
             wordScanProgress = frame.IsVisible ? frame.WordScanProgress : null,
+            scrollProgress = frame.IsVisible ? frame.ScrollProgress : null,
             currentTranslation = frame.IsVisible ? frame.CurrentTranslation : string.Empty,
             nextTranslation = frame.IsVisible ? frame.NextTranslation : string.Empty,
             translationMode = frame.IsVisible && frame.TranslationMode,
