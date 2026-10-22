@@ -80,7 +80,16 @@
                             <ItemsControl Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Note.ReorderQuickLaunchCommand}" ItemsSource="{Binding ViewModel.Note.QuickLaunchEntries}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" KeepControlInline="True"
+                                        <!--
+                                            启动项是"添加出来的条目"，底色与下拉展开的选项一致：白底小卡片。
+                                            AfSettingsListItemStyle 是分隔线列表（透明底 + 下边线），用在这里
+                                            会让这些条目看起来像列表的一部分而不是可点开的条目。
+                                            A launch entry is an item the user added, so it gets the same white
+                                            card as an expanded dropdown option. AfSettingsListItemStyle is the
+                                            separator list (transparent with a bottom line), which makes these read
+                                            as part of the list rather than as discrete entries.
+                                        -->
+                                        <components:SettingsRow KeepControlInline="True"
                                             Description="{Binding Target}"
                                             IsNested="True"
                                             Title="{Binding DisplayName}">
@@ -100,9 +109,30 @@
                             </ItemsControl>
                         </AdornerDecorator>
 
-                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,4,0,0"><TextBlock
-                            Style="{StaticResource AfSettingsStatusTextStyle}"
-                            Text="{Binding ViewModel.Note.StatusText}" /></Border>
+                        <!--
+                            状态行只在真的有话可说时才占位：状态文案为空时 InfoSurface 仍会画出一整条白底卡片，
+                            列表下面就多出一条没有内容的白条。折叠判断放在视图里，null 与空串都要挡住。
+                            The status line only takes up space when it has something to say: with an empty status
+                            text the info surface still paints a full white card, which showed up under the list as
+                            a blank white bar. Both null and empty are collapsed here.
+                        -->
+                        <Border Margin="0,4,0,0">
+                            <Border.Style>
+                                <Style TargetType="Border" BasedOn="{StaticResource AfSettingsInfoSurfaceStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ViewModel.Note.StatusText}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ViewModel.Note.StatusText}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock
+                                Style="{StaticResource AfSettingsStatusTextStyle}"
+                                Text="{Binding ViewModel.Note.StatusText}" />
+                        </Border>
                     </StackPanel>
                 </components:SettingsGroup>
 
