@@ -102,16 +102,16 @@ public static class LyricsPresentationProjector
         // follow the one setting, so there is never a half-converted frame. Syllable highlighting clips by rendered-width percentage in
         // CSS and does not index characters, so a changed character count cannot misalign it.
         var conversion = settings.LyricsChineseConversion;
-        var stripBracketSymbols = settings.LyricsBracketSymbolsHidden;
+        var cleanFormatMarkers = settings.LyricsBracketSymbolsHidden;
 
         return new LyricsPresentationFrame(
             true,
             BuildTrackId(snapshot),
             index,
-            Present(currentLine.Text, stripBracketSymbols, conversion),
-            Present(visibleNext, stripBracketSymbols, conversion),
-            Present(currentTranslation, stripBracketSymbols, conversion),
-            Present(nextTranslation, stripBracketSymbols, conversion),
+            LyricsChineseConverter.Convert(currentLine.Text, conversion),
+            LyricsChineseConverter.Convert(visibleNext, conversion),
+            Translate(currentTranslation, cleanFormatMarkers, conversion),
+            Translate(nextTranslation, cleanFormatMarkers, conversion),
             translationMode,
             lineProgress,
             wordScanProgress,
@@ -124,16 +124,19 @@ public static class LyricsPresentationProjector
         snapshot.Title.Trim().ToUpperInvariant(),
         snapshot.Artist.Trim().ToUpperInvariant());
 
-    private static LyricLine DisplayLine(LyricLine line, AppSettings settings) =>
-        settings.LyricsFuriganaFilterEnabled ? LyricsFuriganaFilter.Apply(line) : line;
+    private static LyricLine DisplayLine(LyricLine line, AppSettings settings)
+    {
+        var result = settings.LyricsFuriganaFilterEnabled ? LyricsFuriganaFilter.Apply(line) : line;
+        return settings.LyricsBracketSymbolsHidden ? LyricsTranslationFormatFilter.Apply(result) : result;
+    }
 
     /// <summary>
-    /// 把一段歌词文本送到呈现层：先按设置清理来源附加的格式标记（行首斜杠、整行括号），再做繁简转换。
-    /// Sends one piece of lyric text to the presentation layer: cleans the source's format markers first (a leading
-    /// slash, enclosing brackets), then applies the Chinese conversion.
+    /// 译文行按同一套规则清理后再做繁简转换；主行与下一句在 <see cref="DisplayLine"/> 里已经清理过。
+    /// Translation rows get the same format cleanup before the Chinese conversion; the active line and the next line
+    /// were already cleaned in <see cref="DisplayLine"/>.
     /// </summary>
-    private static string Present(string text, bool stripBracketSymbols, LyricsChineseConversionMode conversion) =>
-        LyricsChineseConverter.Convert(stripBracketSymbols ? LyricsTranslationFormatFilter.Clean(text) : text, conversion);
+    private static string Translate(string text, bool cleanFormatMarkers, LyricsChineseConversionMode conversion) =>
+        LyricsChineseConverter.Convert(cleanFormatMarkers ? LyricsTranslationFormatFilter.Clean(text) : text, conversion);
 
     private static double ResolveLineProgress(LyricLine line, double position)
     {
