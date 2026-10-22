@@ -1,4 +1,4 @@
-<Page
+﻿<Page
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:components="clr-namespace:AFMediaBar.Components"
@@ -173,6 +173,12 @@
                             Icon="{ui:SymbolIcon TextGrammarWand24}"
                             Title="{DynamicResource Loc.Lyrics.Row.FuriganaFilter.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.FuriganaFilterEnabled, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.BracketSymbols.Description}"
+                            Icon="{ui:SymbolIcon TextQuote24}"
+                            Title="{DynamicResource Loc.Lyrics.Row.BracketSymbols.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.BracketSymbolsHidden, Mode=TwoWay}" />
                         </components:SettingsRow>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.ChineseConversion.Description}"

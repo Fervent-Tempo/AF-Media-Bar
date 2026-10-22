@@ -1,4 +1,4 @@
-// 定义应用设置模型和属性通知，不负责持久化。
+﻿// 定义应用设置模型和属性通知，不负责持久化。
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
@@ -60,6 +60,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private int _lyricsFixedWidthDip = LyricsFixedWidth.DefaultDip;
     private bool _lyricsInfoLineFilterEnabled = true;
     private bool _lyricsFuriganaFilterEnabled = true;
+    private bool _lyricsBracketSymbolsHidden = true;
     private LyricsChineseConversionMode _lyricsChineseConversion = LyricsChineseConversionMode.None;
     private LyricsSourceSettings _lyricsSource = LyricsSourceSettings.Default;
     private string _lyricsArtistSeparators = "/";
@@ -151,6 +152,9 @@ public sealed class AppSettings : INotifyPropertyChanged
 
     /// <summary>仅在显示时隐藏括号内的日语假名，不修改来源歌词。</summary>
     public bool LyricsFuriganaFilterEnabled { get => _lyricsFuriganaFilterEnabled; set => Set(ref _lyricsFuriganaFilterEnabled, value); }
+
+    /// <summary>仅在显示时清理来源附加的格式标记（行首斜杠、整行【】或〖〗符号），不修改来源歌词。</summary>
+    public bool LyricsBracketSymbolsHidden { get => _lyricsBracketSymbolsHidden; set => Set(ref _lyricsBracketSymbolsHidden, value); }
 
     /// <summary>
     /// 歌词文本的简繁转换方向：<c>None</c> 表示不做转换。它只影响呈现，因此改变它不必清空取词缓存。
@@ -324,6 +328,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         LyricsFixedWidthDip = LyricsFixedWidthDip,
         LyricsInfoLineFilterEnabled = LyricsInfoLineFilterEnabled,
         LyricsFuriganaFilterEnabled = LyricsFuriganaFilterEnabled,
+        LyricsBracketSymbolsHidden = LyricsBracketSymbolsHidden,
         LyricsChineseConversion = LyricsChineseConversion,
         LyricsSource = LyricsSource,
         LyricsArtistSeparators = LyricsArtistSeparators,

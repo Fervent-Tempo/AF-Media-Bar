@@ -1,4 +1,4 @@
-using AFMediaBar.Classes.Models;
+﻿using AFMediaBar.Classes.Models;
 using System.Collections.ObjectModel;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Services;
@@ -181,6 +181,17 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>只在显示时清理来源附加的格式标记（行首斜杠、整行【】或〖〗符号）。/ The source's format markers (a leading slash, enclosing 【】 or 〖〗) are cleaned from the display only.</summary>
+    public bool BracketSymbolsHidden
+    {
+        get => _configuration.Current.LyricsBracketSymbolsHidden;
+        set
+        {
+            if (!_configuration.IsActive || value == BracketSymbolsHidden) return;
+            _configuration.SetLyricsBracketSymbolsHidden(value);
+        }
+    }
+
     /// <summary>
     /// 用户上次选过的方向：总开关关掉时方向也一起失效（存 <c>None</c>），再打开时能回到原方向，不必重选。
     /// The direction the user last picked: turning the master switch off clears the direction as well (stored as <c>None</c>), so
@@ -323,6 +334,8 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
             RaiseChineseConversionProperties();
         if (e.PropertyName == nameof(AppSettings.LyricsFuriganaFilterEnabled))
             OnPropertyChanged(nameof(FuriganaFilterEnabled));
+        if (e.PropertyName == nameof(AppSettings.LyricsBracketSymbolsHidden))
+            OnPropertyChanged(nameof(BracketSymbolsHidden));
         if (e.ResetScope == SettingsResetScope.Components || e.PropertyName is nameof(AppSettings.LyricsEnabled)
             or nameof(AppSettings.TwoLineLyricsEnabled) or nameof(AppSettings.LyricsTextAlignment)
             or nameof(AppSettings.LyricsFixedWidthEnabled) or nameof(AppSettings.LyricsFixedWidthDip))
@@ -341,8 +354,9 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(AllowBrowserAndVideoLyrics));
         OnPropertyChanged(nameof(TextAlignment));
         OnPropertyChanged(nameof(SyllableHighlightEnabled)); OnPropertyChanged(nameof(UnsungOpacityPercent));
-        OnPropertyChanged(nameof(UnsungOpacityText)); OnPropertyChanged(nameof(InfoLineFilterEnabled));
+        OnPropertyChanged(nameof(UnsungOpacityText));         OnPropertyChanged(nameof(InfoLineFilterEnabled));
         OnPropertyChanged(nameof(FuriganaFilterEnabled));
+        OnPropertyChanged(nameof(BracketSymbolsHidden));
         OnPropertyChanged(nameof(CharacterSpacingPercent)); OnPropertyChanged(nameof(CharacterSpacingText));
         OnPropertyChanged(nameof(LineGapPercent)); OnPropertyChanged(nameof(LineGapText));
         OnPropertyChanged(nameof(FixedWidthEnabled)); OnPropertyChanged(nameof(FixedWidthDip));

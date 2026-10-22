@@ -1,4 +1,4 @@
-// 设置编辑上下文的读写边界，任务栏保留原字段，悬浮几何独立保存。
+﻿// 设置编辑上下文的读写边界，任务栏保留原字段，悬浮几何独立保存。
 using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Settings;
 
@@ -80,6 +80,8 @@ public interface ISettingsConfiguration
     void SetLyricsInfoLineFilterEnabled(bool enabled);
     /// <summary>通过当前配置上下文更新显示用的假名过滤。</summary>
     void SetLyricsFuriganaFilterEnabled(bool enabled);
+    /// <summary>通过当前配置上下文更新显示用的整行括号隐藏。</summary>
+    void SetLyricsBracketSymbolsHidden(bool hidden);
     /// <summary>Publishes this setting through the existing normalization contract.</summary>
     void SetLyricsSourceSettings(LyricsSourceSettings settings);
     /// <summary>Saves artist separators through the existing lyrics matching contract.</summary>

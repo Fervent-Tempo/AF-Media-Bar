@@ -1,4 +1,4 @@
-{
+﻿{
   "formatVersion": 2,
   "latestRelease": "v1.4.0",
   "settingsSchemaVersion": 2,
@@ -98,6 +98,7 @@
     "layoutOrientationMode": "v1.2.0",
     "layoutThicknessScalePercent": "v1.2.0",
     "lyricsArtistSeparators": "v1.3.2",
+    "lyricsBracketSymbolsHidden": "unreleased",
     "lyricsCharacterSpacingPercent": "v1.3.0",
     "lyricsChineseConversion": "v1.4.0",
     "lyricsEnabled": "v1.2.0",

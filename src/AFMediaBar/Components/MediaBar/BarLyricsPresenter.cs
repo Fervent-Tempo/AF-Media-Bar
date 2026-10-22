@@ -131,8 +131,19 @@ public partial class TaskBarMediaControl
                     _owner.Dispatcher.BeginInvoke(() => OnWebLyricsSettingsChanged(sender, e));
                 return;
             }
-            if (_lyricsHostLoaded)
-                UpdateWebLyricsPresentation(allowTransition: false);
+            // 允许过渡：有的设置会改掉这一行显示的文字（隐藏日语读音标注、繁简转换在后台就绪），
+            // 直接落位就是一次"硬刷新"。改外观的设置不会换字，规划结果仍是进度补丁，不会平白起动画。
+            // 没有改字时连帧都不重发：歌词里没有读音标注时切那个开关，画面上就该什么都不发生。
+            // Allow the transition: some settings rewrite the text of the line on screen (hiding Japanese
+            // reading annotations, the Chinese conversion becoming ready), and snapping it into place is the
+            // hard refresh. Appearance-only settings leave the text alone and still plan a progress patch.
+            // With no text change the frame is not even re-sent: toggling that switch on lyrics without any
+            // reading annotation has to leave the bar exactly as it is.
+            if (!_lyricsHostLoaded)
+                return;
+            var projected = LyricsPresentationProjector.Project(_owner._snapshot, _owner.PresentationSettings, DateTimeOffset.UtcNow);
+            if (VisibleContentChanged(_lyricsFrame, projected))
+                UpdateWebLyricsPresentation(allowTransition: true);
         }
 
         internal void OnWebLyricsReady(object? sender, EventArgs e)
@@ -366,6 +377,12 @@ public partial class TaskBarMediaControl
             var isMetadata = _owner._isVertical && !next.IsVisible && _owner._snapshot.IsConnected;
             var presentation = isMetadata ? _owner.BuildVerticalMetadataFrame() : _owner.VisibleLyricsFrame(next);
             _lastEffectiveLyricsFrame = presentation;
+            // 设置变更可能改掉这一行显示的文字（隐藏日语读音标注、繁简转换在后台就绪）。只有"之前和现在都在显示
+            // 歌词"时才让这类变化走过渡：开启/关闭歌词、首次就绪与故障恢复仍然立即落位，与改动前一致。
+            // A settings change can rewrite the line on screen (hidden reading annotations, a conversion that just
+            // became ready). Only let that animate while lyrics were and still are on screen; enabling or disabling
+            // lyrics, first readiness, and fault recovery keep snapping into place exactly as before.
+            var animateTransition = allowTransition && previous.IsVisible && presentation.IsVisible;
 
             var showWebLyrics = presentation.IsVisible && !_webLyricsGraphicsDisabled &&
                                 _owner._backgroundPruneLevel < MemoryPruneLevel.DisplayOff && !_owner._isHostVisibilitySuspended &&
@@ -383,7 +400,7 @@ public partial class TaskBarMediaControl
             // The web engine decides whether a frame is a progress patch or a line transition.
             // Sending false on every 50 ms progress frame interrupts its in-flight roll animation.
             if (!_owner.IsBackgroundPruned && (isMetadata || LyricsPresentationRefreshPolicy.ShouldPresent(presentation.IsVisible, previous, presentation)))
-                _lyricsWebRenderer?.Present(presentation, allowTransition && MotionPolicy.ResolveCurrent().UseTransitions, isMetadata);
+                _lyricsWebRenderer?.Present(presentation, animateTransition && MotionPolicy.ResolveCurrent().UseTransitions, isMetadata);
             RefreshWebLyricsTimer();
 
             // 行变化后立即重发尺寸请求：自动模式下媒体栏长度跟着歌词内容走，若等到下一次快照才更新，
@@ -403,6 +420,27 @@ public partial class TaskBarMediaControl
                 _owner.RaiseDesiredSizeChanged(skipTransition: true);
             }
         }
+
+        /// <summary>
+        /// 两帧显示的内容是否不同：只看用户看得见的文本与行结构，不看进度。设置变更靠它决定要不要重发。
+        /// Whether the two frames show different content: only the visible text and the row structure count, never
+        /// progress. Settings changes use it to decide whether anything has to be re-sent.
+        /// </summary>
+        /// <summary>
+        /// 两帧显示的内容是否不同：用户看得见的文本、行结构，以及"有没有逐字擦亮"这一模式。进度数值本身永远不算，
+        /// 否则每一帧都会被当成变化。设置变更靠它决定要不要重发，重发时会走换行过渡。
+        /// Whether the two frames show different content: the visible text, the row structure, and whether syllable
+        /// highlighting is in play at all. The progress value itself never counts, or every frame would look changed.
+        /// Settings changes use it to decide whether anything has to be re-sent, and a re-send rolls like a line change.
+        /// </summary>
+        private static bool VisibleContentChanged(LyricsPresentationFrame previous, LyricsPresentationFrame next) =>
+            previous.IsVisible != next.IsVisible ||
+            previous.TranslationMode != next.TranslationMode ||
+            (previous.WordScanProgress is null) != (next.WordScanProgress is null) ||
+            !string.Equals(previous.Current, next.Current, StringComparison.Ordinal) ||
+            !string.Equals(previous.Next, next.Next, StringComparison.Ordinal) ||
+            !string.Equals(previous.CurrentTranslation, next.CurrentTranslation, StringComparison.Ordinal) ||
+            !string.Equals(previous.NextTranslation, next.NextTranslation, StringComparison.Ordinal);
 
         internal void RefreshWebLyricsTimer()
         {
