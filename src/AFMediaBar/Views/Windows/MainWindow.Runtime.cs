@@ -129,7 +129,13 @@ public partial class MainWindow
                     hosts.Add(window);
                     var previous = _floatingWindows.FirstOrDefault(w => string.Equals(w.TargetMonitorDeviceId, target.Requested, StringComparison.OrdinalIgnoreCase) &&
                         string.Equals(w.Monitor.DeviceId, target.Actual.DeviceId, StringComparison.OrdinalIgnoreCase));
-                    if (previous is not null) window.RestoreCenter(previous.CenterPx);
+                    if (previous is not null)
+                    {
+                        var previousDpi = Math.Max(1, previous.Monitor.DpiX) / 96d;
+                        var nextDpi = Math.Max(1, target.Actual.DpiX) / 96d;
+                        var relative = (previous.CenterPx - previous.Monitor.WorkArea.TopLeft) / previousDpi;
+                        window.RestoreCenter(target.Actual.WorkArea.TopLeft + relative * nextDpi, previous.DockEdge);
+                    }
                     window.ApplySnapshot(_mediaSessionService.CurrentSnapshot ?? MediaSnapshot.Disconnected);
                     window.OpenFullPanelRequested += FloatingFullPanelRequested;
                     window.PlacementTransitionStarted += (_, _) => { if (_floatingWindows.Contains(window)) CloseFullPanelWindows(); };
@@ -137,7 +143,13 @@ public partial class MainWindow
                     {
                         if (_isClosing || !_floatingWindows.Contains(host)) return;
                         TrayMenu.ApplyQuickLaunchEntries(host.EffectiveSettings.QuickLaunch.Entries ?? []);
-                        ContextMenuHelper.OpenAtScreenAnchor(host.IsPerformanceMenuRequested ? _memoryMenu : host.IsBatteryMenuRequested ? _batteryMenu : TrayMenu, this, point);
+                        var menu = host.IsPerformanceMenuRequested ? _memoryMenu : host.IsBatteryMenuRequested ? _batteryMenu : TrayMenu;
+                        var hold = host.KeepEdgeExpanded();
+                        RoutedEventHandler? closed = null;
+                        closed = (_, _) => { menu.Closed -= closed; hold.Dispose(); };
+                        menu.Closed += closed;
+                        try { ContextMenuHelper.OpenAtScreenAnchor(menu, this, point); }
+                        catch { menu.Closed -= closed; hold.Dispose(); throw; }
                     };
                 }
             }

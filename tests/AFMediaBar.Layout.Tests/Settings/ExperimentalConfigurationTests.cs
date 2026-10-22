@@ -121,7 +121,8 @@ public sealed class ExperimentalConfigurationTests
                 FloatingBar = new()
                 {
                     Profile = BarDisplaySettings.Capture(new AppSettings { LyricsFixedWidthDip = 310 }),
-                    Positions = [new("display", 150, 200)]
+                    EdgeCollapseEnabled = false,
+                    Positions = [new("display", 150, 200) { DockEdge = FloatingBarDockEdge.Top }]
                 }
             };
             using var persistence = new SettingsPersistenceService(directory);
@@ -132,6 +133,8 @@ public sealed class ExperimentalConfigurationTests
             Assert.AreEqual(220, restored.LyricsFixedWidthDip);
             Assert.AreEqual(310, restored.FloatingBar.Profile!.LyricsFixedWidthDip);
             Assert.AreEqual(150, restored.FloatingBar.Positions.Single().CenterXDip);
+            Assert.IsFalse(restored.FloatingBar.EdgeCollapseEnabled);
+            Assert.AreEqual(FloatingBarDockEdge.Top, restored.FloatingBar.Positions.Single().DockEdge);
         }
         finally
         {

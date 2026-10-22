@@ -257,6 +257,10 @@
                                 <ComboBoxItem Content="{DynamicResource Loc.Experimental.Floating.Topmost}" />
                             </ComboBox>
                         </components:SettingsRow>
+                        <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" Title="{DynamicResource Loc.Placement.Floating.EdgeCollapse.Title}"
+                            Description="{DynamicResource Loc.Placement.Floating.EdgeCollapse.Description}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.FloatingEdgeCollapseEnabled, Mode=TwoWay}" />
+                        </components:SettingsRow>
                         <components:SettingsRow Icon="{ui:SymbolIcon Desktop24}" Title="{DynamicResource Loc.Experimental.Floating.Lock}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.IsTaskbarPositionLocked, Mode=TwoWay}" />
                         </components:SettingsRow>

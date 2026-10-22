@@ -157,7 +157,8 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
                 Positions = defaults.FloatingBar.Positions,
                 MonitorDeviceIds = defaults.FloatingBar.MonitorDeviceIds,
                 Orientation = defaults.FloatingBar.Orientation,
-                Layer = defaults.FloatingBar.Layer
+                Layer = defaults.FloatingBar.Layer,
+                EdgeCollapseEnabled = defaults.FloatingBar.EdgeCollapseEnabled
             };
         }
         else if (scope is SettingsResetScope.ContentLayout or SettingsResetScope.DisplayModes)

@@ -57,6 +57,8 @@ internal static class FloatingBarHostChecks
             Assert.IsTrue(limits.Range.HasAvailableRange);
             var handle = new WindowInteropHelper(window).Handle;
             Assert.AreEqual(nint.Zero, AFMediaBar.Classes.Interop.NativeMethods.GetParent(handle));
+            VerifyEdgeRegionsAndInteractionHold(window, handle);
+            await VerifyEdgeAnimationInterruptionAsync(window, handle);
             var center = window.CenterPx;
             SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { Orientation = LayoutOrientation.Vertical, Layer = FloatingBarLayer.Topmost };
             await Task.Delay(100);
@@ -124,6 +126,71 @@ internal static class FloatingBarHostChecks
             window.RestoreCenter(center);
             apply.Invoke(window, arguments);
         }
+    }
+
+    private static void VerifyEdgeRegionsAndInteractionHold(FloatingBarWindow window, nint handle)
+    {
+        // 通过现有宿主的终态入口驱动原生区域，避免移动真实鼠标或启动全局 Hook。
+        var apply = typeof(FloatingBarWindow).GetMethod("ApplyBounds", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var fold = typeof(FloatingBarWindow).GetMethod("SetEdgeTarget", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var observe = typeof(FloatingBarWindow).GetMethod("ObserveEdgePointer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var center = window.CenterPx;
+        var foreground = AFMediaBar.Classes.Interop.NativeMethods.GetForegroundWindow();
+        var before = SettingsManager.Current.FloatingBar.Positions;
+        foreach (var edge in new[] { FloatingBarDockEdge.Left, FloatingBarDockEdge.Right, FloatingBarDockEdge.Top, FloatingBarDockEdge.Bottom })
+        {
+            window.RestoreCenter(center, edge);
+            apply.Invoke(window, [false]);
+            var normalCenter = window.CenterPx;
+            fold.Invoke(window, [true, true]);
+            Assert.AreEqual(normalCenter, window.CenterPx, "折叠帧不得覆盖正常中心。");
+            Assert.AreNotEqual(0, AFMediaBar.Classes.Interop.NativeMethods.GetWindowRgnBox(handle, out var region));
+            Assert.IsTrue(AFMediaBar.Classes.Interop.NativeMethods.GetWindowRect(handle, out var rect));
+            Assert.AreEqual(6, edge is FloatingBarDockEdge.Left or FloatingBarDockEdge.Right ? region.Right - region.Left : region.Bottom - region.Top);
+            Assert.IsTrue(rect.Left + region.Left >= window.Monitor.WorkArea.Left && rect.Left + region.Right <= window.Monitor.WorkArea.Right);
+            Assert.IsTrue(rect.Top + region.Top >= window.Monitor.WorkArea.Top && rect.Top + region.Bottom <= window.Monitor.WorkArea.Bottom);
+            using (window.KeepEdgeExpanded())
+            {
+                fold.Invoke(window, [false, true]);
+                observe.Invoke(window, [null, EventArgs.Empty]);
+                Assert.IsTrue(AFMediaBar.Classes.Interop.NativeMethods.GetWindowRect(handle, out var expanded));
+                Assert.IsTrue(expanded.Left >= window.Monitor.WorkArea.Left && expanded.Top >= window.Monitor.WorkArea.Top);
+            }
+            fold.Invoke(window, [true, true]);
+            SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { EdgeCollapseEnabled = false };
+            Assert.IsTrue(AFMediaBar.Classes.Interop.NativeMethods.GetWindowRect(handle, out var restored));
+            Assert.IsTrue(restored.Left >= window.Monitor.WorkArea.Left && restored.Top >= window.Monitor.WorkArea.Top,
+                "关闭开关必须立即恢复可见位置。");
+            SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { EdgeCollapseEnabled = true };
+        }
+        CollectionAssert.AreEqual(before.ToArray(), SettingsManager.Current.FloatingBar.Positions.ToArray(), "自动折叠不保存临时坐标。");
+        Assert.AreEqual(foreground, AFMediaBar.Classes.Interop.NativeMethods.GetForegroundWindow(), "折叠与展开不能抢焦点。");
+        window.RestoreCenter(center);
+        apply.Invoke(window, [false]);
+    }
+
+    private static async Task VerifyEdgeAnimationInterruptionAsync(FloatingBarWindow window, nint handle)
+    {
+        var apply = typeof(FloatingBarWindow).GetMethod("ApplyBounds", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var fold = typeof(FloatingBarWindow).GetMethod("SetEdgeTarget", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var center = window.CenterPx;
+        window.RestoreCenter(center, FloatingBarDockEdge.Left);
+        apply.Invoke(window, [false]);
+        fold.Invoke(window, [true, false]);
+        await Task.Delay(30);
+        Assert.IsTrue(AFMediaBar.Classes.Interop.NativeMethods.GetWindowRect(handle, out var interrupted));
+        fold.Invoke(window, [false, false]);
+        Assert.IsTrue(AFMediaBar.Classes.Interop.NativeMethods.GetWindowRect(handle, out var reversing));
+        if (MotionPolicy.ResolveCurrent().UseTransitions)
+            Assert.AreEqual(interrupted.Left, reversing.Left, "反向动画从当前帧开始，不能跳到端点。");
+        window.Suspend();
+        await Task.Delay(MotionPolicy.ResolveCurrent().StandardDuration + TimeSpan.FromMilliseconds(100));
+        Assert.IsFalse(AFMediaBar.Classes.Interop.NativeMethods.IsWindowVisible(handle), "挂起后旧动画不能重新显示宿主。");
+        window.Resume();
+        Assert.IsTrue(AFMediaBar.Classes.Interop.NativeMethods.GetWindowRect(handle, out var resumed));
+        Assert.AreEqual((int)window.Monitor.WorkArea.Left, resumed.Left, "恢复时先回到正常附着位置。");
+        window.RestoreCenter(center);
+        apply.Invoke(window, [false]);
     }
 
 #pragma warning disable CS0649 // 这些字段由 Win32 写入。

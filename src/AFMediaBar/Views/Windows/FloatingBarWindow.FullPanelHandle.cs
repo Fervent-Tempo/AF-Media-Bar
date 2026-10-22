@@ -14,7 +14,7 @@ public sealed partial class FloatingBarWindow
     private bool _externalHandleRequiresReentry;
 
     private bool CanKeepExternalFullPanelHandle() => IsOperational && IsVisible && _lastSnapshot.IsConnected &&
-        !_dragging && !_sizeTimer.IsEnabled && !_isFullPanelOpen && !_compactFlyout.IsVisible && PresentationSettings.TaskbarExperience.FullPanelEntryVisible;
+        !IsEdgeConcealed && !_dragging && !_sizeTimer.IsEnabled && !_isFullPanelOpen && !_compactFlyout.IsVisible && PresentationSettings.TaskbarExperience.FullPanelEntryVisible;
 
     private void InitializeExternalFullPanelHandle(Func<ExternalFullPanelHandleWindow>? factory)
     {
@@ -75,6 +75,7 @@ public sealed partial class FloatingBarWindow
     internal void SetFullPanelOpen(bool open)
     {
         _isFullPanelOpen = open;
+        if (open) SetEdgeTarget(collapse: false);
         _externalHandleRequiresReentry = _mediaControl.IsMouseOver;
         _externalFullPanelHandle?.Dismiss();
     }

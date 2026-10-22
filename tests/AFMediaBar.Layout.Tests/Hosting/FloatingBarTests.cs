@@ -17,6 +17,42 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class FloatingBarTests
 {
     [TestMethod]
+    public void FourEdgeAnchorsSurviveResizeAndClipToTheirOwnWorkArea()
+    {
+        var work = new Size(1000, 800);
+        foreach (var edge in new[] { FloatingBarDockEdge.Left, FloatingBarDockEdge.Right, FloatingBarDockEdge.Top, FloatingBarDockEdge.Bottom })
+        {
+            foreach (var size in new[] { new Size(240, 44), new Size(440, 48), new Size(48, 300) })
+            {
+                var bounds = FloatingBarGeometryPolicy.Resolve(work, size, new Point(500, 400));
+                var anchored = FloatingBarEdgeCollapsePolicy.Anchor(bounds, work, edge);
+                Assert.AreEqual(edge, FloatingBarEdgeCollapsePolicy.DetectEdge(anchored, work, size.Height > size.Width));
+                var collapsed = FloatingBarEdgeCollapsePolicy.CollapsedBounds(anchored, edge);
+                var visible = Rect.Intersect(collapsed, new Rect(work));
+                Assert.AreEqual(6d, edge is FloatingBarDockEdge.Left or FloatingBarDockEdge.Right ? visible.Width : visible.Height);
+                Assert.IsTrue(new Rect(work).Contains(visible));
+            }
+        }
+        var corner = new Rect(0, 0, 200, 44);
+        Assert.AreEqual(FloatingBarDockEdge.Top, FloatingBarEdgeCollapsePolicy.DetectEdge(corner, work, false));
+        Assert.AreEqual(FloatingBarDockEdge.Left, FloatingBarEdgeCollapsePolicy.DetectEdge(corner, work, true));
+    }
+
+    [TestMethod]
+    public void PointerActivationIsBoundedToMonitorAndExpandedStateHasHysteresis()
+    {
+        var work = new Size(1000, 800);
+        var normal = new Rect(0, 200, 240, 44);
+        Assert.IsTrue(FloatingBarEdgeCollapsePolicy.ShouldExpand(normal, work, new Point(70, 180), FloatingBarDockEdge.Left));
+        Assert.IsFalse(FloatingBarEdgeCollapsePolicy.ShouldExpand(normal, work, new Point(-1, 220), FloatingBarDockEdge.Left), "相邻屏幕不能唤醒本屏折叠条。");
+        Assert.IsFalse(FloatingBarEdgeCollapsePolicy.ShouldExpand(normal, work, new Point(20, 500), FloatingBarDockEdge.Left));
+        var nearby = new Point(260, 220);
+        Assert.IsTrue(FloatingBarEdgeCollapsePolicy.ShouldCollapse(normal, nearby, false));
+        Assert.IsFalse(FloatingBarEdgeCollapsePolicy.ShouldCollapse(normal, nearby, true));
+        Assert.IsTrue(FloatingBarEdgeCollapsePolicy.ShouldCollapse(normal, new Point(400, 400), true));
+    }
+
+    [TestMethod]
     public void ResizeAndOrientationKeepCenterUntilClampingIsNecessary()
     {
         var work = new Size(1000, 800);
@@ -38,6 +74,7 @@ public sealed class FloatingBarTests
         try
         {
             SettingsManager.Current = new AppSettings();
+            Assert.IsTrue(SettingsManager.Current.FloatingBar.EdgeCollapseEnabled);
             configuration.SetExperiments(new() { FloatingBar = true });
             Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.WindowMode, "Enabling alone must not switch.");
             ((AFMediaBar.Classes.Abstractions.ISettingsConfiguration)configuration).SetWindowMode(WindowMode.FloatingBar);
@@ -52,6 +89,8 @@ public sealed class FloatingBarTests
                  "FloatingBar":{"Positions":[{"MonitorDeviceId":"old","CenterXDip":350,"CenterYDip":200}]}}
                 """)!.Normalize();
             Assert.AreEqual(WindowMode.FloatingBar, old.WindowMode);
+            Assert.IsTrue(old.FloatingBar.EdgeCollapseEnabled);
+            Assert.AreEqual(FloatingBarDockEdge.None, old.FloatingBar.Positions.Single().DockEdge);
             Assert.AreEqual(350d, old.FloatingBar.Positions.Single().CenterXDip);
             SettingsManager.Current.WindowMode = WindowMode.DynamicIsland;
             Assert.AreEqual(WindowMode.Taskbar, SettingsManager.Current.Normalize().WindowMode);
@@ -74,12 +113,14 @@ public sealed class FloatingBarTests
                 TaskbarBarManualPadding = 50,
                 FloatingBar = new() { Positions = [new("one", 400, 500)], MonitorDeviceIds = ["one"] }
             };
-            SettingsManager.SetUserDefaults(new AppSettings { FloatingBar = new() { Positions = [new("two", 300, 200)], MonitorDeviceIds = ["two"] } });
+            SettingsManager.SetUserDefaults(new AppSettings { FloatingBar = new() { EdgeCollapseEnabled = false, Positions = [new("two", 300, 200) { DockEdge = FloatingBarDockEdge.Left }], MonitorDeviceIds = ["two"] } });
             var editor = new LegacySettingsConfiguration(context);
             editor.Reset(SettingsResetScope.Layout);
             Assert.AreEqual(50, SettingsManager.Current.TaskbarBarManualPadding);
             Assert.AreEqual("two", SettingsManager.Current.FloatingBar.MonitorDeviceIds.Single());
             Assert.AreEqual(300d, SettingsManager.Current.FloatingBar.Positions.Single().CenterXDip);
+            Assert.IsFalse(SettingsManager.Current.FloatingBar.EdgeCollapseEnabled);
+            Assert.AreEqual(FloatingBarDockEdge.Left, SettingsManager.Current.FloatingBar.Positions.Single().DockEdge);
         }
         finally { SettingsManager.Current = previous; SettingsManager.SetUserDefaults(previousDefaults); }
     }

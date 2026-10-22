@@ -70,6 +70,11 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         get => SettingsManager.Current.FloatingBar.Layer == FloatingBarLayer.Topmost ? 1 : 0;
         set { if (IsFloatingBarMode && !_isRefreshing) _configuration.SetFloatingBar(SettingsManager.Current.FloatingBar with { Layer = value == 1 ? FloatingBarLayer.Topmost : FloatingBarLayer.Desktop }); }
     }
+    public bool FloatingEdgeCollapseEnabled
+    {
+        get => SettingsManager.Current.FloatingBar.EdgeCollapseEnabled;
+        set { if (IsFloatingBarMode && !_isRefreshing) _configuration.SetFloatingBar(SettingsManager.Current.FloatingBar with { EdgeCollapseEnabled = value }); }
+    }
     public string RuntimeStatus => _runtime?.IsSwitching == true ? Translations.Get("Experimental.Floating.Switching") :
         _runtime?.LastFailure is not null ? Translations.Get("Experimental.Floating.Failed") : HostingModeText;
 
@@ -678,6 +683,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(IsFloatingBarMode));
             OnPropertyChanged(nameof(CanChangeMode)); OnPropertyChanged(nameof(RuntimeModeSelection));
             OnPropertyChanged(nameof(FloatingOrientation)); OnPropertyChanged(nameof(FloatingLayer)); OnPropertyChanged(nameof(RuntimeStatus));
+            OnPropertyChanged(nameof(FloatingEdgeCollapseEnabled));
             OnPropertyChanged(nameof(TaskbarPosition));
             RaiseExperience(); OnPropertyChanged(nameof(Orientation)); OnPropertyChanged(nameof(IsTaskbarPositionLocked));
             OnPropertyChanged(nameof(IsTaskbarAvoidingIcons)); OnPropertyChanged(nameof(TaskbarCrossAxisOffsetDip));

@@ -143,7 +143,7 @@ public static class SettingsSearchIndex
     /// <summary>Builds localized labels while keeping page and group identities stable.</summary>
     private static SettingsSearchEntry[] Build(LocalizationLanguage language) =>
     [
-        Create(SettingsPageKey.ScreenAndPlacement, "Placement.Floating.Title", "Placement.Floating.Description", language, ["桌面悬浮模式", "floating", "置顶", "锁定", "拖动"]),
+        Create(SettingsPageKey.ScreenAndPlacement, "Placement.Floating.Title", "Placement.Floating.Description", language, ["桌面悬浮模式", "floating", "置顶", "锁定", "拖动", "边缘折叠", "贴边", "auto-hide", "edge collapse"]),
         Create(SettingsPageKey.Appearance, "Appearance.IdleNote.Title", "Appearance.IdleNote.Description", language,
             ["小音符", "音符颜色", "music note", "note color", "占位图标", "自定义音符"]),
         Create(

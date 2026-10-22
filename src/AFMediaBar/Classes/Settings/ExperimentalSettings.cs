@@ -23,7 +23,13 @@ public enum BarConfigurationTarget { Taskbar, FloatingBar }
 public enum FloatingBarLayer { Desktop, Topmost }
 
 /// <summary>以显示器工作区为基准保存的中心位置，单位为 DIP。</summary>
-public sealed record FloatingBarPosition(string MonitorDeviceId, double CenterXDip, double CenterYDip);
+public sealed record FloatingBarPosition(string MonitorDeviceId, double CenterXDip, double CenterYDip)
+{
+    public FloatingBarDockEdge DockEdge { get; init; }
+}
+
+/// <summary>正常位置所附着的工作区边缘；折叠中的屏幕外坐标不保存。</summary>
+public enum FloatingBarDockEdge { None, Left, Right, Top, Bottom }
 
 /// <summary>悬浮宿主偏好；Profile 仅保存几何，首次从任务栏几何初始化。</summary>
 public sealed record FloatingBarSettings
@@ -31,6 +37,7 @@ public sealed record FloatingBarSettings
     public BarDisplaySettings? Profile { get; init; }
     public LayoutOrientation Orientation { get; init; }
     public FloatingBarLayer Layer { get; init; }
+    public bool EdgeCollapseEnabled { get; init; } = true;
     public IReadOnlyList<string> MonitorDeviceIds { get; init; } = [];
     public IReadOnlyList<FloatingBarPosition> Positions { get; init; } = [];
 
@@ -43,7 +50,7 @@ public sealed record FloatingBarSettings
         Positions = (Positions ?? []).Where(position => position is not null &&
             !string.IsNullOrWhiteSpace(position.MonitorDeviceId) && double.IsFinite(position.CenterXDip) &&
             double.IsFinite(position.CenterYDip)).GroupBy(position => position.MonitorDeviceId, StringComparer.OrdinalIgnoreCase)
-            .Select(group => group.Last()).ToArray(),
+            .Select(group => group.Last() with { DockEdge = Enum.IsDefined(group.Last().DockEdge) ? group.Last().DockEdge : FloatingBarDockEdge.None }).ToArray(),
         Profile = Profile?.Normalize()
     };
 }

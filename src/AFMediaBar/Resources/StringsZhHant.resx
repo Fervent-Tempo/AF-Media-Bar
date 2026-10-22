@@ -3192,4 +3192,7 @@
   <data name="Lyrics.Row.BracketSymbols.Title" xml:space="preserve"><value>淨化譯文格式</value></data>
   <data name="Lyrics.Row.BracketSymbols.Description" xml:space="preserve"><value>預設開啟。清理部分翻譯來源多餘的行首斜槓與括號，使譯文顯示更加簡潔。</value></data>
   <data name="Settings.Numeric.Minutes" xml:space="preserve"><value>分鐘</value></data>
+  <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>邊緣自動收合</value></data>
+  <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>預設開啟。拖到工作區邊緣後，移開滑鼠收合，靠近時展開；支援四邊。</value></data>
+  <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展開桌面媒體列</value></data>
 </root>

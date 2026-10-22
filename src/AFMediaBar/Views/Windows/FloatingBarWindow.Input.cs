@@ -22,6 +22,7 @@ public sealed partial class FloatingBarWindow
     private async Task ShowDeviceMenuAsync(AudioDeviceDirection direction, AudioDeviceSwitchTarget scope, TrayIconBounds anchor)
     {
         if (!CanPublishMenu(_menuEnvironmentVersion) || scope == AudioDeviceSwitchTarget.Disabled) return;
+        using var edgeHold = KeepEdgeExpanded();
         var environmentVersion = _menuEnvironmentVersion;
         var mode = direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice;
         if (_compactFlyout.IsShowing(mode)) { _compactFlyout.Dismiss(); return; }
@@ -58,6 +59,7 @@ public sealed partial class FloatingBarWindow
             var settings = EffectiveInteraction;
             var scope = direction == AudioDeviceDirection.Output ? settings.OutputDeviceWheelTarget : settings.InputDeviceWheelTarget;
             if (!CanPublishMenu(_menuEnvironmentVersion) || scope == AudioDeviceSwitchTarget.Disabled) return;
+            using var edgeHold = KeepEdgeExpanded();
             var environmentVersion = _menuEnvironmentVersion;
             var target = await _audioInteractionService.ResolveTargetAsync(direction, scope, this, true);
             if (!CanPublishMenu(environmentVersion)) return;
@@ -89,6 +91,7 @@ public sealed partial class FloatingBarWindow
     private async void MediaControl_InputDeviceInfoRequested(object? sender, EventArgs e) => await RefreshDeviceTooltipAsync(AudioDeviceDirection.Input);
     private async Task RefreshDeviceTooltipAsync(AudioDeviceDirection direction)
     {
+        using var edgeHold = KeepEdgeExpanded();
         var environmentVersion = _menuEnvironmentVersion;
         if (!CanPublishMenu(environmentVersion)) return;
         try
@@ -139,6 +142,7 @@ public sealed partial class FloatingBarWindow
     });
     private async Task RefreshOpenDeviceMenuAsync()
     {
+        using var edgeHold = KeepEdgeExpanded();
         var environmentVersion = _menuEnvironmentVersion;
         if (_deviceMenuTarget is not { } target || !_compactFlyout.IsVisible ||
             !_compactFlyout.IsShowing(target.Direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice)) return;
@@ -162,6 +166,7 @@ public sealed partial class FloatingBarWindow
         }
 
         if (!CanPublishMenu(_menuEnvironmentVersion)) return;
+        using var edgeHold = KeepEdgeExpanded();
         var environmentVersion = _menuEnvironmentVersion;
         var openingAnchor = _mediaControl.GetVolumeAnchor();
         var volume = await ReadVolumeAsync();
@@ -199,6 +204,7 @@ public sealed partial class FloatingBarWindow
             return;
         }
 
+        using var edgeHold = KeepEdgeExpanded();
         var environmentVersion = _menuEnvironmentVersion;
         var openingAnchor = anchor ?? _mediaControl.GetVolumeAnchor();
         var volume = await ReadVolumeAsync();
@@ -217,6 +223,7 @@ public sealed partial class FloatingBarWindow
     /// </summary>
     private async void MediaControl_VolumeInfoRequested(object? sender, EventArgs e)
     {
+        using var edgeHold = KeepEdgeExpanded();
         var environmentVersion = _menuEnvironmentVersion;
         if (!CanPublishMenu(environmentVersion)) return;
         if (_pendingVolume is { } pending)
@@ -239,6 +246,7 @@ public sealed partial class FloatingBarWindow
 
     private async Task PreviewVolumeAsync(int delta, bool updateFlyout)
     {
+        using var edgeHold = KeepEdgeExpanded();
         var environmentVersion = _menuEnvironmentVersion;
         if (!CanPublishMenu(environmentVersion)) return;
         var volume = _currentVolume ?? await ReadVolumeAsync();
@@ -286,6 +294,7 @@ public sealed partial class FloatingBarWindow
         _quickLaunchApplyTimer.Stop();
         _pendingQuickLaunch = null;
         _compactFlyout.Dismiss();
+        using var edgeHold = KeepEdgeExpanded();
         var environmentVersion = _menuEnvironmentVersion;
         var anchor = _mediaControl.GetQuickLaunchAnchor();
         var result = await LaunchQuickLaunchEntryAsync(entry);
@@ -386,7 +395,7 @@ public sealed partial class FloatingBarWindow
     {
         var metrics = performance.GetOrderedMetrics().ToArray();
         var interval = TimeSpan.FromMilliseconds(performance.RefreshIntervalMilliseconds);
-        var shouldSubscribe = IsOperational && _mediaControl.IsPerformanceComponentVisible;
+        var shouldSubscribe = IsOperational && !IsEdgeFullyCollapsed && _mediaControl.IsPerformanceComponentVisible;
         var configurationChanged = _metricsSubscription is not null &&
                                    (!_subscribedMetricKinds.SequenceEqual(metrics) ||
                                     _subscribedMetricInterval != interval);
@@ -418,7 +427,7 @@ public sealed partial class FloatingBarWindow
 
     private void ApplyMetricsSnapshot(int generation, SystemMetricsSnapshot snapshot)
     {
-        if (generation != _metricsSubscriptionGeneration || !IsOperational)
+        if (generation != _metricsSubscriptionGeneration || !IsOperational || IsEdgeFullyCollapsed)
             return;
         var settings = PresentationSettings.PerformanceComponent.Normalize();
         var metrics = settings.GetOrderedMetrics();
