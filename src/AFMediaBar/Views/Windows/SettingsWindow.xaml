@@ -73,14 +73,6 @@
             IsPaneOpen="True"
             TransitionDuration="180"
             TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}">
-            <ui:NavigationView.Header>
-                <StackPanel Margin="16,4,16,4">
-                    <StackPanel x:Name="EditingMonitorPanel" Orientation="Horizontal" Visibility="Collapsed">
-                        <TextBlock Text="{DynamicResource Loc.Settings.Context.EditingMonitor}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                        <ComboBox x:Name="EditingMonitorPicker" MinWidth="200" MaxWidth="360" DisplayMemberPath="DeviceName" SelectedValuePath="DeviceId" SelectionChanged="OnEditingMonitorChanged" />
-                    </StackPanel>
-                </StackPanel>
-            </ui:NavigationView.Header>
             <ui:NavigationView.AutoSuggestBox>
                 <!--
                     搜索框的候选项由设置窗口在 TextChanged 里按 SettingsSearchIndex 填充，

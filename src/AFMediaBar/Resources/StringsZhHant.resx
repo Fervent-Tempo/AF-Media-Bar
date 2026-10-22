@@ -631,6 +631,9 @@
   <data name="Common.Modifier.Shift" xml:space="preserve">
     <value>Shift 鍵</value>
   </data>
+  <data name="Common.Monitor.Internal" xml:space="preserve">
+    <value>內建顯示器</value>
+  </data>
   <data name="Common.Monitor.PrimarySuffix" xml:space="preserve">
     <value>（主顯示器）</value>
   </data>

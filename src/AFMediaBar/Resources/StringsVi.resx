@@ -526,6 +526,9 @@
   <data name="Common.Modifier.Shift" xml:space="preserve">
     <value>Phím Shift</value>
   </data>
+  <data name="Common.Monitor.Internal" xml:space="preserve">
+    <value>Màn hình tích hợp</value>
+  </data>
   <data name="Common.Monitor.PrimarySuffix" xml:space="preserve">
     <value> (Chính)</value>
   </data>

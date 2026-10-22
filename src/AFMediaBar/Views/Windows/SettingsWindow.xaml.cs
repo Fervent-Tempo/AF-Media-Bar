@@ -40,7 +40,6 @@ namespace AFMediaBar.Views.Windows
         private SettingsContext _displayedContext = SettingsContext.Initial;
         private SettingsMode? _navigationMode;
         private SettingsPageKey _currentPage = SettingsPageKey.ScreenAndPlacement;
-        private bool _updatingMonitorChoices;
         private bool _closed;
 
         public SettingsWindowViewModel ViewModel { get; }
@@ -349,7 +348,6 @@ namespace AFMediaBar.Views.Windows
         private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
         {
             if (args.Page is Page destination) _currentPage = SettingsPageProvider.PageTypes.First(pair => pair.Value == destination.GetType()).Key;
-            UpdateContextHeader();
             SettingsRevealAnimator.Cancel(_transitionContent);
             _transitionContent = null;
             if (args.Page is Page page && page.FindName("PageScroll") is ScrollViewer { Content: Panel content })
@@ -443,14 +441,6 @@ namespace AFMediaBar.Views.Windows
             var contextChanged = _displayedContext != _contexts.Current;
             _pages.SetContext(_contexts.Current);
             RebuildNavigation();
-            _updatingMonitorChoices = true;
-            try
-            {
-                EditingMonitorPicker.ItemsSource = _contexts.Monitors;
-                EditingMonitorPicker.SelectedValue = _contexts.Current.MonitorDeviceId;
-                EditingMonitorPanel.Visibility = _contexts.Monitors.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
-            }
-            finally { _updatingMonitorChoices = false; }
             var definition = SettingsPageCatalog.Find(_currentPage, _contexts.Current.Mode);
             if (definition is null) Navigate(typeof(ScreenAndPlacementPage));
             else if (contextChanged && (!definition.IsGlobal || definition.HasModeContent))
@@ -459,13 +449,8 @@ namespace AFMediaBar.Views.Windows
                 if (!definition.IsGlobal || _currentPage == SettingsPageKey.ScreenAndPlacement) RootNavigation.ReplaceContent(content);
             }
             _displayedContext = _contexts.Current;
-            UpdateContextHeader();
             AutoSuggestBox.IsSuggestionListOpen = false;
             AutoSuggestBox.ItemsSource = null;
-        }
-        private void UpdateContextHeader()
-        {
-            RootNavigation.HeaderVisibility = EditingMonitorPanel.Visibility;
         }
         private void OnRelatedSettingsRequested(object sender, RoutedEventArgs args)
         {
@@ -480,10 +465,6 @@ namespace AFMediaBar.Views.Windows
                 page = SettingsPageKey.Experimental;
             if (!string.IsNullOrEmpty(group)) NavigateToGroup(page, group);
             else Navigate(SettingsPageProvider.PageTypes[page]);
-        }
-        private void OnEditingMonitorChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (!_updatingMonitorChoices && EditingMonitorPicker.SelectedValue is string deviceId) _contexts.SelectMonitor(deviceId);
         }
         private void OnContextRefreshFailed(object? sender, Exception exception) => _log.Error("Settings", "读取设置页任务栏环境失败，保留上次有效上下文", exception);
     }

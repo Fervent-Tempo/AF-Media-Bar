@@ -1,6 +1,7 @@
 // 枚举显示器并提供显示区域信息。
 using System.Runtime.InteropServices;
 using AFMediaBar.Classes.Interop;
+using AFMediaBar.Resources;
 using static AFMediaBar.Classes.Interop.NativeMethods;
 
 namespace AFMediaBar.Classes.Utils;
@@ -34,7 +35,7 @@ public static class MonitorUtil
         return monitors[Math.Clamp(index, 0, monitors.Count - 1)];
     }
 
-    private static MonitorInfo GetMonitorInfoInternal(IntPtr hMonitor)
+    private static MonitorInfo GetMonitorInfoInternal(IntPtr hMonitor, IReadOnlyDictionary<string, string>? friendlyNames = null)
     {
         var info = new MONITORINFOEX();
         info.cbSize = Marshal.SizeOf<MONITORINFOEX>();
@@ -49,7 +50,7 @@ public static class MonitorUtil
                     info.rcWork.Right - info.rcWork.Left, info.rcWork.Bottom - info.rcWork.Top),
                 isPrimary = (info.dwFlags & MONITORINFOF_PRIMARY) != 0,
                 deviceId = info.szDevice,
-                deviceName = GetMonitorFriendlyName(info.szDevice)
+                deviceName = friendlyNames?.GetValueOrDefault(info.szDevice) ?? GetMonitorFriendlyName(info.szDevice)
             };
 
             if (GetDpiForMonitor(hMonitor, MonitorDpiType.MDT_EFFECTIVE_DPI, out uint dpiX, out uint dpiY) == S_OK)
@@ -77,12 +78,13 @@ public static class MonitorUtil
 
     public static IReadOnlyList<MonitorInfo> GetMonitors()
     {
+        var friendlyNames = GetDisplayConfigNames();
         List<MonitorInfo> result = [];
 
         EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero,
             (hMonitor, _, ref _, _) =>
             {
-                result.Add(GetMonitorInfoInternal(hMonitor));
+                result.Add(GetMonitorInfoInternal(hMonitor, friendlyNames));
                 return true;
             },
             IntPtr.Zero);
@@ -93,6 +95,55 @@ public static class MonitorUtil
             .ToList();
     }
 
+    private static IReadOnlyDictionary<string, string> GetDisplayConfigNames()
+    {
+        var names = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        // 热插拔可能使首次申请的缓冲失效，有限重试后回退到旧名称来源。
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            if (GetDisplayConfigBufferSizes(DisplayConfigOnlyActivePaths, out var pathCount, out var modeCount) != 0)
+                break;
+            var paths = new DisplayConfigPathInfo[pathCount];
+            var modes = new DisplayConfigModeInfo[modeCount];
+            var status = QueryDisplayConfig(DisplayConfigOnlyActivePaths, ref pathCount, paths, ref modeCount, modes, IntPtr.Zero);
+            if (status == DisplayConfigInsufficientBuffer) continue;
+            if (status != 0) break;
+            for (var index = 0; index < pathCount; index++)
+            {
+                var path = paths[index];
+                var source = new DisplayConfigSourceDeviceName
+                {
+                    Header = new DisplayConfigDeviceInfoHeader
+                    {
+                        Type = DisplayConfigGetSourceName,
+                        Size = (uint)Marshal.SizeOf<DisplayConfigSourceDeviceName>(),
+                        AdapterId = path.SourceInfo.AdapterId,
+                        Id = path.SourceInfo.Id
+                    }
+                };
+                var target = new DisplayConfigTargetDeviceName
+                {
+                    Header = new DisplayConfigDeviceInfoHeader
+                    {
+                        Type = DisplayConfigGetTargetName,
+                        Size = (uint)Marshal.SizeOf<DisplayConfigTargetDeviceName>(),
+                        AdapterId = path.TargetInfo.AdapterId,
+                        Id = path.TargetInfo.Id
+                    }
+                };
+                if (DisplayConfigGetDeviceInfo(ref source) != 0 || string.IsNullOrWhiteSpace(source.ViewGdiDeviceName) ||
+                    DisplayConfigGetDeviceInfo(ref target) != 0) continue;
+                // LVDS、内嵌 DisplayPort/UDI 和 INTERNAL 对应内置面板。
+                var name = target.OutputTechnology is 6 or 11 or 13 or 0x80000000
+                    ? Translations.Get("Common.Monitor.Internal")
+                    : target.MonitorFriendlyDeviceName?.Trim();
+                if (!string.IsNullOrWhiteSpace(name)) names.TryAdd(source.ViewGdiDeviceName, name);
+            }
+            break;
+        }
+        return names;
+    }
+
     private static string GetMonitorFriendlyName(string deviceId)
     {
         var displayDevice = new DISPLAY_DEVICE
@@ -100,10 +151,10 @@ public static class MonitorUtil
             cb = Marshal.SizeOf<DISPLAY_DEVICE>()
         };
 
-        // Enumerate all display devices to find the display given by deviceId
+        // 显示配置不可用或没有型号时保留驱动名称作为回退。
         if (EnumDisplayDevices(deviceId, 0, ref displayDevice, 0))
         {
-            return displayDevice.DeviceString.Trim(); // e.g. "Dell U2720Q"
+            return displayDevice.DeviceString.Trim();
         }
         return "Unknown Monitor";
     }
