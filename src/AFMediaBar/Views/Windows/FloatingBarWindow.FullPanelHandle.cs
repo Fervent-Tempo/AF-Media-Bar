@@ -67,6 +67,7 @@ public sealed partial class FloatingBarWindow
     private void RequestFullPanel()
     {
         if (!IsOperational) return;
+        if (IsEdgeConcealed) SetEdgeTarget(collapse: false, instant: true);
         var side = FullPanelPlacementPolicy.ResolveSide(GetPhysicalBounds(), Monitor.WorkArea, IsVerticalPresentation);
         OpenFullPanelRequested?.Invoke(this, new FullPanelOpenRequestEventArgs(GetMediaBarScreenBounds(),
             IsVerticalPresentation, ensureOpen: false, side));

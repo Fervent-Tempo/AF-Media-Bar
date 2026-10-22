@@ -37,7 +37,7 @@ AF-Media-Bar/
 | `App.xaml.cs` | DI 注册、启动与最终退出；唯一组合根，外观资源交给 ApplicationAppearanceResources 生成 |
 | `Views/Windows/MainWindow.xaml.cs` | 隐藏宿主，协调任务栏窗口、媒体快照转发与 Explorer 恢复；不拥有业务服务 |
 | `Views/Windows/TaskbarWindow.xaml.cs` | 单个任务栏的 HWND、停靠、位置及窗口资源生命周期 |
-| `Views/Windows/FloatingBarWindow.cs` | 单个显示器上的独立工具窗口、拖动、弹层和呈现租约 |
+| `Views/Windows/FloatingBarWindow.cs` | 单个显示器上的独立工具窗口、拖动、四边折叠、原生命中区域、弹层和呈现租约 |
 | `BarRuntimeCoordinator` | 事务切换宿主；全部激活成功后发布实际模式，失败恢复原宿主 |
 | `DesktopWidgetZOrderService` | 已注册浮窗的桌面/置顶层级、WinEvent 和观察计时器；最后租约释放时停止观察 |
 | `Components/MediaBar/TaskBarMediaControl.*` | 呈现、动画和输入意图；不承载媒体来源与歌词算法 |

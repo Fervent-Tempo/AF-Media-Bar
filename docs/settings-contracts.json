@@ -1,42 +1,44 @@
-﻿{
+{
   "formatVersion": 2,
-  "latestRelease": "v1.4.0",
+  "latestRelease": "v1.5.0",
   "settingsSchemaVersion": 2,
   "settings": {
     "experiments": {
       "bluetoothBattery": "unreleased",
       "memoryTools": "unreleased",
       "systemMemoryCleanup": "unreleased",
-      "floatingBar": "unreleased",
-      "$release": "unreleased",
-      "verticalTaskbar": "unreleased"
+      "floatingBar": "v1.5.0",
+      "$release": "v1.5.0",
+      "verticalTaskbar": "v1.5.0"
     },
     "floatingBar": {
-      "$release": "unreleased",
+      "$release": "v1.5.0",
       "profile": {
-        "taskbarBarCrossAxisOffsetDip": "unreleased",
-        "$release": "unreleased",
-        "layoutLengthScalePercent": "unreleased",
-        "taskbarBarManualPadding": "unreleased",
-        "taskbarBarPositionLocked": "unreleased",
-        "position": "unreleased",
-        "layoutThicknessScalePercent": "unreleased",
-        "lyricsFixedWidthEnabled": "unreleased",
-        "lyricsFixedWidthDip": "unreleased",
-        "lengthMode": "unreleased",
-        "fixedLengthDip": "unreleased",
-        "arrangement": "unreleased"
+        "taskbarBarCrossAxisOffsetDip": "v1.5.0",
+        "$release": "v1.5.0",
+        "layoutLengthScalePercent": "v1.5.0",
+        "taskbarBarManualPadding": "v1.5.0",
+        "taskbarBarPositionLocked": "v1.5.0",
+        "position": "v1.5.0",
+        "layoutThicknessScalePercent": "v1.5.0",
+        "lyricsFixedWidthEnabled": "v1.5.0",
+        "lyricsFixedWidthDip": "v1.5.0",
+        "lengthMode": "v1.5.0",
+        "fixedLengthDip": "v1.5.0",
+        "arrangement": "v1.5.0"
       },
-      "orientation": "unreleased",
-      "layer": "unreleased",
-      "monitorDeviceIds": "unreleased",
+      "orientation": "v1.5.0",
+      "layer": "v1.5.0",
+      "edgeCollapseEnabled": "unreleased",
+      "monitorDeviceIds": "v1.5.0",
       "positions": {
         "$items": {
-          "centerXDip": "unreleased",
-          "monitorDeviceId": "unreleased",
-          "centerYDip": "unreleased"
+          "centerXDip": "v1.5.0",
+          "monitorDeviceId": "v1.5.0",
+          "centerYDip": "v1.5.0",
+          "dockEdge": "unreleased"
         },
-        "$release": "unreleased"
+        "$release": "v1.5.0"
       }
     },
     "allowBrowserAndVideoLyrics": "v1.3.0",
@@ -295,6 +297,16 @@
         "Hover": {"value": 1, "release": "unreleased"}
       }
     },
+    "FloatingBarDockEdge": {
+      "paths": ["settings.floatingBar.positions[].dockEdge"],
+      "members": {
+        "None": {"value": 0, "release": "unreleased"},
+        "Left": {"value": 1, "release": "unreleased"},
+        "Right": {"value": 2, "release": "unreleased"},
+        "Top": {"value": 3, "release": "unreleased"},
+        "Bottom": {"value": 4, "release": "unreleased"}
+      }
+    },
     "FloatingBarLayer": {
         "paths": [
           "settings.floatingBar.layer"
@@ -302,11 +314,11 @@
         "members": {
           "Desktop": {
             "value": 0,
-            "release": "unreleased"
+            "release": "v1.5.0"
           },
           "Topmost": {
             "value": 1,
-            "release": "unreleased"
+            "release": "v1.5.0"
           }
         }
       },
@@ -317,11 +329,11 @@
         "members": {
           "Horizontal": {
             "value": 0,
-            "release": "unreleased"
+            "release": "v1.5.0"
           },
           "Vertical": {
             "value": 1,
-            "release": "unreleased"
+            "release": "v1.5.0"
           }
         }
       },
@@ -710,7 +722,7 @@
       "members": {
         "Taskbar": {"value": 0, "release": "v1.2.0"},
         "DynamicIsland": {"value": 1, "release": "v1.2.0"},
-        "FloatingBar": {"value": 2, "release": "unreleased"}
+        "FloatingBar": {"value": 2, "release": "v1.5.0"}
       }
     },
     "PerformanceDisplayMode": {

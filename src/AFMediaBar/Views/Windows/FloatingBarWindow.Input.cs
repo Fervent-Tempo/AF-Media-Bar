@@ -189,6 +189,12 @@ public sealed partial class FloatingBarWindow
         if (!CanPublishMenu(_menuEnvironmentVersion) || mode is not (TaskbarCompactFlyoutMode.OutputDevice or TaskbarCompactFlyoutMode.InputDevice or TaskbarCompactFlyoutMode.Volume))
             return;
 
+        if (IsEdgeConcealed)
+        {
+            SetEdgeTarget(collapse: false, instant: true);
+            anchor = null;
+        }
+
         if (_compactFlyout.IsShowing(mode))
         {
             _compactFlyout.Dismiss();

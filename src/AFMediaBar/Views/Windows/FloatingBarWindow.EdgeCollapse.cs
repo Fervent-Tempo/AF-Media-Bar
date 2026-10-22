@@ -102,6 +102,7 @@ public sealed partial class FloatingBarWindow
         _externalFullPanelHandle?.Dismiss(immediate: true);
         if (collapse)
         {
+            PersistInferredDockEdge();
             ClearInteraction();
             PlacementTransitionStarted?.Invoke(this, EventArgs.Empty);
         }
@@ -113,6 +114,27 @@ public sealed partial class FloatingBarWindow
         else _edgeMotionTimer.Start();
         UpdateEdgePresentation();
         ApplyBounds();
+    }
+
+    private void PersistInferredDockEdge()
+    {
+        if (_savedPosition is not { DockEdge: FloatingBarDockEdge.None } || _dockEdge == FloatingBarDockEdge.None ||
+            !string.Equals(TargetMonitorDeviceId, Monitor.DeviceId, StringComparison.OrdinalIgnoreCase)) return;
+        // 旧记录只在首次实际收起时补齐附着信息，保存的仍是正常中心，不是动画窗口坐标。
+        _savedPosition = new FloatingBarPosition(TargetMonitorDeviceId,
+            (_centerPx.X - Monitor.WorkArea.Left) / Dpi, (_centerPx.Y - Monitor.WorkArea.Top) / Dpi)
+        { DockEdge = _dockEdge };
+        _savingPosition = true;
+        try
+        {
+            var settings = SettingsManager.Current.FloatingBar;
+            SettingsManager.Current.FloatingBar = settings with
+            {
+                Positions = settings.Positions.Where(p => !string.Equals(p.MonitorDeviceId, TargetMonitorDeviceId, StringComparison.OrdinalIgnoreCase))
+                    .Append(_savedPosition).ToArray()
+            };
+        }
+        finally { _savingPosition = false; }
     }
 
     private void AdvanceEdgeMotion(object? sender, EventArgs args)

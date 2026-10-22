@@ -58,6 +58,7 @@ internal static class FloatingBarHostChecks
             var handle = new WindowInteropHelper(window).Handle;
             Assert.AreEqual(nint.Zero, AFMediaBar.Classes.Interop.NativeMethods.GetParent(handle));
             VerifyEdgeRegionsAndInteractionHold(window, handle);
+            VerifyLegacyDockIsPersistedOnce(window);
             await VerifyEdgeAnimationInterruptionAsync(window, handle);
             var center = window.CenterPx;
             SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { Orientation = LayoutOrientation.Vertical, Layer = FloatingBarLayer.Topmost };
@@ -191,6 +192,52 @@ internal static class FloatingBarHostChecks
         Assert.AreEqual((int)window.Monitor.WorkArea.Left, resumed.Left, "恢复时先回到正常附着位置。");
         window.RestoreCenter(center);
         apply.Invoke(window, [false]);
+    }
+
+    private static void VerifyLegacyDockIsPersistedOnce(FloatingBarWindow window)
+    {
+        var apply = typeof(FloatingBarWindow).GetMethod("ApplyBounds", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var fold = typeof(FloatingBarWindow).GetMethod("SetEdgeTarget", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var center = window.CenterPx;
+        SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { Positions = [new("test", 600, 380)] };
+        window.RestoreCenter(center, FloatingBarDockEdge.Left);
+        apply.Invoke(window, [false]);
+        var writes = 0;
+        void Changed(object? sender, SettingsChangedEventArgs args) { if (args.PropertyName == nameof(AppSettings.FloatingBar)) writes++; }
+        SettingsManager.SettingsChanged += Changed;
+        try
+        {
+            fold.Invoke(window, [true, true]);
+            var saved = SettingsManager.Current.FloatingBar.Positions.Single();
+            Assert.AreEqual(FloatingBarDockEdge.Left, saved.DockEdge);
+            Assert.AreEqual(window.CenterPx.X, window.Monitor.WorkArea.Left + saved.CenterXDip);
+            Assert.IsTrue(saved.CenterXDip >= 0);
+            fold.Invoke(window, [false, true]);
+            fold.Invoke(window, [true, true]);
+            Assert.AreEqual(1, writes, "旧位置只回填一次附着信息，动画和后续收起不重复保存。");
+            var requested = false;
+            void Opened(object? sender, FullPanelOpenRequestEventArgs args)
+            {
+                Assert.IsTrue(AFMediaBar.Classes.Interop.NativeMethods.GetWindowRect(new WindowInteropHelper(window).Handle, out var expanded));
+                Assert.IsTrue(expanded.Left >= window.Monitor.WorkArea.Left && expanded.Top >= window.Monitor.WorkArea.Top,
+                    "打开面板前应先恢复正常位置，再计算锚点。");
+                requested = true;
+            }
+            window.OpenFullPanelRequested += Opened;
+            try
+            {
+                typeof(FloatingBarWindow).GetMethod("RequestFullPanel", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
+                Assert.IsTrue(requested);
+            }
+            finally { window.OpenFullPanelRequested -= Opened; }
+        }
+        finally
+        {
+            SettingsManager.SettingsChanged -= Changed;
+            SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { Positions = [] };
+            window.RestoreCenter(center);
+            apply.Invoke(window, [false]);
+        }
     }
 
 #pragma warning disable CS0649 // 这些字段由 Win32 写入。
