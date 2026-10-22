@@ -68,6 +68,29 @@ try {
     $invalid = $arguments.Clone(); $invalid.ReleaseNotesPath = $settings
     Assert-Fails { & "$PSScriptRoot/new-release-manifest.ps1" @invalid } 'Stale release notes accepted.'
 
+    $structuredNotes = @("# AF Media Bar $version", '', 'Summary and experiment warning.', '', '## Display', '',
+        '<details>', '<summary>Floating bar</summary>', '', 'First paragraph.', 'Wrapped continuation.', '',
+        'Second paragraph.', '', '</details>', '', '## 下载与安装', 'Do not include this.')
+    $structuredNotes | Set-Content -LiteralPath $notes -Encoding utf8NoBOM
+    & "$PSScriptRoot/new-release-manifest.ps1" @arguments
+    $structured = Get-Content -LiteralPath $previewPath -Raw | ConvertFrom-Json -AsHashtable
+    Assert-True ($structured.schemaVersion -eq 1 -and $structured.changelog.Count -eq 2) 'Legacy manifest contract changed.'
+    Assert-True ($structured.changelog[1] -notmatch '<[^>]+>' -and $structured.changelog[1].Contains('Second paragraph.')) 'HTML or incomplete compatibility text.'
+    Assert-True ($structured.releaseHighlights.sections[0].items[0].description -eq "First paragraph. Wrapped continuation.`n`nSecond paragraph.") 'Paragraphs were not preserved.'
+    Assert-True (($structured.packages | ConvertTo-Json -Compress) -eq ($manifest.packages | ConvertTo-Json -Compress)) 'Text changed package metadata.'
+    foreach ($bad in @(
+        ($structuredNotes -ne '</details>'),
+        ($structuredNotes -replace '<summary>Floating bar</summary>', '<summary></summary>'),
+        ($structuredNotes -replace '<details>', '<details open>'),
+        ($structuredNotes -replace 'First paragraph.', '<details>'),
+        (@("# AF Media Bar $version") + (1..21 | ForEach-Object { "- Change $_" }))
+    )) {
+        $before = Get-Content -LiteralPath $previewPath -Raw
+        $bad | Set-Content -LiteralPath $notes -Encoding utf8NoBOM
+        Assert-Fails { & "$PSScriptRoot/new-release-manifest.ps1" @arguments } 'Malformed or truncated notes accepted.'
+        Assert-True ((Get-Content -LiteralPath $previewPath -Raw) -ceq $before) 'Invalid notes replaced a valid manifest.'
+    }
+
     $metadata = Join-Path $temp 'metadata'
     New-Item -ItemType Directory -Path (Join-Path $metadata 'release') | Out-Null
     Copy-Item $previewPath (Join-Path $metadata 'release/latest-preview.json')

@@ -3,10 +3,13 @@
 param(
     [Parameter(Mandatory)][string]$ManifestPath,
     [Parameter(Mandatory)][string]$CataloguePath,
+    [string]$ReleaseNotesPath,
+    [switch]$ReplaceVersionText,
     [string]$Repository = 'Fervent-Tempo/AF-Media-Bar'
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'release-notes-content.ps1')
 if ($Repository -notmatch '^[\w.-]+/[\w.-]+$') { throw 'Invalid repository name.' }
 
 function Get-NormalizedVersion([object]$Value) {
@@ -21,7 +24,7 @@ function Get-ReleaseDate([object]$Value) {
     return [datetime]::ParseExact($Value, 'yyyy-MM-dd', [cultureinfo]::InvariantCulture).ToString('yyyy-MM-dd')
 }
 
-function Get-ChineseText([object]$Title, [object]$Highlights) {
+function Get-ChineseText([object]$Title, [object]$Highlights, [object]$Content = $null) {
     if ($Title -isnot [string] -or [string]::IsNullOrWhiteSpace($Title) -or
         $Highlights -isnot [System.Collections.IList] -or $Highlights.Count -eq 0) {
         throw 'Missing Chinese release highlights.'
@@ -30,7 +33,9 @@ function Get-ChineseText([object]$Title, [object]$Highlights) {
         if ($_ -isnot [string] -or [string]::IsNullOrWhiteSpace($_)) { throw 'Invalid highlight text.' }
         $_.Trim()
     })
-    return [ordered]@{ title = $Title.Trim(); highlights = $lines }
+    $text = [ordered]@{ title = $Title.Trim(); highlights = $lines }
+    if ($null -ne $Content) { $text.content = Get-ValidatedReleaseHighlightsContent $Content }
+    return $text
 }
 
 function Assert-NotesUrl([object]$Value, [string]$Version) {
@@ -46,7 +51,12 @@ if ($manifest.schemaVersion -ne 1) { throw 'Unsupported update manifest.' }
 $incomingVersion = Get-NormalizedVersion $manifest.version
 $incomingDate = Get-ReleaseDate $manifest.releaseDate
 Assert-NotesUrl $manifest.releaseNotesUrl $incomingVersion
-$incomingText = Get-ChineseText $manifest.title $manifest.changelog
+$content = if ($manifest.Contains('releaseHighlights')) { Get-ValidatedReleaseHighlightsContent $manifest.releaseHighlights } else { $null }
+$incomingText = Get-ChineseText $manifest.title $manifest.changelog $content
+if ($ReleaseNotesPath) {
+    $notesText = Get-ReleaseNotesText $ReleaseNotesPath $incomingVersion
+    $incomingText = Get-ChineseText $notesText.title $notesText.highlights $notesText.content
+}
 
 $releases = [System.Collections.Generic.List[object]]::new()
 $seen = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
@@ -61,7 +71,19 @@ if (Test-Path -LiteralPath $CataloguePath) {
         $date = Get-ReleaseDate $release.releaseDate
         Assert-NotesUrl $release.releaseNotesUrl $version
         $text = $release.localizations['zh-Hans']
-        $chinese = Get-ChineseText $text.title $text.highlights
+        $content = if ($text.Contains('content')) { Get-ValidatedReleaseHighlightsContent $text.content } else { $null }
+        $chinese = Get-ChineseText $text.title $text.highlights $content
+        if ($ReplaceVersionText) {
+            if ($version -eq $incomingVersion) {
+                if ($date -ne $incomingDate -or $release.releaseNotesUrl -ne $manifest.releaseNotesUrl) {
+                    throw 'Replacing text cannot change the release date or notes URL.'
+                }
+                $release.localizations['zh-Hans'] = $incomingText
+            }
+            # 回填不经过中文目录转换，其他版本、译文与附加字段均按原值保留。
+            $releases.Add($release)
+            continue
+        }
         $releases.Add([ordered]@{
             version = $version
             releaseDate = $date

@@ -7,6 +7,13 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'release-notes-content.ps1')
+$contentCatalogue = Get-Content -LiteralPath $SourcePath -Raw | ConvertFrom-Json -AsHashtable
+foreach ($release in $contentCatalogue.releases) {
+    foreach ($text in $release.localizations.Values) {
+        if ($text.Contains('content')) { $null = Get-ValidatedReleaseHighlightsContent $text.content }
+    }
+}
 $catalogue = Get-Content -LiteralPath $SourcePath -Raw | ConvertFrom-Json
 if ($catalogue.schemaVersion -ne 1 -or $catalogue.releases.Count -eq 0) { throw 'Invalid highlights catalogue.' }
 $seen = [System.Collections.Generic.HashSet[version]]::new()

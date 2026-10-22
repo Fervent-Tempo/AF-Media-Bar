@@ -58,6 +58,9 @@ public sealed record UpdateManifest(
     IReadOnlyList<string>? Accelerators,
     string? PortableDownloadUrl)
 {
+    /// <summary>可选的分组亮点；旧清单继续使用 Changelog。</summary>
+    public ReleaseHighlightsContent? ReleaseHighlights { get; init; }
+
     /// <summary>清单是否提供了可自动安装的安装包。/ Whether the manifest offers an automatically installable package.</summary>
     public bool HasInstallablePackage => Packages.Count > 0;
 }

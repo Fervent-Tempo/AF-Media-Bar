@@ -55,7 +55,10 @@ public static class ReleaseHighlightsPolicy
                 var highlights = lines.EnumerateArray().Select(item => item.ValueKind == JsonValueKind.String ? item.GetString()?.Trim() : null)
                     .Where(item => !string.IsNullOrEmpty(item)).Select(item => item!).ToArray();
                 if (highlights.Length == 0) throw new FormatException("Empty release highlights.");
-                languages.Add(language.Name, new ReleaseHighlightsText(title, highlights));
+                languages.Add(language.Name, new ReleaseHighlightsText(title, highlights)
+                {
+                    Content = language.Value.TryGetProperty("content", out var content) ? ReadContent(content) : null
+                });
             }
             if (languages.Count == 0) throw new FormatException("Missing release languages.");
             result.Add(new ReleaseHighlights(version, date, notes, languages));
@@ -73,10 +76,16 @@ public static class ReleaseHighlightsPolicy
         if (existing is not null)
         {
             var texts = new Dictionary<string, ReleaseHighlightsText>(existing.Localizations, StringComparer.OrdinalIgnoreCase);
-            texts.TryAdd("original", new ReleaseHighlightsText(manifest.Title ?? $"AF Media Bar {version}", manifest.Changelog));
+            texts.TryAdd("original", new ReleaseHighlightsText(manifest.Title ?? $"AF Media Bar {version}", manifest.Changelog)
+            {
+                Content = manifest.ReleaseHighlights
+            });
             return Sort(catalogue.Select(item => ReferenceEquals(item, existing) ? item with { Localizations = texts } : item));
         }
-        var text = new ReleaseHighlightsText(manifest.Title ?? $"AF Media Bar {version}", manifest.Changelog);
+        var text = new ReleaseHighlightsText(manifest.Title ?? $"AF Media Bar {version}", manifest.Changelog)
+        {
+            Content = manifest.ReleaseHighlights
+        };
         var extra = new ReleaseHighlights(version, manifest.ReleaseDate,
             IsSafeNotesUrl(manifest.ReleaseNotesUrl) ? manifest.ReleaseNotesUrl : null,
             new Dictionary<string, ReleaseHighlightsText> { ["original"] = text });
@@ -90,6 +99,38 @@ public static class ReleaseHighlightsPolicy
         foreach (var fallback in new[] { "original", "zh-Hans", "en", "zh-Hant" })
             if (release.Localizations.TryGetValue(fallback, out text)) return (text, true);
         return (release.Localizations.Values.First(), true);
+    }
+
+    // 扩展内容无效时整段回退到旧数组，不能让展示格式影响更新或丢掉部分说明。
+    internal static ReleaseHighlightsContent? ReadContent(JsonElement content)
+    {
+        if (content.ValueKind != JsonValueKind.Object ||
+            !content.TryGetProperty("sections", out var sections) || sections.ValueKind != JsonValueKind.Array)
+            return null;
+        var summary = string.Empty;
+        if (content.TryGetProperty("summary", out var summaryValue))
+        {
+            if (summaryValue.ValueKind != JsonValueKind.String) return null;
+            summary = summaryValue.GetString()?.Trim() ?? string.Empty;
+        }
+        var groups = new List<ReleaseHighlightsSection>();
+        foreach (var section in sections.EnumerateArray())
+        {
+            var title = String(section, "title");
+            if (title is null || !section.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array)
+                return null;
+            var entries = new List<ReleaseHighlightsEntry>();
+            foreach (var item in items.EnumerateArray())
+            {
+                var itemTitle = String(item, "title");
+                var description = String(item, "description");
+                if (itemTitle is null || description is null) return null;
+                entries.Add(new(itemTitle, description));
+            }
+            if (entries.Count == 0) return null;
+            groups.Add(new(title, entries));
+        }
+        return groups.Count == 0 ? null : new(summary, groups);
     }
 
     /// <summary>Allows official HTTPS release pages only; content cannot launch arbitrary protocols.</summary>

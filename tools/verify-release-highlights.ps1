@@ -80,6 +80,38 @@ try {
     & $script @bootstrap
     $new = Get-Content -LiteralPath $bootstrap.CataloguePath -Raw | ConvertFrom-Json
     Assert-True ($new.releases.Count -eq 1 -and $new.releases[0].version -eq '1.3.0') 'Initial catalogue failed.'
+
+    $notesPath = Join-Path $temp 'notes.md'
+    @('# AF Media Bar 1.3.0 — Display', '', 'Experiments are off by default.', '', '## Display',
+        '<details>', '<summary>Floating bar</summary>', '', 'Drag the bar.', '', '</details>') |
+        Set-Content -LiteralPath $notesPath -Encoding utf8NoBOM
+    $replace = $arguments.Clone(); $replace.ReleaseNotesPath = $notesPath; $replace.ReplaceVersionText = $true
+    # 使用此前有效目录，确认显式回填只更改目标版本。
+    [IO.File]::WriteAllText($cataloguePath, $before)
+    & $script @replace
+    $rich = Get-Content -LiteralPath $cataloguePath -Raw | ConvertFrom-Json -AsHashtable
+    Assert-True ($rich.releases[1].localizations['zh-Hans'].content.sections[0].items[0].title -eq 'Floating bar') 'Backfilled content lost.'
+    Assert-True (($rich.releases[2] | ConvertTo-Json -Depth 20 -Compress) -ceq ($result.releases[2] | ConvertTo-Json -Depth 20 -Compress)) 'Backfill changed older history.'
+    $richBefore = [IO.File]::ReadAllText($cataloguePath)
+    & $script @replace
+    Assert-True ([IO.File]::ReadAllText($cataloguePath) -ceq $richBefore) 'Backfill is not idempotent.'
+    & $script @arguments
+    Assert-True ([IO.File]::ReadAllText($cataloguePath) -ceq $richBefore) 'Normal promotion dropped historical structured content.'
+    $rich.releases[2].localizations['en'] = @{ title = 'Reviewed translation'; highlights = @('Keep translated history.') }
+    Write-Json $cataloguePath $rich
+    $richBefore = [IO.File]::ReadAllText($cataloguePath)
+    & $script @replace
+    Assert-True ([IO.File]::ReadAllText($cataloguePath) -ceq $richBefore) 'Explicit backfill changed translations or unrelated release fields.'
+    $badStructured = $manifest.Clone(); $badStructured.releaseHighlights = @{ sections = @(@{ title = 'Group'; items = @() }) }
+    Write-Json $manifestPath $badStructured
+    $failed = $false
+    try { & $script @arguments } catch { $failed = $true }
+    Assert-True ($failed -and [IO.File]::ReadAllText($cataloguePath) -ceq $richBefore) 'Invalid structured content changed history.'
+    Write-Json $manifestPath $manifest
+    (Get-Content -LiteralPath $notesPath -Raw).Replace('1.3.0', '1.9.0') | Set-Content -LiteralPath $notesPath -Encoding utf8NoBOM
+    $failed = $false
+    try { & $script @replace } catch { $failed = $true }
+    Assert-True ($failed -and [IO.File]::ReadAllText($cataloguePath) -ceq $richBefore) 'Mismatched notes changed history.'
     Write-Output 'Highlights append, Chinese-only conversion and failure-retention checks passed.'
 }
 finally {

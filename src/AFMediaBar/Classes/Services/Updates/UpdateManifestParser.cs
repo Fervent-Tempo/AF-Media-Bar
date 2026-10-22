@@ -105,7 +105,11 @@ public static class UpdateManifestParser
                 ReadBoolean(root, "mandatory"),
                 ReadPackages(root),
                 ReadAccelerators(root),
-                ReadNestedUrl(root, "downloads", "github"));
+                ReadNestedUrl(root, "downloads", "github"))
+            {
+                ReleaseHighlights = root.TryGetProperty("releaseHighlights", out var content)
+                    ? ReleaseHighlightsPolicy.ReadContent(content) : null
+            };
 
             return UpdateManifestParseResult.Success(manifest);
         }

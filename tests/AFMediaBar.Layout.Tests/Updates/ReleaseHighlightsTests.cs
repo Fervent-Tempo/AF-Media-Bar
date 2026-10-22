@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using AFMediaBar.Classes.Models.Updates;
 using AFMediaBar.Classes.Services.Updates;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -29,7 +30,8 @@ public sealed class ReleaseHighlightsTests
         schemaVersion = 1,
         releases = versions.Select(version => new
         {
-            version, releaseDate = "2026-10-02",
+            version,
+            releaseDate = "2026-10-02",
             releaseNotesUrl = "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v" + version,
             localizations = new Dictionary<string, object>
             {
@@ -38,6 +40,62 @@ public sealed class ReleaseHighlightsTests
             }
         })
     });
+
+    [TestMethod]
+    public void StructuredContentPreservesLegacyTextAndReviewedTranslations()
+    {
+        const string Content = """
+            {"summary":"Default off.\n\nEnable the experiment first.","sections":[{"title":"Display","items":[{"title":"Floating bar","description":"Drag on the desktop.\n\nPositions are saved per display."}]}]}
+            """;
+        var json = JsonNode.Parse(Catalogue("1.5.0"))!;
+        json["releases"]![0]!["localizations"]!["en"]!["content"] = JsonNode.Parse(Content);
+        var catalogue = ReleaseHighlightsPolicy.Parse(json.ToJsonString());
+        var reviewed = catalogue[0].Localizations["en"];
+        Assert.AreEqual("Improvement", reviewed.Highlights.Single());
+        Assert.AreEqual("Floating bar", reviewed.Content!.Sections.Single().Items.Single().Title);
+        StringAssert.Contains(reviewed.Content.Summary, "\n\nEnable");
+        StringAssert.Contains(reviewed.Content.Sections[0].Items[0].Description, "\n\nPositions");
+
+        var manifestJson = $$"""
+            {"schemaVersion":1,"version":"1.5.0","title":"Other title","changelog":["Complete legacy description"],"releaseHighlights":{{Content}}}
+            """;
+        var manifest = UpdateManifestParser.Parse(manifestJson).Manifest!;
+        Assert.AreEqual("Complete legacy description", manifest.Changelog.Single());
+        Assert.IsNotNull(manifest.ReleaseHighlights);
+        var merged = ReleaseHighlightsPolicy.Merge(catalogue, manifest);
+        Assert.AreSame(reviewed, ReleaseHighlightsPolicy.ResolveText(merged[0], "en").Text);
+        Assert.AreEqual("Floating bar", merged[0].Localizations["original"].Content!.Sections[0].Items[0].Title);
+        merged = ReleaseHighlightsPolicy.Merge([], manifest);
+        Assert.IsTrue(ReleaseHighlightsPolicy.ResolveText(merged[0], "en").IsOriginal);
+        Assert.IsNotNull(ReleaseHighlightsPolicy.ResolveText(merged[0], "en").Text.Content);
+    }
+
+    [TestMethod]
+    public void InvalidOptionalContentKeepsLegacyCatalogueAndInstallableManifest()
+    {
+        foreach (var content in new[]
+        {
+            "null", "[]", "{}", "{\"sections\":[]}",
+            "{\"summary\":42,\"sections\":[]}",
+            "{\"sections\":[{\"title\":\"Group\",\"items\":[{\"title\":\"Valid\",\"description\":\"Details\"},{\"title\":\"Broken\"}]}]}"
+        })
+        {
+            var json = JsonNode.Parse(Catalogue("1.5.0"))!;
+            json["releases"]![0]!["localizations"]!["en"]!["content"] = JsonNode.Parse(content);
+            var text = ReleaseHighlightsPolicy.Parse(json.ToJsonString())[0].Localizations["en"];
+            Assert.IsNull(text.Content);
+            Assert.AreEqual("Improvement", text.Highlights.Single());
+            var manifestJson = $$"""
+                {"schemaVersion":1,"version":"1.5.0","changelog":["Complete legacy description"],"releaseHighlights":{{content}},
+                 "packages":[{"url":"https://example.test/setup.exe","sha256":"{{new string('a', 64)}}"}]}
+                """;
+            var parsed = UpdateManifestParser.Parse(manifestJson);
+            Assert.IsTrue(parsed.Succeeded);
+            Assert.IsTrue(parsed.Manifest!.HasInstallablePackage);
+            Assert.IsNull(parsed.Manifest.ReleaseHighlights);
+            Assert.AreEqual("Complete legacy description", parsed.Manifest.Changelog.Single());
+        }
+    }
 
     [TestMethod]
     public void NumericallySortsVersionsAndRejectsDuplicateAliases()

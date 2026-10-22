@@ -24,18 +24,8 @@ $settings = Get-Content -LiteralPath $SettingsPath -Raw | ConvertFrom-Json -AsHa
 if ($settings.minimumSupportedVersion -notmatch '^\d+\.\d+\.\d+(?:\.\d+)?$' -or
     [version]$settings.minimumSupportedVersion -gt [version]$version -or
     $settings.mandatory -isnot [bool]) { throw 'Invalid update policy in release-settings.json.' }
-$notes = Get-Content -LiteralPath $ReleaseNotesPath -Raw
-if ($notes -notmatch "(?m)^# AF Media Bar $([regex]::Escape($version))(?:\s|$)") {
-    throw 'Release notes must start with the matching AF Media Bar version heading.'
-}
-# Include prose and bullets from the release highlights, stopping before downloads and known limitations.
-$highlights = @()
-foreach ($line in ($notes -split '\r?\n' | Select-Object -Skip 1)) {
-    if ($line -match '^## (下载|已知|贡献|首次|Downloads|Known|Contributors|New Contributors)') { break }
-    $value = ($line -replace '^\s*[-*]\s+', '').Trim()
-    if ($value -and $value -notmatch '^#') { $highlights += $value }
-}
-if ($highlights.Count -eq 0) { throw 'Release notes contain no update highlights.' }
+. (Join-Path $PSScriptRoot 'release-notes-content.ps1')
+$releaseText = Get-ReleaseNotesText $ReleaseNotesPath $version
 $installerName = "AFMediaBar-Setup-$Tag-win-x64.exe"
 $archiveName = "AFMediaBar-$Tag-win-x64.zip"
 $installer = Get-Item -LiteralPath (Join-Path $ArtifactDirectory $installerName)
@@ -51,13 +41,14 @@ $manifest = [ordered]@{
     releaseDate = ([datetime]::ParseExact($ReleaseDate, 'yyyy-MM-dd', [cultureinfo]::InvariantCulture)).ToString('yyyy-MM-dd')
     minimumSupportedVersion = $settings.minimumSupportedVersion
     mandatory = $settings.mandatory
-    title = "AF Media Bar $version"
-    changelog = @($highlights | Select-Object -First 20)
+    title = $releaseText.title
+    changelog = $releaseText.highlights
     releaseNotesUrl = "https://github.com/$Repository/releases/tag/$Tag"
     releasePageUrl = "https://github.com/$Repository/releases/latest"
     downloads = @{ github = "$githubBase/$archiveName" }
     packages = $packages
 }
+if ($null -ne $releaseText.content) { $manifest.releaseHighlights = $releaseText.content }
 if ($settings.ContainsKey('accelerators')) { $manifest.accelerators = $settings.accelerators }
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 $json = $manifest | ConvertTo-Json -Depth 10
