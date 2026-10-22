@@ -13,8 +13,8 @@
         <ScrollViewer x:Name="PageScroll" Grid.Row="1" Margin="{StaticResource AfSettingsScrollMargin}" Background="Transparent"
                       VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel MaxWidth="{StaticResource AfSettingsContentMaxWidth}">
-                <components:SettingsCallout Text="{DynamicResource Loc.Experimental.Warning}" Symbol="Warning24"
-                    IsAccent="True" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,16" />
+                <ui:InfoBar x:Name="ExperimentalWarning" Message="{DynamicResource Loc.Experimental.Warning}" Severity="Warning"
+                    Style="{StaticResource AfSettingsInfoBarStyle}" Margin="0,0,0,16" />
                 <components:SettingsGroup GroupId="Battery.Title" Header="{DynamicResource Loc.Battery.Title}" Description="{DynamicResource Loc.Battery.SelectHint}" Icon="{ui:SymbolIcon Bluetooth24}">
                     <StackPanel>
                         <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Experimental.Enable}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.BluetoothBattery, Mode=TwoWay}"/></components:SettingsRow>

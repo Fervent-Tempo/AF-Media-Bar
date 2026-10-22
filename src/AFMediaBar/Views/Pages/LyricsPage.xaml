@@ -9,6 +9,13 @@
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     ScrollViewer.CanContentScroll="False">
     <Page.Resources>
+        <Style x:Key="SourceOrderListStyle" TargetType="ItemsControl" BasedOn="{StaticResource AfSettingsSortableListStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.IsManualSourceRule}" Value="False">
+                    <Setter Property="Template" Value="{StaticResource AfSettingsListTemplate}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
         <ControlTemplate x:Key="AfBareTextBoxTemplate" TargetType="{x:Type TextBox}">
             <ScrollViewer
                 x:Name="PART_ContentHost"
@@ -117,10 +124,10 @@
                                         TextWrapping="Wrap" />
                                 </components:SettingsRow>
                                 <AdornerDecorator>
-                                    <ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.ReorderSecondaryLineCommand}" Margin="0,0,0,4" ItemsSource="{Binding ViewModel.SecondaryLineEntries}">
+                                    <ItemsControl Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.ReorderSecondaryLineCommand}" ItemsSource="{Binding ViewModel.SecondaryLineEntries}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <components:SettingsRow KeepControlInline="True"
+                                                <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" KeepControlInline="True"
                                                     Description="{DynamicResource Loc.Lyrics.Row.SecondLine.OrderRow.Description}"
                                                     IsNested="True"
                                                     Title="{Binding DisplayName}">
@@ -341,10 +348,10 @@
                                         Style="{StaticResource AfSettingsButtonStyle}" />
                                 </components:SettingsRow>
                                 <AdornerDecorator>
-                                    <ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.ReorderSourceCommand}" Margin="0,0,0,4" ItemsSource="{Binding ViewModel.SourceEntries}">
+                                    <ItemsControl Style="{StaticResource SourceOrderListStyle}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.ReorderSourceCommand}" ItemsSource="{Binding ViewModel.SourceEntries}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <components:SettingsRow KeepControlInline="True"
+                                                <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" KeepControlInline="True"
                                                     Description="{DynamicResource Loc.Lyrics.Sources.Row.Description}"
                                                     IsNested="True"
                                                     Title="{Binding DisplayName}">

@@ -172,10 +172,10 @@
                                     Symbol="Info24"
                                     Text="{DynamicResource Loc.DisplayModes.Rest.Order.Notice}" />
                                 <AdornerDecorator>
-                                    <ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layout.ReorderRestComponentCommand}" Margin="0,0,0,4" ItemsSource="{Binding ViewModel.Layout.RestOrderEntries}">
+                                    <ItemsControl Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layout.ReorderRestComponentCommand}" ItemsSource="{Binding ViewModel.Layout.RestOrderEntries}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <components:SettingsRow KeepControlInline="True"
+                                                <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" KeepControlInline="True"
                                                     Description="{Binding Description}"
                                                     IsNested="True"
                                                     Title="{Binding DisplayName}">

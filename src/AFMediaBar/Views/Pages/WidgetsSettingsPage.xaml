@@ -77,10 +77,10 @@
                         </components:SettingsRow>
 
                         <AdornerDecorator>
-                            <ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Note.ReorderQuickLaunchCommand}" Margin="0,0,0,4" ItemsSource="{Binding ViewModel.Note.QuickLaunchEntries}">
+                            <ItemsControl Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Note.ReorderQuickLaunchCommand}" ItemsSource="{Binding ViewModel.Note.QuickLaunchEntries}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <components:SettingsRow KeepControlInline="True"
+                                        <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" KeepControlInline="True"
                                             Description="{Binding Target}"
                                             IsNested="True"
                                             Title="{Binding DisplayName}">
@@ -342,11 +342,11 @@
                                 </components:SettingsRow>
                                 <components:SettingsCallout Margin="0,4,0,4" Text="{DynamicResource Loc.Media.Performance.Order.Description}" />
                                 <AdornerDecorator>
-                                    <ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Components.ReorderMetricCommand}" ItemsSource="{Binding ViewModel.Components.MetricOrderEntries}"
+                                    <ItemsControl Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Components.ReorderMetricCommand}" ItemsSource="{Binding ViewModel.Components.MetricOrderEntries}"
                                                   IsEnabled="{Binding ViewModel.Components.CanConfigurePerformance}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <components:SettingsRow KeepControlInline="True" IsNested="True"
+                                                <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" KeepControlInline="True" IsNested="True"
                                                                         Title="{Binding DisplayName}">
                                                     <components:SettingsReorderHandle ItemKey="{Binding Metric}" />
                                                 </components:SettingsRow>

@@ -7,6 +7,13 @@
             <Setter Property="HeaderHint" Value="{DynamicResource Loc.Device.RenameHint}" />
             <Style.Triggers><DataTrigger Binding="{Binding ViewModel.IsPersonalizationEnabled}" Value="False"><Setter Property="HeaderHint" Value="" /></DataTrigger></Style.Triggers>
         </Style>
+        <Style x:Key="DeviceOrderListStyle" TargetType="ItemsControl" BasedOn="{StaticResource AfSettingsSortableListStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.IsOrderingEnabled}" Value="False">
+                    <Setter Property="Template" Value="{StaticResource AfSettingsListTemplate}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
         <DataTemplate x:Key="DeviceRow">
             <Border Style="{StaticResource AfSettingsDeviceSurfaceStyle}">
                 <StackPanel>
@@ -62,7 +69,7 @@
 
                 <components:SettingsGroup Style="{StaticResource DeviceGroupStyle}" GroupId="Common.OutputDevice" Header="{DynamicResource Loc.Common.OutputDevice}" Icon="{ui:SymbolIcon Speaker224}" IsEnabled="{Binding ViewModel.IsEnabled}">
                     <StackPanel>
-                        <AdornerDecorator><ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.ReorderDevicesCommand}" ItemsSource="{Binding ViewModel.OutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></AdornerDecorator>
+                        <AdornerDecorator><ItemsControl Style="{StaticResource DeviceOrderListStyle}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.ReorderDevicesCommand}" ItemsSource="{Binding ViewModel.OutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></AdornerDecorator>
                         <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Speaker224}">
                             <ui:CardExpander.Header><TextBlock Text="{DynamicResource Loc.Device.Disabled}" Style="{StaticResource AfSettingsRowTitleStyle}" /></ui:CardExpander.Header>
                             <ItemsControl ItemsSource="{Binding ViewModel.DisabledOutputDevices}" ItemTemplate="{StaticResource DeviceRow}"/>
@@ -81,7 +88,7 @@
                 </components:SettingsGroup>
                 <components:SettingsGroup Style="{StaticResource DeviceGroupStyle}" GroupId="Common.InputDevice" Header="{DynamicResource Loc.Common.InputDevice}" Icon="{ui:SymbolIcon Mic24}" IsEnabled="{Binding ViewModel.IsEnabled}">
                     <StackPanel>
-                        <AdornerDecorator><ItemsControl components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.ReorderDevicesCommand}" ItemsSource="{Binding ViewModel.InputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></AdornerDecorator>
+                        <AdornerDecorator><ItemsControl Style="{StaticResource DeviceOrderListStyle}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.ReorderDevicesCommand}" ItemsSource="{Binding ViewModel.InputDevices}" ItemTemplate="{StaticResource DeviceRow}"/></AdornerDecorator>
                         <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Mic24}">
                             <ui:CardExpander.Header><TextBlock Text="{DynamicResource Loc.Device.Disabled}" Style="{StaticResource AfSettingsRowTitleStyle}" /></ui:CardExpander.Header>
                             <ItemsControl ItemsSource="{Binding ViewModel.DisabledInputDevices}" ItemTemplate="{StaticResource DeviceRow}"/>

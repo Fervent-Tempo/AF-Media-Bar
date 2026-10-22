@@ -153,7 +153,7 @@ public sealed class AudioSettingsPageLoadingTests
             await window.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             var scroll = (ScrollViewer)page.FindName("PageScroll");
             Assert.IsTrue(scroll.ScrollableHeight > 0, "测试窗口必须产生真实溢出。");
-            var notice = LogicalChildren(page).OfType<SettingsCallout>().First();
+            var notice = (FrameworkElement)page.FindName("ExperimentalWarning");
             var gaps = new[] { notice.TranslatePoint(new Point(12, notice.ActualHeight + 4), page),
                 scroll.TranslatePoint(new Point(12, scroll.ViewportHeight / 2), page) };
             foreach (var gap in gaps)

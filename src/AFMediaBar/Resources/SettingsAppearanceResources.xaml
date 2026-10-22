@@ -59,6 +59,12 @@
     <Thickness x:Key="AfSettingsRowGapLast">0,0,0,20</Thickness>
     <sys:Double x:Key="AfSettingsRowSliderWidth">150</sys:Double>
     <sys:Double x:Key="AfSettingsRowValueWidth">58</sys:Double>
+
+    <!-- 同一页面的动作选择器使用固定字段宽度，避免随选中项或枚举长度变化。 -->
+    <Style x:Key="AfSettingsActionSelectStyle" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+        <Setter Property="Width" Value="{StaticResource AfSettingsSelectMinWidth}" />
+        <Setter Property="ToolTip" Value="{Binding SelectedItem.Content, RelativeSource={RelativeSource Self}}" />
+    </Style>
     <!-- Fluent page refresh: immediate movement followed by a gentle stop. -->
     <KeySpline x:Key="AfSplineFluentEntrance">0.23,1,0.32,1</KeySpline>
 
@@ -792,6 +798,15 @@
         <Setter Property="Padding" Value="14,10" />
     </Style>
 
+    <!-- 保留 WPF-UI 原生消息模板和严重程度配色，常驻提示不可关闭。 -->
+    <Style x:Key="AfSettingsInfoBarStyle" TargetType="{x:Type ui:InfoBar}" BasedOn="{StaticResource {x:Type ui:InfoBar}}">
+        <Setter Property="IsOpen" Value="True" />
+        <Setter Property="IsClosable" Value="False" />
+        <Setter Property="Padding" Value="12,10" />
+        <Setter Property="FontFamily" Value="{DynamicResource AppTextFontFamily}" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
     <!-- 关联入口、操作按钮和列表表面复用同一间距。 -->
     <Style x:Key="AfSettingsRelatedLinksStyle" TargetType="WrapPanel">
         <Setter Property="Margin" Value="{StaticResource AfSettingsRelatedGap}" />
@@ -802,13 +817,18 @@
     <Style x:Key="AfSettingsStandaloneActionsStyle" TargetType="WrapPanel" BasedOn="{StaticResource AfSettingsActionsStyle}">
         <Setter Property="Margin" Value="0,8,0,0" />
     </Style>
-    <Style x:Key="AfSettingsDeviceSurfaceStyle" TargetType="Border">
-        <Setter Property="Padding" Value="{StaticResource AfSettingsNestedPadding}" />
-        <Setter Property="CornerRadius" Value="{StaticResource AfSettingsNestedRadius}" />
-        <Setter Property="Margin" Value="{StaticResource AfSettingsRowGap}" />
-        <Setter Property="Background" Value="{DynamicResource AfSettingsCardBrush}" />
+    <Style x:Key="AfSettingsListSurfaceStyle" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource AfSettingsInfoSurfaceBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <!-- 列表条目共用外框，内部以分隔线区分，不再重复设置卡片表面。 -->
+    <Style x:Key="AfSettingsDeviceSurfaceStyle" TargetType="Border">
+        <Setter Property="Padding" Value="{StaticResource AfSettingsNestedPadding}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
     </Style>
     <Style x:Key="AfSettingsStatusTextStyle" TargetType="TextBlock" BasedOn="{StaticResource AfSettingsHintTextStyle}">
         <Setter Property="Margin" Value="0,8,0,4" />
