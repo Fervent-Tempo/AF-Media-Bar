@@ -191,13 +191,38 @@
                                 </WrapPanel>
                             </components:SettingsRow>
                         </StackPanel>
-                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,4,0,0">
+                        <Border Margin="0,4,0,0">
+                            <Border.Style>
+                                <Style TargetType="Border" BasedOn="{StaticResource AfSettingsInfoSurfaceStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ViewModel.StartupStatusText}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ViewModel.StartupStatusText}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
                             <TextBlock Style="{StaticResource AfSettingsStatusTextStyle}" Text="{Binding ViewModel.StartupStatusText}" />
                         </Border>
                         <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
                             <components:SettingsNavigationButton ToolTip="{DynamicResource Loc.ReleaseHighlights.Application.Description}"
                                 Content="{DynamicResource Loc.ReleaseHighlights.Application.Open}"
-                                Destination="ReleaseHighlights" />
+                                Destination="ReleaseHighlights">
+                                <components:SettingsNavigationButton.Style>
+                                    <Style TargetType="components:SettingsNavigationButton" BasedOn="{StaticResource AfSettingsNavigationButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ViewModel.HasUpdate}" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource AfAccentTintBrush}" />
+                                                <Setter Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource AfAccentBrush}" />
+                                                <Setter Property="FontWeight" Value="{DynamicResource AppTextMediumFontWeight}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </components:SettingsNavigationButton.Style>
+                            </components:SettingsNavigationButton>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
