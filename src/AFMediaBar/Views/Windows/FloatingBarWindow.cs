@@ -326,7 +326,10 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             _mediaControl.ApplyPresentationSettings(PresentationSettings);
             // 字距、未唱部分透明度与对齐通过外观落到 Web 歌词，其余项在演示器重投影时生效。
             _mediaControl.ApplyAppearanceSettings();
-            _mediaControl.UpdateSongInfo(_lastSnapshot);
+            // 歌词呈现设置变更：可见内容一字未变时连帧都不重发，与演示器守卫是同一条规则。
+            // Lyrics-presentation settings change: with the visible content character-for-character
+            // unchanged not even the frame is re-sent — the same rule the presenter's guard applies.
+            _mediaControl.UpdateSongInfo(_lastSnapshot, skipUnchangedLyricsContent: true);
         }
         finally { _applyingSettings = false; }
     }

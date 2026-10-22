@@ -1829,7 +1829,14 @@ namespace AFMediaBar.Components
         /// 4. 歌词可用时用当前行替换标题显示
         ///    Replace title with current lyric line when lyrics are available
         /// </summary>
-        public void UpdateSongInfo(MediaSnapshot snapshot)
+        /// <param name="skipUnchangedLyricsContent">
+        /// 歌词可见内容一字未变时不再向 Web 视图重发帧。歌词呈现类设置变更（简繁转换、读音标注等）传 true，
+        /// 与演示器自己的守卫合成同一条"内容没变就不重发"规则；媒体快照路径不传，保持原有行为。
+        /// Do not re-send the web frame when the visible lyrics content is character-for-character unchanged.
+        /// Lyrics-presentation settings changes (Chinese conversion, reading annotations) pass true so this and
+        /// the presenter's own guard form one rule; media snapshot delivery does not pass it and keeps its behaviour.
+        /// </param>
+        public void UpdateSongInfo(MediaSnapshot snapshot, bool skipUnchangedLyricsContent = false)
         {
             _snapshot = snapshot;
             if (!snapshot.IsConnected)
@@ -1931,7 +1938,7 @@ namespace AFMediaBar.Components
                     SongArtist.Text = _actualArtist;
                 }
 
-                _lyrics.UpdateWebLyricsPresentation();
+                _lyrics.UpdateWebLyricsPresentation(skipUnchangedContent: skipUnchangedLyricsContent);
 
                 // 有媒体时封面与文字区一起构成"程序内的全局滚轮面"：曲名与歌手不再需要跟着提示走（它们已经在文字区里，
                 // 完整层则负责把整个标题显示完），因此这里只把封面的提示换回滚轮提示。

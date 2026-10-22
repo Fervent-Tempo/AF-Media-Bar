@@ -358,7 +358,17 @@ public partial class TaskBarMediaControl
             }
         }
 
-        internal void UpdateWebLyricsPresentation(bool allowTransition = true)
+        /// <param name="skipUnchangedContent">
+        /// 可见内容与上一帧完全相同时不再下发。设置变更走这条：转换方向、读音标注开关这类改动要么换字
+        /// （交给过渡），要么什么都没变——连帧都不该重发，与 <see cref="OnWebLyricsSettingsChanged"/>
+        /// 的守卫是同一条规则。50ms 进度帧与渲染器就绪/故障恢复路径不带这个标记，照旧下发。
+        /// Skip the send when the visible content matches the previous frame exactly. Settings changes take
+        /// this path: a conversion direction or annotation toggle either rewrites the text (let it transition)
+        /// or changes nothing at all — no frame should go out, the same rule the OnWebLyricsSettingsChanged
+        /// guard follows. The 50 ms progress frames and the renderer readiness/recovery paths do not carry
+        /// the flag and keep sending as before.
+        /// </param>
+        internal void UpdateWebLyricsPresentation(bool allowTransition = true, bool skipUnchangedContent = false)
         {
             if (_disposed) return;
             // Resource release still applies while the host's presentation is frozen.
@@ -399,7 +409,14 @@ public partial class TaskBarMediaControl
             _owner.SongLyricsPanel.IsHitTestVisible = showWebLyrics;
             // The web engine decides whether a frame is a progress patch or a line transition.
             // Sending false on every 50 ms progress frame interrupts its in-flight roll animation.
-            if (!_owner.IsBackgroundPruned && (isMetadata || LyricsPresentationRefreshPolicy.ShouldPresent(presentation.IsVisible, previous, presentation)))
+            // 设置变更链路（简繁转换方向、日语读音标注开关等）带 skipUnchangedContent：可见内容一字未变时
+            // 这里直接不下发。纵向元数据帧携带播放状态且不带进度，仍按原路径走。
+            // The settings-change chain (Chinese conversion direction, Japanese reading-annotation toggles) passes
+            // skipUnchangedContent: when the visible content is character-for-character identical nothing is sent
+            // here. The vertical metadata frame carries playback state and no progress, so it keeps its path.
+            var contentUnchanged = skipUnchangedContent && !isMetadata && !VisibleContentChanged(previous, presentation);
+            if (!_owner.IsBackgroundPruned && !contentUnchanged &&
+                (isMetadata || LyricsPresentationRefreshPolicy.ShouldPresent(presentation.IsVisible, previous, presentation)))
                 _lyricsWebRenderer?.Present(presentation, animateTransition && MotionPolicy.ResolveCurrent().UseTransitions, isMetadata);
             RefreshWebLyricsTimer();
 

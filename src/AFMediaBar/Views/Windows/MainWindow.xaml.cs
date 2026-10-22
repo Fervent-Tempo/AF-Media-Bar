@@ -620,7 +620,10 @@ namespace AFMediaBar.Views.Windows
                 var snapshot = _mediaSessionService.CurrentSnapshot ?? MediaSnapshot.Disconnected;
                 foreach (var taskbarWindow in _taskbarWindows)
                 {
-                    taskbarWindow.ApplySnapshot(snapshot);
+                    // 歌词呈现设置变更：帧遵循"可见内容一字未变就不重发"，与演示器守卫是同一条规则。
+                    // Lyrics-presentation settings change: the frame follows "no visible change, no re-send",
+                    // the same rule the presenter's own guard applies.
+                    taskbarWindow.ApplySnapshot(snapshot, lyricsSettingsRefresh: true);
                 }
             });
         }
