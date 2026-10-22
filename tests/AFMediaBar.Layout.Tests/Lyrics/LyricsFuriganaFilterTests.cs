@@ -21,7 +21,7 @@ public sealed class LyricsFuriganaFilterTests
         var line = new LyricLine(0, 10, Original) { Translation = "訳(やく)", Romanization = "yaku（ヤク）" };
         var next = new LyricLine(10, 20, "声（コエ）と歌(ｳﾀ)");
         var snapshot = Snapshot([line, next], 2);
-        var settings = new AppSettings { LyricsSecondaryLine = new([LyricsSecondaryLineMode.NextLine]) };
+        var settings = new AppSettings { LyricsFuriganaFilterEnabled = true, LyricsSecondaryLine = new([LyricsSecondaryLineMode.NextLine]) };
         var frame = LyricsPresentationProjector.Project(snapshot, settings, DateTimeOffset.UtcNow);
         Assert.AreEqual("目覚と日々 (oh yeah)（中文）(かなmix) (かな！)", frame.Current);
         Assert.AreEqual("声と歌", frame.Next);
@@ -52,7 +52,7 @@ public sealed class LyricsFuriganaFilterTests
             Assert.AreEqual(words[index].Start, filtered.Words[index].Start);
             Assert.AreEqual(words[index].End, filtered.Words[index].End);
         }
-        var settings = new AppSettings();
+        var settings = new AppSettings { LyricsFuriganaFilterEnabled = true };
         var singing = LyricsPresentationProjector.Project(Snapshot([line], 1.5), settings, DateTimeOffset.UtcNow);
         Assert.AreEqual(0.375, singing.WordScanProgress!.Value, 0.000001);
         var annotation = LyricsPresentationProjector.Project(Snapshot([line], 2.5), settings, DateTimeOffset.UtcNow);
@@ -78,24 +78,24 @@ public sealed class LyricsFuriganaFilterTests
                 File.WriteAllText(Path.Combine(directory, "user-defaults.json"), "{\"schemaVersion\":2,\"settings\":{\"lyricsEnabled\":false}}");
                 var legacy = store.LoadUserDefaults();
                 Assert.IsNotNull(legacy);
-                Assert.IsTrue(legacy.LyricsFuriganaFilterEnabled);
+                Assert.IsFalse(legacy.LyricsFuriganaFilterEnabled);
                 Assert.IsFalse(legacy.LyricsEnabled);
                 SettingsManager.Current = legacy;
                 using var context = new SettingsPageContext();
                 using var localization = new LocalizationService();
                 using var editor = new LyricsViewModel(localization, new LegacySettingsConfiguration(context));
-                editor.FuriganaFilterEnabled = false;
-                Assert.IsNull(store.SaveCurrentAsUserDefaults());
-                Assert.IsFalse(store.LoadUserDefaults()!.LyricsFuriganaFilterEnabled);
                 editor.FuriganaFilterEnabled = true;
+                Assert.IsNull(store.SaveCurrentAsUserDefaults());
+                Assert.IsTrue(store.LoadUserDefaults()!.LyricsFuriganaFilterEnabled);
+                editor.FuriganaFilterEnabled = false;
                 SettingsManager.ResetLyrics();
-                Assert.IsFalse(editor.FuriganaFilterEnabled, "歌词重置应采用已保存的用户默认值。");
+                Assert.IsTrue(editor.FuriganaFilterEnabled, "歌词重置应采用已保存的用户默认值。");
                 SettingsManager.SetUserDefaults(null);
                 SettingsManager.ResetLyrics();
-                Assert.IsTrue(editor.FuriganaFilterEnabled);
+                Assert.IsFalse(editor.FuriganaFilterEnabled);
                 context.Deactivate();
-                editor.FuriganaFilterEnabled = false;
-                Assert.IsTrue(SettingsManager.Current.LyricsFuriganaFilterEnabled);
+                editor.FuriganaFilterEnabled = true;
+                Assert.IsFalse(SettingsManager.Current.LyricsFuriganaFilterEnabled);
                 Assert.IsFalse(LyricsCacheInvalidationPolicy.ShouldClearCache(nameof(AppSettings.LyricsFuriganaFilterEnabled), null));
             }
             finally

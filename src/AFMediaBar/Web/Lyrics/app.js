@@ -25,8 +25,9 @@ function normalizeLineIndex(currentLineIndex) {
 }
 
 function toDisplayLine(line, fallback = " ") {
-  const text = (line ?? "").toString().trim();
-  return text.length > 0 ? text : fallback;
+  const text = (line ?? "").toString();
+  // 格式清理后的显式空行保留空白，只有缺失文本才使用兜底文案。
+  return text.length > 0 ? text.trim() || " " : fallback;
 }
 
 function resolveTranslationDisplay(line) {

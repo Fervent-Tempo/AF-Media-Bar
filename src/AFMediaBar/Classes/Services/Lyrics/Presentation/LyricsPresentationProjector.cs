@@ -1,4 +1,4 @@
-﻿using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
 
@@ -108,8 +108,8 @@ public static class LyricsPresentationProjector
             true,
             BuildTrackId(snapshot),
             index,
-            Present(currentLine.Text, stripBracketSymbols, conversion),
-            Present(visibleNext, stripBracketSymbols, conversion),
+            LyricsChineseConverter.Convert(currentLine.Text, conversion),
+            LyricsChineseConverter.Convert(visibleNext, conversion),
             Present(currentTranslation, stripBracketSymbols, conversion),
             Present(nextTranslation, stripBracketSymbols, conversion),
             translationMode,
@@ -124,8 +124,11 @@ public static class LyricsPresentationProjector
         snapshot.Title.Trim().ToUpperInvariant(),
         snapshot.Artist.Trim().ToUpperInvariant());
 
-    private static LyricLine DisplayLine(LyricLine line, AppSettings settings) =>
-        settings.LyricsFuriganaFilterEnabled ? LyricsFuriganaFilter.Apply(line) : line;
+    private static LyricLine DisplayLine(LyricLine line, AppSettings settings)
+    {
+        var display = settings.LyricsFuriganaFilterEnabled ? LyricsFuriganaFilter.Apply(line) : line;
+        return settings.LyricsBracketSymbolsHidden ? LyricsTranslationFormatFilter.Apply(display) : display;
+    }
 
     /// <summary>
     /// 把一段歌词文本送到呈现层：先按设置清理来源附加的格式标记（行首斜杠、整行括号），再做繁简转换。

@@ -3188,7 +3188,7 @@
   <data name="Developer.Resources.Delta" xml:space="preserve"><value>相对 {0:yyyy-MM-dd HH:mm:ss zzz} 的变化，间隔 {1:0.0} 秒：工作集={2:+0.0;-0.0;0.0} MiB，私有字节={3:+0.0;-0.0;0.0} MiB，托管堆={4:+0.0;-0.0;0.0} MiB，句柄={5:+0;-0;0}，线程={6:+0;-0;0}，GC 次数（0/1/2 代）=+{7}/+{8}/+{9}</value></data>
   <data name="Developer.Resources.Scope" xml:space="preserve"><value>仅统计 AF 主进程，不含 WebView2 子进程；不强制 GC 或整理内存。读数增长本身不代表泄漏。关闭开发者模式会清除基线。</value></data>
   <data name="Lyrics.Row.FuriganaFilter.Title" xml:space="preserve"><value>隐藏日语振假名标注</value></data>
-  <data name="Lyrics.Row.FuriganaFilter.Description" xml:space="preserve"><value>默认开启。隐藏日文歌词中括号内的纯假名，避免注音标注占用过多显示空间。部分实际歌词可能被误隐藏，可按需关闭。</value></data>
+  <data name="Lyrics.Row.FuriganaFilter.Description" xml:space="preserve"><value>默认关闭。开启后隐藏日文歌词中括号内的纯假名，避免注音标注占用过多显示空间。部分实际歌词可能被误隐藏。</value></data>
   <data name="Lyrics.Row.BracketSymbols.Title" xml:space="preserve"><value>净化译文格式</value></data>
   <data name="Lyrics.Row.BracketSymbols.Description" xml:space="preserve"><value>默认开启。清理部分翻译来源多余的行首斜杠与括号，使译文显示更加简洁。</value></data>
   <data name="Settings.Numeric.Minutes" xml:space="preserve"><value>分钟</value></data>

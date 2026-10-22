@@ -118,7 +118,7 @@ public partial class TaskBarMediaControl
                 Interlocked.Exchange(ref _lyricsConversionRefreshQueued, 0);
                 // 通知不携带旧曲目或文本，恢复时按最新快照与转换方向重新投影。
                 if (_lyricsHostLoaded)
-                    UpdateWebLyricsPresentation(allowTransition: false);
+                    OnWebLyricsSettingsChanged(null, EventArgs.Empty);
             });
         }
 
@@ -421,11 +421,6 @@ public partial class TaskBarMediaControl
             }
         }
 
-        /// <summary>
-        /// 两帧显示的内容是否不同：只看用户看得见的文本与行结构，不看进度。设置变更靠它决定要不要重发。
-        /// Whether the two frames show different content: only the visible text and the row structure count, never
-        /// progress. Settings changes use it to decide whether anything has to be re-sent.
-        /// </summary>
         /// <summary>
         /// 两帧显示的内容是否不同：用户看得见的文本、行结构，以及"有没有逐字擦亮"这一模式。进度数值本身永远不算，
         /// 否则每一帧都会被当成变化。设置变更靠它决定要不要重发，重发时会走换行过渡。

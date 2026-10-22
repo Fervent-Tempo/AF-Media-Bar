@@ -1,4 +1,4 @@
-﻿// 定义应用设置模型和属性通知，不负责持久化。
+// 定义应用设置模型和属性通知，不负责持久化。
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
@@ -59,7 +59,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private bool _lyricsFixedWidthEnabled;
     private int _lyricsFixedWidthDip = LyricsFixedWidth.DefaultDip;
     private bool _lyricsInfoLineFilterEnabled = true;
-    private bool _lyricsFuriganaFilterEnabled = true;
+    private bool _lyricsFuriganaFilterEnabled;
     private bool _lyricsBracketSymbolsHidden = true;
     private LyricsChineseConversionMode _lyricsChineseConversion = LyricsChineseConversionMode.None;
     private LyricsSourceSettings _lyricsSource = LyricsSourceSettings.Default;

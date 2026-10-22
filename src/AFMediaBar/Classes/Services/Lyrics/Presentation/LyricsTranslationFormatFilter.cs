@@ -1,72 +1,94 @@
-﻿// 清理整行翻译的格式噪声：行首斜杠标记与整行成对的【】/〖〗符号；只影响显示，不修改歌词文档。
+// 清理整行翻译的格式噪声：行首斜杠标记与整行成对的【】/〖〗符号；只影响显示，不修改歌词文档。
+using System.Runtime.CompilerServices;
+using AFMediaBar.Classes.Models;
+
 namespace AFMediaBar.Classes.Services.Lyrics;
 
 /// <summary>
-/// 清理一行歌词里由来源附加的格式噪声：行首用 <c>/</c> 标记译文、整行被 <c>【】</c> 或 <c>〖〗</c> 包住，
-/// 去掉这些标记后把剩下的文字照常显示。
-/// Cleans the formatting noise a lyric source adds to a line: a leading <c>/</c> marking a translation row, or the
-/// whole line being wrapped in <c>【】</c> or <c>〖〗</c>. Whatever remains between the markers is displayed as usual.
-///
-/// 两种标记可以叠加（<c>/ 【…】</c>），因此按"能去就去"的方式循环处理，直到没有可去的标记。
-/// The two kinds can stack (<c>/ 【…】</c>), so they are removed in a loop until nothing else matches.
-///
-/// 行首斜杠只在后面紧跟空白时才去掉：这样 <c>/ 曾经沉睡着</c> 这种译文标记会被清理，而 <c>/cause I…</c>
-/// 这种以斜杠开头的正文不受影响。
-/// A leading slash is removed only when whitespace follows it, so a translation marker such as
-/// <c>/ 曾经沉睡着</c> is cleaned while text that genuinely starts with a slash, such as <c>/cause I…</c>, is left alone.
-///
-/// 清理后什么都不剩时返回一个空格：Web 呈现层把空串当成"还没取到歌词"，会显示搜索中的兜底文案。
-/// When nothing is left this returns a single space: the web presentation layer treats an empty string as "lyrics
-/// not loaded yet" and shows its searching placeholder.
+/// 去掉行首斜杠标记和整行成对的【】/〖〗，保留正文；支持叠加标记，斜杠后必须有空白。
+/// 显示副本的音节文本同步清理并按原行弱引用缓存，不修改来源文档或时间戳。
 /// </summary>
 public static class LyricsTranslationFormatFilter
 {
-    /// <summary>清理后什么都不剩时的显示文本：单个空格。/ The display text when nothing is left: one space.</summary>
+    private static readonly ConditionalWeakTable<LyricLine, LyricLine> _lines = new();
+
+    /// <summary>显式空行；Web 层保留该空格，与缺失文本区分。</summary>
     public const string HiddenText = " ";
 
-    /// <summary>
-    /// 去掉行首斜杠标记与首尾成对的方括号符号，返回剩下的文字；没有可去的标记时返回同一个实例。
-    /// Removes the leading slash marker and the enclosing bracket pair, returning what is left; returns the very same
-    /// instance when there is nothing to remove.
-    /// </summary>
+    public static LyricLine Apply(LyricLine line) => _lines.GetValue(line, FilterLine);
+
+    /// <summary>返回清理后的显示文本，没有标记时保留原实例。</summary>
     public static string Clean(string text)
     {
         if (string.IsNullOrEmpty(text))
             return text;
 
-        var trimmed = text.Trim();
+        var (start, length) = FindVisibleRange(text);
+        if (start == 0 && length == text.Length)
+            return text;
+        return length == 0 ? HiddenText : text.Substring(start, length);
+    }
+
+    private static LyricLine FilterLine(LyricLine line)
+    {
+        var text = Clean(line.Text);
+        if (text == line.Text) return line;
+        return new LyricLine(line.Start, line.End, text)
+        {
+            Words = FilterWords(line.Words),
+            Translation = line.Translation,
+            Romanization = line.Romanization,
+            IsBackground = line.IsBackground
+        };
+    }
+
+    private static IReadOnlyList<LyricWord> FilterWords(IReadOnlyList<LyricWord> words)
+    {
+        if (words.Count == 0) return words;
+        // 标记可能跨音节，先在完整文本上定位，再按原时间片保留可见部分。
+        var text = string.Concat(words.Select(word => word.Text));
+        var (start, length) = FindVisibleRange(text);
+        if (start == 0 && length == text.Length) return words;
+        var result = new LyricWord[words.Count];
+        var offset = 0;
+        for (var index = 0; index < words.Count; index++)
+        {
+            var word = words[index];
+            var visibleStart = Math.Clamp(start - offset, 0, word.Text.Length);
+            var visibleEnd = Math.Clamp(start + length - offset, 0, word.Text.Length);
+            result[index] = word with { Text = word.Text[visibleStart..visibleEnd] };
+            offset += word.Text.Length;
+        }
+        return result;
+    }
+
+    private static (int Start, int Length) FindVisibleRange(string text)
+    {
+        var start = 0;
+        var end = text.Length;
         var changed = false;
         while (true)
         {
-            if (trimmed.Length > 1 && trimmed[0] == '/' && char.IsWhiteSpace(trimmed[1]))
+            while (start < end && char.IsWhiteSpace(text[start])) start++;
+            // 在去掉尾部空白前判定，保证只有斜杠和空白的行也能被清理。
+            var leadingSlash = end - start > 1 && text[start] == '/' && char.IsWhiteSpace(text[start + 1]);
+            while (end > start && char.IsWhiteSpace(text[end - 1])) end--;
+            if (leadingSlash)
             {
-                trimmed = trimmed[1..].Trim();
+                start++;
                 changed = true;
                 continue;
             }
 
-            var inner = InnerText(trimmed);
-            if (inner is null)
-                break;
+            var hasBrackets = end - start >= 2 &&
+                              ((text[start] == '【' && text[end - 1] == '】') ||
+                               (text[start] == '〖' && text[end - 1] == '〗'));
+            if (!hasBrackets) break;
 
-            trimmed = inner.Trim();
+            start++;
+            end--;
             changed = true;
         }
-
-        if (!changed)
-            return text;
-
-        return trimmed.Length == 0 ? HiddenText : trimmed;
-    }
-
-    private static string? InnerText(string text)
-    {
-        if (text.Length < 2)
-            return null;
-        if (text[0] == '【' && text[^1] == '】')
-            return text[1..^1];
-        if (text[0] == '〖' && text[^1] == '〗')
-            return text[1..^1];
-        return null;
+        return changed ? (start, end - start) : (0, text.Length);
     }
 }

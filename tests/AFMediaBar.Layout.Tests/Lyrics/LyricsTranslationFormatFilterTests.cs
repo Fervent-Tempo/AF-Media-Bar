@@ -1,4 +1,4 @@
-﻿// 验证译文格式清理只去掉来源附加的标记（行首斜杠、首尾成对括号），中间文字保留，并且只在显示层生效、不影响歌词文档。
+// 验证译文格式清理只去掉来源附加的标记（行首斜杠、首尾成对括号），中间文字保留，并且只在显示层生效、不影响歌词文档。
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
@@ -25,12 +25,13 @@ public sealed class LyricsTranslationFormatFilterTests
         Assert.AreEqual(expected, LyricsTranslationFormatFilter.Clean(source));
 
     [TestMethod]
-    public void NothingLeftBecomesBlankInsteadOfTheSearchingPlaceholder()
+    public void NothingLeftBecomesExplicitBlank()
     {
-        // 什么都不剩时给一个空格：空串会被渲染层当成"还没取到歌词"而显示搜索兜底文案。
+        // 用空格区分已清空的行与缺失文本。
         Assert.AreEqual(LyricsTranslationFormatFilter.HiddenText, LyricsTranslationFormatFilter.Clean("【】"));
         Assert.AreEqual(LyricsTranslationFormatFilter.HiddenText, LyricsTranslationFormatFilter.Clean("〖 〗"));
         Assert.AreEqual(LyricsTranslationFormatFilter.HiddenText, LyricsTranslationFormatFilter.Clean("/ 【】"));
+        Assert.AreEqual(LyricsTranslationFormatFilter.HiddenText, LyricsTranslationFormatFilter.Clean("/ "));
     }
 
     [DataTestMethod]
@@ -80,6 +81,27 @@ public sealed class LyricsTranslationFormatFilterTests
         // 歌词文档本身一个字符都不该被改。
         Assert.AreEqual("/ 【一个人是艰辛的 于是两人牵起手】", wrapped.Text);
         Assert.AreEqual("〖总是在不知不觉中兜圈子的话语〗", wrapped.Translation);
+    }
+
+    [DataTestMethod]
+    [DataRow("/ 你好", "/ 你", "好")]
+    [DataRow("【你好】", "【你", "好】")]
+    [DataRow("/ 【你好】", "/ 【你", "好】")]
+    public void ProjectionUsesVisibleWordWeightsWithoutChangingSourceTimings(string text, string firstWord, string secondWord)
+    {
+        LyricWord[] words = [new(0, 1, firstWord), new(1, 3, secondWord)];
+        var line = new LyricLine(0, 3, text) { Words = words };
+        var display = LyricsTranslationFormatFilter.Apply(line);
+        for (var index = 0; index < words.Length; index++)
+        {
+            Assert.AreEqual(words[index].Start, display.Words[index].Start);
+            Assert.AreEqual(words[index].End, display.Words[index].End);
+        }
+        var frame = LyricsPresentationProjector.Project(Snapshot([line], 1), new AppSettings(), _now);
+        Assert.AreEqual("你好", frame.Current);
+        Assert.AreEqual(0.5, frame.WordScanProgress!.Value, 0.000001);
+        Assert.AreEqual(text, line.Text);
+        CollectionAssert.AreEqual(words, line.Words.ToArray());
     }
 
     private static MediaSnapshot Snapshot(IReadOnlyList<LyricLine> lines, double position) => MediaSnapshot.Disconnected with
