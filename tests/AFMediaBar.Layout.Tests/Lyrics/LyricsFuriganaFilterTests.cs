@@ -64,6 +64,44 @@ public sealed class LyricsFuriganaFilterTests
     }
 
     [TestMethod]
+    public void KanaBracketStaysWhenTheTranslationCarriesTheSameInterjection()
+    {
+        // 译文行同样带括号内容时，主行的假名括号是唱出来的人声而不是标注音：删掉会和译文对不上。
+        var line = new LyricLine(0, 5, "ミニスカートで襲撃だ！（キュン）") { Translation = "穿着迷你裙袭来！（心跳~）" };
+        Assert.AreEqual("ミニスカートで襲撃だ！（キュン）", LyricsFuriganaFilter.Apply(line).Text);
+
+        // 未翻译、原样保留在译文里的人声同样保留。
+        var kept = new LyricLine(0, 5, "ミニスカートで襲撃だ！（キュン）") { Translation = "袭击！（キュン）" };
+        Assert.AreEqual("ミニスカートで襲撃だ！（キュン）", LyricsFuriganaFilter.Apply(kept).Text);
+
+        // 译文没有任何括号，或括号里是纯假名注音（如「訳(やく)」）时，照旧按标注音隐藏。
+        var plain = new LyricLine(0, 5, "日々(ひび)の歌") { Translation = "日日的歌" };
+        Assert.AreEqual("日々の歌", LyricsFuriganaFilter.Apply(plain).Text);
+        var noted = new LyricLine(0, 5, "目覚(める)と日々（ひび）") { Translation = "訳(やく)" };
+        Assert.AreEqual("目覚と日々", LyricsFuriganaFilter.Apply(noted).Text);
+
+        // 呈现层：译文作次行时两边的括号都在。
+        var snapshot = Snapshot([line], 2);
+        var settings = new AppSettings { LyricsSecondaryLine = new([LyricsSecondaryLineMode.Translation]) };
+        var frame = LyricsPresentationProjector.Project(snapshot, settings, DateTimeOffset.UtcNow);
+        Assert.AreEqual("ミニスカートで襲撃だ！（キュン）", frame.Current);
+        Assert.AreEqual("穿着迷你裙袭来！（心跳~）", frame.CurrentTranslation);
+    }
+
+    [TestMethod]
+    public void TranslationBracketKeepsTheWholeLineEvenWhenItAlsoHidesAnAnnotation()
+    {
+        // 取舍：判定按行进行，不逐括号配对。译文带括号人声时，同行里的真标注音也会一起保留——
+        // 留着标注音只是碍眼，删掉人声却会和译文对不上，所以选轻的一侧。
+        var mixed = new LyricLine(0, 5, "歌(ｳﾀ)！（キュン）") { Translation = "唱歌！（心动）" };
+        Assert.AreEqual("歌(ｳﾀ)！（キュン）", LyricsFuriganaFilter.Apply(mixed).Text);
+
+        // 译文保留英文人声（括号内非假名）时同样触发保留。
+        var english = new LyricLine(0, 5, "日々(ひび)の歌") { Translation = "日日 (oh yeah)" };
+        Assert.AreEqual("日々(ひび)の歌", LyricsFuriganaFilter.Apply(english).Text);
+    }
+
+    [TestMethod]
     public void PersistenceAndLyricsResetPreserveTheExplicitChoiceAndInactiveEditorsCannotWrite()
     {
         StaTest.Run(_ =>
