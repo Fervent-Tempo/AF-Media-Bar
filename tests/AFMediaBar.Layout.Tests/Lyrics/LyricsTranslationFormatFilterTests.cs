@@ -104,6 +104,36 @@ public sealed class LyricsTranslationFormatFilterTests
         CollectionAssert.AreEqual(words, line.Words.ToArray());
     }
 
+    [TestMethod]
+    public void SyllableLyricsKeepTheirTimelineAndWeighOnlyVisibleCharacters()
+    {
+        // 标记跨音节时同步清理文本；时间戳保持不变，进度与不带标记的歌词一致。
+        LyricWord[] words = [new(0, 1, "/ 【一"), new(1, 2, "个人"), new(2, 3, "是艰】")];
+        var marked = new LyricLine(0, 3, "/ 【一个人是艰】") { Words = words };
+        var plain = new LyricLine(0, 3, "一个人是艰")
+        {
+            Words = [new(0, 1, "一"), new(1, 2, "个人"), new(2, 3, "是艰")]
+        };
+
+        var cleaned = LyricsTranslationFormatFilter.Apply(marked);
+        Assert.AreEqual("一个人是艰", cleaned.Text);
+        Assert.AreEqual("一", cleaned.Words[0].Text);
+        Assert.AreEqual("个人", cleaned.Words[1].Text);
+        Assert.AreEqual("是艰", cleaned.Words[2].Text);
+        for (var index = 0; index < words.Length; index++)
+        {
+            Assert.AreEqual(words[index].Start, cleaned.Words[index].Start, "音节起点不能被改。");
+            Assert.AreEqual(words[index].End, cleaned.Words[index].End, "音节终点不能被改。");
+        }
+
+        var cleanedProgress = LyricHighlightPolicy.ResolveProgress(cleaned, 2.5);
+        var plainProgress = LyricHighlightPolicy.ResolveProgress(plain, 2.5);
+        Assert.IsNotNull(cleanedProgress);
+        Assert.AreEqual(plainProgress!.Value, cleanedProgress!.Value, 1e-9, "擦亮进度必须按清理后的可见字符算。");
+        Assert.AreEqual("/ 【一个人是艰】", marked.Text);
+        Assert.AreEqual("/ 【一", words[0].Text);
+    }
+
     private static MediaSnapshot Snapshot(IReadOnlyList<LyricLine> lines, double position) => MediaSnapshot.Disconnected with
     {
         IsConnected = true,
