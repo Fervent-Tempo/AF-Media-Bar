@@ -11,6 +11,12 @@ namespace AFMediaBar.ViewModels.Pages;
 public sealed record ReleaseHighlightsItem(string Version, string Title, string DateText, IReadOnlyList<string> Highlights,
     string? ReleaseNotesUrl, string Badge, bool IsOriginal)
 {
+    public ReleaseHighlightsContent? Content { get; init; }
+    public bool HasStructuredContent => Content is not null;
+
+    public string DisplayTitle => Title.StartsWith($"AF Media Bar {Version} — ", StringComparison.OrdinalIgnoreCase)
+        ? Title[($"AF Media Bar {Version} — ").Length..] : Title;
+
     /// <summary>Version label shown independently of the release title.</summary>
     public string VersionLabel => $"v{Version}";
     /// <summary>Whether an official release page is available.</summary>
@@ -124,7 +130,10 @@ public partial class ReleaseHighlightsViewModel : ObservableObject
             var current = UpdateVersionPolicy.TryParse(release.Version, out var version) &&
                 UpdateVersionPolicy.TryParse(_updates.CurrentVersion, out var running) && version == running;
             return new ReleaseHighlightsItem(release.Version, text.Title, release.ReleaseDate?.ToString("yyyy-MM-dd") ?? string.Empty,
-                text.Highlights, release.ReleaseNotesUrl, current ? Translations.Get("ReleaseHighlights.CurrentVersion") : string.Empty, original);
+                text.Highlights, release.ReleaseNotesUrl, current ? Translations.Get("ReleaseHighlights.CurrentVersion") : string.Empty, original)
+            {
+                Content = text.Content
+            };
         }).ToArray();
         Latest = items.FirstOrDefault();
         History.Clear();
