@@ -3112,6 +3112,8 @@ Source: {2}</value></data>
   <data name="Settings.Related.TextAppearance" xml:space="preserve"><value>Text appearance</value></data>
   <data name="Settings.Related.LyricsPresentation" xml:space="preserve"><value>Lyrics presentation</value></data>
   <data name="Settings.Related.WidgetLayout" xml:space="preserve"><value>Widgets and order</value></data>
+  <data name="Settings.Related.WidgetsSpectrum" xml:space="preserve"><value>Spectrum and performance</value></data>
+  <data name="Settings.Related.TextSize" xml:space="preserve"><value>Text size</value></data>
   <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>Memory optimization policy</value></data>
   <data name="Common.Page.Widgets" xml:space="preserve">
     <value>Widgets</value>

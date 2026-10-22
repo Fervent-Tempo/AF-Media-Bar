@@ -146,6 +146,10 @@
                         <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
                             <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer"/>
                             <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.IdleNote}" Destination="Appearance" GroupId="Appearance.IdleNote.Title"/>
+                            <!-- 上面那条提示点名了这两处：频谱与性能参数在「小组件」，文字大小在「外观」的字体分组。 -->
+                            <!-- The notice above names exactly these two: spectrum and performance live under Widgets, text size under the appearance fonts group. -->
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.WidgetsSpectrum}" Destination="Widgets" GroupId="Widgets.Spectrum"/>
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextSize}" Destination="Appearance" GroupId="Common.Group.Fonts"/>
                         </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
