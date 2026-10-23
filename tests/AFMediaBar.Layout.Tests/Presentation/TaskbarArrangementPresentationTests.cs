@@ -200,6 +200,7 @@ public sealed class TaskbarArrangementPresentationTests
                 SmallTaskbarPresentationChecks.Verify(control);
                 AssertMetadataSurvivesOrientationChanges();
                 AssertLyricsSurviveOrientationChanges();
+                AssertLyricsTimelineChangesResizeRepeatedText();
                 control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
                 MetadataMarqueePresentationChecks.Verify();
             }
@@ -260,6 +261,47 @@ public sealed class TaskbarArrangementPresentationTests
                 }
             }
         }
+    }
+
+    private static void AssertLyricsTimelineChangesResizeRepeatedText()
+    {
+        var settings = new AppSettings
+        {
+            TwoLineLyricsEnabled = false,
+            LyricsLongLineScrollEnabled = true,
+            TaskbarExperience = new() { LengthMode = TaskbarLengthMode.FollowContent, HoverLayerEnabled = false }
+        };
+        var control = new TaskBarMediaControl { AllowRestConnectionTransition = false };
+        try
+        {
+            control.ApplyPresentationSettings(settings);
+            control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal, 100, 100, 44);
+            var text = new string('长', 60);
+            var snapshot = MediaSnapshot.Disconnected with
+            {
+                IsConnected = true,
+                Duration = 20,
+                Position = 2,
+                Lyrics = new LyricsResult("test", new LyricDocument([
+                    new LyricLine(0, 5, text) { Words = [new(0, 5, text)] },
+                    new LyricLine(5, 10, text)
+                ], LyricsSyncType.MixedSynced, "test"))
+            };
+            var widths = new List<double>();
+            control.DesiredSizeChanged += (_, args) => widths.Add(args.Request.Width);
+            control.UpdateSongInfo(snapshot);
+            var cappedWidth = widths[^1];
+            control.UpdateSongInfo(snapshot with { Position = 7 });
+            var naturalWidth = widths[^1];
+            Assert.IsTrue(naturalWidth > cappedWidth + 100, "相同歌词失去逐字时间轴后必须恢复自然宽度，否则无法滚动的歌词会被截断。");
+
+            // 模拟下一次定时器投影，验证没有新媒体快照触发的额外尺寸请求时也能重新封顶。
+            MediaBarTestAccess.GetField("_snapshot", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(control, snapshot);
+            MediaBarTestAccess.GetMethod("UpdateWebLyricsPresentation", BindingFlags.Instance | BindingFlags.NonPublic)
+                .Invoke(control, [false, false]);
+            Assert.AreEqual(cappedWidth, widths[^1], .01, "逐字时间轴恢复后应立即重新封顶。");
+        }
+        finally { control.DisposePresentation(); }
     }
 
     private static void AssertLyricsSurviveOrientationChanges()

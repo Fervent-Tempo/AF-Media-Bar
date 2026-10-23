@@ -420,14 +420,16 @@ public partial class TaskBarMediaControl
                 _lyricsWebRenderer?.Present(presentation, animateTransition && MotionPolicy.ResolveCurrent().UseTransitions, isMetadata);
             RefreshWebLyricsTimer();
 
-            // 行变化后立即重发尺寸请求：自动模式下媒体栏长度跟着歌词内容走，若等到下一次快照才更新，
+            // 文本或逐字时间轴可用性变化后立即重发尺寸请求；没有时间轴时长行需要恢复自然宽度。
+            // 自动模式下媒体栏长度跟着歌词内容走，若等到下一次快照才更新，
             // 新的一句会先按旧宽度渲染、右端短暂出现省略号（随后才恢复）。固定长度模式不依赖这条路径。
             // Re-issue the size request as soon as the line changes: in auto mode the bar length follows the content, and waiting for the
             // next snapshot would render the new line at the previous width and briefly show an ellipsis at its right edge. A fixed box does
             // not depend on this path.
             var secondaryText = string.IsNullOrEmpty(presentation.CurrentTranslation) ? presentation.Next : presentation.CurrentTranslation;
             if (!string.Equals(_lastSizeLyricText, next.Current, StringComparison.Ordinal) ||
-                !string.Equals(_lastSizeSecondaryText, secondaryText, StringComparison.Ordinal))
+                !string.Equals(_lastSizeSecondaryText, secondaryText, StringComparison.Ordinal) ||
+                (previous.ScrollProgress is null) != (presentation.ScrollProgress is null))
             {
                 _lastSizeLyricText = next.Current;
                 _lastSizeSecondaryText = secondaryText;

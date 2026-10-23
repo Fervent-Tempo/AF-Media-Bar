@@ -25,7 +25,7 @@ function setIncomingTranslationPair(original, translation, wordScanProgress, scr
     "translation-placeholder",
     translationDisplay.isPlaceholder);
   setLineWordScanProgress(incomingTranslationOriginalLineEl, wordScanProgress, false);
-  setLineScrollProgress(incomingTranslationOriginalLineEl, scrollProgress);
+  setLineScrollProgress(incomingTranslationOriginalLineEl, scrollProgress, false);
 }
 
 function clearIncomingTranslationPair() {
@@ -492,7 +492,7 @@ function renderLyricsFrameContent(frame, allowWordScanSmoothing = true) {
   setIncomingLine("");
   setCurrentLine(safeCurrent);
   setWordScanProgress(normalized.wordScanProgress, allowWordScanSmoothing);
-  setScrollProgress(normalized.scrollProgress);
+  setScrollProgress(normalized.scrollProgress, allowWordScanSmoothing);
   setSecondaryLine(visibleSecondary);
   updateSecondaryOpacity(normalized.progress);
   lastCurrentLineIndex = normalized.currentLineIndex >= 0
@@ -743,7 +743,7 @@ function finalizeTransition(
   void trackEl.offsetHeight;
   setCurrentLine(promotedCurrent);
   setWordScanProgress(wordScanProgress, false);
-  setScrollProgress(scrollProgress);
+  setScrollProgress(scrollProgress, false);
   setSecondaryLine(upcomingNext);
   setLineWordScanProgress(nextLineEl, null);
   setLineScrollProgress(nextLineEl, null);
@@ -845,7 +845,7 @@ function finalizeTranslationPairTransition(
   stopTransitionOpacityAnimation();
   setCurrentLine(promotedCurrent);
   setWordScanProgress(wordScanProgress, false);
-  setScrollProgress(scrollProgress);
+  setScrollProgress(scrollProgress, false);
   setSecondaryLine(promotedTranslation);
   setLineWordScanProgress(nextLineEl, null);
   setLineScrollProgress(nextLineEl, null);
@@ -1029,7 +1029,7 @@ function startStandardTransition(
   nextLineEl.style.setProperty("--promotion-scale", promotionStartScale.toFixed(6));
   nextLineEl.style.transform = "translateY(0px) scale(var(--promotion-scale))";
   updateTransitionWordScanProgress(wordScanProgress, false);
-  updateTransitionScrollProgress(scrollProgress);
+  updateTransitionScrollProgress(scrollProgress, false);
   incomingLineEl.style.opacity = secondaryOpacity.toFixed(3);
   void trackEl.offsetHeight;
   trackEl.classList.remove("no-anim");

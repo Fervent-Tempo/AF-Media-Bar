@@ -57,18 +57,15 @@ public static class LyricsChineseConverter
     }
 
     /// <summary>
-    /// 文本是否含日文假名：平假名、片假名（含长音符与半角片假名及其符号）。这些码位不出现在中文歌词里，
-    /// 是判定"这段是日文"最可靠的标记；纯汉字的日文句子（极少见）不在识别范围内。
-    /// Whether the text contains Japanese kana: hiragana, katakana (including the prolonged sound mark and
-    /// the half-width forms). Those code points do not occur in Chinese lyrics and are the most reliable
-    /// marker of "this is Japanese"; a kanji-only Japanese sentence (rare) is not recognised.
+    /// 只以假名字母（含长音符和半角形式）判断日文，避免共享标点让中文跳过转换；纯汉字日文无法据此识别。
     /// </summary>
     private static bool ContainsKana(string text)
     {
         foreach (var c in text)
         {
-            if ((c >= '\u3040' && c <= '\u309F') || (c >= '\u30A0' && c <= '\u30FF') ||
-                (c >= '\uFF61' && c <= '\uFF9F'))
+            if (char.IsLetter(c) &&
+                ((c >= '\u3040' && c <= '\u309F') || (c >= '\u30A0' && c <= '\u30FF') ||
+                 (c >= '\uFF66' && c <= '\uFF9F')))
                 return true;
         }
 

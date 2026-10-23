@@ -10,6 +10,12 @@
   initial-value: 0px;
 }
 
+@property --line-scroll-progress {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
 :root {
   --font-family: "Segoe UI Variable Text", "Microsoft YaHei UI", sans-serif;
   --font-size: 13px;
@@ -340,12 +346,14 @@ html, body {
   padding-bottom: var(--line-text-padding-bottom);
 }
 
-.line.word-scan-smoothing {
+.line.word-scan-smoothing,
+.line.line-scroll-smoothing {
   transition:
     opacity 560ms cubic-bezier(0.22, 0.72, 0.24, 1),
     color 280ms ease,
     transform 560ms cubic-bezier(0.22, 0.72, 0.24, 1),
-    --word-scan-progress 90ms linear;
+    --word-scan-progress 90ms linear,
+    --line-scroll-progress 90ms linear;
 }
 
 .line-text-viewport {
@@ -387,7 +395,7 @@ html, body {
   text-overflow: clip;
 }
 
-.line.horizontal-scrolling.word-scan-smoothing .line-text-stack {
+.line.horizontal-scrolling.line-scroll-smoothing .line-text-stack {
   transition: transform 90ms linear;
   will-change: transform;
 }
@@ -587,7 +595,8 @@ html, body {
   }
 
   .line,
-  .line.word-scan-smoothing {
+  .line.word-scan-smoothing,
+  .line.line-scroll-smoothing {
     transition: none;
   }
 
@@ -597,7 +606,7 @@ html, body {
     will-change: auto;
   }
 
-  .line.horizontal-scrolling.word-scan-smoothing .line-text-stack {
+  .line.horizontal-scrolling.line-scroll-smoothing .line-text-stack {
     transition: none;
     will-change: auto;
   }

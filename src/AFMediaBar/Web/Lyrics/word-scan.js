@@ -33,14 +33,14 @@ function getCurrentWordScanVisualLine(trackId, currentLineIndex) {
   return currentLineEl;
 }
 
-function readInterpolatedWordScanProgress(lineElement, targetProgress) {
-  if (!lineElement?.classList.contains("word-scan-smoothing") ||
+function readInterpolatedScrollProgress(lineElement, targetProgress) {
+  if (!lineElement?.classList.contains("line-scroll-smoothing") ||
       typeof window.getComputedStyle !== "function") {
     return null;
   }
 
   const inlineProgress = Number.parseFloat(
-    lineElement.style.getPropertyValue("--word-scan-progress")) / 100;
+    lineElement.style.getPropertyValue("--line-scroll-progress")) / 100;
   if (!Number.isFinite(inlineProgress) || targetProgress === null ||
       targetProgress < inlineProgress - 0.02 ||
       targetProgress - inlineProgress > 0.35) {
@@ -48,7 +48,7 @@ function readInterpolatedWordScanProgress(lineElement, targetProgress) {
   }
 
   const computedValue = window.getComputedStyle(lineElement)
-    .getPropertyValue("--word-scan-progress");
+    .getPropertyValue("--line-scroll-progress");
   const parsed = Number.parseFloat(computedValue);
   return Number.isFinite(parsed) ? clamp01(parsed / 100) : null;
 }
@@ -124,7 +124,7 @@ function updateWordScanFreezeState(
     wordScanFreezeState = {
       trackId: normalizedTrackId,
       currentLineIndex: normalizedLineIndex,
-      progress: readInterpolatedWordScanProgress(activeLine, normalizedProgress) ?? normalizedProgress,
+      progress: readInterpolatedScrollProgress(activeLine, normalizedProgress) ?? normalizedProgress,
       authoritativeProgress: normalizedProgress
     };
   }
@@ -211,6 +211,7 @@ function clearLineHorizontalScroll(lineElement, discardMetrics = true) {
 
   if (discardMetrics) {
     horizontalScrollMetrics.delete(lineElement);
+    lineElement.classList.remove("line-scroll-smoothing");
   }
   lineElement.classList.remove("horizontal-scrolling");
   getLineScrollElements(lineElement)?.textStack.style.removeProperty("--line-scroll-offset");
@@ -308,8 +309,18 @@ function setLineWordScanProgress(lineElement, progress, allowSmoothing = true) {
 
 // 横向滚动层：由独立透传的时间轴进度驱动，与擦亮是否开启无关；进度同时写到行上的
 // --line-scroll-progress，供布局变化后重算偏移时读取。
-function setLineScrollProgress(lineElement, progress) {
+function setLineScrollProgress(lineElement, progress, allowSmoothing = true) {
   const normalized = resolveWordScanProgress(lineElement, normalizeWordScanProgress(progress));
+  const previousProgress = Number.parseFloat(
+    lineElement.style.getPropertyValue("--line-scroll-progress")) / 100;
+  const isContinuousProgress = Number.isFinite(previousProgress) &&
+    normalized !== null &&
+    normalized >= previousProgress - 0.02 &&
+    normalized - previousProgress <= 0.35;
+  lineElement.classList.toggle(
+    "line-scroll-smoothing",
+    normalized !== null && normalized > 0 && normalized < 1 &&
+      isPlaybackPlaying && !prefersReducedMotion() && allowSmoothing && isContinuousProgress);
   if (normalized === null) {
     lineElement.style.removeProperty("--line-scroll-progress");
   } else {
@@ -323,8 +334,8 @@ function setWordScanProgress(progress, allowSmoothing = true) {
   setLineWordScanProgress(currentLineEl, progress, allowSmoothing);
 }
 
-function setScrollProgress(progress) {
-  setLineScrollProgress(currentLineEl, progress);
+function setScrollProgress(progress, allowSmoothing = true) {
+  setLineScrollProgress(currentLineEl, progress, allowSmoothing);
 }
 
 function updateTransitionWordScanProgress(progress, allowSmoothing = true) {
@@ -338,11 +349,11 @@ function updateTransitionWordScanProgress(progress, allowSmoothing = true) {
     !transitionUsesTranslationPair && normalizeWordScanProgress(progress) !== null);
 }
 
-function updateTransitionScrollProgress(progress) {
+function updateTransitionScrollProgress(progress, allowSmoothing = true) {
   transitionScrollProgress = progress;
   const targetLine = transitionUsesTranslationPair
     ? incomingTranslationOriginalLineEl
     : nextLineEl;
-  setLineScrollProgress(targetLine, progress);
+  setLineScrollProgress(targetLine, progress, allowSmoothing);
 }
 
