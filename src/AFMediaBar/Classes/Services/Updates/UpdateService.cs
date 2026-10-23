@@ -307,6 +307,8 @@ public sealed partial class UpdateService : IDisposable
     public void StartDownload()
     {
         UpdateManifest? manifest;
+        UpdateState claimed;
+        CancellationToken token;
         lock (_gate)
         {
             if (_disposed || _state.IsBusy || _state.Phase == UpdatePhase.Ready)
@@ -315,14 +317,34 @@ public sealed partial class UpdateService : IDisposable
             }
 
             manifest = _state.Manifest;
+            if (manifest is null || _plan.Count == 0)
+            {
+                return;
+            }
+
+            // 置忙与建 CTS 必须和放行判断在同一把锁内完成：下载循环稍后才在线程池上启动，只读状态就放行时，
+            // 托盘与设置页两个入口会各自起一轮，后建的 CTS 覆盖前一个，取消只命中最后一轮。
+            // The busy claim and the CTS belong inside the same lock as the admission check: the loop starts later on
+            // the thread pool, so reading the state alone lets two entries each start a round and overwrite each
+            // other's CTS.
+            _operation?.Dispose();
+            _operation = new CancellationTokenSource();
+            token = _operation.Token;
+            claimed = _state with
+            {
+                Phase = UpdatePhase.Downloading,
+                ProgressPercent = 0d,
+                ActiveSource = null,
+                FailureReason = null
+            };
+            _state = claimed;
         }
 
-        if (manifest is null || _plan.Count == 0)
-        {
-            return;
-        }
-
-        _ = Task.Run(() => DownloadLoopAsync(manifest));
+        // 状态已在锁内落地，事件照常发到 UI 线程；随后才排队下载循环。
+        // The state is already committed under the lock; the event still goes through the dispatcher, and only
+        // afterwards is the download loop queued.
+        PublishState(claimed);
+        _ = Task.Run(() => DownloadLoopAsync(manifest, token));
     }
 
     /// <summary>取消正在进行的下载或校验；已完成的下载不受影响。/ Cancels an in-flight download or verification; a finished download is unaffected.</summary>
@@ -490,26 +512,17 @@ public sealed partial class UpdateService : IDisposable
         PublishState(state with { Phase = UpdatePhase.Available });
     }
 
-    private async Task DownloadLoopAsync(UpdateManifest manifest)
+    private async Task DownloadLoopAsync(UpdateManifest manifest, CancellationToken token)
     {
-        CancellationToken token;
-        lock (_gate)
+        if (_disposed)
         {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _operation?.Dispose();
-            _operation = new CancellationTokenSource();
-            token = _operation.Token;
+            return;
         }
 
         // 所有 package 条目描述同一个文件，因此第一条就是这段下载的期望长度与哈希。
         // Every package entry describes the same file, so the first one carries the expected size and hash.
         var asset = manifest.Packages[0];
         var progress = new Progress<double>(ReportProgress);
-        SetPhase(UpdatePhase.Downloading, 0d, null);
 
         string? lastFailure = null;
         UpdatePendingFileRecord? record = null;
@@ -588,14 +601,27 @@ public sealed partial class UpdateService : IDisposable
 
         if (record is null)
         {
+            // 排队的一轮在开始前就被取消时没有渠道结果，回到"可下载"，不留下没有原因的失败态。
+            // A queued round cancelled before it starts has no source outcome; return to "available" instead of
+            // leaving a failure that has no reason.
+            if (token.IsCancellationRequested)
+            {
+                PublishState(CurrentState with
+                {
+                    Phase = UpdatePhase.Available,
+                    ProgressPercent = 0d,
+                    ActiveSource = null,
+                    FailureReason = null
+                });
+                return;
+            }
+
             PublishState(CurrentState with
             {
                 Phase = UpdatePhase.Failed,
                 ProgressPercent = 0d,
                 ActiveSource = null,
-                FailureReason = token.IsCancellationRequested
-                    ? null
-                    : lastFailure ?? Translations.Get("Update.Reason.NoUsableSource")
+                FailureReason = lastFailure ?? Translations.Get("Update.Reason.NoUsableSource")
             });
             return;
         }
