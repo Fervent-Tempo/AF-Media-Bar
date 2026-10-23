@@ -21,6 +21,14 @@ public sealed class SettingsSidebarSelectionAnimator : IDisposable
     private readonly ScaleTransform _scale = new();
     private DispatcherOperation? _pending;
     private NavigationViewItem? _target;
+    /// <summary>
+    /// 程序化导航指定的菜单项。NavigationView 只在用户点击时更新 SelectedItem，它的 setter 又是内部可见，
+    /// 因此快捷跳转、搜索跳转与通知跳转之后由设置窗口显式指定，高亮才不会留在原来那一页。
+    /// The menu item a programmatic navigation landed on. NavigationView only updates SelectedItem when the
+    /// user clicks, and its setter is internal, so the settings window names the item explicitly after a
+    /// shortcut, search or notification jump; otherwise the highlight stays on the previous page.
+    /// </summary>
+    private NavigationViewItem? _requested;
     private Rect _targetBounds = Rect.Empty;
     private bool _disposed;
     private int _generation;
@@ -51,7 +59,25 @@ public sealed class SettingsSidebarSelectionAnimator : IDisposable
         Schedule(animate: false);
     }
 
-    private void OnSelectionChanged(NavigationView sender, RoutedEventArgs args) => Schedule(animate: true);
+    /// <summary>
+    /// 指定程序化导航之后应当高亮的菜单项；传 null 表示交回给用户点击。
+    /// Names the menu item to highlight after a programmatic navigation; null hands the highlight back to the
+    /// user's own clicks.
+    /// </summary>
+    public void Highlight(NavigationViewItem? item)
+    {
+        if (_disposed || ReferenceEquals(_requested, item)) return;
+        _requested = item;
+        Schedule(animate: true);
+    }
+
+    private void OnSelectionChanged(NavigationView sender, RoutedEventArgs args)
+    {
+        // 用户点击才是新的真值：此前的程序化指定立即作废，否则点击会被旧的目标覆盖。
+        // A user click is the new truth: any earlier programmatic request is dropped so it cannot win over the click.
+        _requested = null;
+        Schedule(animate: true);
+    }
     private void OnPaneChanged(NavigationView sender, RoutedEventArgs args) => Schedule(animate: false);
     private void OnLoaded(object sender, RoutedEventArgs args) => Schedule(animate: false);
     private void OnLayoutUpdated(object? sender, EventArgs args) => Align(animate: false);
@@ -72,7 +98,8 @@ public sealed class SettingsSidebarSelectionAnimator : IDisposable
     private void Align(bool animate, bool force = false)
     {
         if (_disposed || !_navigation.IsLoaded || !_navigation.IsVisible) return;
-        if (_navigation.SelectedItem is not NavigationViewItem item || !item.IsVisible || item.ActualWidth < 8d || item.ActualHeight < 8d)
+        if ((_requested ?? _navigation.SelectedItem as NavigationViewItem) is not { } item ||
+            !item.IsVisible || item.ActualWidth < 8d || item.ActualHeight < 8d)
         {
             Stop();
             _surface.Visibility = Visibility.Collapsed;

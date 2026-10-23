@@ -3150,6 +3150,8 @@ Nguồn: {2}</value></data>
   <data name="Settings.Related.TextAppearance" xml:space="preserve"><value>Giao diện văn bản</value></data>
   <data name="Settings.Related.LyricsPresentation" xml:space="preserve"><value>Cách hiển thị lời bài hát</value></data>
   <data name="Settings.Related.WidgetLayout" xml:space="preserve"><value>Tiện ích và thứ tự</value></data>
+  <data name="Settings.Related.WidgetsSpectrum" xml:space="preserve"><value>Thông số phổ &amp; hiệu năng</value></data>
+  <data name="Settings.Related.TextSize" xml:space="preserve"><value>Cỡ chữ</value></data>
   <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>Chính sách tối ưu bộ nhớ</value></data>
   <data name="Common.Page.Widgets" xml:space="preserve">
     <value>Tiện ích</value>

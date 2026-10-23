@@ -53,8 +53,25 @@
         <Border
             Padding="14,12"
             BorderThickness="1"
-            CornerRadius="8"
-            Style="{StaticResource CalloutSurfaceStyle}">
+            CornerRadius="8">
+            <Border.Style>
+                <!--
+                    没有文案时整块信息面仍会画出白底卡片，页面上就多出一条什么都没有的条。折叠放在组件里而不是
+                    各页面：调用方既可能只给 Visibility，也可能给绑定，两种写法都不会与这里的触发器冲突。
+                    With no text the information surface still paints a white card, leaving a blank bar on the page.
+                    Collapsing here rather than per page keeps it independent of how a caller drives Visibility.
+                -->
+                <Style TargetType="Border" BasedOn="{StaticResource CalloutSurfaceStyle}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Text, ElementName=Root}" Value="{x:Null}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Text, ElementName=Root}" Value="">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
