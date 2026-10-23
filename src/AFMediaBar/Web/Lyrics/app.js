@@ -131,6 +131,7 @@ function createPresentationFrame({
   isPureMusic,
   isPlaying,
   wordScanProgress,
+  scrollProgress,
   currentTranslation,
   nextTranslation,
   translationMode
@@ -155,6 +156,7 @@ function createPresentationFrame({
     isPureMusic,
     isPlaying,
     wordScanProgress,
+    scrollProgress,
     currentTranslation,
     nextTranslation,
     translationMode
@@ -255,6 +257,7 @@ const lyricsApi = {
     isPureMusic,
     isPlaying,
     wordScanProgress,
+    scrollProgress,
     currentTranslation,
     nextTranslation,
     translationMode,
@@ -270,12 +273,16 @@ const lyricsApi = {
     const p = clamp01(progress);
     const lineIndex = Number(currentLineIndex);
     const normalizedTrackId = normalizeTrackId(trackId);
+    // 冻结与恢复追赶以滚动进度为准：它不受擦亮开关影响，关掉擦亮后暂停、恢复的
+    // 滚动轨迹与开启时完全一致。
+    // Freeze and resume catch-up track the scroll progress: it is independent of the highlight switch, so the
+    // scroll trajectory while paused and resuming stays identical with the highlight off.
     updateWordScanFreezeState(
       wasPlaying,
       nextIsPlaying,
       normalizedTrackId,
       lineIndex,
-      wordScanProgress);
+      scrollProgress);
     isPlaybackPlaying = nextIsPlaying;
     const targetFrame = createPresentationFrame({
       scene,
@@ -287,6 +294,7 @@ const lyricsApi = {
       isPureMusic: Boolean(isPureMusic),
       isPlaying,
       wordScanProgress,
+      scrollProgress,
       currentTranslation: safeCurrentTranslation,
       nextTranslation: safeNextTranslation,
       translationMode: useTranslationPair
@@ -352,6 +360,7 @@ const lyricsApi = {
         lineIndex,
         normalizedTrackId,
         wordScanProgress,
+        scrollProgress,
         safeCurrentTranslation,
         safeNextTranslation,
         useTranslationPair,
@@ -369,6 +378,7 @@ const lyricsApi = {
       p,
       lineIndex,
       wordScanProgress,
+      scrollProgress,
       safeCurrentTranslation,
       safeNextTranslation,
       useTranslationPair,
@@ -527,6 +537,7 @@ window.taskbarLyrics = {
           payload?.isPureMusic,
           payload?.isPlaying,
           payload?.wordScanProgress,
+          payload?.scrollProgress,
           payload?.currentTranslation,
           payload?.nextTranslation,
           payload?.translationMode,

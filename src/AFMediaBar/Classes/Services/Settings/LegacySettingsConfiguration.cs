@@ -110,6 +110,9 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
     public void SetLyricsSyllableHighlightEnabled(bool value) => Update(current => current.LyricsSyllableHighlightEnabled = value);
     public void SetLyricsChineseConversion(LyricsChineseConversionMode value) => Update(current => current.LyricsChineseConversion = value);
     public void SetLyricsFuriganaFilterEnabled(bool value) => Update(current => current.LyricsFuriganaFilterEnabled = value);
+    // 长歌词动态滚动是全局呈现行为：任务栏与悬浮栏读同一份配置，因此走普通更新，
+    // 由 LyricsSettingsChanged 通知两端重新投影并申请新宽度。
+    public void SetLyricsLongLineScrollEnabled(bool value) => Update(current => current.LyricsLongLineScrollEnabled = value);
     public void SetLyricsBracketSymbolsHidden(bool value) => Update(current => current.LyricsBracketSymbolsHidden = value);
     public void SetLyricsUnsungOpacityPercent(int value) => Update(current => current.LyricsUnsungOpacityPercent = value);
     public void SetLyricsCharacterSpacingPercent(int value) => Update(current => current.LyricsCharacterSpacingPercent = value);

@@ -263,15 +263,17 @@ function updateLineHorizontalScroll(lineElement, normalizedProgress) {
 
 function refreshLineHorizontalScroll(lineElement) {
   horizontalScrollMetrics.delete(lineElement);
+  // 滚动偏移以行上独立存放的滚动进度为准：擦亮关闭时 --word-scan-progress 不存在，
+  // 但滚动必须照常重算，否则 resize 之后长行会停在不随演唱进度移动的位置。
+  // The scroll offset is recomputed from the line's dedicated scroll progress: with the highlight off there is no
+  // --word-scan-progress, yet the scroll must still be recomputed, or a long line would stop following the song.
   const progress = Number.parseFloat(
-    lineElement.style.getPropertyValue("--word-scan-progress")) / 100;
+    lineElement.style.getPropertyValue("--line-scroll-progress")) / 100;
   updateLineHorizontalScroll(lineElement, Number.isFinite(progress) ? clamp01(progress) : null);
 }
 
-function setLineWordScanProgress(lineElement, progress, allowSmoothing = true) {
-  const normalized = resolveWordScanProgress(
-    lineElement,
-    normalizeWordScanProgress(progress));
+// 擦亮层：只写高亮视觉（类名与裁剪变量），不再驱动横向滚动。
+function applyLineWordScanVisual(lineElement, normalized, allowSmoothing) {
   const isScanning = normalized !== null;
   const previousProgress = Number.parseFloat(
     lineElement.style.getPropertyValue("--word-scan-progress")) / 100;
@@ -291,16 +293,38 @@ function setLineWordScanProgress(lineElement, progress, allowSmoothing = true) {
       isContinuousProgress);
   if (normalized === null) {
     lineElement.style.removeProperty("--word-scan-progress");
-    updateLineHorizontalScroll(lineElement, null);
     return;
   }
 
   lineElement.style.setProperty("--word-scan-progress", `${(normalized * 100).toFixed(3)}%`);
+}
+
+function setLineWordScanProgress(lineElement, progress, allowSmoothing = true) {
+  applyLineWordScanVisual(
+    lineElement,
+    resolveWordScanProgress(lineElement, normalizeWordScanProgress(progress)),
+    allowSmoothing);
+}
+
+// 横向滚动层：由独立透传的时间轴进度驱动，与擦亮是否开启无关；进度同时写到行上的
+// --line-scroll-progress，供布局变化后重算偏移时读取。
+function setLineScrollProgress(lineElement, progress) {
+  const normalized = resolveWordScanProgress(lineElement, normalizeWordScanProgress(progress));
+  if (normalized === null) {
+    lineElement.style.removeProperty("--line-scroll-progress");
+  } else {
+    lineElement.style.setProperty("--line-scroll-progress", `${(normalized * 100).toFixed(3)}%`);
+  }
+
   updateLineHorizontalScroll(lineElement, normalized);
 }
 
 function setWordScanProgress(progress, allowSmoothing = true) {
   setLineWordScanProgress(currentLineEl, progress, allowSmoothing);
+}
+
+function setScrollProgress(progress) {
+  setLineScrollProgress(currentLineEl, progress);
 }
 
 function updateTransitionWordScanProgress(progress, allowSmoothing = true) {
@@ -312,5 +336,13 @@ function updateTransitionWordScanProgress(progress, allowSmoothing = true) {
   trackEl.classList.toggle(
     "word-scan-transition",
     !transitionUsesTranslationPair && normalizeWordScanProgress(progress) !== null);
+}
+
+function updateTransitionScrollProgress(progress) {
+  transitionScrollProgress = progress;
+  const targetLine = transitionUsesTranslationPair
+    ? incomingTranslationOriginalLineEl
+    : nextLineEl;
+  setLineScrollProgress(targetLine, progress);
 }
 

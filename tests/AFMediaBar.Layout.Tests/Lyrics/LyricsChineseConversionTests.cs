@@ -99,6 +99,59 @@ public sealed class LyricsChineseConversionTests
     }
 
     [TestMethod]
+    public void ConversionWithoutAnyGlyphChangeLeavesTheFrameIdentical()
+    {
+        // 切换转换方向而歌词里没有任何可变字形时（简体文本走 t2s、纯拉丁文本走任意方向），投影结果必须
+        // 逐字相同：演示器据此判定"内容没变"，连帧都不重发，画面上什么都不该发生。这条同时钉住
+        // OpenCC 升级不会悄悄让"简体文本过一遍 t2s 也变字"——那会让每次切换都凭空起一次换行过渡。
+        // Switching the direction on lyrics with no convertible glyph (simplified text through t2s, Latin text
+        // through either direction) must leave the projection character-for-character identical: the presenter
+        // then sees "no content change" and does not even re-send the frame, so nothing at all should happen.
+        // This also pins down that an OpenCC upgrade cannot quietly make t2s rewrite already-simplified text —
+        // that would conjure a line transition out of every toggle.
+        var snapshot = Snapshot([new LyricLine(0, 10, "我在这里等你")], position: 2);
+
+        var off = ProjectWith(snapshot, LyricsChineseConversionMode.None, LyricsSecondaryLineMode.NextLine);
+        var toSimplified = ProjectWith(snapshot, LyricsChineseConversionMode.TraditionalToSimplified, LyricsSecondaryLineMode.NextLine);
+        Assert.AreEqual(off, toSimplified);
+
+        var toTraditional = ProjectWith(snapshot, LyricsChineseConversionMode.SimplifiedToTraditional, LyricsSecondaryLineMode.NextLine);
+        Assert.AreNotEqual(off, toTraditional);
+
+        var latin = Snapshot([new LyricLine(0, 10, "Never Gonna Give You Up")], position: 2);
+        var latinOff = ProjectWith(latin, LyricsChineseConversionMode.None, LyricsSecondaryLineMode.NextLine);
+        var latinConverted = ProjectWith(latin, LyricsChineseConversionMode.TraditionalToSimplified, LyricsSecondaryLineMode.NextLine);
+        Assert.AreEqual(latinOff, latinConverted);
+    }
+
+    [TestMethod]
+    public void JapaneseLyricsAreNeverConverted()
+    {
+        // 日文歌词与中文共用汉字：按字面转换会把「学校」写成「學校」这种日文不用的字形（OpenCC 的 S2T
+        // 实测正是如此）。检测到假名就不转换——切到任何方向，日文歌词的画面都必须一模一样，连后台都
+        // 不进，因此切换时也不该出现任何过渡。
+        // Japanese lyrics share kanji with Chinese: a glyph-level conversion would write 「學校」, a form
+        // Japanese does not use (OpenCC's S2T really does that). Kana detected means no conversion — switching
+        // to any direction must leave a Japanese line exactly as it is, without even entering the background
+        // queue, so no transition should appear on a toggle either.
+        var snapshot = Snapshot([new LyricLine(0, 10, "仮眠取って学校行かなきゃ")], position: 2);
+
+        var off = ProjectWith(snapshot, LyricsChineseConversionMode.None, LyricsSecondaryLineMode.NextLine);
+        var toTraditional = ProjectWith(snapshot, LyricsChineseConversionMode.SimplifiedToTraditional, LyricsSecondaryLineMode.NextLine);
+        Assert.AreEqual("仮眠取って学校行かなきゃ", toTraditional.Current);
+        Assert.AreEqual(off, toTraditional);
+
+        var toSimplified = ProjectWith(snapshot, LyricsChineseConversionMode.TraditionalToSimplified, LyricsSecondaryLineMode.NextLine);
+        Assert.AreEqual(off, toSimplified);
+
+        // 片假名（含长音符）同样算日文标记。
+        // Katakana (the prolonged sound mark included) is a Japanese marker too.
+        var katakana = Snapshot([new LyricLine(0, 10, "ラーメン食べたい")], position: 2);
+        var katakanaConverted = ProjectWith(katakana, LyricsChineseConversionMode.SimplifiedToTraditional, LyricsSecondaryLineMode.NextLine);
+        Assert.AreEqual("ラーメン食べたい", katakanaConverted.Current);
+    }
+
+    [TestMethod]
     public void ConversionDisabledKeepsOriginalTextAndLatinUntouched()
     {
         var snapshot = Snapshot([

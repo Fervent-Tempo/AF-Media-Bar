@@ -1385,7 +1385,7 @@
     <value>Chinese conversion</value>
   </data>
   <data name="Lyrics.Row.ChineseConversion.Description" xml:space="preserve">
-    <value>Show lyrics in Simplified or Traditional Chinese. Only the display changes; the retrieved lyrics stay as they are.</value>
+    <value>Show lyrics in Simplified or Traditional Chinese. Only the display changes; the retrieved lyrics stay as they are. Japanese lyrics are left untouched.</value>
   </data>
   <data name="Lyrics.Row.ChineseConversion.Direction.Title" xml:space="preserve">
     <value>Direction</value>
@@ -1479,6 +1479,15 @@
   </data>
   <data name="Lyrics.Row.FixedWidth.Length.Title" xml:space="preserve">
     <value>Lyric-box length</value>
+  </data>
+  <data name="Lyrics.Row.LongLineScroll.Description" xml:space="preserve">
+    <value>While the media bar follows its content, long lyrics scroll with the playback progress so an over-long line no longer takes up too much space. Only syllable-timed lyrics are affected.</value>
+  </data>
+  <data name="Lyrics.Row.LongLineScroll.Title" xml:space="preserve">
+    <value>Long lyric auto-scroll</value>
+  </data>
+  <data name="Lyrics.Row.LongLineScroll.Badge" xml:space="preserve">
+    <value>Enable Follow content first</value>
   </data>
   <data name="Lyrics.SecondLine.NextLine" xml:space="preserve">
     <value>Next lyric line</value>
@@ -3110,6 +3119,7 @@ Source: {2}</value></data>
   <data name="Settings.Related.IdleNote" xml:space="preserve"><value>No-media placeholder text</value></data>
   <data name="Settings.Related.TextLayout" xml:space="preserve"><value>Text layout and alignment</value></data>
   <data name="Settings.Related.TextAppearance" xml:space="preserve"><value>Text appearance</value></data>
+  <data name="Settings.Related.MediaBarLength" xml:space="preserve"><value>Media bar length</value></data>
   <data name="Settings.Related.LyricsPresentation" xml:space="preserve"><value>Lyrics presentation</value></data>
   <data name="Settings.Related.WidgetLayout" xml:space="preserve"><value>Widgets and order</value></data>
   <data name="Settings.Related.WidgetsSpectrum" xml:space="preserve"><value>Spectrum and performance</value></data>

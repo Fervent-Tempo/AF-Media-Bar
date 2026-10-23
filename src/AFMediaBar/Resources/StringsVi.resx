@@ -1367,7 +1367,7 @@
     <value>Khoảng cách ký tự</value>
   </data>
   <data name="Lyrics.Row.ChineseConversion.Description" xml:space="preserve">
-    <value>Hiển thị lời bài hát bằng chữ giản thể hoặc phồn thể. Chỉ thay đổi cách hiển thị; lời bài hát đã lấy vẫn giữ nguyên.</value>
+    <value>Hiển thị lời bài hát bằng chữ giản thể hoặc phồn thể. Chỉ thay đổi cách hiển thị; lời bài hát đã lấy vẫn giữ nguyên. Lời bài hát tiếng Nhật được giữ nguyên.</value>
   </data>
   <data name="Lyrics.Row.ChineseConversion.Direction.Description" xml:space="preserve">
     <value>Chọn dạng chữ muốn chuyển sang. Chọn “Tắt” để hiển thị lời bài hát đúng như nguồn cung cấp.</value>
@@ -1398,6 +1398,15 @@
   </data>
   <data name="Lyrics.Row.FixedWidth.Length.Title" xml:space="preserve">
     <value>Độ dài khung lời bài hát</value>
+  </data>
+  <data name="Lyrics.Row.LongLineScroll.Description" xml:space="preserve">
+    <value>Khi thanh media theo nội dung, lời dài sẽ tự động cuộn theo tiến trình phát để lời quá dài không chiếm quá nhiều không gian. Chỉ áp dụng cho lời có dấu thời gian từng chữ.</value>
+  </data>
+  <data name="Lyrics.Row.LongLineScroll.Title" xml:space="preserve">
+    <value>Tự động cuộn lời dài</value>
+  </data>
+  <data name="Lyrics.Row.LongLineScroll.Badge" xml:space="preserve">
+    <value>Hãy bật Theo nội dung trước</value>
   </data>
   <data name="Lyrics.Row.FixedWidth.Title" xml:space="preserve">
     <value>Chiều rộng cố định khung lời bài hát</value>
@@ -3148,6 +3157,7 @@ Nguồn: {2}</value></data>
   <data name="Settings.Related.IdleNote" xml:space="preserve"><value>Văn bản khi không có nội dung</value></data>
   <data name="Settings.Related.TextLayout" xml:space="preserve"><value>Bố cục và căn chỉnh văn bản</value></data>
   <data name="Settings.Related.TextAppearance" xml:space="preserve"><value>Giao diện văn bản</value></data>
+  <data name="Settings.Related.MediaBarLength" xml:space="preserve"><value>Chiều dài thanh media bar</value></data>
   <data name="Settings.Related.LyricsPresentation" xml:space="preserve"><value>Cách hiển thị lời bài hát</value></data>
   <data name="Settings.Related.WidgetLayout" xml:space="preserve"><value>Tiện ích và thứ tự</value></data>
   <data name="Settings.Related.WidgetsSpectrum" xml:space="preserve"><value>Thông số phổ &amp; hiệu năng</value></data>

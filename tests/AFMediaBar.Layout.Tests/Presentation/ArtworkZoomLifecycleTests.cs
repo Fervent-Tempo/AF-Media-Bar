@@ -34,7 +34,7 @@ public sealed class ArtworkZoomLifecycleTests
         control.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
         Invoke(control, "ShowArtworkHoverZoom");
         Invoke(control, "ShowArtworkHoverPreview", true);
-        Invoke(control, "UpdateWebLyricsPresentation", false);
+        Invoke(control, "UpdateWebLyricsPresentation", false, false);
         await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
         AssertRestored(control);
         Assert.IsFalse(((Popup)MediaBarTestAccess.GetField("_artworkHoverPreview", BindingFlags.Instance | BindingFlags.NonPublic)

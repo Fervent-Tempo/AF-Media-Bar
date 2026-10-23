@@ -148,6 +148,8 @@
       currentLineIndex: Number.isInteger(currentLineIndex) ? currentLineIndex : -1,
       progress: clamp01(source.progress),
       wordScanProgress: normalizeOptionalProgress(source.wordScanProgress),
+      // 横向滚动进度独立于擦亮进度：擦亮关闭时它仍然携带逐字时间轴，驱动长行滚动。
+      scrollProgress: normalizeOptionalProgress(source.scrollProgress),
       trackId: String(source.trackId ?? ""),
       isPlaying: source.isPlaying !== false,
       isPureMusic: source.isPureMusic === true

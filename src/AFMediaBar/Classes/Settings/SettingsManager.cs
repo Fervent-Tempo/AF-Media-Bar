@@ -193,6 +193,7 @@ public static class SettingsManager
         next.LyricsTextAlignment = defaults.LyricsTextAlignment;
         next.LyricsFixedWidthEnabled = defaults.LyricsFixedWidthEnabled;
         next.LyricsFixedWidthDip = defaults.LyricsFixedWidthDip;
+        next.LyricsLongLineScrollEnabled = defaults.LyricsLongLineScrollEnabled;
         Replace(next, SettingsResetScope.ContentLayout);
     }
 
@@ -354,6 +355,7 @@ public static class SettingsManager
             case nameof(AppSettings.LyricsLineGapPercent):
             case nameof(AppSettings.LyricsFixedWidthEnabled):
             case nameof(AppSettings.LyricsFixedWidthDip):
+            case nameof(AppSettings.LyricsLongLineScrollEnabled):
             case nameof(AppSettings.LyricsChineseConversion):
             case nameof(AppSettings.LyricsInfoLineFilterEnabled):
             case nameof(AppSettings.LyricsFuriganaFilterEnabled):

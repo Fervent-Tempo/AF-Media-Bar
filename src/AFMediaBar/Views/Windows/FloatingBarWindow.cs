@@ -297,13 +297,13 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     }
 
     /// <summary>
-    /// 只影响歌词显示方式的设置：逐字擦亮、未唱部分透明度、字距、行距、简繁转换、振假名过滤与对齐。
+    /// 只影响歌词显示方式的设置：逐字擦亮、未唱部分透明度、字距、行距、简繁转换、振假名过滤、长歌词动态滚动与对齐。
     /// 这类设置不该触发整条栏的重排——重排会让画面闪一下，而它们要么通过 Web 歌词样式生效，要么由歌词演示器
     /// 自己重投影（并申请它需要的尺寸）。
     /// Settings that only change how lyrics are displayed: syllable highlight, unsung opacity, character spacing, line
-    /// gap, Chinese conversion, the furigana filter, and alignment. They must not re-layout the whole bar, which is what
-    /// makes it flash: they either land as a web lyrics style or are re-projected by the lyrics presenter, which also
-    /// requests the size it needs.
+    /// gap, Chinese conversion, the furigana filter, the long-lyric auto-scroll, and alignment. They must not
+    /// re-layout the whole bar, which is what makes it flash: they either land as a web lyrics style or are
+    /// re-projected by the lyrics presenter, which also requests the size it needs.
     /// </summary>
     private static bool IsLyricsPresentationSetting(string? propertyName) => propertyName is
         nameof(AppSettings.LyricsSyllableHighlightEnabled) or
@@ -312,6 +312,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         nameof(AppSettings.LyricsLineGapPercent) or
         nameof(AppSettings.LyricsChineseConversion) or
         nameof(AppSettings.LyricsFuriganaFilterEnabled) or
+        nameof(AppSettings.LyricsLongLineScrollEnabled) or
         nameof(AppSettings.LyricsBracketSymbolsHidden) or
         nameof(AppSettings.LyricsTextAlignment);
 
@@ -326,7 +327,10 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             _mediaControl.ApplyPresentationSettings(PresentationSettings);
             // 字距、未唱部分透明度与对齐通过外观落到 Web 歌词，其余项在演示器重投影时生效。
             _mediaControl.ApplyAppearanceSettings();
-            _mediaControl.UpdateSongInfo(_lastSnapshot);
+            // 歌词呈现设置变更：可见内容一字未变时连帧都不重发，与演示器守卫是同一条规则。
+            // Lyrics-presentation settings change: with the visible content character-for-character
+            // unchanged not even the frame is re-sent — the same rule the presenter's guard applies.
+            _mediaControl.UpdateSongInfo(_lastSnapshot, skipUnchangedLyricsContent: true);
         }
         finally { _applyingSettings = false; }
     }

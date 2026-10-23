@@ -1385,7 +1385,7 @@
     <value>歌词繁简转换</value>
   </data>
   <data name="Lyrics.Row.ChineseConversion.Description" xml:space="preserve">
-    <value>把显示的歌词改成简体或繁体；只改显示，不改动取到的歌词本身。</value>
+    <value>把显示的歌词改成简体或繁体；只改显示，不改动取到的歌词本身。日文歌词不受影响。</value>
   </data>
   <data name="Lyrics.Row.ChineseConversion.Direction.Title" xml:space="preserve">
     <value>转换方向</value>
@@ -1479,6 +1479,15 @@
   </data>
   <data name="Lyrics.Row.FixedWidth.Length.Title" xml:space="preserve">
     <value>歌词框长度</value>
+  </data>
+  <data name="Lyrics.Row.LongLineScroll.Description" xml:space="preserve">
+    <value>开启「媒体栏跟随内容变化」时，长歌词随演唱进度自动滚动，避免媒体栏因歌词过长而占用过多空间。仅对逐字歌词生效。</value>
+  </data>
+  <data name="Lyrics.Row.LongLineScroll.Title" xml:space="preserve">
+    <value>长歌词动态滚动</value>
+  </data>
+  <data name="Lyrics.Row.LongLineScroll.Badge" xml:space="preserve">
+    <value>需先开启随内容变化</value>
   </data>
   <data name="Lyrics.SecondLine.NextLine" xml:space="preserve">
     <value>下一句歌词</value>
@@ -3110,6 +3119,7 @@
   <data name="Settings.Related.IdleNote" xml:space="preserve"><value>无媒体提示文字</value></data>
   <data name="Settings.Related.TextLayout" xml:space="preserve"><value>文字布局与对齐</value></data>
   <data name="Settings.Related.TextAppearance" xml:space="preserve"><value>文字外观</value></data>
+  <data name="Settings.Related.MediaBarLength" xml:space="preserve"><value>媒体栏长度方式</value></data>
   <data name="Settings.Related.LyricsPresentation" xml:space="preserve"><value>歌词样式</value></data>
   <data name="Settings.Related.WidgetLayout" xml:space="preserve"><value>小组件与顺序</value></data>
   <data name="Settings.Related.WidgetsSpectrum" xml:space="preserve"><value>频谱与性能参数</value></data>

@@ -181,6 +181,17 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>长歌词动态滚动：逐字歌词超过封顶宽度时随演唱进度横向滚动。/ Long lyrics scroll with the playback progress past the width cap.</summary>
+    public bool LongLineScrollEnabled
+    {
+        get => _configuration.Current.LyricsLongLineScrollEnabled;
+        set
+        {
+            if (!_configuration.IsActive || value == LongLineScrollEnabled) return;
+            _configuration.SetLyricsLongLineScrollEnabled(value);
+        }
+    }
+
     /// <summary>只在显示时清理来源附加的格式标记（行首斜杠、整行【】或〖〗符号）。/ The source's format markers (a leading slash, enclosing 【】 or 〖〗) are cleaned from the display only.</summary>
     public bool BracketSymbolsHidden
     {
@@ -189,34 +200,6 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         {
             if (!_configuration.IsActive || value == BracketSymbolsHidden) return;
             _configuration.SetLyricsBracketSymbolsHidden(value);
-        }
-    }
-
-    /// <summary>
-    /// 用户上次选过的方向：总开关关掉时方向也一起失效（存 <c>None</c>），再打开时能回到原方向，不必重选。
-    /// The direction the user last picked: turning the master switch off clears the direction as well (stored as <c>None</c>), so
-    /// turning it back on restores that direction instead of asking again.
-    /// </summary>
-    private LyricsChineseConversionMode _lastConversionDirection = LyricsChineseConversionMode.SimplifiedToTraditional;
-
-    /// <summary>
-    /// 歌词繁简转换的总开关：关掉就是 <c>None</c>，歌词按来源原样显示。
-    /// Master switch for the Chinese conversion of lyrics: off means <c>None</c>, so lyrics show exactly as their source wrote them.
-    ///
-    /// 开关与下拉写的是同一个设置，两者不会各说各话：下拉选到"不转换"时开关自然变成关。
-    /// The switch and the list write one and the same setting, so they can never disagree — choosing "off" in the list turns the
-    /// switch off by itself.
-    /// </summary>
-    public bool ChineseConversionEnabled
-    {
-        get => _configuration.Current.LyricsChineseConversion != LyricsChineseConversionMode.None;
-        set
-        {
-            if (value == ChineseConversionEnabled)
-                return;
-            if (!value)
-                _lastConversionDirection = ChineseConversion;
-            ChineseConversion = value ? _lastConversionDirection : LyricsChineseConversionMode.None;
         }
     }
 
@@ -231,18 +214,10 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
             if (!_configuration.IsActive || value == ChineseConversion)
                 return;
             if (value != LyricsChineseConversionMode.None)
-            {
-                _lastConversionDirection = value;
-            }
-
-            if (value != LyricsChineseConversionMode.None)
                 LyricsChineseConverter.WarmUp();
             _configuration.SetLyricsChineseConversion(value);
         }
     }
-
-    /// <summary>方向下拉只在总开关打开时可改。/ The direction list is editable only while the master switch is on.</summary>
-    public bool CanConfigureChineseConversion => ChineseConversionEnabled;
 
     /// <summary>取词来源启用列表，执行顺序由代码策略决定。/ Enabled sources; execution order belongs to the retrieval policy.</summary>
     public ObservableCollection<LyricsSourceSettingItem> SourceEntries { get; } = [];
@@ -297,6 +272,16 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
     /// <summary>行距只在双行歌词开启时可用：单行时没有"两行之间"可调。/ The line gap applies only while two-line lyrics are on: with a single line there is no "between" to adjust.</summary>
     public bool CanConfigureLineGap => LyricsEnabled && TwoLineLyricsEnabled;
 
+    /// <summary>
+    /// 长歌词动态滚动只在媒体栏长度方式为「随内容变化」时可用：固定长度下媒体栏总长不再随内容伸缩，
+    /// 封顶与横向滚动都没有落点，开关因此置灰并提示先去开启「随内容变化」。
+    /// The long-lyric auto-scroll only applies while the media bar follows content: with a fixed length the bar keeps
+    /// its configured size, the lyric area no longer stretches with the content, and neither the cap nor the scroll
+    /// has anything to act on — the switch greys out and points at the "Follow content" length mode.
+    /// </summary>
+    public bool CanConfigureLongLineScroll =>
+        _configuration.Current.TaskbarExperience.LengthMode == TaskbarLengthMode.FollowContent;
+
     public void ResetLyrics() => _configuration.Reset(SettingsResetScope.Lyrics);
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
@@ -331,9 +316,16 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         if (e.PropertyName == nameof(AppSettings.LyricsArtistSeparators))
             OnPropertyChanged(nameof(ArtistSeparatorsText));
         if (e.PropertyName == nameof(AppSettings.LyricsChineseConversion))
-            RaiseChineseConversionProperties();
+            OnPropertyChanged(nameof(ChineseConversion));
         if (e.PropertyName == nameof(AppSettings.LyricsFuriganaFilterEnabled))
             OnPropertyChanged(nameof(FuriganaFilterEnabled));
+        if (e.PropertyName == nameof(AppSettings.LyricsLongLineScrollEnabled))
+            OnPropertyChanged(nameof(LongLineScrollEnabled));
+        // 媒体栏长度方式决定长歌词动态滚动有没有落点：切到「随内容变化」或「固定长度」时要即时置灰/放行开关。
+        // The media bar length mode decides whether the long-lyric auto-scroll has anything to act on: switching to
+        // "Follow content" or "Fixed" must grey out or release the switch right away.
+        if (e.PropertyName == nameof(AppSettings.TaskbarExperience))
+            OnPropertyChanged(nameof(CanConfigureLongLineScroll));
         if (e.PropertyName == nameof(AppSettings.LyricsBracketSymbolsHidden))
             OnPropertyChanged(nameof(BracketSymbolsHidden));
         if (e.ResetScope == SettingsResetScope.Components || e.PropertyName is nameof(AppSettings.LyricsEnabled)
@@ -356,6 +348,7 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(SyllableHighlightEnabled)); OnPropertyChanged(nameof(UnsungOpacityPercent));
         OnPropertyChanged(nameof(UnsungOpacityText));         OnPropertyChanged(nameof(InfoLineFilterEnabled));
         OnPropertyChanged(nameof(FuriganaFilterEnabled));
+        OnPropertyChanged(nameof(LongLineScrollEnabled));
         OnPropertyChanged(nameof(BracketSymbolsHidden));
         OnPropertyChanged(nameof(CharacterSpacingPercent)); OnPropertyChanged(nameof(CharacterSpacingText));
         OnPropertyChanged(nameof(LineGapPercent)); OnPropertyChanged(nameof(LineGapText));
@@ -364,15 +357,9 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CanConfigureFixedWidth)); OnPropertyChanged(nameof(CanConfigureFixedWidthDip));
         OnPropertyChanged(nameof(CanConfigureTwoLine)); OnPropertyChanged(nameof(CanConfigureSecondary));
         OnPropertyChanged(nameof(CanConfigureUnsungOpacity)); OnPropertyChanged(nameof(CanConfigureLineGap));
+        OnPropertyChanged(nameof(CanConfigureLongLineScroll));
         OnPropertyChanged(nameof(IsEverySourceDisabled));
-        RaiseChineseConversionProperties();
-    }
-
-    private void RaiseChineseConversionProperties()
-    {
-        OnPropertyChanged(nameof(ChineseConversionEnabled));
         OnPropertyChanged(nameof(ChineseConversion));
-        OnPropertyChanged(nameof(CanConfigureChineseConversion));
     }
 
     /// <summary>

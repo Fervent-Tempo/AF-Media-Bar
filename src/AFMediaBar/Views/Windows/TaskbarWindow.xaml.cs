@@ -990,7 +990,14 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     /// Applies a media snapshot to the taskbar host and schedules repositioning.
     /// </summary>
     /// <param name="snapshot">不可变媒体快照 / Immutable media snapshot.</param>
-    public void ApplySnapshot(MediaSnapshot snapshot)
+    /// <param name="lyricsSettingsRefresh">
+    /// 本次快照重放是否由歌词呈现类设置变更触发。传 true 时歌词帧遵循"可见内容一字未变就不重发"，
+    /// 与演示器守卫合成同一条规则；媒体快照递送不传，保持原有行为。
+    /// Whether this snapshot replay is driven by a lyrics-presentation settings change. With true the lyrics
+    /// frame follows "no visible change, no re-send", forming one rule with the presenter's own guard; media
+    /// snapshot delivery does not pass it and keeps its behaviour.
+    /// </param>
+    public void ApplySnapshot(MediaSnapshot snapshot, bool lyricsSettingsRefresh = false)
     {
         if (!Dispatcher.CheckAccess())
         {
@@ -1020,7 +1027,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         // Delegate UI update to the original media control and its taskbar-only overlay.
         MediaControl.AllowRestConnectionTransition = !_isDragging && !IsTaskbarPresentationSuspended &&
             !_hostActions.IsEnvironmentRecovering;
-        MediaControl.UpdateSongInfo(snapshot);
+        MediaControl.UpdateSongInfo(snapshot, lyricsSettingsRefresh);
         MediaControl.ApplyAppearanceSettings();
         SynchronizeSpectrumTimer();
         // 新宿主构造时仍是断开快照；若性能组件没有配置为“无媒体时保留”，构造阶段不会取得指标租约。

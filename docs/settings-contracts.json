@@ -109,6 +109,7 @@
     "lyricsFuriganaFilterEnabled": "unreleased",
     "lyricsInfoLineFilterEnabled": "v1.2.0",
     "lyricsLineGapPercent": "v1.3.0",
+    "lyricsLongLineScrollEnabled": "unreleased",
     "lyricsSecondaryLine": {
       "$release": "v1.2.0",
       "order": "v1.2.0"

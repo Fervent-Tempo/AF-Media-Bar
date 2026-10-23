@@ -167,6 +167,66 @@ public static class LyricsFixedWidth
 }
 
 /// <summary>
+/// 「长歌词动态滚动」的宽度封顶：跟随内容模式下，逐字歌词超过封顶宽度时按封顶宽度呈现，
+/// 由 Web 层既有的横向滚动机制保证当前演唱内容可见，媒体栏不再被超长歌词撑开。
+/// Width cap for the long-lyric auto-scroll: in follow-content mode a syllable-timed line wider than the cap is
+/// presented at the capped width, and the web layer's existing horizontal scroll keeps the sung part visible, so an
+/// over-long line no longer stretches the media bar.
+/// </summary>
+public static class LyricsLongLineScroll
+{
+    /// <summary>
+    /// 封顶宽度按全角字个数折算：全角字符宽约等于一个 em，因此封顶值随当前有效字号等比缩放，
+    /// 不同字号下可见字数稳定，也不依赖固定字符数阈值。
+    /// The cap is expressed in full-width characters: a full-width glyph is about one em wide, so the cap scales
+    /// with the active font size, keeps the visible character count stable, and needs no fixed character threshold.
+    /// </summary>
+    public const int MaximumFullWidthCharacters = 16;
+
+    /// <summary>
+    /// 按当前有效歌词字号换算封顶宽度（DIP）。
+    /// Converts the cap into DIP against the active effective lyric font size.
+    /// </summary>
+    public static double ResolveMaximumDip(double effectiveFontSizeDip) =>
+        MaximumFullWidthCharacters * Math.Max(0, effectiveFontSizeDip);
+
+    /// <summary>
+    /// 跟随内容模式的歌词宽度：开启封顶且当前行有逐字时间轴时取封顶值，否则原样返回。
+    /// 行级歌词没有逐字时间轴（Web 层无法滚动），因此不封顶，维持原有行为。
+    /// Resolves the lyric width in follow-content mode: capped while the feature is on and the active line carries a
+    /// syllable timeline, returned unchanged otherwise. Line-level lyrics cannot scroll in the web layer, so they are
+    /// never capped and keep their existing behavior.
+    /// </summary>
+    public static double ResolveFollowContentWidth(
+        double measuredWidthDip,
+        bool enabled,
+        bool hasSyllableTimeline,
+        double effectiveFontSizeDip) =>
+        enabled && hasSyllableTimeline
+            ? Math.Min(measuredWidthDip, ResolveMaximumDip(effectiveFontSizeDip))
+            : measuredWidthDip;
+
+    /// <summary>
+    /// 跟随内容模式下主行与次行（译文或下一句）的合成宽度：封顶只作用于主行，次行保持自然宽度，取两者较大值。
+    /// 主行是唯一带逐字时间轴、能随演唱进度在 Web 层横向滚动的行；次行没有逐字时间轴也不会随进度滚动，
+    /// 封顶只会把它截断（省略号裁掉右侧），因此它保持自然宽度——次行更长时媒体栏跟随次行。
+    /// Combines the primary and secondary (translation or next line) widths in follow-content mode: the cap applies to
+    /// the primary line only, the secondary keeps its natural width, and the larger of the two wins. The primary is the
+    /// only line with a syllable timeline that can scroll horizontally with the singing progress; the secondary has no
+    /// timeline and never scrolls, so capping it would only clip it — when the secondary is longer the bar follows it.
+    /// </summary>
+    public static double ResolveFollowContentWidthPair(
+        double primaryWidthDip,
+        double secondaryWidthDip,
+        bool enabled,
+        bool hasSyllableTimeline,
+        double effectiveFontSizeDip) =>
+        Math.Max(
+            ResolveFollowContentWidth(primaryWidthDip, enabled, hasSyllableTimeline, effectiveFontSizeDip),
+            secondaryWidthDip);
+}
+
+/// <summary>
 /// 第二行歌词的来源顺序：列表顺序就是优先级，未列出的来源不会被使用。
 /// The second lyric line's source order: the list order is the priority and a source missing from the list is never used.
 ///
