@@ -342,7 +342,7 @@ public partial class TaskBarMediaControl
 
 
     /// <summary>复用原 TaskBarMediaControl 的 hover 色彩和节奏，但将效果限制在单个组件。</summary>
-    private void AnimateComponentHover(Border surface, bool isHovered, bool immediate = false)
+    private void AnimateComponentHover(Border surface, bool isHovered, bool immediate = false, TimeSpan? colorDuration = null)
     {
         if (isHovered && !CanUseTaskbarRestHover(surface))
             return;
@@ -367,42 +367,28 @@ public partial class TaskBarMediaControl
         }
 
         var motion = CurrentMotion;
+        var duration = colorDuration ?? (immediate ? TimeSpan.Zero : ColorTransitionBrush.ResolveDuration(animate: true));
+        TransitionColor(surface.Name + ".Background", new SolidColorBrush(backgroundColor), duration, background, immediate);
+        TransitionColor(surface.Name + ".Border", new SolidColorBrush(borderColor), duration, border, immediate);
         if (immediate || !motion.UseTransitions)
         {
-            background.BeginAnimation(SolidColorBrush.ColorProperty, null);
             background.BeginAnimation(SolidColorBrush.OpacityProperty, null);
-            border.BeginAnimation(SolidColorBrush.ColorProperty, null);
             border.BeginAnimation(SolidColorBrush.OpacityProperty, null);
-            background.Color = backgroundColor;
             background.Opacity = backgroundOpacity;
-            border.Color = borderColor;
             border.Opacity = borderOpacity;
             return;
         }
 
-        var duration = motion.StandardDuration;
-        background.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation
-        {
-            To = backgroundColor,
-            Duration = duration,
-            EasingFunction = easingMode == EasingMode.EaseOut ? CreateEaseOut() : CreateEaseInOut()
-        });
         background.BeginAnimation(SolidColorBrush.OpacityProperty, new DoubleAnimation
         {
             To = backgroundOpacity,
-            Duration = duration,
-            EasingFunction = easingMode == EasingMode.EaseOut ? CreateEaseOut() : CreateEaseInOut()
-        });
-        border.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation
-        {
-            To = borderColor,
-            Duration = duration,
+            Duration = motion.StandardDuration,
             EasingFunction = easingMode == EasingMode.EaseOut ? CreateEaseOut() : CreateEaseInOut()
         });
         border.BeginAnimation(SolidColorBrush.OpacityProperty, new DoubleAnimation
         {
             To = borderOpacity,
-            Duration = duration,
+            Duration = motion.StandardDuration,
             EasingFunction = easingMode == EasingMode.EaseOut ? CreateEaseOut() : CreateEaseInOut()
         });
     }
@@ -495,20 +481,23 @@ public partial class TaskBarMediaControl
         _artworkHover.HideArtworkHoverZoom(immediate: true);
     }
 
-    private void RefreshTaskbarHoverAppearance()
+    private void RefreshTaskbarHoverAppearance(bool animateColor = false)
     {
         // 封面的悬停态用 IsPointerOverArtwork（屏幕几何，捕获免疫）判定，理由同 RefreshArtworkHoverPresentation：
         // 唯有封面会被换树进 Popup，其余组件住在主树里，IsMouseOver 对它们始终诚实。
         // The artwork's hover state comes from IsPointerOverArtwork (screen geometry, capture-immune), same reasoning as in
         // RefreshArtworkHoverPresentation: only the artwork ever re-parents into its Popup, while the other widgets live in the
         // main tree where IsMouseOver stays honest.
-        AnimateComponentHover(SongImageHoverOverlay, _artworkHover.IsPointerOverArtwork(), immediate: true);
+        var duration = ColorTransitionBrush.ResolveDuration(animateColor);
+        AnimateComponentHover(SongImageHoverOverlay, _artworkHover.IsPointerOverArtwork(), immediate: !animateColor, colorDuration: duration);
         _artworkHover.RefreshArtworkHoverPresentation();
-        AnimateComponentHover(SongInfoHoverOverlay, IsTextSurfaceHovered, immediate: true);
-        AnimateComponentHover(TaskbarSpectrumHoverSurface, TaskbarSpectrumHoverSurface.IsMouseOver, immediate: true);
-        AnimateComponentHover(TaskbarPerformanceHoverSurface, TaskbarPerformanceHoverSurface.IsMouseOver, immediate: true);
-        AnimateComponentHover(TaskbarOutputDeviceHoverSurface, TaskbarOutputDeviceHoverSurface.IsMouseOver, immediate: true);
-        AnimateComponentHover(TaskbarVolumeHoverSurface, TaskbarVolumeHoverSurface.IsMouseOver, immediate: true);
+        AnimateComponentHover(SongInfoHoverOverlay, IsTextSurfaceHovered, immediate: !animateColor, colorDuration: duration);
+        AnimateComponentHover(TaskbarSpectrumHoverSurface, TaskbarSpectrumHoverSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
+        AnimateComponentHover(TaskbarPerformanceHoverSurface, TaskbarPerformanceHoverSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
+        AnimateComponentHover(TaskbarInputDeviceHoverSurface, TaskbarInputDeviceHoverSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
+        AnimateComponentHover(TaskbarOutputDeviceHoverSurface, TaskbarOutputDeviceHoverSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
+        AnimateComponentHover(TaskbarVolumeHoverSurface, TaskbarVolumeHoverSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
+        AnimateComponentHover(TaskbarBatterySurface, TaskbarBatterySurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
     }
 
     private void SongImageBorder_MouseEnter(object sender, MouseEventArgs e)

@@ -13,6 +13,7 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
+using AFMediaBar.Components;
 using AFMediaBar.Resources;
 using static AFMediaBar.Classes.Interop.NativeMethods;
 
@@ -27,6 +28,8 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     private readonly NativeMouseInputMonitor _input;
     private readonly Border _line;
     private readonly Border _outline;
+    private readonly ColorTransitionBrush _lineColor = new();
+    private readonly ColorTransitionBrush _outlineColor = new();
     private readonly Grid _marks;
     private readonly Border _visualHost;
     private readonly TranslateTransform _markTranslation = new();
@@ -263,8 +266,9 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         if (_disposed) return;
         if (decision is not null) _foregroundDecision = decision;
         var brushes = HandleIndicatorAppearance.Resolve(_foregroundDecision);
-        _line.Background = brushes.Line;
-        _outline.Background = brushes.Outline;
+        var duration = ColorTransitionBrush.ResolveDuration(_contrastReady && !_isHiding && IsVisible && decision is not null);
+        _line.Background = _lineColor.Apply(brushes.Line, duration);
+        _outline.Background = _outlineColor.Apply(brushes.Outline, duration);
     }
 
     private void RefreshContrast()
@@ -296,6 +300,8 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
 
     private void StopInteraction()
     {
+        _lineColor.Finish();
+        _outlineColor.Finish();
         _pointerTimer.Stop();
         _revealVersion++;
         _initialContrastCancellation?.Cancel();
@@ -323,6 +329,8 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     private void BeginPointerLeaveDismissal()
     {
         if (_isHiding) return;
+        _lineColor.Finish();
+        _outlineColor.Finish();
         _canResumeDismissal = true;
         _isPressed = false;
         _contrastSampling.Invalidate(clearDecision: false);

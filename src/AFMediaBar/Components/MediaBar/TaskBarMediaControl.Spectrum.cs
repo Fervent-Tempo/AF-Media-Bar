@@ -84,7 +84,7 @@ public partial class TaskBarMediaControl
     /// contrast stay identical to the text as well.
     /// </summary>
     /// <param name="foreground">媒体文字正在使用的画刷。/ Brush currently used by the media text.</param>
-    internal void ApplySpectrumForeground(Brush foreground)
+    internal void ApplySpectrumForeground(Brush foreground, TimeSpan colorDuration = default)
     {
         Brush brush;
         Color? color = null;
@@ -96,7 +96,7 @@ public partial class TaskBarMediaControl
             color = PlayerForegroundPolicy.ToSpectrumForeground(resolved);
             if (color == _spectrumForegroundColor)
                 return;
-            brush = CreateFrozenBrush(color.Value);
+            brush = TransitionColor("SpectrumForeground", new SolidColorBrush(color.Value), colorDuration);
         }
         else
         {

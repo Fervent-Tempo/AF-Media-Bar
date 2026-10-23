@@ -115,10 +115,12 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
         }
     }
 
-    public void ApplyStyle(LyricsWebStyle style)
+    public void ApplyStyle(LyricsWebStyle style) => ApplyStyle(style, TimeSpan.Zero);
+
+    internal void ApplyStyle(LyricsWebStyle style, TimeSpan colorDuration, bool finishColorTransition = false)
     {
         ArgumentNullException.ThrowIfNull(style);
-        if (_disposed || _failed || Equals(_lastStyle, style))
+        if (_disposed || _failed || !finishColorTransition && Equals(_lastStyle, style))
             return;
 
         // Snapshot updates can reapply appearance without changing it; skip the WebView2
@@ -148,7 +150,8 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
             style.SecondaryFontSize,
             style.MetadataAlignment,
             style.ReduceMotion,
-            style.Compact
+            style.Compact,
+            colorTransitionMilliseconds = IsReady ? Math.Clamp(colorDuration.TotalMilliseconds, 0, 180) : 0
         });
         StartDrain();
     }

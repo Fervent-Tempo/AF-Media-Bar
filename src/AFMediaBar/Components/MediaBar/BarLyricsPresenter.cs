@@ -482,7 +482,9 @@ public partial class TaskBarMediaControl
             }
         }
 
-        internal void ApplyWebLyricsStyle()
+        internal void ApplyWebLyricsStyle() => ApplyWebLyricsStyle(TimeSpan.Zero);
+
+        private void ApplyWebLyricsStyle(TimeSpan colorDuration, bool finishColorTransition = false)
         {
             if (_lyricsWebRenderer is null)
                 return;
@@ -524,7 +526,7 @@ public partial class TaskBarMediaControl
                 _owner.VerticalSecondaryFontSize,
                 _owner.PresentationSettings.TaskbarExperience.MediaTextAlignment.ToString(),
                 !_owner.CurrentMotion.UseContinuousMotion,
-                _owner.UsesAdaptiveTaskbarText && _owner._textBudget.HideSecondary));
+                _owner.UsesAdaptiveTaskbarText && _owner._textBudget.HideSecondary), colorDuration, finishColorTransition);
         }
 
         internal static string ToCssColor(Brush brush, double opacity)
@@ -571,13 +573,15 @@ public partial class TaskBarMediaControl
             return width;
         }
 
-        internal void SetWebLyricsAppearance(Brush foreground, bool needsContrastShadow, bool usesLightText)
+        internal void SetWebLyricsAppearance(Brush foreground, bool needsContrastShadow, bool usesLightText, TimeSpan colorDuration = default)
         {
             _lyricsForeground = foreground;
             _lyricsNeedsContrastShadow = needsContrastShadow;
             _lyricsUsesLightText = usesLightText;
-            ApplyWebLyricsStyle();
+            ApplyWebLyricsStyle(colorDuration);
         }
+
+        internal void FinishColorTransition() => ApplyWebLyricsStyle(TimeSpan.Zero, finishColorTransition: true);
 
         internal void StopWebLyrics()
         {

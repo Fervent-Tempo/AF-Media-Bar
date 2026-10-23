@@ -1,4 +1,6 @@
 // 接收宿主协议并协调布局、样式与呈现模块；模块按 LyricsWebViewRenderer 中的顺序内嵌。
+let hasAppliedColorStyle = false;
+
 function clamp01(value) {
   const parsed = Number(value);
   if (Number.isNaN(parsed)) {
@@ -395,6 +397,12 @@ const lyricsApi = {
     if (!payload || typeof payload !== "object") {
       return;
     }
+
+    const colorDuration = Number(payload.colorTransitionMilliseconds);
+    const transitionDuration = hasAppliedColorStyle && Number.isFinite(colorDuration)
+      ? Math.max(0, Math.min(180, colorDuration)) : 0;
+    root.style.setProperty("--color-transition-duration", `${transitionDuration}ms`);
+    hasAppliedColorStyle = true;
 
     // Map Han code points first; otherwise a Latin font that includes Han glyphs masks the Chinese selection.
     // 汉字单独映射，西文字体即使也有汉字字形，也不能遮住用户选择的中文字体。

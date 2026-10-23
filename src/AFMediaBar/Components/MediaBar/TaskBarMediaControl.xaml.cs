@@ -175,6 +175,7 @@ namespace AFMediaBar.Components
             };
             Unloaded += (_, _) =>
             {
+                FinishColorTransitions();
                 SuspendQuickLaunchPresentation();
                 _artworkHover.Detach();
                 HideTaskbarHoverLayer(immediate: true);
@@ -199,6 +200,7 @@ namespace AFMediaBar.Components
         /// <summary>宿主最终关闭时释放控件级呈现资源；普通卸载仍允许重新加载。</summary>
         internal void DisposePresentation()
         {
+            FinishColorTransitions();
             SuspendQuickLaunchPresentation();
             CancelQuickLaunchInteraction();
             _quickLaunchSession?.Dispose();
@@ -896,10 +898,13 @@ namespace AFMediaBar.Components
         /// </summary>
         public void ApplyAdaptiveForegroundDecision(PlayerForegroundDecision? decision)
         {
+            var canAnimate = _adaptiveColorPresented && decision is not null && IsLoaded && IsVisible && !_isHostVisibilitySuspended &&
+                PresentationSettings.Appearance.PlayerForegroundMode == PlayerForegroundMode.Automatic;
+            _adaptiveColorPresented = decision is not null && IsLoaded && IsVisible && !_isHostVisibilitySuspended;
             if (_adaptiveForegroundDecision == decision)
                 return;
             _adaptiveForegroundDecision = decision;
-            ApplyAppearanceSettings();
+            ApplyAppearanceSettings(canAnimate);
         }
 
         /// <summary>
@@ -1563,6 +1568,7 @@ namespace AFMediaBar.Components
             _isHostVisibilitySuspended = suspended;
             if (suspended)
             {
+                FinishColorTransitions();
                 SuspendQuickLaunchPresentation();
                 SettleTaskbarPointerVisuals();
                 _artworkHover.AnimateArtworkHover(false, immediate: true);
@@ -1696,7 +1702,9 @@ namespace AFMediaBar.Components
         /// 应用任务栏播放器文字和透明背景。
         /// Applies taskbar player text and its transparent background.
         /// </summary>
-        public void ApplyAppearanceSettings()
+        public void ApplyAppearanceSettings() => ApplyAppearanceSettings(animateColor: false);
+
+        private void ApplyAppearanceSettings(bool animateColor)
         {
             var appearance = PresentationSettings.Appearance.Normalize();
             ApplyNoteColor();
@@ -1712,6 +1720,10 @@ namespace AFMediaBar.Components
                 SystemParameters.HighContrast,
                 isDark,
                 _adaptiveForegroundDecision);
+            if (appearance.PlayerForegroundMode != PlayerForegroundMode.Automatic) _adaptiveColorPresented = false;
+            var colorDuration = ColorTransitionBrush.ResolveDuration(animateColor);
+            if (presentation.UsesSystemColors || !CurrentMotion.UseTransitions || appearance.PlayerForegroundMode != PlayerForegroundMode.Automatic)
+                foreach (var transition in _colorTransitions.Values) transition.Finish();
 
             Brush foreground;
             if (presentation.UsesSystemColors)
@@ -1723,20 +1735,21 @@ namespace AFMediaBar.Components
                 foreground = presentation.UsesLightText ? Brushes.White : DarkPlayerForeground;
             }
 
-            SongTitle.Foreground = foreground;
-            SongArtist.Foreground = foreground;
-            System.Windows.Documents.TextElement.SetForeground(TaskbarPerformanceItems, foreground);
+            var displayedForeground = TransitionColor("PlayerForeground", foreground, colorDuration);
+            SongTitle.Foreground = displayedForeground;
+            SongArtist.Foreground = displayedForeground;
+            System.Windows.Documents.TextElement.SetForeground(TaskbarPerformanceItems, displayedForeground);
             // 静置层的设备与音量图标和媒体文字取同一支自动前景：它们铺在同一块任务栏表面上。
             // The rest layer's device and volume glyphs take the same automatic foreground as the media text: they sit on the same
             // taskbar surface.
-            TaskbarOutputDeviceGlyph.Foreground = foreground;
-            TaskbarInputDeviceGlyph.Foreground = foreground;
-            TaskbarVolumeGlyph.Foreground = foreground;
+            TaskbarOutputDeviceGlyph.Foreground = displayedForeground;
+            TaskbarInputDeviceGlyph.Foreground = displayedForeground;
+            TaskbarVolumeGlyph.Foreground = displayedForeground;
             // 频谱与文字取同一支自动前景：两者铺在同一块任务栏表面上，分开判断只会在同一背景上给出两种颜色。
             // The spectrum takes the same automatic foreground as the text: both sit on the same taskbar surface, and judging
             // them separately would only produce two colours over one background.
-            ApplySpectrumForeground(foreground);
-            ApplyTaskbarHoverAppearance(foreground);
+            ApplySpectrumForeground(foreground, colorDuration);
+            ApplyTaskbarHoverAppearance(foreground, colorDuration);
             // 暂停遮罩要伪装成"封面格底下那块任务栏表面"（理由见 ApplyArtworkDimming），所以它的颜色取上面两支文字前景的
             // <b>另一端</b>：表面亮就盖白、表面暗就盖深、高对比度跟系统窗口底色。于是它跟的不是"系统深浅色"这么粗的一档，而是同一个
             // 权威判定 presentation——里面还含宿主从真实屏幕背景采样出的自适应决定（ApplyAdaptiveForegroundDecision），所以
@@ -1747,31 +1760,33 @@ namespace AFMediaBar.Components
             // "system light/dark setting" — the same authoritative verdict, presentation, which also folds in the decision the host
             // samples from the real screen background (ApplyAdaptiveForegroundDecision), so when the taskbar surface changes, the text
             // and the scrim flip together. The scrim brush is the very instance the stand-in cover uses, so the stand-in needs no sync.
-            SongImagePauseScrimBrush.Color = presentation.UsesSystemColors
+            var scrimColor = presentation.UsesSystemColors
                 ? SystemColors.WindowColor
                 : presentation.UsesLightText
                     ? Color.FromRgb(0x1C, 0x1C, 0x1C)
                     : Colors.White;
+            TransitionColor("PauseScrim", new SolidColorBrush(scrimColor), colorDuration, SongImagePauseScrimBrush);
             SongInfoStackPanel.Background = Brushes.Transparent;
-            _lyrics.SetWebLyricsAppearance(foreground, needsContrastShadow: false, usesLightText: presentation.UsesLightText);
+            _lyrics.SetWebLyricsAppearance(foreground, needsContrastShadow: false, usesLightText: presentation.UsesLightText, colorDuration);
 
             MainBorder.Background = Brushes.Transparent;
             TopBorder.BorderBrush = Brushes.Transparent;
-            ApplyTaskbarBackgroundMaterial(appearance, presentation.UsesLightText);
+            ApplyTaskbarBackgroundMaterial(appearance, presentation.UsesLightText, colorDuration);
         }
 
         private void ApplyTaskbarBackgroundMaterial(
             AppearanceSettings appearance,
-            bool usesLightText)
+            bool usesLightText,
+            TimeSpan colorDuration)
         {
             var presentation = TaskbarBackgroundMaterialPolicy.Resolve(
                 appearance, _isConnected, SystemParameters.HighContrast, usesLightText);
             TaskbarMaterialSurface.Background = SystemParameters.HighContrast && presentation.Tint.A > 0
                 ? SystemColors.WindowBrush
-                : new SolidColorBrush(presentation.Tint);
+                : TransitionColor("MaterialTint", new SolidColorBrush(presentation.Tint), colorDuration);
             TaskbarMaterialSurface.BorderBrush = SystemParameters.HighContrast && presentation.Stroke.A > 0
                 ? SystemColors.WindowTextBrush
-                : new SolidColorBrush(presentation.Stroke);
+                : TransitionColor("MaterialStroke", new SolidColorBrush(presentation.Stroke), colorDuration);
             BackgroundImage.Opacity = presentation.ArtworkOpacity;
             RefreshTaskbarBackgroundArtwork();
         }
@@ -1797,7 +1812,7 @@ namespace AFMediaBar.Components
                 : Visibility.Collapsed;
         }
 
-        private void ApplyTaskbarHoverAppearance(Brush foreground)
+        private void ApplyTaskbarHoverAppearance(Brush foreground, TimeSpan colorDuration)
         {
             var color = foreground is SolidColorBrush solid
                 ? solid.Color
@@ -1808,11 +1823,11 @@ namespace AFMediaBar.Components
 
             _taskbarHoverPalette = palette;
             _appliedTaskbarHoverForeground = palette.Foreground;
-            Resources["TaskbarHoverForegroundBrush"] = CreateFrozenBrush(_taskbarHoverPalette.Foreground);
-            Resources["TaskbarHoverButtonOverBrush"] = CreateFrozenBrush(_taskbarHoverPalette.ButtonHover);
-            Resources["TaskbarHoverButtonPressedBrush"] = CreateFrozenBrush(_taskbarHoverPalette.ButtonPressed);
-            Resources["TaskbarHoverHandleBrush"] = CreateFrozenBrush(_taskbarHoverPalette.Handle);
-            RefreshTaskbarHoverAppearance();
+            Resources["TaskbarHoverForegroundBrush"] = TransitionColor("HoverForeground", new SolidColorBrush(_taskbarHoverPalette.Foreground), colorDuration);
+            Resources["TaskbarHoverButtonOverBrush"] = TransitionColor("HoverButtonOver", new SolidColorBrush(_taskbarHoverPalette.ButtonHover), colorDuration);
+            Resources["TaskbarHoverButtonPressedBrush"] = TransitionColor("HoverButtonPressed", new SolidColorBrush(_taskbarHoverPalette.ButtonPressed), colorDuration);
+            Resources["TaskbarHoverHandleBrush"] = TransitionColor("HoverHandle", new SolidColorBrush(_taskbarHoverPalette.Handle), colorDuration);
+            RefreshTaskbarHoverAppearance(animateColor: colorDuration > TimeSpan.Zero);
         }
 
         /// <summary>

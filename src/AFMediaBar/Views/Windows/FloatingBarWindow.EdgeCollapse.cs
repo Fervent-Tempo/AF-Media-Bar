@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Components;
 using static AFMediaBar.Classes.Interop.NativeMethods;
 
 namespace AFMediaBar.Views.Windows;
@@ -16,6 +17,9 @@ public sealed partial class FloatingBarWindow
     private readonly Border _edgeIndicator = new() { CornerRadius = new CornerRadius(2), BorderThickness = new Thickness(1), Visibility = Visibility.Collapsed };
     private readonly AdaptiveForegroundSamplingSession _edgeContrastSampling;
     private PlayerForegroundDecision? _edgeForegroundDecision;
+    private readonly ColorTransitionBrush _edgeLineColor = new();
+    private readonly ColorTransitionBrush _edgeOutlineColor = new();
+    private bool _edgeContrastReady;
     private long _edgeContrastRefreshTick;
     private FloatingBarDockEdge _dockEdge;
     private Rect _normalBoundsDip;
@@ -156,7 +160,7 @@ public sealed partial class FloatingBarWindow
     private void UpdateEdgePresentation()
     {
         _mediaControl.IsHitTestVisible = !IsEdgeConcealed;
-        _edgeIndicator.Visibility = IsEdgeConcealed ? Visibility.Visible : Visibility.Collapsed;
+        _edgeIndicator.Visibility = IsEdgeConcealed && _edgeContrastReady ? Visibility.Visible : Visibility.Collapsed;
         var horizontal = _dockEdge is FloatingBarDockEdge.Top or FloatingBarDockEdge.Bottom;
         _edgeIndicator.Width = Math.Min(_normalBoundsDip.Width, horizontal ? 56 : 4);
         _edgeIndicator.Height = Math.Min(_normalBoundsDip.Height, horizontal ? 4 : IsVerticalPresentation ? 72 : 38);
@@ -165,6 +169,10 @@ public sealed partial class FloatingBarWindow
         _edgeIndicator.VerticalAlignment = _dockEdge == FloatingBarDockEdge.Top ? VerticalAlignment.Bottom :
             _dockEdge == FloatingBarDockEdge.Bottom ? VerticalAlignment.Top : VerticalAlignment.Center;
         if (_edgeBodySuspended == IsEdgeFullyCollapsed) return;
+        _edgeContrastReady = false;
+        _edgeIndicator.Visibility = Visibility.Collapsed;
+        _edgeLineColor.Finish();
+        _edgeOutlineColor.Finish();
         _edgeContrastSampling.Invalidate(clearDecision: false);
         _edgeContrastRefreshTick = 0;
         _edgeBodySuspended = IsEdgeFullyCollapsed;
@@ -184,8 +192,11 @@ public sealed partial class FloatingBarWindow
         if (_isClosing) return;
         if (decision is not null) _edgeForegroundDecision = decision;
         var brushes = HandleIndicatorAppearance.Resolve(_edgeForegroundDecision);
-        _edgeIndicator.Background = brushes.Line;
-        _edgeIndicator.BorderBrush = brushes.Outline;
+        var duration = ColorTransitionBrush.ResolveDuration(_edgeContrastReady && IsEdgeFullyCollapsed && IsVisible && decision is not null);
+        _edgeIndicator.Background = _edgeLineColor.Apply(brushes.Line, duration);
+        _edgeIndicator.BorderBrush = _edgeOutlineColor.Apply(brushes.Outline, duration);
+        if (decision is not null) _edgeContrastReady = true;
+        _edgeIndicator.Visibility = IsEdgeConcealed && _edgeContrastReady ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private Int32Rect? GetEdgeContrastBounds()
@@ -211,6 +222,8 @@ public sealed partial class FloatingBarWindow
     {
         if (!IsEdgeFullyCollapsed || !IsOperational || !IsVisible ||
             Stopwatch.GetElapsedTime(_edgeContrastRefreshTick) < TimeSpan.FromMilliseconds(250)) return;
+        // 首次取色前不绘制旧色；一个刷新周期仍无有效样本时使用已有回退色，不能丢失位置提示。
+        if (_edgeContrastRefreshTick != 0) _edgeContrastReady = true;
         _edgeContrastRefreshTick = Stopwatch.GetTimestamp();
         ApplyEdgeContrast(null);
         if (SystemParameters.HighContrast) _edgeContrastSampling.Invalidate(clearDecision: false);

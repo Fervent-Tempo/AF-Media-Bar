@@ -1,3 +1,33 @@
+@property --primary {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: white;
+}
+
+@property --secondary {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: white;
+}
+
+@property --translation {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: white;
+}
+
+@property --word-scan-base {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: white;
+}
+
+@property --word-scan-overlay {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: white;
+}
+
 @property --word-scan-progress {
   syntax: "<percentage>";
   inherits: true;
@@ -17,6 +47,10 @@
 }
 
 :root {
+  --color-transition-duration: 0ms;
+  transition-property: --primary, --secondary, --translation, --word-scan-base, --word-scan-overlay;
+  transition-duration: var(--color-transition-duration);
+  transition-timing-function: cubic-bezier(0.77, 0, 0.175, 1);
   --font-family: "Segoe UI Variable Text", "Microsoft YaHei UI", sans-serif;
   --font-size: 13px;
   --font-weight: 500;
