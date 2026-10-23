@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Text;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models.Updates;
 using AFMediaBar.Classes.Services.Updates;
@@ -19,40 +20,44 @@ public sealed class UpdateDownloadStartTests
     {
         StaTest.Run(async dispatcher =>
         {
-            using var fixture = new Fixture(dispatcher);
-            var downloadingPublished = 0;
+            await using var fixture = new Fixture(dispatcher);
             var failed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             fixture.Service.UpdateStateChanged += state =>
             {
-                if (state.Phase == UpdatePhase.Downloading) Interlocked.Increment(ref downloadingPublished);
                 if (state.Phase == UpdatePhase.Failed) failed.TrySetResult();
             };
 
             fixture.Service.StartDownload();
 
-            // 旧实现只读取 IsBusy 就返回，下载循环由线程池稍后才置忙，入口处看到的仍是 Available。
-            // The old implementation only read IsBusy and returned; the loop claimed the phase later on the thread
-            // pool, so this entry point still observed Available.
+            // 回环服务器保持响应在途，避免后台结束后合法的状态变化使中间阶段断言失效。
             Assert.AreEqual(UpdatePhase.Downloading, fixture.Service.CurrentState.Phase,
                 "The entry point must claim the busy phase before the background loop starts.");
 
-            // 第二次进入（另一个入口）必须被同一次置忙挡住。
-            // The second entry (the other surface) must be rejected by that same claim.
             fixture.Service.StartDownload();
 
+            await fixture.RequestReceived.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.AreEqual(UpdatePhase.Downloading, fixture.Service.CurrentState.Phase);
+            fixture.ReleaseResponse();
             await failed.Task.WaitAsync(TimeSpan.FromSeconds(20));
-            await dispatcher.InvokeAsync(() => { });
 
-            Assert.AreEqual(1, Volatile.Read(ref downloadingPublished), "Only one download round may be started.");
-        });
+            Assert.AreEqual(1, fixture.RequestCount, "Only one download request may reach the server.");
+        }, TimeSpan.FromSeconds(35));
     }
 
-    private sealed class Fixture : IDisposable
+    private sealed class Fixture : IAsyncDisposable
     {
         internal string Directory { get; } = Path.Combine(Path.GetTempPath(), "AFMediaBar-download-" + Guid.NewGuid().ToString("N"));
         internal UpdatePackageStore Store { get; }
         internal UpdateService Service { get; }
+        internal Task RequestReceived => _requestReceived.Task;
+        internal int RequestCount => Volatile.Read(ref _requestCount);
         private readonly InstallCoordinatorMutex _mutex = new();
+        private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
+        private readonly CancellationTokenSource _stop = new();
+        private readonly TaskCompletionSource _requestReceived = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _releaseResponse = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly Task _serverTask;
+        private int _requestCount;
 
         internal Fixture(Dispatcher dispatcher)
         {
@@ -62,8 +67,11 @@ public sealed class UpdateDownloadStartTests
                 new InstalledApplicationProbe(), _mutex, dispatcher, () => new UpdateInstallDecision(true, false, null),
                 (_, _, _) => throw new InvalidOperationException("Installer launch is not expected in this test."));
 
+            _listener.Start();
+            var port = ((IPEndPoint)_listener.LocalEndpoint).Port;
+            _serverTask = ServeAsync();
             var manifest = new UpdateManifest("9.9.9", null, null, [], null, null, null, false,
-                [new UpdatePackageAsset(UnreachableUrl(), null, new string('A', 64))], null, null);
+                [new UpdatePackageAsset($"http://127.0.0.1:{port}/AFMediaBar-Setup-9.9.9.exe", null, new string('A', 64))], null, null);
             SetField("_state", new UpdateState(UpdatePhase.Available, "1.0", manifest, 0d, null, null, false, false, null));
             SetField("_plan", (IReadOnlyList<UpdateDownloadSource>)[new UpdateDownloadSource(manifest.Packages[0].Url, "local", false)]);
         }
@@ -71,23 +79,63 @@ public sealed class UpdateDownloadStartTests
         private void SetField(string name, object value) =>
             typeof(UpdateService).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(Service, value);
 
-        // 取一个刚释放的本地端口：连接会被立刻拒绝，下载循环无需访问网络即可走到失败分支。
-        // Take a just-released local port: the connection is refused immediately, so the loop reaches its failure
-        // branch without touching the network.
-        private static string UnreachableUrl()
+        internal void ReleaseResponse() => _releaseResponse.TrySetResult();
+
+        private async Task ServeAsync()
         {
-            var listener = new TcpListener(IPAddress.Loopback, 0);
-            listener.Start();
-            var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-            listener.Stop();
-            return $"http://127.0.0.1:{port}/AFMediaBar-Setup-9.9.9.exe";
+            var responses = new List<Task>();
+            try
+            {
+                while (!_stop.IsCancellationRequested)
+                {
+                    var client = await _listener.AcceptTcpClientAsync(_stop.Token);
+                    responses.Add(RespondAsync(client));
+                }
+            }
+            catch (OperationCanceledException) when (_stop.IsCancellationRequested)
+            {
+            }
+            finally
+            {
+                await Task.WhenAll(responses);
+            }
         }
 
-        public void Dispose()
+        private async Task RespondAsync(TcpClient client)
+        {
+            using (client)
+            {
+                try
+                {
+                    var stream = client.GetStream();
+                    using var reader = new StreamReader(stream, Encoding.ASCII, leaveOpen: true);
+                    while (await reader.ReadLineAsync(_stop.Token) is { Length: > 0 }) { }
+                    Interlocked.Increment(ref _requestCount);
+                    _requestReceived.TrySetResult();
+                    await _releaseResponse.Task.WaitAsync(_stop.Token);
+                    await stream.WriteAsync("HTTP/1.1 503 Service Unavailable\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"u8.ToArray(), _stop.Token);
+                }
+                catch (OperationCanceledException) when (_stop.IsCancellationRequested)
+                {
+                }
+            }
+        }
+
+        public async ValueTask DisposeAsync()
         {
             Service.Dispose();
-            _mutex.Dispose();
-            System.IO.Directory.Delete(Directory, true);
+            _stop.Cancel();
+            try
+            {
+                await _serverTask;
+            }
+            finally
+            {
+                _listener.Stop();
+                _stop.Dispose();
+                _mutex.Dispose();
+                System.IO.Directory.Delete(Directory, true);
+            }
         }
     }
 }

@@ -343,7 +343,7 @@ public sealed partial class UpdateService : IDisposable
         // 状态已在锁内落地，事件照常发到 UI 线程；随后才排队下载循环。
         // The state is already committed under the lock; the event still goes through the dispatcher, and only
         // afterwards is the download loop queued.
-        PublishState(claimed);
+        PublishCommittedState(claimed, logChange: true);
         _ = Task.Run(() => DownloadLoopAsync(manifest, token));
     }
 
@@ -806,6 +806,13 @@ public sealed partial class UpdateService : IDisposable
                 _state.InstallBlockedReason != state.InstallBlockedReason;
             _state = state;
         }
+
+        PublishCommittedState(state, logChange);
+    }
+
+    // 状态提交与外部通知分开，入口原子置忙后也能记录变化，且不持锁调用日志或 Dispatcher。
+    private void PublishCommittedState(UpdateState state, bool logChange)
+    {
         if (logChange)
         {
             var message = $"更新状态: phase={state.Phase} current={state.CurrentVersion} available={state.AvailableVersion ?? "none"} " +
