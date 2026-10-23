@@ -146,6 +146,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             () => IsOperational && !IsEdgeConcealed && !_dragging && PresentationSettings.Appearance.PlayerForegroundMode == PlayerForegroundMode.Automatic &&
                 _mediaControl.TryGetForegroundSampleBounds(out var bounds) ? bounds : null,
             _mediaControl.ApplyAdaptiveForegroundDecision);
+        _edgeContrastSampling = new AdaptiveForegroundSamplingSession(sampler, Dispatcher, GetEdgeContrastBounds, ApplyEdgeContrast);
         _spectrumSession = new SpectrumPresentationSession(audioMonitor, Dispatcher,
             () => PresentationSettings.SpectrumComponent,
             () => IsOperational && !IsEdgeFullyCollapsed && _mediaControl.IsSpectrumComponentVisible,
@@ -459,6 +460,11 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             (int)Math.Round(Monitor.WorkArea.Top + bounds.Top * Dpi), (int)Math.Ceiling(bounds.Width * Dpi), (int)Math.Ceiling(bounds.Height * Dpi));
         if (_handle != nint.Zero && _nativeBoundsPx != physical)
         {
+            if (IsEdgeFullyCollapsed)
+            {
+                _edgeContrastSampling.Invalidate(clearDecision: false);
+                _edgeContrastRefreshTick = 0;
+            }
             _externalFullPanelHandle?.Dismiss(immediate: true);
             if (_isFullPanelOpen) PlacementTransitionStarted?.Invoke(this, EventArgs.Empty);
             var flags = SWP_NOACTIVATE | SWP_NOZORDER;
@@ -470,6 +476,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         }
         if (_handle != nint.Zero && !ApplyEdgeRegion(physical) && !_edgeFaulted) { FailEdgePlacement(); return; }
         UpdateEdgeObservation();
+        RefreshEdgeContrast();
         if (!_dragging) _foregroundSamplingSession?.RequestRefresh();
     }
 
@@ -717,6 +724,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         DisposeMetricsSubscription();
         DisposeExternalFullPanelHandle();
         _foregroundSamplingSession.Dispose();
+        _edgeContrastSampling.Dispose();
         _compactFlyout.Dispose();
         _mediaControl.ApplyHostVisibilitySuspension(true);
         _mediaControl.DisposePresentation();

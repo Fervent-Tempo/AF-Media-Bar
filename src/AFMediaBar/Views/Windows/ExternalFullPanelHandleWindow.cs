@@ -262,15 +262,9 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     {
         if (_disposed) return;
         if (decision is not null) _foregroundDecision = decision;
-        if (SystemParameters.HighContrast)
-        {
-            _line.Background = SystemColors.WindowTextBrush;
-            _outline.Background = SystemColors.WindowBrush;
-            return;
-        }
-        var light = _foregroundDecision?.UsesLightText ?? true;
-        _line.Background = light ? Brushes.White : new SolidColorBrush(Color.FromRgb(0x1C, 0x1C, 0x1C));
-        _outline.Background = new SolidColorBrush(light ? Color.FromArgb(192, 0, 0, 0) : Color.FromArgb(216, 255, 255, 255));
+        var brushes = HandleIndicatorAppearance.Resolve(_foregroundDecision);
+        _line.Background = brushes.Line;
+        _outline.Background = brushes.Outline;
     }
 
     private void RefreshContrast()

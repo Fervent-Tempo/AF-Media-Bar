@@ -1,4 +1,4 @@
-// 单个悬浮宿主持有折叠状态、计时器及原生命中区域；正常位置与动画帧分离。
+// 单个悬浮宿主持有折叠状态、采样、计时器及原生命中区域；停止时取消采样，关闭时释放。
 using System.Diagnostics;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -13,7 +13,10 @@ public sealed partial class FloatingBarWindow
 {
     private readonly DispatcherTimer _edgeHoverTimer = new(DispatcherPriority.Input) { Interval = TimeSpan.FromMilliseconds(90) };
     private readonly DispatcherTimer _edgeMotionTimer = new(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
-    private readonly Border _edgeIndicator = new() { CornerRadius = new CornerRadius(2), Visibility = Visibility.Collapsed };
+    private readonly Border _edgeIndicator = new() { CornerRadius = new CornerRadius(2), BorderThickness = new Thickness(1), Visibility = Visibility.Collapsed };
+    private readonly AdaptiveForegroundSamplingSession _edgeContrastSampling;
+    private PlayerForegroundDecision? _edgeForegroundDecision;
+    private long _edgeContrastRefreshTick;
     private FloatingBarDockEdge _dockEdge;
     private Rect _normalBoundsDip;
     private double _edgeProgress;
@@ -34,7 +37,7 @@ public sealed partial class FloatingBarWindow
 
     private void InitializeEdgeCollapse()
     {
-        _edgeIndicator.SetResourceReference(Border.BackgroundProperty, "AfAccentBrush");
+        ApplyEdgeContrast(null);
         _edgeIndicator.SetResourceReference(ToolTipProperty, "Loc.Placement.Floating.EdgeCollapse.Reveal");
         var surface = new Grid { Background = System.Windows.Media.Brushes.Transparent };
         surface.Children.Add(_mediaControl);
@@ -72,6 +75,7 @@ public sealed partial class FloatingBarWindow
     {
         UpdateEdgeObservation();
         if (!_edgeHoverTimer.IsEnabled) return;
+        RefreshEdgeContrast();
         if (_edgeHoldCount > 0 || _isFullPanelOpen || _compactFlyout.IsVisible || _dragPending)
         {
             SetEdgeTarget(collapse: false);
@@ -161,6 +165,8 @@ public sealed partial class FloatingBarWindow
         _edgeIndicator.VerticalAlignment = _dockEdge == FloatingBarDockEdge.Top ? VerticalAlignment.Bottom :
             _dockEdge == FloatingBarDockEdge.Bottom ? VerticalAlignment.Top : VerticalAlignment.Center;
         if (_edgeBodySuspended == IsEdgeFullyCollapsed) return;
+        _edgeContrastSampling.Invalidate(clearDecision: false);
+        _edgeContrastRefreshTick = 0;
         _edgeBodySuspended = IsEdgeFullyCollapsed;
         _mediaControl.Visibility = _edgeBodySuspended ? Visibility.Hidden : Visibility.Visible;
         _mediaControl.ApplyHostVisibilitySuspension(_edgeBodySuspended || !IsOperational);
@@ -171,6 +177,44 @@ public sealed partial class FloatingBarWindow
             _foregroundSamplingSession.Invalidate(clearDecision: false);
         }
         else if (IsOperational) _backgroundTimer.Start();
+    }
+
+    private void ApplyEdgeContrast(PlayerForegroundDecision? decision)
+    {
+        if (_isClosing) return;
+        if (decision is not null) _edgeForegroundDecision = decision;
+        var brushes = HandleIndicatorAppearance.Resolve(_edgeForegroundDecision);
+        _edgeIndicator.Background = brushes.Line;
+        _edgeIndicator.BorderBrush = brushes.Outline;
+    }
+
+    private Int32Rect? GetEdgeContrastBounds()
+    {
+        if (!IsOperational || !IsVisible || !IsEdgeFullyCollapsed || _dockEdge == FloatingBarDockEdge.None) return null;
+        // 在工作区内、折叠窗口之外取色，避开横条与轮廓，防止颜色自反馈和跨屏采样。
+        var area = Monitor.WorkArea;
+        var inset = (FloatingBarEdgeCollapsePolicy.VisibleStripDip + 1) * Dpi;
+        var horizontal = _dockEdge is FloatingBarDockEdge.Top or FloatingBarDockEdge.Bottom;
+        var length = (horizontal ? _edgeIndicator.Width : _edgeIndicator.Height) * Dpi;
+        var bounds = horizontal
+            ? new Rect(_centerPx.X - length / 2,
+                _dockEdge == FloatingBarDockEdge.Top ? area.Top + inset : area.Bottom - inset - Dpi, length, Dpi)
+            : new Rect(_dockEdge == FloatingBarDockEdge.Left ? area.Left + inset : area.Right - inset - Dpi,
+                _centerPx.Y - length / 2, Dpi, length);
+        bounds.Intersect(new Rect(area.Left, area.Top, area.Width, area.Height));
+        if (bounds.IsEmpty || bounds.Width < 1 || bounds.Height < 1) return null;
+        return new Int32Rect((int)Math.Ceiling(bounds.Left), (int)Math.Ceiling(bounds.Top),
+            Math.Max(1, (int)Math.Floor(bounds.Width)), Math.Max(1, (int)Math.Floor(bounds.Height)));
+    }
+
+    private void RefreshEdgeContrast()
+    {
+        if (!IsEdgeFullyCollapsed || !IsOperational || !IsVisible ||
+            Stopwatch.GetElapsedTime(_edgeContrastRefreshTick) < TimeSpan.FromMilliseconds(250)) return;
+        _edgeContrastRefreshTick = Stopwatch.GetTimestamp();
+        ApplyEdgeContrast(null);
+        if (SystemParameters.HighContrast) _edgeContrastSampling.Invalidate(clearDecision: false);
+        else _edgeContrastSampling.RequestRefresh();
     }
 
     private bool ApplyEdgeRegion(Int32Rect physical)
