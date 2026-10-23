@@ -476,6 +476,7 @@
     <Style TargetType="{x:Type components:SettingsGroup}">
         <Setter Property="Margin" Value="{StaticResource AfSettingsSectionGap}" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="AutomationProperties.HelpText" Value="{Binding Description, RelativeSource={RelativeSource Self}}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type components:SettingsGroup}">
@@ -506,6 +507,8 @@
                                             <ContentControl
                                                 HorizontalAlignment="Center"
                                                 VerticalAlignment="Center"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
                                                 Content="{TemplateBinding Icon}"
                                                 FontSize="22"
                                                 Foreground="{DynamicResource AfOnAccentBrush}"
@@ -527,19 +530,6 @@
                                             Content="{TemplateBinding StatusText}" />
                                     </Grid>
 
-                                <!--
-                                    分组说明：一行白话，用来解释「常驻状态 / 快捷控制 / 完整面板」等名称什么时候生效。
-                                    缩进 50 DIP 与分组图标底片及右侧间距同宽，因此说明与标题左对齐起点一致。
-                                    The group description: one plain line explaining when a view such as "Always-on view / Quick controls /
-                                    Full panel" applies. The 50 DIP indent matches the header icon plate and gap so the description starts
-                                    on the same left edge as the title.
-                                -->
-                                    <TextBlock
-                                        x:Name="GroupDescription"
-                                        Margin="50,6,0,0"
-                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                        Text="{TemplateBinding Description}" />
-
                                 </StackPanel>
                             </Border>
 
@@ -551,9 +541,6 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="Icon" Value="{x:Null}">
                             <Setter TargetName="GroupIcon" Property="Visibility" Value="Collapsed" />
-                        </Trigger>
-                        <Trigger Property="Description" Value="">
-                            <Setter TargetName="GroupDescription" Property="Visibility" Value="Collapsed" />
                         </Trigger>
                         <Trigger Property="HeaderHint" Value="">
                             <Setter TargetName="GroupHeaderHint" Property="Visibility" Value="Collapsed" />

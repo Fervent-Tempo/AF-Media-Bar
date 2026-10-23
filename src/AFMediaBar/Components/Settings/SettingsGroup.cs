@@ -75,9 +75,7 @@ public class SettingsGroup : HeaderedContentControl
         new PropertyMetadata(SettingsChipTone.Neutral));
 
     /// <summary>
-    /// 分组说明，一行白话，标题正下方。用于解释「常驻状态 / 快捷控制 / 完整面板」等界面名称何时生效。
-    /// Group description: one plain line directly under the header explaining when a view such as
-    /// "Always-on view / Quick controls / Full panel" is shown.
+    /// 分组的辅助说明，供无障碍工具读取，标题模板不再显示说明行。
     /// </summary>
     public static readonly DependencyProperty DescriptionProperty = DependencyProperty.Register(
         nameof(Description),
