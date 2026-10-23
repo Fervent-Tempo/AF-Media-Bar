@@ -25,7 +25,7 @@ internal sealed class ColorTransitionBrush
     }
 
     internal static TimeSpan ResolveDuration(bool animate) => animate && !SystemParameters.HighContrast
-        ? MotionPolicy.ResolveCurrent().StandardDuration : TimeSpan.Zero;
+        ? MotionPolicy.ResolveCurrent().ForegroundColorDuration : TimeSpan.Zero;
 
     internal bool Owns(SolidColorBrush brush) => ReferenceEquals(_brush, brush);
 

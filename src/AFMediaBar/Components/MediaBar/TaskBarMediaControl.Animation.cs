@@ -367,7 +367,7 @@ public partial class TaskBarMediaControl
         }
 
         var motion = CurrentMotion;
-        var duration = colorDuration ?? (immediate ? TimeSpan.Zero : ColorTransitionBrush.ResolveDuration(animate: true));
+        var duration = colorDuration ?? (immediate || SystemParameters.HighContrast ? TimeSpan.Zero : motion.StandardDuration);
         TransitionColor(surface.Name + ".Background", new SolidColorBrush(backgroundColor), duration, background, immediate);
         TransitionColor(surface.Name + ".Border", new SolidColorBrush(borderColor), duration, border, immediate);
         if (immediate || !motion.UseTransitions)

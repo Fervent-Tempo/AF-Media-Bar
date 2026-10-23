@@ -35,6 +35,9 @@ public readonly record struct MotionProfile(
     /// <summary>是否允许使用位置和缩放动画。/ Whether position and scale animations are allowed.</summary>
     public bool UseTransitions => Mode != MotionMode.Instant;
 
+    /// <summary>自动深浅色的过渡时长，与位置、悬停和连接动画分开。</summary>
+    public TimeSpan ForegroundColorDuration => Mode == MotionMode.Full ? TimeSpan.FromMilliseconds(220) : StandardDuration;
+
     /// <summary>媒体连接状态专用过渡时长，不影响常规位置与尺寸动画。/ Duration for media connection changes, independent of normal placement motion.</summary>
     public TimeSpan RestConnectionDuration => Mode switch
     {

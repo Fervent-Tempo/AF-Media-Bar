@@ -12,11 +12,13 @@ internal sealed class AdaptiveForegroundSamplingSession : IDisposable
 {
     private readonly ScreenBackgroundSampler _sampler;
     private readonly Dispatcher _dispatcher;
-    private readonly Func<Int32Rect?> _boundsProvider;
+    private readonly Func<IReadOnlyList<Int32Rect>> _regionsProvider;
     private readonly Action<PlayerForegroundDecision?> _apply;
+    private readonly ForegroundDecisionConfirmation _confirmation = new();
+    private readonly DispatcherTimer _confirmationTimer;
     private CancellationTokenSource _cancellation = new();
     private PlayerForegroundDecision? _lastDecision;
-    private Int32Rect? _lastBounds;
+    private Int32Rect[]? _lastRegions;
     private int _generation;
     private bool _sampling;
     private bool _refreshPending;
@@ -27,11 +29,22 @@ internal sealed class AdaptiveForegroundSamplingSession : IDisposable
         Dispatcher dispatcher,
         Func<Int32Rect?> boundsProvider,
         Action<PlayerForegroundDecision?> apply)
+        : this(sampler, dispatcher, (Func<IReadOnlyList<Int32Rect>>)(() => boundsProvider() is { } bounds ? [bounds] : []), apply)
+    {
+    }
+
+    internal AdaptiveForegroundSamplingSession(
+        ScreenBackgroundSampler sampler,
+        Dispatcher dispatcher,
+        Func<IReadOnlyList<Int32Rect>> regionsProvider,
+        Action<PlayerForegroundDecision?> apply)
     {
         _sampler = sampler;
         _dispatcher = dispatcher;
-        _boundsProvider = boundsProvider;
+        _regionsProvider = regionsProvider;
         _apply = apply;
+        _confirmationTimer = new DispatcherTimer(DispatcherPriority.Background, dispatcher) { Interval = TimeSpan.FromMilliseconds(150) };
+        _confirmationTimer.Tick += ConfirmPending;
     }
 
     internal void RequestRefresh()
@@ -44,12 +57,18 @@ internal sealed class AdaptiveForegroundSamplingSession : IDisposable
             return;
         }
 
-        if (_boundsProvider() is not { } bounds || bounds.Width <= 0 || bounds.Height <= 0)
-            return;
-
-        if (_lastBounds is not { } previousBounds || !previousBounds.Equals(bounds))
+        var regions = _regionsProvider().Where(bounds => bounds.Width > 0 && bounds.Height > 0).ToArray();
+        if (regions.Length == 0)
         {
-            _lastBounds = bounds;
+            AdvanceGeneration();
+            _lastRegions = null;
+            _refreshPending = false;
+            return;
+        }
+
+        if (_lastRegions is null || !_lastRegions.SequenceEqual(regions))
+        {
+            _lastRegions = regions;
             AdvanceGeneration();
         }
 
@@ -60,7 +79,7 @@ internal sealed class AdaptiveForegroundSamplingSession : IDisposable
         }
 
         _sampling = true;
-        _ = SampleAndApplyAsync(bounds, _generation, _lastDecision, _cancellation.Token);
+        _ = SampleAndApplyAsync(regions, _generation, _lastDecision, _cancellation.Token);
     }
 
     internal void Invalidate(bool clearDecision)
@@ -68,7 +87,7 @@ internal sealed class AdaptiveForegroundSamplingSession : IDisposable
         if (_disposed)
             return;
         AdvanceGeneration();
-        _lastBounds = null;
+        _lastRegions = null;
         _refreshPending = false;
         if (!clearDecision)
             return;
@@ -78,14 +97,14 @@ internal sealed class AdaptiveForegroundSamplingSession : IDisposable
     }
 
     private async Task SampleAndApplyAsync(
-        Int32Rect bounds,
+        IReadOnlyList<Int32Rect> regions,
         int generation,
         PlayerForegroundDecision? previousDecision,
         CancellationToken cancellationToken)
     {
         try
         {
-            var samples = await _sampler.SampleAsync(bounds, cancellationToken).ConfigureAwait(false);
+            var samples = await _sampler.SampleAsync(regions, cancellationToken).ConfigureAwait(false);
             if (cancellationToken.IsCancellationRequested)
                 return;
             var decision = PlayerForegroundPolicy.Resolve(samples, previousDecision);
@@ -94,12 +113,15 @@ internal sealed class AdaptiveForegroundSamplingSession : IDisposable
             await _dispatcher.InvokeAsync(() =>
             {
                 if (!PlayerForegroundPolicy.IsCurrent(_disposed, generation, _generation) ||
-                    cancellationToken.IsCancellationRequested || decision is null)
+                    cancellationToken.IsCancellationRequested)
                     return;
-                if (_lastDecision == decision)
+                var confirmed = _confirmation.Observe(decision, _lastDecision);
+                if (_confirmation.HasPending) _confirmationTimer.Start();
+                else _confirmationTimer.Stop();
+                if (confirmed is null || _lastDecision == confirmed)
                     return;
-                _lastDecision = decision;
-                _apply(decision);
+                _lastDecision = confirmed;
+                _apply(confirmed);
             }, DispatcherPriority.Background);
         }
         catch (OperationCanceledException)
@@ -133,6 +155,8 @@ internal sealed class AdaptiveForegroundSamplingSession : IDisposable
 
     private void AdvanceGeneration()
     {
+        _confirmationTimer.Stop();
+        _confirmation.Reset();
         _generation++;
         _cancellation.Cancel();
         _cancellation.Dispose();
@@ -144,8 +168,16 @@ internal sealed class AdaptiveForegroundSamplingSession : IDisposable
         if (_disposed)
             return;
         _disposed = true;
+        _confirmationTimer.Stop();
+        _confirmationTimer.Tick -= ConfirmPending;
         _generation++;
         _cancellation.Cancel();
         _cancellation.Dispose();
+    }
+
+    private void ConfirmPending(object? sender, EventArgs args)
+    {
+        _confirmationTimer.Stop();
+        RequestRefresh();
     }
 }

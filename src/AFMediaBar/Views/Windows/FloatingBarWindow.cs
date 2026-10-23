@@ -143,8 +143,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         ConnectInput();
         InitializeExternalFullPanelHandle(externalFullPanelHandleFactory);
         _foregroundSamplingSession = new AdaptiveForegroundSamplingSession(sampler, Dispatcher,
-            () => IsOperational && !IsEdgeConcealed && !_dragging && PresentationSettings.Appearance.PlayerForegroundMode == PlayerForegroundMode.Automatic &&
-                _mediaControl.TryGetForegroundSampleBounds(out var bounds) ? bounds : null,
+            () => IsOperational && !IsEdgeConcealed && !_dragging && PresentationSettings.Appearance.PlayerForegroundMode == PlayerForegroundMode.Automatic
+                ? _mediaControl.GetForegroundSampleRegions() : [],
             _mediaControl.ApplyAdaptiveForegroundDecision);
         _edgeContrastSampling = new AdaptiveForegroundSamplingSession(sampler, Dispatcher, GetEdgeContrastBounds, ApplyEdgeContrast);
         _spectrumSession = new SpectrumPresentationSession(audioMonitor, Dispatcher,

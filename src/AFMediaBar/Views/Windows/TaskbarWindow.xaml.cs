@@ -250,7 +250,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _foregroundSamplingSession = new AdaptiveForegroundSamplingSession(
             screenBackgroundSampler,
             Dispatcher,
-            GetAdaptiveForegroundSampleBounds,
+            GetAdaptiveForegroundSampleRegions,
             MediaControl.ApplyAdaptiveForegroundDecision);
 
         _timer = new DispatcherTimer();
@@ -1190,15 +1190,15 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             _foregroundSamplingSession.Invalidate(clearDecision: true);
     }
 
-    private Int32Rect? GetAdaptiveForegroundSampleBounds()
+    private IReadOnlyList<Int32Rect> GetAdaptiveForegroundSampleRegions()
     {
-        if (_isClosing || _isEnvironmentSuspended || Visibility != Visibility.Visible ||
+        if (_isClosing || _isEnvironmentSuspended || IsTaskbarPresentationSuspended || _isDragging || IsBackgroundPruned || Visibility != Visibility.Visible ||
             SettingsManager.Current.Appearance.PlayerForegroundMode != PlayerForegroundMode.Automatic)
         {
-            return null;
+            return [];
         }
 
-        return MediaControl.TryGetForegroundSampleBounds(out var bounds) ? bounds : null;
+        return MediaControl.GetForegroundSampleRegions();
     }
 
     /// <summary>在全局左键点击位于菜单外时关闭右键菜单。 / Closes the context menu after a global left click outside it.</summary>

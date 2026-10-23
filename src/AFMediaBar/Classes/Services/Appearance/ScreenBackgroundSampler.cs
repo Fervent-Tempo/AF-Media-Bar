@@ -32,6 +32,18 @@ public sealed class ScreenBackgroundSampler : IDisposable
         // the owning session discards stale generations afterwards.
         Task.Run(() => Sample(bounds, cancellationToken));
 
+    /// <summary>在同一个后台请求中采集独立区域，不读取它们之间的组件。</summary>
+    internal Task<IReadOnlyList<Color>> SampleAsync(IReadOnlyList<Int32Rect> regions, CancellationToken cancellationToken) => Task.Run<IReadOnlyList<Color>>(() =>
+    {
+        var colors = new List<Color>();
+        foreach (var region in regions)
+        {
+            if (cancellationToken.IsCancellationRequested) break;
+            colors.AddRange(Sample(region, cancellationToken));
+        }
+        return colors;
+    });
+
     private IReadOnlyList<Color> Sample(Int32Rect requestedBounds, CancellationToken cancellationToken)
     {
         if (Volatile.Read(ref _disposed) != 0 || cancellationToken.IsCancellationRequested ||

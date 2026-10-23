@@ -400,7 +400,7 @@ const lyricsApi = {
 
     const colorDuration = Number(payload.colorTransitionMilliseconds);
     const transitionDuration = hasAppliedColorStyle && Number.isFinite(colorDuration)
-      ? Math.max(0, Math.min(180, colorDuration)) : 0;
+      ? Math.max(0, Math.min(220, colorDuration)) : 0;
     root.style.setProperty("--color-transition-duration", `${transitionDuration}ms`);
     hasAppliedColorStyle = true;
 

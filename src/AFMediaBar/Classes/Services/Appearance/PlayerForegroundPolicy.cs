@@ -18,6 +18,9 @@ public readonly record struct PlayerForegroundPresentation(
 public static class PlayerForegroundPolicy
 {
     private const double Hysteresis = 0.025;
+    private const double MixedDarkLuminance = 0.08;
+    private const double MixedLightLuminance = 0.6;
+    private const double MixedMinimumShare = 0.25;
     private static readonly double DarkTextLuminance = RelativeLuminance(Color.FromRgb(0x1C, 0x1C, 0x1C));
     private static readonly double SwitchingLuminance =
         Math.Sqrt(1.05 * (DarkTextLuminance + 0.05)) - 0.05;
@@ -64,6 +67,12 @@ public static class PlayerForegroundPolicy
             .ToArray();
         if (luminances.Length == 0)
             return null;
+
+        // 明显同时跨越亮、暗背景时沿用当前颜色，避免中位数在分界两侧来回跳。
+        if (previous is not null &&
+            luminances.Count(value => value <= MixedDarkLuminance) >= luminances.Length * MixedMinimumShare &&
+            luminances.Count(value => value >= MixedLightLuminance) >= luminances.Length * MixedMinimumShare)
+            return previous;
 
         var median = Percentile(luminances, 0.5);
         var usesLightText = previous?.UsesLightText ?? median <= SwitchingLuminance;

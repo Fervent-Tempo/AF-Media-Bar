@@ -151,7 +151,7 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
             style.MetadataAlignment,
             style.ReduceMotion,
             style.Compact,
-            colorTransitionMilliseconds = IsReady ? Math.Clamp(colorDuration.TotalMilliseconds, 0, 180) : 0
+            colorTransitionMilliseconds = IsReady ? Math.Clamp(colorDuration.TotalMilliseconds, 0, 220) : 0
         });
         StartDrain();
     }

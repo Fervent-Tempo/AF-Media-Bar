@@ -410,46 +410,28 @@ namespace AFMediaBar.Components
         public bool IsRestLayerEmpty => _isRestLayerEmpty;
 
         /// <summary>
-        /// 返回当前可见文字表面的物理屏幕像素矩形，供宿主采样实际背景。
-        /// Returns the physical screen-pixel rectangle of the visible text surface for host background sampling.
+        /// 返回文字表面周围的独立留白带；悬停时仍可采样，不读取文字或按钮本身。
         /// </summary>
         /// <remarks>
-        /// 频谱表面刻意不参与采样：它自己就画在这个矩形里，而频谱取的是同一个自动前景，把画着前景色的区域喂回策略会形成
-        /// 自反馈（亮背景下按白色频谱采样，样本中位数被抬高，决定就会一直停在白色）。性能块参与采样是因为它的底色几乎透明，
-        /// 采样到的仍是它背后的实际背景。
-        /// The spectrum surface deliberately stays out of the sample: the bars are painted inside that very rectangle and the
-        /// spectrum takes the same automatic foreground, so feeding a region covered in the foreground colour back into the
-        /// policy would close a feedback loop (sampling white bars over a bright background lifts the median and pins the
-        /// decision to white). The performance chip does participate because its background is almost transparent, so the
-        /// samples still read the real background behind it.
+        /// 有媒体文字时以其背景为准；否则使用性能区域。不能将两者合并为包含中间组件的矩形。
         /// </remarks>
-        public bool TryGetForegroundSampleBounds(out Int32Rect bounds)
+        public IReadOnlyList<Int32Rect> GetForegroundSampleRegions()
         {
-            bounds = Int32Rect.Empty;
-            if (_isTaskbarHoverVisible)
-            {
-                return false;
-            }
-
+            if (_isHostVisibilitySuspended) return [];
             try
             {
-                var regions = new List<Int32Rect>();
-                if (_isConnected && TryGetPhysicalBounds(SongInfoSurface, out var mediaBounds))
-                    regions.Add(mediaBounds);
-                if (TaskbarPerformanceSurface.IsVisible && TryGetPhysicalBounds(TaskbarPerformanceSurface, out var metricBounds))
-                    regions.Add(metricBounds);
-                if (regions.Count == 0)
-                    return false;
-                var left = regions.Min(region => region.X);
-                var top = regions.Min(region => region.Y);
-                var right = regions.Max(region => region.X + region.Width);
-                var bottom = regions.Max(region => region.Y + region.Height);
-                bounds = new Int32Rect(left, top, right - left, bottom - top);
-                return true;
+                if (!TryGetPhysicalBounds(MainBorder, out var host)) return [];
+                Int32Rect bounds;
+                if (_isConnected && TryGetPhysicalBounds(SongInfoSurface, out var mediaBounds)) bounds = mediaBounds;
+                else if (TryGetPhysicalBounds(TaskbarPerformanceSurface, out var metricBounds)) bounds = metricBounds;
+                else return [];
+                var dpi = VisualTreeHelper.GetDpi(this);
+                return ForegroundSampleRegionPolicy.Create(bounds, host, _isVertical,
+                    _isVertical ? dpi.DpiScaleX : dpi.DpiScaleY);
             }
             catch (InvalidOperationException)
             {
-                return false;
+                return [];
             }
         }
 
