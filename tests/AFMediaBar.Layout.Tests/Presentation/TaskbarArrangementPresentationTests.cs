@@ -389,6 +389,9 @@ public sealed class TaskbarArrangementPresentationTests
         Assert.AreEqual(3, cells.Length);
         Assert.IsTrue(cells.All(item => item.Visibility == Visibility.Visible));
         Assert.IsTrue(cells[0].Text.StartsWith("↑ ") && cells[0].Text.Contains("\n↓ "));
+        Assert.AreEqual(TextAlignment.Left, cells[0].TextAlignment,
+            "网速两行必须左对齐：宽度按最大占位固定，各自居中的话短行的箭头会随速率漂移。");
+        Assert.AreEqual(TextAlignment.Center, cells[1].TextAlignment, "其余单行指标保持居中。");
         Assert.IsTrue(cells[1].Text.StartsWith("CPU "));
         Assert.IsTrue(cells[2].Text.StartsWith("MEM "));
         var parallelWidth = surface.Width;
