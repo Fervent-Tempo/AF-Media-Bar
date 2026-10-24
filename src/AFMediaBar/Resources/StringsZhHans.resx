@@ -1637,10 +1637,10 @@
     <value>跟随前台窗口所在显示器</value>
   </data>
   <data name="Media.Performance.Metrics.Description" xml:space="preserve">
-    <value>选择要显示的指标；多选时轮流显示。</value>
+    <value>统一设置指标的显示、样式和顺序；关闭的指标也可预设。</value>
   </data>
   <data name="Media.Performance.Metrics.Title" xml:space="preserve">
-    <value>显示哪些指标</value>
+    <value>显示指标</value>
   </data>
   <data name="Media.Performance.OpenTaskManager.Description" xml:space="preserve">
     <value>点击性能组件时打开任务管理器。</value>
@@ -2646,7 +2646,7 @@
     <value>并排显示</value>
   </data>
   <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>拖动调整已选指标顺序；两种显示方式共用顺序，至少保留一个指标。</value>
+    <value>拖动可调整全部指标的顺序，按顺序轮换或并排显示已开启项；关闭再开启会保留位置和样式，至少保留一项。</value>
   </data>
   <data name="Panel.Performance.Upload" xml:space="preserve">
     <value>上传</value>

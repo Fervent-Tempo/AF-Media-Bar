@@ -1637,10 +1637,10 @@
     <value>跟隨前景視窗所在的顯示器</value>
   </data>
   <data name="Media.Performance.Metrics.Description" xml:space="preserve">
-    <value>選擇要顯示的指標；複選時輪流顯示。</value>
+    <value>統一設定指標的顯示、樣式和順序；關閉的指標也可預設。</value>
   </data>
   <data name="Media.Performance.Metrics.Title" xml:space="preserve">
-    <value>顯示哪些指標</value>
+    <value>顯示指標</value>
   </data>
   <data name="Media.Performance.OpenTaskManager.Description" xml:space="preserve">
     <value>點擊效能元件時開啟工作管理員。</value>
@@ -2646,7 +2646,7 @@
     <value>並排顯示</value>
   </data>
   <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>拖曳調整已選指標順序；兩種顯示方式共用順序，至少保留一個指標。</value>
+    <value>拖曳可調整全部指標的順序，依序輪播或並排顯示已開啟項；關閉再開啟會保留位置和樣式，至少保留一項。</value>
   </data>
   <data name="Panel.Performance.Upload" xml:space="preserve">
     <value>上傳</value>

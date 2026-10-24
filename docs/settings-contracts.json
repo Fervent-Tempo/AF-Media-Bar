@@ -964,7 +964,7 @@
     {
       "id": "components",
       "prefixes": ["settings.spectrumComponent", "settings.performanceComponent", "settings.taskbarExperience.fullPanel.performanceVisuals"],
-      "text": "小组件页 ResetComponents 恢复频谱、性能、蓝牙电量参数及显隐，以及媒体栏和完整面板的性能样式；保留完整面板缩放与分区显隐。ResetContentLayout 和 ResetDeviceManagement 保留这些小组件设置。性能 metrics 空或全无效回 SystemMemory；metricOrder 只决定已选指标顺序，缺失或 null 沿用原顺序。枚举新增成员的发布状态独立核对。"
+      "text": "小组件页 ResetComponents 恢复频谱、性能、蓝牙电量参数及显隐，以及媒体栏和完整面板的性能样式；保留完整面板缩放与分区显隐。ResetContentLayout 和 ResetDeviceManagement 保留这些小组件设置。性能 metrics 空或全无效回 SystemMemory；metricOrder 保存全部指标的顺序，运行时按此筛选已开启项；关闭再开启保留位置。读取旧列表时保留原有已开启顺序并将缺失指标补到末尾，不改变原来的选中项；缺失或 null 保留原有选中顺序后补齐未选项。枚举新增成员的发布状态独立核对。"
     },
     {
       "id": "startup",

@@ -287,134 +287,86 @@
                             Title="{DynamicResource Loc.Media.Performance.Visible.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PerformanceVisible, Mode=TwoWay}" />
                         </components:SettingsRow>
-                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Gauge24}">
-                            <ui:CardExpander.Header>
-                                <StackPanel>
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowTitleStyle}"
-                                        Text="{DynamicResource Loc.Media.Performance.Metrics.Title}" />
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                        Text="{DynamicResource Loc.Media.Performance.Metrics.Description}" />
-                                </StackPanel>
-                            </ui:CardExpander.Header>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="True"
+                            Header="{DynamicResource Loc.Media.Performance.Metrics.Title}" Icon="{ui:SymbolIcon Gauge24}">
                             <StackPanel>
-                                <components:SettingsRow
-                                    Description="{DynamicResource Loc.Media.Metric.SystemMemory.Description}"
-                                    Icon="{ui:SymbolIcon Storage24}"
-                                    IsNested="True"
-                                    Style="{StaticResource PerformanceParameterRowStyle}"
-                                    Title="{DynamicResource Loc.Media.Metric.SystemMemory.Title}">
-                                    <ui:ToggleSwitch
-                                        IsChecked="{Binding ViewModel.Components.ShowSystemMemory, Mode=TwoWay}"
-                                        IsEnabled="{Binding ViewModel.Components.CanUncheckSystemMemory}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Icon="{ui:SymbolIcon DeveloperBoard24}"
-                                    IsNested="True"
-                                    Style="{StaticResource PerformanceParameterRowStyle}"
-                                    Title="CPU">
-                                    <ui:ToggleSwitch
-                                        IsChecked="{Binding ViewModel.Components.ShowSystemCpu, Mode=TwoWay}"
-                                        IsEnabled="{Binding ViewModel.Components.CanUncheckSystemCpu}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Icon="{ui:SymbolIcon VideoClip24}"
-                                    IsNested="True"
-                                    Style="{StaticResource PerformanceParameterRowStyle}"
-                                    Title="GPU">
-                                    <ui:ToggleSwitch
-                                        IsChecked="{Binding ViewModel.Components.ShowSystemGpu, Mode=TwoWay}"
-                                        IsEnabled="{Binding ViewModel.Components.CanUncheckSystemGpu}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Icon="{ui:SymbolIcon Apps24}"
-                                    IsNested="True"
-                                    Style="{StaticResource PerformanceParameterRowStyle}"
-                                    Title="{DynamicResource Loc.Media.Metric.ProcessMemory.Title}">
-                                    <ui:ToggleSwitch
-                                        IsChecked="{Binding ViewModel.Components.ShowProcessMemory, Mode=TwoWay}"
-                                        IsEnabled="{Binding ViewModel.Components.CanUncheckProcessMemory}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Description="{DynamicResource Loc.Media.Performance.RefreshInterval.Description}"
-                                    Icon="{ui:SymbolIcon Timer24}"
-                                    IsNested="True"
-                                    Style="{StaticResource PerformanceParameterRowStyle}"
-                                    Title="{DynamicResource Loc.Media.Performance.RefreshInterval.Title}">
-                                    <components:SettingsNumericEditor
-                                        Value="{Binding ViewModel.Components.PerformanceRefreshIntervalSeconds, Mode=TwoWay}"
-                                        Minimum="{Binding ViewModel.Components.MinimumPerformanceRefreshIntervalSeconds}"
-                                        Maximum="{Binding ViewModel.Components.MaximumPerformanceRefreshIntervalSeconds}"
-                                        Step="{Binding ViewModel.Components.PerformanceRefreshIntervalStepSeconds}"
-                                        Unit="{DynamicResource Loc.Settings.Numeric.Seconds}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Description="{DynamicResource Loc.Media.Metric.SystemNetwork.Description}"
-                                    IsNested="True"
-                                    Style="{StaticResource PerformanceParameterRowStyle}"
-                                    Title="{DynamicResource Loc.Media.Metric.SystemNetwork.Title}">
-                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.ShowSystemNetwork, Mode=TwoWay}"
-                                                     IsEnabled="{Binding ViewModel.Components.CanUncheckSystemNetwork}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Description="{DynamicResource Loc.Media.Performance.DisplayMode.Description}"
-                                    IsNested="True"
-                                    Style="{StaticResource PerformanceParameterRowStyle}"
-                                    Title="{DynamicResource Loc.Media.Performance.DisplayMode.Title}">
-                                    <ComboBox SelectedValue="{Binding ViewModel.Components.PerformanceMode, Mode=TwoWay}"
-                                              SelectedValuePath="Tag" MinWidth="{StaticResource AfSettingsSelectShortWidth}">
-                                        <ComboBoxItem Content="{DynamicResource Loc.Media.Performance.DisplayMode.Cycle}"
-                                                      Tag="{x:Static settings:PerformanceDisplayMode.Cycle}" />
-                                        <ComboBoxItem Content="{DynamicResource Loc.Media.Performance.DisplayMode.Parallel}"
-                                                      Tag="{x:Static settings:PerformanceDisplayMode.Parallel}" />
-                                    </ComboBox>
-                                </components:SettingsRow>
-                                <components:SettingsCallout Margin="0,4,0,4" Text="{DynamicResource Loc.Media.Performance.Order.Description}" />
+                                <components:SettingsCallout Text="{DynamicResource Loc.Media.Performance.Order.Description}" Margin="0,0,0,4" />
+                                <components:SettingsCallout Text="{DynamicResource Loc.Performance.Visual.Description}" Margin="0,0,0,4" />
                                 <AdornerDecorator>
-                                    <ItemsControl Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Components.ReorderMetricCommand}" ItemsSource="{Binding ViewModel.Components.MetricOrderEntries}"
-                                                  IsEnabled="{Binding ViewModel.Components.CanConfigurePerformance}">
+                                    <ItemsControl x:Name="PerformanceMetricList" Style="{StaticResource AfSettingsSortableListStyle}"
+                                        components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Components.ReorderMetricCommand}"
+                                        ItemsSource="{Binding ViewModel.Components.MetricOrderEntries}"
+                                        IsEnabled="{Binding ViewModel.Components.CanConfigurePerformance}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" KeepControlInline="True" IsNested="True"
-                                                                        Title="{Binding DisplayName}">
-                                                    <components:SettingsReorderHandle ItemKey="{Binding Metric}" />
+                                                <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" KeepControlInline="False"
+                                                    Title="{Binding DisplayName}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                                        <components:MetricStylePicker VisualStyle="{Binding VisualStyle, Mode=TwoWay}" />
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <StackPanel.Style>
+                                                                <Style TargetType="StackPanel">
+                                                                    <Setter Property="Grid.Column" Value="1" />
+                                                                    <Setter Property="Margin" Value="12,0,0,0" />
+                                                                    <Setter Property="HorizontalAlignment" Value="Right" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsCompact, RelativeSource={RelativeSource AncestorType={x:Type components:SettingsRow}}}" Value="True">
+                                                                            <Setter Property="Grid.Column" Value="0" />
+                                                                            <Setter Property="Grid.Row" Value="1" />
+                                                                            <Setter Property="Margin" Value="0,8,0,0" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </StackPanel.Style>
+                                                            <ui:ToggleSwitch VerticalAlignment="Center"
+                                                                IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding CanToggle}"
+                                                                AutomationProperties.Name="{Binding DisplayName}" />
+                                                            <components:SettingsReorderHandle ItemKey="{Binding Metric}" Margin="12,0,0,0" />
+                                                        </StackPanel>
+                                                    </Grid>
                                                 </components:SettingsRow>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                 </AdornerDecorator>
-                                <components:SettingsRow
-                                    Description="{DynamicResource Loc.Media.Performance.OpenTaskManager.Description}"
-                                    Icon="{ui:SymbolIcon CursorClick24}"
-                                    IsNested="True"
-                                    Style="{StaticResource PerformanceParameterRowStyle}"
-                                    Title="{DynamicResource Loc.Media.Performance.OpenTaskManager.Title}">
-                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.OpenTaskManagerOnMetricsClick, Mode=TwoWay}" />
-                                </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
-
-                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Header="{DynamicResource Loc.Performance.Visual.BarSurface}" Icon="{ui:SymbolIcon DataUsage24}">
-                            <StackPanel>
-                                <components:SettingsCallout Text="{DynamicResource Loc.Performance.Visual.Description}" Margin="0,0,0,4" />
-                                <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Media.Metric.SystemMemory.Title}">
-                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.BarSystemMemoryVisual, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow IsNested="True" Title="CPU">
-                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.BarSystemCpuVisual, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow IsNested="True" Title="GPU">
-                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.BarSystemGpuVisual, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Media.Metric.ProcessMemory.Title}">
-                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.BarProcessMemoryVisual, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Media.Metric.SystemNetwork.Title}">
-                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.BarSystemNetworkVisual, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                            </StackPanel>
-                        </ui:CardExpander>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Media.Performance.RefreshInterval.Description}"
+                            Icon="{ui:SymbolIcon Timer24}"
+                            IsNested="True"
+                            Style="{StaticResource PerformanceParameterRowStyle}"
+                            Title="{DynamicResource Loc.Media.Performance.RefreshInterval.Title}">
+                            <components:SettingsNumericEditor
+                                Value="{Binding ViewModel.Components.PerformanceRefreshIntervalSeconds, Mode=TwoWay}"
+                                Minimum="{Binding ViewModel.Components.MinimumPerformanceRefreshIntervalSeconds}"
+                                Maximum="{Binding ViewModel.Components.MaximumPerformanceRefreshIntervalSeconds}"
+                                Step="{Binding ViewModel.Components.PerformanceRefreshIntervalStepSeconds}"
+                                Unit="{DynamicResource Loc.Settings.Numeric.Seconds}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Media.Performance.DisplayMode.Description}"
+                            IsNested="True"
+                            Style="{StaticResource PerformanceParameterRowStyle}"
+                            Title="{DynamicResource Loc.Media.Performance.DisplayMode.Title}">
+                            <ComboBox SelectedValue="{Binding ViewModel.Components.PerformanceMode, Mode=TwoWay}"
+                                      SelectedValuePath="Tag" MinWidth="{StaticResource AfSettingsSelectShortWidth}">
+                                <ComboBoxItem Content="{DynamicResource Loc.Media.Performance.DisplayMode.Cycle}"
+                                              Tag="{x:Static settings:PerformanceDisplayMode.Cycle}" />
+                                <ComboBoxItem Content="{DynamicResource Loc.Media.Performance.DisplayMode.Parallel}"
+                                              Tag="{x:Static settings:PerformanceDisplayMode.Parallel}" />
+                            </ComboBox>
+                        </components:SettingsRow>
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Media.Performance.OpenTaskManager.Description}"
+                            Icon="{ui:SymbolIcon CursorClick24}"
+                            IsNested="True"
+                            Style="{StaticResource PerformanceParameterRowStyle}"
+                            Title="{DynamicResource Loc.Media.Performance.OpenTaskManager.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.OpenTaskManagerOnMetricsClick, Mode=TwoWay}" />
+                        </components:SettingsRow>
                         <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Header="{DynamicResource Loc.Performance.Visual.Panel}" Icon="{ui:SymbolIcon DataUsage24}">
                             <StackPanel>
                                 <components:SettingsCallout Text="{DynamicResource Loc.Performance.Visual.Description}" Margin="0,0,0,4" />

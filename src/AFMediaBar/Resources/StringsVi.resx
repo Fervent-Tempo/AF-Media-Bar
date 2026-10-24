@@ -1613,7 +1613,7 @@
     <value>Màn hình của cửa sổ đang dùng</value>
   </data>
   <data name="Media.Performance.Metrics.Description" xml:space="preserve">
-    <value>Chọn các chỉ số cần hiển thị; chọn nhiều mục sẽ luân phiên hiển thị.</value>
+    <value>Thiết lập hiển thị, kiểu và thứ tự tại một nơi, kể cả chỉ số đang tắt.</value>
   </data>
   <data name="Media.Performance.Metrics.Title" xml:space="preserve">
     <value>Chỉ số hiển thị</value>
@@ -2684,7 +2684,7 @@
     <value>Cạnh nhau</value>
   </data>
   <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>Kéo để sắp xếp chỉ số đã chọn. Hai chế độ dùng chung thứ tự; giữ ít nhất một chỉ số.</value>
+    <value>Kéo để sắp xếp mọi chỉ số. Các chỉ số bật hiển thị theo thứ tự này ở cả hai chế độ. Tắt chỉ số vẫn giữ vị trí và kiểu. Giữ ít nhất một chỉ số bật.</value>
   </data>
   <data name="Panel.Performance.Upload" xml:space="preserve">
     <value>Tải lên</value>

@@ -108,7 +108,7 @@ public sealed class SettingsReorderTests
     });
 
     [TestMethod]
-    public void MetricMoveInsertsRatherThanSwapsAndRejectsChangedSelection() => Run((configuration, localization, context) =>
+    public void MetricMoveInsertsRatherThanSwapsAndKeepsDisabledEntries() => Run((configuration, localization, context) =>
     {
         SettingsManager.Current.PerformanceComponent = new PerformanceComponentSettings
         { Metrics = [MetricKind.SystemCpu, MetricKind.SystemGpu, MetricKind.SystemMemory, MetricKind.SystemNetwork] };
@@ -116,16 +116,22 @@ public sealed class SettingsReorderTests
         var entries = model.MetricOrderEntries.ToArray();
         var request = new SettingsReorderRequest(entries[0], 3, entries);
         model.ReorderMetricCommand.Execute(request);
-        CollectionAssert.AreEqual(entries.Skip(1).Select(entry => entry.Metric).Append(entries[0].Metric).ToArray(), SettingsManager.Current.PerformanceComponent.GetOrderedMetrics().ToArray());
+        var expected = entries.ToList();
+        expected.RemoveAt(0);
+        expected.Insert(3, entries[0]);
+        CollectionAssert.AreEqual(expected.Select(entry => entry.Metric).ToArray(), SettingsManager.Current.PerformanceComponent.GetMetricOrder().ToArray());
         var before = SettingsManager.Current.PerformanceComponent;
         model.ReorderMetricCommand.Execute(request);
         Assert.AreEqual(before, SettingsManager.Current.PerformanceComponent);
         entries = model.MetricOrderEntries.ToArray();
         request = new SettingsReorderRequest(entries[0], 3, entries);
         model.ShowSystemNetwork = false;
-        before = SettingsManager.Current.PerformanceComponent;
+        expected = entries.ToList();
+        expected.RemoveAt(0);
+        expected.Insert(3, entries[0]);
         model.ReorderMetricCommand.Execute(request);
-        Assert.AreEqual(before, SettingsManager.Current.PerformanceComponent);
+        CollectionAssert.AreEqual(expected.Select(entry => entry.Metric).ToArray(), SettingsManager.Current.PerformanceComponent.GetMetricOrder().ToArray());
+        Assert.IsFalse(SettingsManager.Current.PerformanceComponent.GetOrderedMetrics().Contains(MetricKind.SystemNetwork));
     });
 
     [TestMethod]

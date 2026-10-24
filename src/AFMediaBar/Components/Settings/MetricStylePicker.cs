@@ -13,14 +13,14 @@ public sealed class MetricStylePicker : Grid
     public static readonly DependencyProperty VisualStyleProperty = DependencyProperty.Register(
         nameof(VisualStyle), typeof(MetricVisualStyle), typeof(MetricStylePicker),
         new FrameworkPropertyMetadata(MetricVisualStyle.Numeric, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnStyleChanged));
-    private readonly ComboBox _picker = new() { MinWidth = 140, SelectedValuePath = "Tag" };
-    private readonly MetricChart _preview = new() { Width = 52, Height = 20, Margin = new Thickness(8, 0, 0, 0) };
+    private readonly ComboBox _picker = new() { Width = 140, SelectedValuePath = "Tag" };
+    private readonly MetricChart _preview = new() { Width = 52, Height = 20, Margin = new Thickness(0, 0, 8, 0) };
     public MetricVisualStyle VisualStyle { get => (MetricVisualStyle)GetValue(VisualStyleProperty); set => SetValue(VisualStyleProperty, value); }
 
     public MetricStylePicker()
     {
-        ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
+        ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(140) });
         foreach (var style in Enum.GetValues<MetricVisualStyle>())
         {
             var item = new ComboBoxItem { Tag = style };
@@ -31,7 +31,7 @@ public sealed class MetricStylePicker : Grid
         accessibleName.Bindings.Add(new Binding("Header") { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(Wpf.Ui.Controls.CardExpander), 1) });
         accessibleName.Bindings.Add(new Binding("Title") { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(SettingsRow), 1) });
         _picker.SetBinding(AutomationProperties.NameProperty, accessibleName);
-        SetColumn(_preview, 1);
+        SetColumn(_picker, 1);
         Children.Add(_picker);
         Children.Add(_preview);
         _picker.SelectedValue = VisualStyle;
@@ -54,6 +54,7 @@ public sealed class MetricStylePicker : Grid
     private void RefreshPreview()
     {
         _preview.VisualStyle = VisualStyle;
+        _preview.Visibility = VisualStyle == MetricVisualStyle.Numeric ? Visibility.Hidden : Visibility.Visible;
         _preview.ShowPreview();
     }
 }

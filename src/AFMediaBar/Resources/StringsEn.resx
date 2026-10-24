@@ -1637,10 +1637,10 @@
     <value>Monitor of the foreground window</value>
   </data>
   <data name="Media.Performance.Metrics.Description" xml:space="preserve">
-    <value>Choose metrics to show; multiple selections rotate.</value>
+    <value>Configure metric visibility, style, and order together, including disabled metrics.</value>
   </data>
   <data name="Media.Performance.Metrics.Title" xml:space="preserve">
-    <value>Which metrics to show</value>
+    <value>Display metrics</value>
   </data>
   <data name="Media.Performance.OpenTaskManager.Description" xml:space="preserve">
     <value>Open Task Manager when the performance component is clicked.</value>
@@ -2646,7 +2646,7 @@
     <value>Side by side</value>
   </data>
   <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>Drag to reorder selected metrics. Both display modes share this order; keep at least one metric.</value>
+    <value>Drag to order all metrics. Enabled metrics use this order in both display modes. Turning a metric off keeps its position and style. Keep at least one enabled.</value>
   </data>
   <data name="Panel.Performance.Upload" xml:space="preserve">
     <value>Upload</value>

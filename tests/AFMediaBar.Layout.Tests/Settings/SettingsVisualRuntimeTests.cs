@@ -35,6 +35,7 @@ public sealed class SettingsVisualRuntimeTests
         {
             VerifyNumericBinding(app);
             VerifyPageMarkup(app);
+            VerifyMetricStylePicker();
             _ = new ExperimentalPage(null!);
             DeveloperToolsMarkupChecks.Verify(app, FindRepository());
         });
@@ -119,6 +120,28 @@ public sealed class SettingsVisualRuntimeTests
             Assert.AreEqual("1", counters.Attribute("passed")?.Value);
         }
         finally { if (Directory.Exists(results)) Directory.Delete(results, recursive: true); }
+    }
+
+    private static void VerifyMetricStylePicker()
+    {
+        var picker = new MetricStylePicker();
+        var combo = picker.Children.OfType<ComboBox>().Single();
+        var preview = picker.Children.OfType<MetricChart>().Single();
+        double? previousLeft = null;
+        double? previousWidth = null;
+        foreach (var style in Enum.GetValues<MetricVisualStyle>())
+        {
+            picker.VisualStyle = style;
+            picker.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            picker.Arrange(new Rect(new Point(), picker.DesiredSize));
+            picker.UpdateLayout();
+            var left = combo.TranslatePoint(new Point(), picker).X;
+            if (previousLeft is double expected) Assert.AreEqual(expected, left, 0.01, "切换样式不能移动选择框。");
+            if (previousWidth is double width) Assert.AreEqual(width, picker.ActualWidth, 0.01);
+            Assert.IsTrue(preview.TranslatePoint(new Point(), picker).X < left, "预览应位于选择框左侧。");
+            previousLeft = left;
+            previousWidth = picker.ActualWidth;
+        }
     }
 
     private static void VerifyPageMarkup(Application app)

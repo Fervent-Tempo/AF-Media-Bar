@@ -56,7 +56,9 @@ public partial class ComponentsSettingsViewModel
         get => _configuration.Current.TaskbarExperience.FullPanel.PerformanceVisuals.SystemNetwork;
         set => SetMetricVisual(MetricKind.SystemNetwork, value, true);
     }
-    private void SetMetricVisual(MetricKind metric, MetricVisualStyle style, bool panel)
+    internal MetricVisualStyle GetBarMetricVisual(MetricKind metric) => _configuration.Current.PerformanceComponent.Visuals.Get(metric);
+
+    internal void SetMetricVisual(MetricKind metric, MetricVisualStyle style, bool panel)
     {
         if (_disposed || !_configuration.IsActive) return;
         if (panel)
