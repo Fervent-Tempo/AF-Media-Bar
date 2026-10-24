@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:components="clr-namespace:AFMediaBar.Components"
-        Title="{DynamicResource Loc.Panel.FullPanel.WindowTitle}" Width="440" MinHeight="0" SizeToContent="Height"
+        Title="{DynamicResource Loc.Panel.FullPanel.WindowTitle}" Width="440" MinWidth="0" MinHeight="0" SizeToContent="Height"
         ShowInTaskbar="False" Topmost="True" ResizeMode="NoResize"
         WindowStyle="None" WindowCornerPreference="Round"
         ExtendsContentIntoTitleBar="True" Background="Transparent"
