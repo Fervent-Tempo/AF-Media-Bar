@@ -89,10 +89,10 @@
       "trayChordWheelAction": "v1.2.0",
       "trayClickAction": "v1.2.0",
       "trayPrimaryWheelAction": "v1.2.0",
-      "outputDeviceClickTarget": "unreleased",
-      "outputDeviceWheelTarget": "unreleased",
-      "inputDeviceClickTarget": "unreleased",
-      "inputDeviceWheelTarget": "unreleased"
+      "outputDeviceClickTarget": "v1.5.0",
+      "outputDeviceWheelTarget": "v1.5.0",
+      "inputDeviceClickTarget": "v1.5.0",
+      "inputDeviceWheelTarget": "v1.5.0"
     },
     "interfaceLanguage": "v1.2.0",
     "launchAtStartup": "v1.2.0",
@@ -117,10 +117,10 @@
     "lyricsSource": {
       "$release": "v1.2.0",
       "enabledSourceIds": "v1.2.0",
-      "rule": "unreleased",
-      "attemptMode": "unreleased",
-      "resultMode": "unreleased",
-      "prioritySourceIds": "unreleased"
+      "rule": "v1.5.0",
+      "attemptMode": "v1.5.0",
+      "resultMode": "v1.5.0",
+      "prioritySourceIds": "v1.5.0"
     },
     "lyricsSyllableHighlightEnabled": "v1.2.0",
     "lyricsTextAlignment": "v1.2.0",
@@ -205,7 +205,7 @@
         "playPauseVisible": "v1.2.0",
         "previousNextVisible": "v1.2.0",
         "progressVisible": "v1.2.0",
-        "inputDeviceVisible": "unreleased"
+        "inputDeviceVisible": "v1.5.0"
       },
       "hoverLayerEnabled": "v1.2.0",
       "idleComponents": "v1.2.1",
@@ -218,7 +218,7 @@
       "restProgressVisible": "v1.2.0",
       "spectrumVisible": "v1.2.0",
       "volumeVisible": "v1.2.1",
-      "inputDeviceVisible": "unreleased"
+      "inputDeviceVisible": "v1.5.0"
     },
     "taskbarSurface": {
       "$release": "v1.2.0",
@@ -260,23 +260,23 @@
       "preferences": { "$release": "unreleased", "$items": { "direction": "unreleased", "endpointId": "unreleased", "lastKnownName": "unreleased", "alias": "unreleased" } },
       "outputCycleHotkey": "unreleased",
       "inputCycleHotkey": "unreleased",
-      "$release": "unreleased",
+      "$release": "v1.5.0",
       "outputBlacklist": {
-        "$release": "unreleased",
+        "$release": "v1.5.0",
         "$items": {
-          "endpointId": "unreleased",
-          "displayName": "unreleased"
+          "endpointId": "v1.5.0",
+          "displayName": "v1.5.0"
         }
       },
       "inputBlacklist": {
-        "$release": "unreleased",
+        "$release": "v1.5.0",
         "$items": {
-          "endpointId": "unreleased",
-          "displayName": "unreleased"
+          "endpointId": "v1.5.0",
+          "displayName": "v1.5.0"
         }
       },
-      "switchOutputCommunications": "unreleased",
-      "switchInputCommunications": "unreleased"
+      "switchOutputCommunications": "v1.5.0",
+      "switchInputCommunications": "v1.5.0"
     }
   },
   "enums": {
@@ -343,22 +343,22 @@
     "LyricsSourceRule": {
       "paths": ["settings.lyricsSource.rule"],
       "members": {
-        "Default": {"value": 0, "release": "unreleased"},
-        "Manual": {"value": 1, "release": "unreleased"}
+        "Default": {"value": 0, "release": "v1.5.0"},
+        "Manual": {"value": 1, "release": "v1.5.0"}
       }
     },
     "LyricsSourceAttemptMode": {
       "paths": ["settings.lyricsSource.attemptMode"],
       "members": {
-        "Sequential": {"value": 0, "release": "unreleased"},
-        "Parallel": {"value": 1, "release": "unreleased"}
+        "Sequential": {"value": 0, "release": "v1.5.0"},
+        "Parallel": {"value": 1, "release": "v1.5.0"}
       }
     },
     "LyricsSourceResultMode": {
       "paths": ["settings.lyricsSource.resultMode"],
       "members": {
-        "Ordered": {"value": 0, "release": "unreleased"},
-        "FirstAvailable": {"value": 1, "release": "unreleased"}
+        "Ordered": {"value": 0, "release": "v1.5.0"},
+        "FirstAvailable": {"value": 1, "release": "v1.5.0"}
       }
     },
     "AccentColorMode": {
@@ -667,7 +667,7 @@
         },
         "InputDevice": {
           "value": 6,
-          "release": "unreleased"
+          "release": "v1.5.0"
         },
         "BluetoothBattery": {
           "value": 7,
@@ -697,7 +697,7 @@
         "OpenCurrentAppVolumeMenu": {"value": 5, "release": "v1.2.0"},
         "OpenInputDeviceMenu": {
           "value": 6,
-          "release": "unreleased"
+          "release": "v1.5.0"
         }
       }
     },
@@ -709,7 +709,7 @@
         "Disabled": {"value": 2, "release": "v1.2.0"},
         "SwitchInputDevice": {
           "value": 3,
-          "release": "unreleased"
+          "release": "v1.5.0"
         }
       }
     },
@@ -723,7 +723,7 @@
         "Disabled": {"value": 4, "release": "v1.2.0"},
         "InputDevice": {
           "value": 5,
-          "release": "unreleased"
+          "release": "v1.5.0"
         }
       }
     },
@@ -752,15 +752,15 @@
       "members": {
         "SystemDefault": {
           "value": 0,
-          "release": "unreleased"
+          "release": "v1.5.0"
         },
         "ForegroundApplication": {
           "value": 1,
-          "release": "unreleased"
+          "release": "v1.5.0"
         },
         "Disabled": {
           "value": 2,
-          "release": "unreleased"
+          "release": "v1.5.0"
         }
       }
     }

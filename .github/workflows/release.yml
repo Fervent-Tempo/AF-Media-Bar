@@ -51,6 +51,8 @@ jobs:
         run: dotnet build ./src/AFMediaBar.slnx -c Release --no-restore -p:ContinuousIntegrationBuild=true -p:BuildInParallel=false
       - name: Test layout, policies and settings
         run: dotnet test ./tests/AFMediaBar.Layout.Tests/AFMediaBar.Layout.Tests.csproj -c Release --no-build --no-restore
+      - name: Restore win-x64 publish dependencies
+        run: dotnet restore ./src/AFMediaBar.slnx -r win-x64
       - name: Publish single-file application
         run: dotnet publish ./src/AFMediaBar/AFMediaBar.csproj -c Release -r win-x64 --self-contained true --no-restore -p:ContinuousIntegrationBuild=true -p:BuildInParallel=false -o ./artifacts/publish
       - name: Verify single-file output

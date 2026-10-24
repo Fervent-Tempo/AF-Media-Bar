@@ -6,6 +6,51 @@ All notable changes to AF Media Bar are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-10-24
+
+Make the new audio controls, vertical taskbars and desktop floating mode generally available; extend device management, media-source and spectrum selection; add opt-in Bluetooth battery and memory-tool experiments.
+
+### Added
+
+- Add device aliases, enabled and disabled groups, drag ordering, disconnected-device settings and shortcuts to Windows sound settings. Record input and output cycling hotkeys, cancel with Esc or remove a binding.
+- Remember application volumes adjusted in AF and restore them in new audio sessions for the corresponding application, without a separate configuration switch.
+- Add a Bluetooth battery experiment for one manually selected paired device, with a widget shown when connected or only when low, plus optional alerts. The experiment, widget and alerts default to off and require Windows battery properties or standard BLE support.
+- Add experimental AF memory diagnostics, manual reclamation and operation results. System cleanup supports on-demand or persistent authorization, standard and deep levels, and opt-in timer or threshold policies. Standard cleanup clears low-priority standby pages; deep cleanup also handles the system file cache and all standby pages, without trimming other applications' working sets.
+- Add automatic, latest-session and preferred-application media selection, save stable source preferences and retain recovery state for manually selected sources.
+- Add spectrum endpoint strategies for the media application's actual output, the system default or a specific device. Default-device changes can rebuild capture; disconnected fixed devices retain their selection and pause capture. Endpoint strategies apply only to device capture; process capture still spans endpoints.
+- Add list-launch and select-then-launch interactions, a shared selected target and application icons on hover. List launch remains the default; the alternative supports wheel selection and double-click launch.
+- Add four-edge collapse, edge indicators and saved docking direction to floating mode. Edge collapse defaults to on and can be disabled in Display and placement.
+- Add an external full-panel handle with click or hover activation, adapting to taskbar and floating expansion directions. The handle defaults to visible with click activation and hides without media.
+- Add long-line scrolling for syllable-timed lyrics in follow-content mode, enabled by default when a line exceeds the width cap.
+- Add display-only source-format cleanup, enabled by default, and an optional filter for Japanese kana annotations in parentheses, disabled by default.
+
+### Changed
+
+- Make the new audio controls, input devices and application routing available without an experiment switch. Floating mode and vertical taskbars are directly configurable; legacy switches no longer gate them, while saved modes and geometry remain intact.
+- Move widgets to a dedicated settings page, unify device ordering, cards, group titles, related-setting links and list hierarchy, simplify title descriptions and improve icon alignment. Group release highlights by topic with expandable items.
+- Reorganize media information and controls in the full panel. Adapt the external handle to its background, with interruptible visibility transitions, a larger hit area and a leave delay.
+- Batch foreground-color sampling and reuse buffers, add interruptible color transitions, reuse performance text nodes, settings resources and artwork geometry, and defer audio-flyout and spectrum-buffer creation.
+- Keep settings schema 2 and continue reading 1.5.0 settings and user-default snapshots. New experiments and automatic memory policies default to off; long-line scrolling and format cleanup default to on; kana filtering defaults to off. Keep update schema 1, minimumSupportedVersion 1.2.0 and non-mandatory updates.
+- Add structured topics and items to release highlights while retaining legacy string arrays. Generate catalogue and candidate content from the same release notes, preserving compatibility with older clients.
+
+### Fixed and improved
+
+- Fix long-lyric width refresh and uneven scrolling, redundant frames when displayed text is unchanged, and interrupted transitions when changing highlighting or filtering. Remove format markers from syllables consistently, retain parenthesized vocals and exclude Japanese lyrics from Chinese conversion.
+- Reduce repeated lyric retrieval while paused and limit automatic failure retries for the same track. Improve handling of missing SMTC notifications, manual-source recovery and stale media snapshots.
+- Fix full-panel entry drift during in-place artwork zoom, reversed layout pushes and whole-bar relayout caused by lyric display settings.
+- Fix delayed first taskbar expansion, missing placement polling after hidden startup and overly broad host recovery. Unify content centers and available-height budgets across layouts.
+- Fix interrupted quick-launch icon transitions, stale icons during cold reads and changing hit areas while scaling. Clear status feedback after a short interval.
+- Fix sidebar selection after settings shortcuts, inaccurate display names, empty callout lines and quick-launch list hierarchy.
+- Fix network-rate arrows drifting with centered values in the non-compact two-line layout.
+- Atomically mark update downloads busy before starting work to prevent simultaneous downloads from two entry points. Restore download-state logging and verify concurrency rejection and shutdown with a controlled local server.
+- Discard queued battery results after device changes and publish startup and configuration state on the UI thread. Add resource-baseline comparison and output clearing to developer tools.
+
+### Internal and release
+
+- Reorganize code by responsibility, reduce redundant tests and isolate native-window, UIA and settings-contract fixtures. Refresh sponsor information and release checks; test-count changes do not establish changes in functional coverage.
+- Retain the MIT license and correct attribution for independently implemented features; the temporary GPL change in intermediate commits is not part of this release.
+- Retain draft prereleases, candidate-metadata review and explicit stable promotion. Generate package sizes and SHA-256 values from final artifacts; the production release chain still has no code signing.
+
 ## [1.5.0] - 2026-10-17
 
 Add opt-in experiments for vertical taskbars and desktop floating mode, with improvements to narrow taskbars, Settings ordering and artwork interaction.
