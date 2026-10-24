@@ -3207,4 +3207,100 @@
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>边缘自动折叠</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>默认开启。拖到工作区边缘后，移开鼠标收起，靠近时展开；支持四边。</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展开桌面媒体栏</value></data>
+  <data name="Common.Page.PluginCenter" xml:space="preserve"><value>插件中心</value></data>
+  <data name="Plugins.Architecture" xml:space="preserve"><value>播放器架构</value></data>
+  <data name="Plugins.Attribution" xml:space="preserve"><value>作者：{0}    版本：{1}</value></data>
+  <data name="Plugins.Author" xml:space="preserve"><value>作者：{0}</value></data>
+  <data name="Plugins.Cancel" xml:space="preserve"><value>取消下载</value></data>
+  <data name="Plugins.Catalog" xml:space="preserve"><value>播放器扩展</value></data>
+  <data name="Plugins.Catalog.foobar.Install" xml:space="preserve"><value>1. 在 foobar2000 的 Preferences → Components 中选择 Install。
+2. 选择下载的 .fb2k-component，应用并重启播放器。
+3. 播放歌曲，检查系统媒体面板的信息和进度。</value></data>
+  <data name="Plugins.Catalog.foobar.Requirements" xml:space="preserve"><value>选择与 foobar2000 一致的 x86 或 x64 组件。功能以播放器和上游组件版本为准。</value></data>
+  <data name="Plugins.Catalog.foobar.Restore" xml:space="preserve"><value>在 Components 中移除 foo_mediacontrol 并重启；回退时安装保留的旧版组件。</value></data>
+  <data name="Plugins.Catalog.foobar.Summary" xml:space="preserve"><value>补全专辑、专辑艺术家、时长和播放进度，接入 Windows 媒体控制。</value></data>
+  <data name="Plugins.Catalog.foobar.Target" xml:space="preserve"><value>foobar2000</value></data>
+  <data name="Plugins.Catalog.foobar.Upgrade" xml:space="preserve"><value>通过 Components 安装新版组件并重启；保留原组件包，以便需要时回退。</value></data>
+  <data name="Plugins.Catalog.itunes.Install" xml:space="preserve"><value>1. 将压缩包完整解压到普通文件夹，保留所有文件。
+2. 启动 iTunes.SMTC.exe，再打开 iTunes 播放音乐。
+3. 检查 Windows 媒体面板；AF 不替你运行工具或设置开机自启。</value></data>
+  <data name="Plugins.Catalog.itunes.Requirements" xml:space="preserve"><value>Windows 10/11 和 iTunes；选择可在本机运行且匹配 iTunes 的附件。上游也提到 Apple Music Preview，不将其视为当前 Apple Music 的通用修复。</value></data>
+  <data name="Plugins.Catalog.itunes.Restore" xml:space="preserve"><value>退出桥接工具，移除其文件夹以及你手动添加的启动入口；回退时使用备份。</value></data>
+  <data name="Plugins.Catalog.itunes.Summary" xml:space="preserve"><value>独立运行的桥接工具，将 iTunes 接入 Windows 媒体控制；不是复制到播放器目录的 DLL 插件。</value></data>
+  <data name="Plugins.Catalog.itunes.Target" xml:space="preserve"><value>iTunes</value></data>
+  <data name="Plugins.Catalog.itunes.Upgrade" xml:space="preserve"><value>先退出桥接工具，备份其目录，再完整解压新版；保留需要的个人配置。</value></data>
+  <data name="Plugins.Catalog.musicbee.Install" xml:space="preserve"><value>1. 完全退出 MusicBee。
+2. 将 mb_MediaControl.dll 放入该 MusicBee 安装的 Plugins 目录。
+3. 重启后在插件设置中确认已启用。Microsoft Store 版请使用播放器的 Add Plugin 入口，不修改 WindowsApps。</value></data>
+  <data name="Plugins.Catalog.musicbee.Requirements" xml:space="preserve"><value>适用于 Windows 10/11 的 MusicBee，需 .NET Framework 4.8。附件为 AnyCPU。避免同时启用多个发布 SMTC 会话的插件。</value></data>
+  <data name="Plugins.Catalog.musicbee.Restore" xml:space="preserve"><value>在插件设置中卸载并重启，或完全退出后删除添加的 DLL；需要回退时恢复备份。</value></data>
+  <data name="Plugins.Catalog.musicbee.Summary" xml:space="preserve"><value>提供曲目信息、播放控制、时间轴、进度跳转、随机和循环控制。</value></data>
+  <data name="Plugins.Catalog.musicbee.Target" xml:space="preserve"><value>MusicBee</value></data>
+  <data name="Plugins.Catalog.musicbee.Upgrade" xml:space="preserve"><value>退出 MusicBee，备份旧 DLL 后替换并重启；通过 Add Plugin 安装的组件按播放器流程升级。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Install" xml:space="preserve"><value>1. 完全退出 QQ 音乐，确认当前真正使用的版本安装目录，其中应有 QQMusicAgent.exe；不要使用升级后的残留目录。
+2. 如已有 msimg32.dll，先确认来源并另存备份，不直接覆盖。
+3. 将 payload.dll 重命名为 msimg32.dll 放入该目录，再启动验证。写入 Program Files 可能需要管理员权限。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Requirements" xml:space="preserve"><value>实验性进程内插件，仅 x86；上游主要验证 QQ 音乐 22.71。客户端更新可能导致失效或崩溃，不与其它同名代理 DLL 混装。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Restore" xml:space="preserve"><value>完全退出 QQ 音乐，仅删除此次安装的 msimg32.dll；若原先有同名文件，将原备份还原。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Summary" xml:space="preserve"><value>补齐 SMTC 进度跳转，并提供 QQ 歌曲 ID 和高清封面；沿用 QQMusic.exe 会话身份。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Target" xml:space="preserve"><value>QQ 音乐</value></data>
+  <data name="Plugins.Catalog.qqmusic.Upgrade" xml:space="preserve"><value>先核对新客户端和插件兼容性，退出播放器后替换插件；不要用插件覆盖安装前保留的原文件备份。</value></data>
+  <data name="Plugins.Catalog.vlc.Install" xml:space="preserve"><value>1. 退出 VLC，将压缩包中的 libwin10smtc_plugin.dll 解压到 VLC\plugins\misc。
+2. 重启 VLC，打开高级首选项 → 界面 → 控制界面。
+3. 勾选 Windows SMTC integration 并保存，重新播放媒体。</value></data>
+  <data name="Plugins.Catalog.vlc.Requirements" xml:space="preserve"><value>VLC 3.0.x 或 4.0.0-dev；Windows 10 1607+ / 11。插件和 Visual C++ 2022 或更新运行库必须匹配 VLC 架构。</value></data>
+  <data name="Plugins.Catalog.vlc.Restore" xml:space="preserve"><value>取消勾选该控制界面，退出 VLC 后移除新增 DLL；回退时恢复备份。</value></data>
+  <data name="Plugins.Catalog.vlc.Summary" xml:space="preserve"><value>接入 SMTC 元数据、播放控制和进度跳转。v5.0.0 已声明修复播放进度上报。</value></data>
+  <data name="Plugins.Catalog.vlc.Target" xml:space="preserve"><value>VLC</value></data>
+  <data name="Plugins.Catalog.vlc.Upgrade" xml:space="preserve"><value>退出 VLC，备份原插件后替换为匹配架构的新 DLL，重启并检查控制界面选项。</value></data>
+  <data name="Plugins.ChooseArchitecture" xml:space="preserve"><value>请选择播放器的架构，与 Windows 或 AF 的架构无关。</value></data>
+  <data name="Plugins.Download" xml:space="preserve"><value>下载</value></data>
+  <data name="Plugins.Empty" xml:space="preserve"><value>没有匹配的插件或配置指引。</value></data>
+  <data name="Plugins.Error.File" xml:space="preserve"><value>无法保存或读取插件文件，请检查目录权限与可用空间。</value></data>
+  <data name="Plugins.Error.Integrity" xml:space="preserve"><value>文件大小或 SHA-256 校验失败，未保存为完成文件。请重试或查看上游版本。</value></data>
+  <data name="Plugins.Error.Network" xml:space="preserve"><value>下载来源均未成功。请重试或从上游发布页手动下载。</value></data>
+  <data name="Plugins.Error.Open" xml:space="preserve"><value>无法打开链接或显示文件。文件可能已移动，请检查默认浏览器或重新下载。</value></data>
+  <data name="Plugins.Experimental" xml:space="preserve"><value>实验性 · 请核对兼容条件</value></data>
+  <data name="Plugins.Guide" xml:space="preserve"><value>安装、升级与还原指引</value></data>
+  <data name="Plugins.Install" xml:space="preserve"><value>安装</value></data>
+  <data name="Plugins.ManualNotice" xml:space="preserve">
+    <value>下载后按指引手动安装。</value>
+  </data>
+  <data name="Plugins.Native" xml:space="preserve"><value>原生功能配置指引，无需下载插件。</value></data>
+  <data name="Plugins.Project" xml:space="preserve"><value>上游项目与说明</value></data>
+  <data name="Plugins.Restore" xml:space="preserve"><value>卸载或还原</value></data>
+  <data name="Plugins.Retry" xml:space="preserve"><value>重试下载</value></data>
+  <data name="Plugins.Reveal" xml:space="preserve"><value>在文件夹中显示</value></data>
+  <data name="Plugins.Search" xml:space="preserve"><value>搜索插件名称或播放器</value></data>
+  <data name="Plugins.Source" xml:space="preserve"><value>当前下载来源：{0}</value></data>
+  <data name="Plugins.Status.Available" xml:space="preserve"><value>可下载。目录版本随 AF 更新。</value></data>
+  <data name="Plugins.Status.Canceled" xml:space="preserve"><value>已取消，可重试下载。</value></data>
+  <data name="Plugins.Status.Completed" xml:space="preserve"><value>已下载并校验，请按指引手动安装。</value></data>
+  <data name="Plugins.Status.Downloading" xml:space="preserve"><value>正在下载并校验…</value></data>
+  <data name="Plugins.Status.Failed" xml:space="preserve"><value>下载失败，可重试或访问上游项目。</value></data>
+  <data name="Plugins.Status.Verifying" xml:space="preserve"><value>正在校验文件…</value></data>
+  <data name="Plugins.Subtitle" xml:space="preserve"><value>下载播放器 SMTC 扩展，按说明手动安装。</value></data>
+  <data name="Plugins.Upgrade" xml:space="preserve"><value>升级</value></data>
+  <data name="Plugins.VerifyOrDownload" xml:space="preserve"><value>校验或重新下载</value></data>
+  <data name="Plugins.Catalog.foobar.Compatibility" xml:space="preserve">
+    <value>按 foobar2000 架构选择组件。</value>
+  </data>
+  <data name="Plugins.Catalog.musicbee.Compatibility" xml:space="preserve">
+    <value>需要 .NET Framework 4.8。</value>
+  </data>
+  <data name="Plugins.Catalog.vlc.Compatibility" xml:space="preserve">
+    <value>适配 VLC 3.0.x；需要匹配架构的 VC++ 2022 运行库。</value>
+  </data>
+  <data name="Plugins.Catalog.itunes.Compatibility" xml:space="preserve">
+    <value>用于传统 iTunes，独立运行。</value>
+  </data>
+  <data name="Plugins.Catalog.qqmusic.Compatibility" xml:space="preserve">
+    <value>仅 x86，主要验证 22.71；通过 DLL 注入，更新后可能失效或崩溃。</value>
+  </data>
+  <data name="Plugins.DownloadDetails" xml:space="preserve">
+    <value>下载说明</value>
+  </data>
+  <data name="Plugins.DownloadDetails.Body" xml:space="preserve">
+    <value>AF 只下载和校验文件，不自动解压或安装。优先尝试镜像，失败后回退官方；切换页面或关闭设置后继续，退出 AF 时取消。文件保存在本地应用数据目录的 AFMediaBar\PluginDownloads。</value>
+  </data>
 </root>

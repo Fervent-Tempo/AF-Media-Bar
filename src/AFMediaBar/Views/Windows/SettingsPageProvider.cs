@@ -23,6 +23,7 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INaviga
         [SettingsPageKey.Components] = typeof(ComponentsSettingsPage),
         [SettingsPageKey.Widgets] = typeof(WidgetsSettingsPage),
         [SettingsPageKey.MediaAndNotifications] = typeof(ExtraFeaturesPage),
+        [SettingsPageKey.PluginCenter] = typeof(PluginCenterPage),
         [SettingsPageKey.Application] = typeof(ApplicationPage),
         [SettingsPageKey.Experimental] = typeof(ExperimentalPage),
         [SettingsPageKey.ReleaseHighlights] = typeof(ReleaseHighlightsPage),

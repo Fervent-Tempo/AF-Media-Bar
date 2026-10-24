@@ -19,6 +19,7 @@ public static class SettingsPageCatalog
         new SettingsPageDefinition(SettingsPageKey.Interaction, "Common.Page.Interaction", "HandDraw24", false),
         new SettingsPageDefinition(SettingsPageKey.DeviceManagement, "Device.Management.Title", "Headphones24", true),
         new SettingsPageDefinition(SettingsPageKey.MediaAndNotifications, "Common.Page.MediaAndNotifications", "PuzzlePiece24", true),
+        new SettingsPageDefinition(SettingsPageKey.PluginCenter, "Common.Page.PluginCenter", "ArrowDownload24", true),
         new SettingsPageDefinition(SettingsPageKey.Application, "Common.Page.Application", "Settings24", true),
         new SettingsPageDefinition(SettingsPageKey.Experimental, "Common.Page.Experimental", "Beaker24", true),
         new SettingsPageDefinition(SettingsPageKey.ReleaseHighlights, "Common.Page.ReleaseHighlights", "Sparkle24", true, true),
