@@ -71,6 +71,106 @@ public sealed class SpectrumCaptureTests
     }
 
     [TestMethod]
+    [DataRow(null, SpectrumCaptureDeviceMode.FollowMediaSource)]
+    [DataRow("endpoint-id", SpectrumCaptureDeviceMode.SpecificDevice)]
+    public void OldConfigWithoutDeviceModeKeepsPriorBehaviour(string? deviceId, SpectrumCaptureDeviceMode expected)
+    {
+        WithSettingsDirectory(directory =>
+        {
+            var device = deviceId is null ? string.Empty : ",\"captureDeviceId\":\"" + deviceId + "\"";
+            File.WriteAllText(Path.Combine(directory, "settings.json"),
+                "{\"schemaVersion\":2,\"settings\":{\"spectrumComponent\":{\"bandCount\":12,\"refreshRateHz\":20,\"sensitivityPercent\":100" + device + "}}}");
+            using var persistence = new SettingsPersistenceService(directory, TimeSpan.FromMinutes(5));
+            persistence.Initialize();
+            var settings = SettingsManager.Current.SpectrumComponent;
+            Assert.IsNull(settings.CaptureDeviceMode, "升级前的设置文件没有设备策略字段。");
+            Assert.AreEqual(expected, settings.ResolveCaptureDeviceMode(), "缺字段时按 CaptureDeviceId 回退，与升级前的判据一致。");
+            Assert.AreEqual(deviceId, settings.CaptureDeviceId, "旧配置保存的设备标识原样保留。");
+        });
+    }
+
+    [TestMethod]
+    [DataRow(SpectrumCaptureDeviceMode.FollowMediaSource)]
+    [DataRow(SpectrumCaptureDeviceMode.SystemDefault)]
+    [DataRow(SpectrumCaptureDeviceMode.SpecificDevice)]
+    public void DeviceModeSurvivesPersistenceCloneAndUserDefaultReset(SpectrumCaptureDeviceMode mode)
+    {
+        WithSettingsDirectory(directory =>
+        {
+            using (var persistence = new SettingsPersistenceService(directory, TimeSpan.FromMinutes(5)))
+            {
+                persistence.Initialize();
+                SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with
+                { CaptureDeviceMode = mode, CaptureDeviceId = " endpoint-id ", CaptureDeviceName = "Headphones" });
+                persistence.Flush();
+                using var document = JsonDocument.Parse(File.ReadAllText(persistence.SettingsPath));
+                // 序列化用成员名而不是序号，改名会让旧文件读到回退值。
+                Assert.AreEqual(mode.ToString(), document.RootElement.GetProperty("settings").GetProperty("spectrumComponent")
+                    .GetProperty("captureDeviceMode").GetString());
+            }
+            SettingsManager.Current = new AppSettings();
+            using var reloaded = new SettingsPersistenceService(directory, TimeSpan.FromMinutes(5));
+            reloaded.Initialize();
+            Assert.AreEqual(mode, SettingsManager.Current.SpectrumComponent.CaptureDeviceMode);
+            Assert.AreEqual(mode, SettingsManager.Current.SpectrumComponent.ResolveCaptureDeviceMode());
+            Assert.AreEqual("endpoint-id", SettingsManager.Current.SpectrumComponent.CaptureDeviceId);
+            Assert.AreEqual("Headphones", SettingsManager.Current.SpectrumComponent.CaptureDeviceName);
+            var saved = SettingsManager.Current.Clone();
+            SettingsManager.SetUserDefaults(saved);
+            SettingsManager.ResetComponents();
+            Assert.AreEqual(mode, SettingsManager.Current.SpectrumComponent.CaptureDeviceMode, "恢复默认后策略与设备标识一起回到用户快照。");
+            Assert.AreEqual("endpoint-id", SettingsManager.Current.SpectrumComponent.CaptureDeviceId);
+            Assert.AreEqual("Headphones", SettingsManager.Current.SpectrumComponent.CaptureDeviceName);
+        });
+    }
+
+    [TestMethod]
+    [DataRow((SpectrumCaptureDeviceMode)999)]
+    public void InvalidDeviceModeFallsBackToLegacyResolution(SpectrumCaptureDeviceMode mode)
+    {
+        var normalized = (SpectrumComponentSettings.Default with { CaptureDeviceMode = mode, CaptureDeviceId = "endpoint-id" }).Normalize();
+        Assert.IsNull(normalized.CaptureDeviceMode, "无法识别的策略值按「没有表达过」处理。");
+        Assert.AreEqual(SpectrumCaptureDeviceMode.SpecificDevice, normalized.ResolveCaptureDeviceMode());
+    }
+
+    [TestMethod]
+    public void SwitchingDeviceModeRebuildsCaptureEvenWhenDeviceIdIsUnchanged()
+    {
+        WithSettingsDirectory(_ =>
+        {
+            SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with
+            { CaptureSource = SpectrumCaptureSource.CurrentDevice, CaptureDeviceMode = SpectrumCaptureDeviceMode.FollowMediaSource });
+            using var devices = new AudioCaptureDeviceResolver(new MediaSourceProcessResolver());
+            using var monitor = new AudioMonitorService(devices, new SpectrumCaptureProcessResolver(new MediaSourceProcessResolver()));
+            var version = GetField<int>(monitor, "_captureVersion");
+            SetField(monitor, "_captureReady", true);
+            Assert.IsTrue(monitor.IsCaptureCurrent(version), "初始代际可用。");
+
+            // 跟随媒体来源 → 系统默认输出设备：设备标识没变，也必须重建采集。
+            SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with
+            { CaptureSource = SpectrumCaptureSource.CurrentDevice, CaptureDeviceMode = SpectrumCaptureDeviceMode.SystemDefault });
+            Assert.IsFalse(monitor.IsCaptureCurrent(version), "切到系统默认输出设备必须重建采集。");
+
+            // 指定设备 → 系统默认输出设备（保留旧设备标识）：同样必须重建。
+            SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with
+            { CaptureSource = SpectrumCaptureSource.CurrentDevice, CaptureDeviceMode = SpectrumCaptureDeviceMode.SpecificDevice, CaptureDeviceId = "endpoint-id" });
+            version = GetField<int>(monitor, "_captureVersion");
+            SetField(monitor, "_captureReady", true);
+            Assert.IsTrue(monitor.IsCaptureCurrent(version));
+            SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with
+            { CaptureSource = SpectrumCaptureSource.CurrentDevice, CaptureDeviceMode = SpectrumCaptureDeviceMode.SystemDefault, CaptureDeviceId = "endpoint-id" });
+            Assert.IsFalse(monitor.IsCaptureCurrent(version), "仅策略变化也要重建采集。");
+
+            // 策略与设备都没变：不重建。
+            version = GetField<int>(monitor, "_captureVersion");
+            SetField(monitor, "_captureReady", true);
+            SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with
+            { CaptureSource = SpectrumCaptureSource.CurrentDevice, CaptureDeviceMode = SpectrumCaptureDeviceMode.SystemDefault, CaptureDeviceId = "endpoint-id" });
+            Assert.IsTrue(monitor.IsCaptureCurrent(version), "策略与设备均未变化时不重建采集。");
+        });
+    }
+
+    [TestMethod]
     [DataRow(SpectrumCaptureSource.CurrentDevice)]
     [DataRow(SpectrumCaptureSource.AllApplications)]
     [DataRow(SpectrumCaptureSource.CurrentMediaApplication)]
