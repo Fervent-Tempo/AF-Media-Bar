@@ -143,6 +143,12 @@ public static class SettingsSearchIndex
     /// <summary>Builds localized labels while keeping page and group identities stable.</summary>
     private static SettingsSearchEntry[] Build(LocalizationLanguage language) =>
     [
+        Create(SettingsPageKey.QuickStart, "QuickStart.Basics", "QuickStart.Basics.Description", language,
+            ["教程", "入门", "quick start", "tutorial", "来源", "显示", "歌词"]),
+        Create(SettingsPageKey.QuickStart, "QuickStart.Players", "QuickStart.Players.Description", language,
+            ["兼容", "播放器", "SMTC", "网易云", "酷狗", "汽水", "酷我", "咪咕", "千千", "波点", "洛雪", "LX Music", "YesPlayMusic", "MoeKoeMusic", "Listen 1", "MusicFree", "SPlayer", "AlgerMusicPlayer", "Spotify", "Apple Music", "AIMP", "PotPlayer", "mpv", "TIDAL"]),
+        Create(SettingsPageKey.QuickStart, "QuickStart.Latest", "QuickStart.Latest.Description", language,
+            ["新功能", "版本", "what's new", "版本亮点"]),
         Create(SettingsPageKey.PluginCenter, "Plugins.Catalog", "Plugins.Subtitle", language,
             ["插件", "plugin", "SMTC", "下载", "download", "foobar2000", "MusicBee", "VLC", "iTunes", "QQ音乐"]),
         Create(SettingsPageKey.ScreenAndPlacement, "Placement.Floating.Title", "Placement.Floating.Description", language, ["桌面悬浮模式", "floating", "置顶", "锁定", "拖动", "边缘折叠", "贴边", "auto-hide", "edge collapse"]),

@@ -3320,6 +3320,144 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Plugins.Subtitle" xml:space="preserve"><value>Tải tiện ích SMTC cho trình phát và cài đặt thủ công theo hướng dẫn.</value></data>
   <data name="Plugins.Upgrade" xml:space="preserve"><value>Nâng cấp</value></data>
   <data name="Plugins.VerifyOrDownload" xml:space="preserve"><value>Xác minh hoặc tải lại</value></data>
+  <data name="Common.Page.QuickStart" xml:space="preserve">
+    <value>Bắt đầu nhanh</value>
+  </data>
+  <data name="QuickStart.Subtitle" xml:space="preserve">
+    <value>Bắt đầu dùng AF, xem hỗ trợ trình phát và điểm mới.</value>
+  </data>
+  <data name="QuickStart.Latest" xml:space="preserve">
+    <value>Điểm mới</value>
+  </data>
+  <data name="QuickStart.Latest.Description" xml:space="preserve">
+    <value>Xem tính năng mới và các bản trước.</value>
+  </data>
+  <data name="QuickStart.Latest.Unavailable" xml:space="preserve">
+    <value>Chưa đọc được thông tin phiên bản. Mở điểm mới để thử lại.</value>
+  </data>
+  <data name="QuickStart.AllReleases" xml:space="preserve">
+    <value>Xem mọi phiên bản</value>
+  </data>
+  <data name="QuickStart.Basics" xml:space="preserve">
+    <value>Hướng dẫn cơ bản</value>
+  </data>
+  <data name="QuickStart.Basics.Description" xml:space="preserve">
+    <value>Tìm hiểu phát nhạc, vị trí, giao diện và lời bài hát.</value>
+  </data>
+  <data name="QuickStart.Players" xml:space="preserve">
+    <value>Hỗ trợ trình phát</value>
+  </data>
+  <data name="QuickStart.Players.Description" xml:space="preserve">
+    <value>Xem điều khiển có sẵn, bổ sung của AF và gợi ý tiện ích.</value>
+  </data>
+  <data name="QuickStart.Reference" xml:space="preserve">
+    <value>Thông tin tương thích kiểm tra ngày 2026-10-24. Mã nguồn và mô tả dự án không thay thế kiểm thử trên máy; khả năng chưa rõ vẫn cần xác minh.</value>
+  </data>
+  <data name="QuickStart.Search" xml:space="preserve">
+    <value>Tìm trình phát</value>
+  </data>
+  <data name="QuickStart.OpenSettings" xml:space="preserve">
+    <value>Mở cài đặt liên quan</value>
+  </data>
+  <data name="QuickStart.ViewPlugin" xml:space="preserve">
+    <value>Xem tiện ích</value>
+  </data>
+  <data name="QuickStart.Source" xml:space="preserve">
+    <value>Xem nguồn</value>
+  </data>
+  <data name="QuickStart.Back" xml:space="preserve">
+    <value>Quay lại</value>
+  </data>
+  <data name="QuickStart.Capabilities" xml:space="preserve">
+    <value>Thông tin có sẵn: {0}; tiến độ: {1}; điều khiển và tua: {2}.</value>
+  </data>
+  <data name="QuickStart.Capability.Unknown" xml:space="preserve">
+    <value>chưa xác minh</value>
+  </data>
+  <data name="QuickStart.Capability.Implemented" xml:space="preserve">
+    <value>đã có trong mã nguồn</value>
+  </data>
+  <data name="QuickStart.Capability.Reported" xml:space="preserve">
+    <value>dự án đã mô tả</value>
+  </data>
+  <data name="QuickStart.Capability.RequiresPlugin" xml:space="preserve">
+    <value>cần tiện ích</value>
+  </data>
+  <data name="QuickStart.Capability.Partial" xml:space="preserve">
+    <value>một phần</value>
+  </data>
+  <data name="QuickStart.PluginAvailable" xml:space="preserve">
+    <value>Có tiện ích bổ sung; chọn theo phiên bản và nhu cầu.</value>
+  </data>
+  <data name="QuickStart.NoRecommendation" xml:space="preserve">
+    <value>Cần xác minh trước; chưa đề xuất tiện ích.</value>
+  </data>
+  <data name="QuickStart.UseBuiltIn" xml:space="preserve">
+    <value>Dùng điều khiển có sẵn; không cần thêm tiện ích SMTC.</value>
+  </data>
+  <data name="QuickStart.Af.NetEase" xml:space="preserve">
+    <value>AF đọc thông tin và tiến độ NetEase bằng tích hợp riêng. Phát, chuyển bài và tua vẫn phụ thuộc SMTC của cùng nguồn.</value>
+  </data>
+  <data name="QuickStart.Af.KuGou" xml:space="preserve">
+    <value>AF có thể bổ sung tiến độ KuGou. Thông tin, ảnh bìa và điều khiển vẫn dùng SMTC; cần kiểm tra theo phiên bản.</value>
+  </data>
+  <data name="QuickStart.Af.Smtc" xml:space="preserve">
+    <value>AF dùng phiên phương tiện do trình phát cung cấp; thông tin và điều khiển còn thiếu không tự xuất hiện.</value>
+  </data>
+  <data name="QuickStart.Note.NetEase" xml:space="preserve">
+    <value>Chưa kiểm thử SMTC gốc của 3.1.41. InfLink-rs đã thử 3.1.20–3.1.41 và 2.10.13, cần BetterNCM; chỉ cân nhắc nếu AF vẫn thiếu chức năng cần dùng.</value>
+  </data>
+  <data name="QuickStart.Note.QQ" xml:space="preserve">
+    <value>Dự án xác nhận 22.71 thiếu tua gốc. Tiện ích bổ sung bằng chèn tiến trình. Bản 22.61 chưa thử, không thể suy ra tương thích.</value>
+  </data>
+  <data name="QuickStart.Note.KuGou" xml:space="preserve">
+    <value>Phiên bản này cần kiểm thử trên máy. Tiện ích cũ chỉ hỗ trợ 8.3.97.21592, không tua được và không phù hợp bản 20.x.</value>
+  </data>
+  <data name="QuickStart.Note.Pending" xml:space="preserve">
+    <value>Chưa đủ bằng chứng theo phiên bản. Cần kiểm tra thông tin, ảnh bìa, thời lượng, tiến độ và điều khiển thực tế; có thẻ phương tiện chưa chứng minh hỗ trợ đầy đủ.</value>
+  </data>
+  <data name="QuickStart.Note.Browser" xml:space="preserve">
+    <value>Kiểm tra riêng bản máy tính và web. Bản web phụ thuộc triển khai phiên phương tiện của trang và trình duyệt.</value>
+  </data>
+  <data name="QuickStart.Note.Bodian" xml:space="preserve">
+    <value>Có tiện ích cung cấp thông tin, tiến độ và điều khiển, nhưng chưa xác nhận bản trình phát hiện tại còn cần; chưa liệt kê tải xuống.</value>
+  </data>
+  <data name="QuickStart.Note.BuiltIn" xml:space="preserve">
+    <value>Bản phát hành ghi trên có mã Media Session cho thông tin, vị trí và tua. Gói Windows vẫn cần người bảo trì kiểm thử.</value>
+  </data>
+  <data name="QuickStart.Note.Listen1" xml:space="preserve">
+    <value>Mô-đun trình phát mà dự án máy tính ghim có thông tin, tiến độ và tua. Cần thử riêng bản web, tiện ích trình duyệt và máy tính.</value>
+  </data>
+  <data name="QuickStart.Note.SPlayer" xml:space="preserve">
+    <value>Bản máy tính có SMTC Windows gốc; cần bật tùy chọn SMTC. Bản web dùng Media Session. Gói cài đặt cần kiểm thử.</value>
+  </data>
+  <data name="QuickStart.Note.MusicFree" xml:space="preserve">
+    <value>Đã thấy thông tin, trạng thái phát và chuyển bài; chưa xác nhận đầy đủ tiến độ và tua. Tiện ích nguồn nhạc của MusicFree khác tiện ích SMTC.</value>
+  </data>
+  <data name="QuickStart.Note.Foobar" xml:space="preserve">
+    <value>Hướng dẫn SMTC nêu chế độ có sẵn có thể thiếu album và thời lượng. Dùng foo_mediacontrol nếu cần; kiểm tra phiên bản trình phát.</value>
+  </data>
+  <data name="QuickStart.Note.Plugin" xml:space="preserve">
+    <value>Dự án có tiện ích SMTC. Dùng khi thiếu phiên phương tiện hoặc thành phần hiện có thiếu tính năng; kiểm tra tiện ích tương tự trước.</value>
+  </data>
+  <data name="QuickStart.Note.Vlc" xml:space="preserve">
+    <value>Danh mục có tích hợp cho VLC 3.0.x. Bản phát triển 4.0 cần kiểm tra riêng. Kiến trúc tiện ích và runtime VC++ phải khớp VLC.</value>
+  </data>
+  <data name="QuickStart.Note.ITunes" xml:space="preserve">
+    <value>Công cụ cầu nối riêng cho iTunes cũ; không suy ra Apple Music hiện đại cũng cần.</value>
+  </data>
+  <data name="QuickStart.Note.Mpv" xml:space="preserve">
+    <value>v0.41.0 có thông tin, tiến độ và tua gốc. Có thể đặt media-controls=yes trong mpv.conf. Kiểm tra riêng libmpv và giao diện bên thứ ba.</value>
+  </data>
+  <data name="QuickStart.Note.PotPlayer" xml:space="preserve">
+    <value>Cầu nối chủ yếu bổ sung tên bài, nghệ sĩ và album; dự án mô tả đã có tiến độ và điều khiển. Chưa thử bản này trên máy, chưa đề xuất công cụ chèn.</value>
+  </data>
+  <data name="QuickStart.Note.Aimp" xml:space="preserve">
+    <value>Tác giả cầu nối cũ đã dừng khi có hỗ trợ gốc. Phạm vi bản ổn định và thử nghiệm chưa rõ; không coi cầu nối cũ là bắt buộc.</value>
+  </data>
+  <data name="QuickStart.Note.MpcHc" xml:space="preserve">
+    <value>Dùng nhánh clsid2 còn duy trì và kiểm tra tùy chọn SMTC trong tích hợp Windows. Cần thử thông tin, tiến độ và điều khiển theo phiên bản.</value>
+  </data>
   <data name="Plugins.Catalog.foobar.Compatibility" xml:space="preserve">
     <value>Chọn thành phần khớp kiến trúc foobar2000.</value>
   </data>
@@ -3340,5 +3478,107 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   </data>
   <data name="Plugins.DownloadDetails.Body" xml:space="preserve">
     <value>AF chỉ tải và kiểm tra tệp, không tự giải nén hay cài. Thử máy chủ gương trước nguồn chính thức. Tải tiếp khi rời cài đặt và hủy khi thoát AF. Tệp nằm trong AFMediaBar\PluginDownloads ở dữ liệu ứng dụng cục bộ.</value>
+  </data>
+  <data name="QuickStart.Tutorial.Playback.Title" xml:space="preserve">
+    <value>Phát nhạc và nguồn</value>
+  </data>
+  <data name="QuickStart.Tutorial.Playback.Body" xml:space="preserve">
+    <value>Phát bài hát trong trình phát rồi chọn nguồn ở menu phương tiện AF. Nếu không thấy, kiểm tra bộ lọc trong Phương tiện và thông báo cùng hướng dẫn bên dưới.</value>
+  </data>
+  <data name="QuickStart.Tutorial.Placement.Title" xml:space="preserve">
+    <value>Hiển thị và vị trí</value>
+  </data>
+  <data name="QuickStart.Tutorial.Placement.Body" xml:space="preserve">
+    <value>Chọn chế độ thanh tác vụ hoặc nổi trên màn hình, rồi đặt màn hình, vị trí và kích thước. Kéo thanh nổi vào chỗ và khóa nếu cần.</value>
+  </data>
+  <data name="QuickStart.Tutorial.Appearance.Title" xml:space="preserve">
+    <value>Nội dung và giao diện</value>
+  </data>
+  <data name="QuickStart.Tutorial.Appearance.Body" xml:space="preserve">
+    <value>Chọn ảnh bìa, chữ và điều khiển trong Nội dung và bố cục. Đổi chủ đề, nền và phông ở Giao diện; cấu hình tiện ích riêng.</value>
+  </data>
+  <data name="QuickStart.Tutorial.Lyrics.Title" xml:space="preserve">
+    <value>Lời bài hát và tiến độ</value>
+  </data>
+  <data name="QuickStart.Tutorial.Lyrics.Body" xml:space="preserve">
+    <value>Đặt hiển thị và nguồn lời trong Lời bài hát. Đồng bộ cần thông tin và tiến độ tin cậy. Kiểm tra hỗ trợ trình phát trước khi cài tiện ích trùng chức năng.</value>
+  </data>
+  <data name="QuickStart.Player.netease.Name" xml:space="preserve">
+    <value>NetEase Cloud Music</value>
+  </data>
+  <data name="QuickStart.Player.qqmusic.Name" xml:space="preserve">
+    <value>QQ Music</value>
+  </data>
+  <data name="QuickStart.Player.kugou.Name" xml:space="preserve">
+    <value>KuGou Music</value>
+  </data>
+  <data name="QuickStart.Player.soda.Name" xml:space="preserve">
+    <value>Soda Music</value>
+  </data>
+  <data name="QuickStart.Player.kuwo.Name" xml:space="preserve">
+    <value>Kuwo Music</value>
+  </data>
+  <data name="QuickStart.Player.migu.Name" xml:space="preserve">
+    <value>Migu Music</value>
+  </data>
+  <data name="QuickStart.Player.qianqian.Name" xml:space="preserve">
+    <value>Qianqian Music</value>
+  </data>
+  <data name="QuickStart.Player.bodian.Name" xml:space="preserve">
+    <value>Bodian Music</value>
+  </data>
+  <data name="QuickStart.Player.lx.Name" xml:space="preserve">
+    <value>LX Music Desktop</value>
+  </data>
+  <data name="QuickStart.Player.yesplay.Name" xml:space="preserve">
+    <value>YesPlayMusic</value>
+  </data>
+  <data name="QuickStart.Player.moekoe.Name" xml:space="preserve">
+    <value>MoeKoeMusic</value>
+  </data>
+  <data name="QuickStart.Player.listen1.Name" xml:space="preserve">
+    <value>Listen 1</value>
+  </data>
+  <data name="QuickStart.Player.splayer.Name" xml:space="preserve">
+    <value>SPlayer</value>
+  </data>
+  <data name="QuickStart.Player.alger.Name" xml:space="preserve">
+    <value>AlgerMusicPlayer</value>
+  </data>
+  <data name="QuickStart.Player.musicfree.Name" xml:space="preserve">
+    <value>MusicFree Desktop</value>
+  </data>
+  <data name="QuickStart.Player.foobar.Name" xml:space="preserve">
+    <value>foobar2000</value>
+  </data>
+  <data name="QuickStart.Player.musicbee.Name" xml:space="preserve">
+    <value>MusicBee</value>
+  </data>
+  <data name="QuickStart.Player.vlc.Name" xml:space="preserve">
+    <value>VLC</value>
+  </data>
+  <data name="QuickStart.Player.itunes.Name" xml:space="preserve">
+    <value>iTunes</value>
+  </data>
+  <data name="QuickStart.Player.mpv.Name" xml:space="preserve">
+    <value>mpv</value>
+  </data>
+  <data name="QuickStart.Player.potplayer.Name" xml:space="preserve">
+    <value>PotPlayer</value>
+  </data>
+  <data name="QuickStart.Player.spotify.Name" xml:space="preserve">
+    <value>Spotify</value>
+  </data>
+  <data name="QuickStart.Player.applemusic.Name" xml:space="preserve">
+    <value>Apple Music</value>
+  </data>
+  <data name="QuickStart.Player.aimp.Name" xml:space="preserve">
+    <value>AIMP</value>
+  </data>
+  <data name="QuickStart.Player.mpchc.Name" xml:space="preserve">
+    <value>MPC-HC</value>
+  </data>
+  <data name="QuickStart.Player.tidal.Name" xml:space="preserve">
+    <value>TIDAL</value>
   </data>
 </root>

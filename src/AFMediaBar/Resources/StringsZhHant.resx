@@ -3282,6 +3282,144 @@
   <data name="Plugins.Subtitle" xml:space="preserve"><value>下載播放器 SMTC 擴充功能，依說明手動安裝。</value></data>
   <data name="Plugins.Upgrade" xml:space="preserve"><value>升級</value></data>
   <data name="Plugins.VerifyOrDownload" xml:space="preserve"><value>驗證或重新下載</value></data>
+  <data name="Common.Page.QuickStart" xml:space="preserve">
+    <value>快速開始</value>
+  </data>
+  <data name="QuickStart.Subtitle" xml:space="preserve">
+    <value>開始使用 AF，查看播放器支援與版本亮點。</value>
+  </data>
+  <data name="QuickStart.Latest" xml:space="preserve">
+    <value>版本亮點</value>
+  </data>
+  <data name="QuickStart.Latest.Description" xml:space="preserve">
+    <value>查看版本新功能與歷史亮點。</value>
+  </data>
+  <data name="QuickStart.Latest.Unavailable" xml:space="preserve">
+    <value>暫時無法讀取版本資料，可開啟版本亮點重試。</value>
+  </data>
+  <data name="QuickStart.AllReleases" xml:space="preserve">
+    <value>查看所有版本</value>
+  </data>
+  <data name="QuickStart.Basics" xml:space="preserve">
+    <value>基礎教學</value>
+  </data>
+  <data name="QuickStart.Basics.Description" xml:space="preserve">
+    <value>播放、顯示位置、外觀與歌詞的使用方式。</value>
+  </data>
+  <data name="QuickStart.Players" xml:space="preserve">
+    <value>播放器支援</value>
+  </data>
+  <data name="QuickStart.Players.Description" xml:space="preserve">
+    <value>查看原生媒體控制、AF 補全與外掛程式建議。</value>
+  </data>
+  <data name="QuickStart.Reference" xml:space="preserve">
+    <value>相容性參考截至 2026-10-24。原始碼與上游說明不等於本機驗收；未確認的能力標為待驗證。</value>
+  </data>
+  <data name="QuickStart.Search" xml:space="preserve">
+    <value>搜尋播放器</value>
+  </data>
+  <data name="QuickStart.OpenSettings" xml:space="preserve">
+    <value>開啟相關設定</value>
+  </data>
+  <data name="QuickStart.ViewPlugin" xml:space="preserve">
+    <value>查看外掛程式</value>
+  </data>
+  <data name="QuickStart.Source" xml:space="preserve">
+    <value>查看依據</value>
+  </data>
+  <data name="QuickStart.Back" xml:space="preserve">
+    <value>返回</value>
+  </data>
+  <data name="QuickStart.Capabilities" xml:space="preserve">
+    <value>原生資訊：{0}；時間軸：{1}；控制與跳轉：{2}。</value>
+  </data>
+  <data name="QuickStart.Capability.Unknown" xml:space="preserve">
+    <value>待驗證</value>
+  </data>
+  <data name="QuickStart.Capability.Implemented" xml:space="preserve">
+    <value>原始碼已實作</value>
+  </data>
+  <data name="QuickStart.Capability.Reported" xml:space="preserve">
+    <value>上游有說明</value>
+  </data>
+  <data name="QuickStart.Capability.RequiresPlugin" xml:space="preserve">
+    <value>需擴充接入</value>
+  </data>
+  <data name="QuickStart.Capability.Partial" xml:space="preserve">
+    <value>部分支援</value>
+  </data>
+  <data name="QuickStart.PluginAvailable" xml:space="preserve">
+    <value>有補充缺項的外掛程式，依版本與需要選擇。</value>
+  </data>
+  <data name="QuickStart.NoRecommendation" xml:space="preserve">
+    <value>須先驗證，暫不建議安裝外掛程式。</value>
+  </data>
+  <data name="QuickStart.UseBuiltIn" xml:space="preserve">
+    <value>使用內建媒體控制，無須另裝 SMTC 外掛程式。</value>
+  </data>
+  <data name="QuickStart.Af.NetEase" xml:space="preserve">
+    <value>AF 內建網易雲資訊與進度讀取；播放、切歌與跳轉仍取決於同來源 SMTC 能力。</value>
+  </data>
+  <data name="QuickStart.Af.KuGou" xml:space="preserve">
+    <value>AF 可補充酷狗進度；中繼資料、封面與控制仍依賴播放器 SMTC。適配效果須依用戶端版本驗證。</value>
+  </data>
+  <data name="QuickStart.Af.Smtc" xml:space="preserve">
+    <value>AF 使用播放器回報的媒體工作階段；未回報的資訊與控制不會自動變為可用。</value>
+  </data>
+  <data name="QuickStart.Note.NetEase" xml:space="preserve">
+    <value>3.1.41 的原生 SMTC 尚未實機驗證。InfLink-rs 上游驗證 3.1.20–3.1.41 與 2.10.13，依賴 BetterNCM；確認 AF 仍有缺項後再考慮。</value>
+  </data>
+  <data name="QuickStart.Note.QQ" xml:space="preserve">
+    <value>上游在 22.71 驗證原生時間軸缺少跳轉。外掛程式透過處理程序注入補充跳轉；22.61 尚未驗證，不能推斷相容。</value>
+  </data>
+  <data name="QuickStart.Note.KuGou" xml:space="preserve">
+    <value>目前版本尚未本機驗收。舊外掛程式僅支援 8.3.97.21592 且不支援跳轉，不適用於目前 20.x 用戶端。</value>
+  </data>
+  <data name="QuickStart.Note.Pending" xml:space="preserve">
+    <value>未找到足夠的版本化證據，須檢查歌曲資訊、封面、時長、進度與實際控制。不能僅憑出現系統媒體卡片認定完整支援。</value>
+  </data>
+  <data name="QuickStart.Note.Browser" xml:space="preserve">
+    <value>桌面端與網頁版分別驗證；網頁版取決於網站及瀏覽器的媒體工作階段實作。</value>
+  </data>
+  <data name="QuickStart.Note.Bodian" xml:space="preserve">
+    <value>上游外掛程式提供中繼資料、時間軸與控制，但尚未確認目前播放器版本是否仍需要；暫不提供下載。</value>
+  </data>
+  <data name="QuickStart.Note.BuiltIn" xml:space="preserve">
+    <value>已核對標註發行版本的 Media Session 中繼資料、位置回報與跳轉處理；Windows 安裝套件實際表現待維護者驗收。</value>
+  </data>
+  <data name="QuickStart.Note.Listen1" xml:space="preserve">
+    <value>已核對桌面專案引用的播放器子模組，實作媒體資訊、時間軸與跳轉。網頁版、擴充功能版與桌面版須分別驗收。</value>
+  </data>
+  <data name="QuickStart.Note.SPlayer" xml:space="preserve">
+    <value>桌面版含原生 Windows SMTC，須開啟播放器的 SMTC 選項；網頁回退使用 Media Session。實際安裝套件待驗收。</value>
+  </data>
+  <data name="QuickStart.Note.MusicFree" xml:space="preserve">
+    <value>已確認中繼資料、播放狀態與切歌處理；尚未確認時間軸與跳轉完整性。MusicFree 音源外掛程式與 SMTC 擴充用途不同。</value>
+  </data>
+  <data name="QuickStart.Note.Foobar" xml:space="preserve">
+    <value>上游 SMTC 使用指引指出內建模式可能缺少專輯與時長；需要這些資訊時可用 foo_mediacontrol。目前播放器版本仍須實測。</value>
+  </data>
+  <data name="QuickStart.Note.Plugin" xml:space="preserve">
+    <value>上游提供 SMTC 接入外掛程式。缺少媒體工作階段或現有元件功能不足時使用，先檢查是否已安裝同類元件。</value>
+  </data>
+  <data name="QuickStart.Note.Vlc" xml:space="preserve">
+    <value>目錄提供上游 VLC 3.0.x 接入方案；4.0 開發版相容性須另行核對。外掛程式與 VC++ 執行階段須符合 VLC 架構。</value>
+  </data>
+  <data name="QuickStart.Note.ITunes" xml:space="preserve">
+    <value>適用於傳統 iTunes 的獨立橋接工具；不能據此認定現代 Apple Music 用戶端也需要。</value>
+  </data>
+  <data name="QuickStart.Note.Mpv" xml:space="preserve">
+    <value>v0.41.0 原生實作中繼資料、時間軸與跳轉。可於 mpv.conf 設定 media-controls=yes；libmpv 與第三方前端須分別確認。</value>
+  </data>
+  <data name="QuickStart.Note.PotPlayer" xml:space="preserve">
+    <value>橋接專案主要補歌曲、演出者與專輯等中繼資料；上游表示時間軸與控制原已提供。本機版本尚未實測，暫不建議注入工具。</value>
+  </data>
+  <data name="QuickStart.Note.Aimp" xml:space="preserve">
+    <value>舊橋接作者已因原生支援停止維護，但穩定版與測試版範圍尚未核實；不建議將舊橋接列為必裝。</value>
+  </data>
+  <data name="QuickStart.Note.MpcHc" xml:space="preserve">
+    <value>使用仍維護的 clsid2 分支，檢查 Windows 整合中的 SMTC 選項；完整中繼資料、時間軸與控制仍須依版本驗收。</value>
+  </data>
   <data name="Plugins.Catalog.foobar.Compatibility" xml:space="preserve">
     <value>依 foobar2000 架構選擇元件。</value>
   </data>
@@ -3302,5 +3440,107 @@
   </data>
   <data name="Plugins.DownloadDetails.Body" xml:space="preserve">
     <value>AF 僅下載及驗證檔案，不自動解壓縮或安裝。優先嘗試鏡像，失敗後回到官方；切換頁面或關閉設定後繼續，結束 AF 時取消。檔案儲存於本機應用程式資料目錄的 AFMediaBar\PluginDownloads。</value>
+  </data>
+  <data name="QuickStart.Tutorial.Playback.Title" xml:space="preserve">
+    <value>播放與來源</value>
+  </data>
+  <data name="QuickStart.Tutorial.Playback.Body" xml:space="preserve">
+    <value>先在播放器播放歌曲，再於 AF 媒體選單選擇來源。未顯示時檢查媒體與通知的來源篩選，並查看下方播放器支援。</value>
+  </data>
+  <data name="QuickStart.Tutorial.Placement.Title" xml:space="preserve">
+    <value>顯示與位置</value>
+  </data>
+  <data name="QuickStart.Tutorial.Placement.Body" xml:space="preserve">
+    <value>選擇工作列或桌面懸浮模式，再設定目標顯示器、位置與尺寸。桌面懸浮模式可拖曳並依需求鎖定。</value>
+  </data>
+  <data name="QuickStart.Tutorial.Appearance.Title" xml:space="preserve">
+    <value>內容與外觀</value>
+  </data>
+  <data name="QuickStart.Tutorial.Appearance.Body" xml:space="preserve">
+    <value>在內容與版面配置選擇封面、文字與控制等元件；於外觀調整主題、背景與字型。小工具可另行設定。</value>
+  </data>
+  <data name="QuickStart.Tutorial.Lyrics.Title" xml:space="preserve">
+    <value>歌詞與進度</value>
+  </data>
+  <data name="QuickStart.Tutorial.Lyrics.Body" xml:space="preserve">
+    <value>在歌詞設定調整顯示與來源。歌詞同步需要可靠的歌曲資訊與進度；若缺少時間軸，先查看播放器支援，避免重複安裝同類外掛程式。</value>
+  </data>
+  <data name="QuickStart.Player.netease.Name" xml:space="preserve">
+    <value>網易雲音樂</value>
+  </data>
+  <data name="QuickStart.Player.qqmusic.Name" xml:space="preserve">
+    <value>QQ 音樂</value>
+  </data>
+  <data name="QuickStart.Player.kugou.Name" xml:space="preserve">
+    <value>酷狗音樂</value>
+  </data>
+  <data name="QuickStart.Player.soda.Name" xml:space="preserve">
+    <value>汽水音樂</value>
+  </data>
+  <data name="QuickStart.Player.kuwo.Name" xml:space="preserve">
+    <value>酷我音樂</value>
+  </data>
+  <data name="QuickStart.Player.migu.Name" xml:space="preserve">
+    <value>咪咕音樂</value>
+  </data>
+  <data name="QuickStart.Player.qianqian.Name" xml:space="preserve">
+    <value>千千音樂</value>
+  </data>
+  <data name="QuickStart.Player.bodian.Name" xml:space="preserve">
+    <value>波點音樂</value>
+  </data>
+  <data name="QuickStart.Player.lx.Name" xml:space="preserve">
+    <value>洛雪音樂桌面版</value>
+  </data>
+  <data name="QuickStart.Player.yesplay.Name" xml:space="preserve">
+    <value>YesPlayMusic</value>
+  </data>
+  <data name="QuickStart.Player.moekoe.Name" xml:space="preserve">
+    <value>MoeKoeMusic</value>
+  </data>
+  <data name="QuickStart.Player.listen1.Name" xml:space="preserve">
+    <value>Listen 1</value>
+  </data>
+  <data name="QuickStart.Player.splayer.Name" xml:space="preserve">
+    <value>SPlayer</value>
+  </data>
+  <data name="QuickStart.Player.alger.Name" xml:space="preserve">
+    <value>AlgerMusicPlayer</value>
+  </data>
+  <data name="QuickStart.Player.musicfree.Name" xml:space="preserve">
+    <value>MusicFree Desktop</value>
+  </data>
+  <data name="QuickStart.Player.foobar.Name" xml:space="preserve">
+    <value>foobar2000</value>
+  </data>
+  <data name="QuickStart.Player.musicbee.Name" xml:space="preserve">
+    <value>MusicBee</value>
+  </data>
+  <data name="QuickStart.Player.vlc.Name" xml:space="preserve">
+    <value>VLC</value>
+  </data>
+  <data name="QuickStart.Player.itunes.Name" xml:space="preserve">
+    <value>iTunes</value>
+  </data>
+  <data name="QuickStart.Player.mpv.Name" xml:space="preserve">
+    <value>mpv</value>
+  </data>
+  <data name="QuickStart.Player.potplayer.Name" xml:space="preserve">
+    <value>PotPlayer</value>
+  </data>
+  <data name="QuickStart.Player.spotify.Name" xml:space="preserve">
+    <value>Spotify</value>
+  </data>
+  <data name="QuickStart.Player.applemusic.Name" xml:space="preserve">
+    <value>Apple Music</value>
+  </data>
+  <data name="QuickStart.Player.aimp.Name" xml:space="preserve">
+    <value>AIMP</value>
+  </data>
+  <data name="QuickStart.Player.mpchc.Name" xml:space="preserve">
+    <value>MPC-HC</value>
+  </data>
+  <data name="QuickStart.Player.tidal.Name" xml:space="preserve">
+    <value>TIDAL</value>
   </data>
 </root>

@@ -3282,6 +3282,144 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Plugins.Subtitle" xml:space="preserve"><value>Download SMTC extensions for your player and install them manually.</value></data>
   <data name="Plugins.Upgrade" xml:space="preserve"><value>Upgrade</value></data>
   <data name="Plugins.VerifyOrDownload" xml:space="preserve"><value>Verify or download again</value></data>
+  <data name="Common.Page.QuickStart" xml:space="preserve">
+    <value>Quick start</value>
+  </data>
+  <data name="QuickStart.Subtitle" xml:space="preserve">
+    <value>Get started with AF, player support and release highlights.</value>
+  </data>
+  <data name="QuickStart.Latest" xml:space="preserve">
+    <value>Release highlights</value>
+  </data>
+  <data name="QuickStart.Latest.Description" xml:space="preserve">
+    <value>Read new features and previous releases.</value>
+  </data>
+  <data name="QuickStart.Latest.Unavailable" xml:space="preserve">
+    <value>Release information is unavailable. Open release highlights to retry.</value>
+  </data>
+  <data name="QuickStart.AllReleases" xml:space="preserve">
+    <value>View all releases</value>
+  </data>
+  <data name="QuickStart.Basics" xml:space="preserve">
+    <value>The basics</value>
+  </data>
+  <data name="QuickStart.Basics.Description" xml:space="preserve">
+    <value>Learn playback, placement, appearance and lyrics.</value>
+  </data>
+  <data name="QuickStart.Players" xml:space="preserve">
+    <value>Player support</value>
+  </data>
+  <data name="QuickStart.Players.Description" xml:space="preserve">
+    <value>Check native media controls, AF integration and plugin advice.</value>
+  </data>
+  <data name="QuickStart.Reference" xml:space="preserve">
+    <value>Compatibility reference checked on 2026-10-24. Source code and upstream reports do not replace local testing; unconfirmed capabilities remain unverified.</value>
+  </data>
+  <data name="QuickStart.Search" xml:space="preserve">
+    <value>Search players</value>
+  </data>
+  <data name="QuickStart.OpenSettings" xml:space="preserve">
+    <value>Open related settings</value>
+  </data>
+  <data name="QuickStart.ViewPlugin" xml:space="preserve">
+    <value>View plugins</value>
+  </data>
+  <data name="QuickStart.Source" xml:space="preserve">
+    <value>View source</value>
+  </data>
+  <data name="QuickStart.Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="QuickStart.Capabilities" xml:space="preserve">
+    <value>Native metadata: {0}; timeline: {1}; controls and seeking: {2}.</value>
+  </data>
+  <data name="QuickStart.Capability.Unknown" xml:space="preserve">
+    <value>unverified</value>
+  </data>
+  <data name="QuickStart.Capability.Implemented" xml:space="preserve">
+    <value>implemented in source</value>
+  </data>
+  <data name="QuickStart.Capability.Reported" xml:space="preserve">
+    <value>reported upstream</value>
+  </data>
+  <data name="QuickStart.Capability.RequiresPlugin" xml:space="preserve">
+    <value>requires an extension</value>
+  </data>
+  <data name="QuickStart.Capability.Partial" xml:space="preserve">
+    <value>partial</value>
+  </data>
+  <data name="QuickStart.PluginAvailable" xml:space="preserve">
+    <value>A plugin can fill gaps; check your version and needs.</value>
+  </data>
+  <data name="QuickStart.NoRecommendation" xml:space="preserve">
+    <value>Verify first; no plugin is recommended yet.</value>
+  </data>
+  <data name="QuickStart.UseBuiltIn" xml:space="preserve">
+    <value>Use built-in media controls; no extra SMTC plugin is needed.</value>
+  </data>
+  <data name="QuickStart.Af.NetEase" xml:space="preserve">
+    <value>AF reads NetEase metadata and progress internally. Playback, track changes and seeking still depend on its SMTC capabilities.</value>
+  </data>
+  <data name="QuickStart.Af.KuGou" xml:space="preserve">
+    <value>AF can supplement KuGou progress. Metadata, artwork and controls still use player SMTC; verify integration with your client version.</value>
+  </data>
+  <data name="QuickStart.Af.Smtc" xml:space="preserve">
+    <value>AF uses the player's media session. Missing information and controls do not become available automatically.</value>
+  </data>
+  <data name="QuickStart.Note.NetEase" xml:space="preserve">
+    <value>Native SMTC is not locally verified for 3.1.41. InfLink-rs reports testing 3.1.20–3.1.41 and 2.10.13 and requires BetterNCM. Consider it only if AF still lacks a needed feature.</value>
+  </data>
+  <data name="QuickStart.Note.QQ" xml:space="preserve">
+    <value>Upstream tested missing native seeking on 22.71. The plugin adds seeking through injection. Version 22.61 has not been tested; compatibility is unknown.</value>
+  </data>
+  <data name="QuickStart.Note.KuGou" xml:space="preserve">
+    <value>This version awaits local testing. The old plugin only supports 8.3.97.21592 and has no seeking; it is unsuitable for current 20.x clients.</value>
+  </data>
+  <data name="QuickStart.Note.Pending" xml:space="preserve">
+    <value>Version-specific evidence is insufficient. Check metadata, artwork, duration, progress and actual controls. A system media card alone does not prove full support.</value>
+  </data>
+  <data name="QuickStart.Note.Browser" xml:space="preserve">
+    <value>Test desktop and web editions separately. Web support depends on both the site and browser media session implementation.</value>
+  </data>
+  <data name="QuickStart.Note.Bodian" xml:space="preserve">
+    <value>An upstream plugin supplies metadata, timeline and controls, but its need for the current player version is unconfirmed. No download is listed yet.</value>
+  </data>
+  <data name="QuickStart.Note.BuiltIn" xml:space="preserve">
+    <value>The labelled release implements Media Session metadata, position reporting and seeking. Its Windows package still needs maintainer acceptance testing.</value>
+  </data>
+  <data name="QuickStart.Note.Listen1" xml:space="preserve">
+    <value>The desktop project's pinned player submodule implements metadata, timeline and seeking. Test the web, browser-extension and desktop editions separately.</value>
+  </data>
+  <data name="QuickStart.Note.SPlayer" xml:space="preserve">
+    <value>The desktop app includes native Windows SMTC; enable its SMTC setting. The web fallback uses Media Session. Package behaviour awaits testing.</value>
+  </data>
+  <data name="QuickStart.Note.MusicFree" xml:space="preserve">
+    <value>Metadata, playback state and track-change handlers are present. Complete timeline and seeking remain unconfirmed. MusicFree source plugins serve a different purpose from SMTC extensions.</value>
+  </data>
+  <data name="QuickStart.Note.Foobar" xml:space="preserve">
+    <value>Upstream SMTC setup guidance notes missing album and duration in built-in mode. Use foo_mediacontrol if these are needed; verify your player version.</value>
+  </data>
+  <data name="QuickStart.Note.Plugin" xml:space="preserve">
+    <value>Upstream provides an SMTC plugin. Use it when the media session is absent or an existing component lacks features; first check for a similar installed component.</value>
+  </data>
+  <data name="QuickStart.Note.Vlc" xml:space="preserve">
+    <value>The catalogue offers the upstream VLC 3.0.x integration. Check 4.0 development builds separately. Match both plugin and VC++ runtime to VLC's architecture.</value>
+  </data>
+  <data name="QuickStart.Note.ITunes" xml:space="preserve">
+    <value>A standalone bridge for legacy iTunes. This does not establish a need for the modern Apple Music client.</value>
+  </data>
+  <data name="QuickStart.Note.Mpv" xml:space="preserve">
+    <value>v0.41.0 implements native metadata, timeline and seeking. Set media-controls=yes in mpv.conf if needed. Check libmpv and third-party frontends separately.</value>
+  </data>
+  <data name="QuickStart.Note.PotPlayer" xml:space="preserve">
+    <value>The bridge mainly supplements title, artist and album metadata. Upstream reports existing timeline and controls. This version is not locally tested; no injector is recommended yet.</value>
+  </data>
+  <data name="QuickStart.Note.Aimp" xml:space="preserve">
+    <value>Old bridge authors stopped maintenance after native support appeared. Stable and test-version coverage is unconfirmed; the old bridge is not a required install.</value>
+  </data>
+  <data name="QuickStart.Note.MpcHc" xml:space="preserve">
+    <value>Use the maintained clsid2 fork and check its Windows integration SMTC option. Full metadata, timeline and controls need version-specific testing.</value>
+  </data>
   <data name="Plugins.Catalog.foobar.Compatibility" xml:space="preserve">
     <value>Match the component to foobar2000's architecture.</value>
   </data>
@@ -3302,5 +3440,107 @@ Double-click to launch · Scroll to select · Click for list</value>
   </data>
   <data name="Plugins.DownloadDetails.Body" xml:space="preserve">
     <value>AF downloads and verifies files without extracting or installing them. Mirrors are tried before the official source. Downloads continue after leaving Settings and are cancelled when AF exits. Files are saved under AFMediaBar\PluginDownloads in local application data.</value>
+  </data>
+  <data name="QuickStart.Tutorial.Playback.Title" xml:space="preserve">
+    <value>Playback and sources</value>
+  </data>
+  <data name="QuickStart.Tutorial.Playback.Body" xml:space="preserve">
+    <value>Play a song in your player, then choose its source in AF's media menu. If it is missing, check source filters in Media and notifications and the player support guide below.</value>
+  </data>
+  <data name="QuickStart.Tutorial.Placement.Title" xml:space="preserve">
+    <value>Display and placement</value>
+  </data>
+  <data name="QuickStart.Tutorial.Placement.Body" xml:space="preserve">
+    <value>Choose taskbar or desktop floating mode, then set the target displays, position and size. Drag the floating bar into place and lock it if needed.</value>
+  </data>
+  <data name="QuickStart.Tutorial.Appearance.Title" xml:space="preserve">
+    <value>Content and appearance</value>
+  </data>
+  <data name="QuickStart.Tutorial.Appearance.Body" xml:space="preserve">
+    <value>Choose artwork, text and controls in Content and layout. Adjust theme, background and fonts in Appearance; configure widgets separately.</value>
+  </data>
+  <data name="QuickStart.Tutorial.Lyrics.Title" xml:space="preserve">
+    <value>Lyrics and progress</value>
+  </data>
+  <data name="QuickStart.Tutorial.Lyrics.Body" xml:space="preserve">
+    <value>Configure lyric display and sources in Lyrics. Synchronization needs reliable track information and progress. Check player support before installing overlapping plugins for a missing timeline.</value>
+  </data>
+  <data name="QuickStart.Player.netease.Name" xml:space="preserve">
+    <value>NetEase Cloud Music</value>
+  </data>
+  <data name="QuickStart.Player.qqmusic.Name" xml:space="preserve">
+    <value>QQ Music</value>
+  </data>
+  <data name="QuickStart.Player.kugou.Name" xml:space="preserve">
+    <value>KuGou Music</value>
+  </data>
+  <data name="QuickStart.Player.soda.Name" xml:space="preserve">
+    <value>Soda Music</value>
+  </data>
+  <data name="QuickStart.Player.kuwo.Name" xml:space="preserve">
+    <value>Kuwo Music</value>
+  </data>
+  <data name="QuickStart.Player.migu.Name" xml:space="preserve">
+    <value>Migu Music</value>
+  </data>
+  <data name="QuickStart.Player.qianqian.Name" xml:space="preserve">
+    <value>Qianqian Music</value>
+  </data>
+  <data name="QuickStart.Player.bodian.Name" xml:space="preserve">
+    <value>Bodian Music</value>
+  </data>
+  <data name="QuickStart.Player.lx.Name" xml:space="preserve">
+    <value>LX Music Desktop</value>
+  </data>
+  <data name="QuickStart.Player.yesplay.Name" xml:space="preserve">
+    <value>YesPlayMusic</value>
+  </data>
+  <data name="QuickStart.Player.moekoe.Name" xml:space="preserve">
+    <value>MoeKoeMusic</value>
+  </data>
+  <data name="QuickStart.Player.listen1.Name" xml:space="preserve">
+    <value>Listen 1</value>
+  </data>
+  <data name="QuickStart.Player.splayer.Name" xml:space="preserve">
+    <value>SPlayer</value>
+  </data>
+  <data name="QuickStart.Player.alger.Name" xml:space="preserve">
+    <value>AlgerMusicPlayer</value>
+  </data>
+  <data name="QuickStart.Player.musicfree.Name" xml:space="preserve">
+    <value>MusicFree Desktop</value>
+  </data>
+  <data name="QuickStart.Player.foobar.Name" xml:space="preserve">
+    <value>foobar2000</value>
+  </data>
+  <data name="QuickStart.Player.musicbee.Name" xml:space="preserve">
+    <value>MusicBee</value>
+  </data>
+  <data name="QuickStart.Player.vlc.Name" xml:space="preserve">
+    <value>VLC</value>
+  </data>
+  <data name="QuickStart.Player.itunes.Name" xml:space="preserve">
+    <value>iTunes</value>
+  </data>
+  <data name="QuickStart.Player.mpv.Name" xml:space="preserve">
+    <value>mpv</value>
+  </data>
+  <data name="QuickStart.Player.potplayer.Name" xml:space="preserve">
+    <value>PotPlayer</value>
+  </data>
+  <data name="QuickStart.Player.spotify.Name" xml:space="preserve">
+    <value>Spotify</value>
+  </data>
+  <data name="QuickStart.Player.applemusic.Name" xml:space="preserve">
+    <value>Apple Music</value>
+  </data>
+  <data name="QuickStart.Player.aimp.Name" xml:space="preserve">
+    <value>AIMP</value>
+  </data>
+  <data name="QuickStart.Player.mpchc.Name" xml:space="preserve">
+    <value>MPC-HC</value>
+  </data>
+  <data name="QuickStart.Player.tidal.Name" xml:space="preserve">
+    <value>TIDAL</value>
   </data>
 </root>

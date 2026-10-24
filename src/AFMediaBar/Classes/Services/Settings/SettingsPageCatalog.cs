@@ -4,13 +4,14 @@ using AFMediaBar.Classes.Models.Settings;
 namespace AFMediaBar.Classes.Services.Settings;
 
 /// <summary>Semantic settings destination with ownership, label, icon name, and sidebar placement.</summary>
-public sealed record SettingsPageDefinition(SettingsPageKey Key, string TitleKey, string IconName, bool IsGlobal, bool IsFooter = false, bool HasModeContent = false);
+public sealed record SettingsPageDefinition(SettingsPageKey Key, string TitleKey, string IconName, bool IsGlobal, bool IsFooter = false, bool HasModeContent = false, bool ShowInNavigation = true);
 
 /// <summary>One source of truth for current page composition and future display-family availability.</summary>
 public static class SettingsPageCatalog
 {
     private static readonly IReadOnlyList<SettingsPageDefinition> TaskbarPages = Array.AsReadOnly(new[]
     {
+        new SettingsPageDefinition(SettingsPageKey.QuickStart, "Common.Page.QuickStart", "BookOpen24", true),
         new SettingsPageDefinition(SettingsPageKey.ScreenAndPlacement, "Common.Page.ScreenAndPlacement", "Desktop24", true, HasModeContent: true),
         new SettingsPageDefinition(SettingsPageKey.Components, "Common.Page.ContentLayout", "Grid24", false),
         new SettingsPageDefinition(SettingsPageKey.Widgets, "Common.Page.Widgets", "Apps24", true),
@@ -22,7 +23,7 @@ public static class SettingsPageCatalog
         new SettingsPageDefinition(SettingsPageKey.PluginCenter, "Common.Page.PluginCenter", "ArrowDownload24", true),
         new SettingsPageDefinition(SettingsPageKey.Application, "Common.Page.Application", "Settings24", true),
         new SettingsPageDefinition(SettingsPageKey.Experimental, "Common.Page.Experimental", "Beaker24", true),
-        new SettingsPageDefinition(SettingsPageKey.ReleaseHighlights, "Common.Page.ReleaseHighlights", "Sparkle24", true, true),
+        new SettingsPageDefinition(SettingsPageKey.ReleaseHighlights, "Common.Page.ReleaseHighlights", "Sparkle24", true, true, ShowInNavigation: false),
         new SettingsPageDefinition(SettingsPageKey.About, "Common.Page.About", "QuestionCircle24", true, true)
     });
 

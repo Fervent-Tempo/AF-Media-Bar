@@ -50,6 +50,8 @@ public enum SettingsPageKey
     Widgets,
     /// <summary>全局插件目录、下载和手动安装指引。</summary>
     PluginCenter,
+    /// <summary>基础教程、版本亮点入口和播放器兼容性参考。</summary>
+    QuickStart,
 }
 
 /// <summary>

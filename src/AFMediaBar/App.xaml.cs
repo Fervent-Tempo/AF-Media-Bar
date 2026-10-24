@@ -238,6 +238,9 @@ namespace AFMediaBar
                 services.AddScoped(sp => new PluginCenterViewModel(sp.GetRequiredService<PluginDownloadService>(),
                     sp.GetRequiredService<LocalizationService>(), Current.Dispatcher));
                 services.AddScoped<PluginCenterPage>();
+                services.AddScoped(sp => new QuickStartViewModel(sp.GetRequiredService<ReleaseHighlightsService>(),
+                    sp.GetRequiredService<LocalizationService>(), Current.Dispatcher));
+                services.AddScoped<QuickStartPage>();
                 services.AddSingleton<IApplicationRestartService>(sp => new ApplicationRestartService(
                     sp.GetRequiredService<UpdateService>().TryReserveOrdinaryRestart,
                     RestartProcessHandoff.PrepareCurrentProcessAsync,

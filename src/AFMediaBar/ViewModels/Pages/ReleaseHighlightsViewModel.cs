@@ -121,6 +121,7 @@ public partial class ReleaseHighlightsViewModel : ObservableObject
         {
             LocalizationLanguage.TraditionalChinese => "zh-Hant",
             LocalizationLanguage.English => "en",
+            LocalizationLanguage.Vietnamese => "vi",
             _ => "zh-Hans"
         };
         var releases = ReleaseHighlightsPolicy.Merge(_result?.Releases ?? [], _updates.CurrentState.Manifest);

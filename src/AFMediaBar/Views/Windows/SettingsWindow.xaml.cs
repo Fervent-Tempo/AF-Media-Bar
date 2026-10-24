@@ -1,3 +1,5 @@
+using AFMediaBar.Classes.Interop;
+using System.Runtime.InteropServices;
 using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Classes.Settings;
@@ -39,7 +41,7 @@ namespace AFMediaBar.Views.Windows
         private readonly AppLogService _log;
         private SettingsContext _displayedContext = SettingsContext.Initial;
         private SettingsMode? _navigationMode;
-        private SettingsPageKey _currentPage = SettingsPageKey.ScreenAndPlacement;
+        private SettingsPageKey _currentPage = SettingsPageKey.QuickStart;
         private bool _closed;
 
         public SettingsWindowViewModel ViewModel { get; }
@@ -92,24 +94,12 @@ namespace AFMediaBar.Views.Windows
             RootNavigation.Transition = Transition.None;
             RootNavigation.TransitionDuration = 0;
 
+            AddHandler(ReleaseHighlightsPage.BackRequestedEvent, new RoutedEventHandler(OnReleaseBackRequested));
             AddHandler(AppearancePage.OpenApplicationFontsEvent, new RoutedEventHandler(OnOpenApplicationFontsRequested));
             AddHandler(AFMediaBar.Components.SettingsNavigationButton.NavigateEvent, new RoutedEventHandler(OnRelatedSettingsRequested));
             RootNavigation.Navigated += OnNavigated;
 
-            // 落地页：窗口每次打开都直接落在「显示与位置」。
-            //
-            // 不发起导航时内容区是空的：导航控件在收到第一个导航请求之前不会创建任何页面，用户打开设置看到的就是一片
-            // 空白。这里挂在"窗口变为可见"而不是构造函数上——构造函数早于 Show，那时导航视图还没有内容宿主，立刻导航
-            // 等于什么都没发生（MainWindow 里的更新跳转也踩过这一条）；再排到 Loaded 之后，等布局完成。
-            // 由打开方发起的导航（例如更新提示要落在「更新亮点」）排在本次之后，因此仍然由它决定最终页面。
-            // Landing page: the window lands straight on "display and placement" every time it opens.
-            //
-            // Without a navigation request the content area is empty: the navigation control creates no page until the first request
-            // arrives, so opening the settings shows nothing at all. This hangs off "window became visible" rather than the
-            // constructor, because the constructor runs before Show, when the navigation view has no content host yet and navigating
-            // does nothing (the update jump in MainWindow hit the same thing); the call is then queued behind Loaded so layout has
-            // finished. A navigation issued by whoever opened the window — the update notice lands on "release highlights" — is queued after
-            // this one and therefore still decides the final page.
+            // 普通打开进入快速开始；由打开方排队的更新或搜索跳转仍决定最终页面。
             IsVisibleChanged += OnVisibilityChangedForLandingPage;
 
             // 更新提示的订阅与显示放在窗口构造的最后：它依赖 InitializeComponent 创建好的导航项。
@@ -139,7 +129,7 @@ namespace AFMediaBar.Views.Windows
 
             Dispatcher.BeginInvoke(
                 DispatcherPriority.Loaded,
-                new Action(() => { if (!_closed) Navigate(typeof(DisplayModesPage)); }));
+                new Action(() => { if (!_closed) Navigate(typeof(QuickStartPage)); }));
         }
 
         #endregion Landing page
@@ -292,8 +282,7 @@ namespace AFMediaBar.Views.Windows
 
         private void UpdateNoticeNavItem_Click(object sender, RoutedEventArgs e)
         {
-            // 更新入口只展示版本亮点；下载和安装仍由应用页负责。
-            Navigate(typeof(ReleaseHighlightsPage));
+            Navigate(typeof(QuickStartPage));
         }
 
         private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -309,7 +298,7 @@ namespace AFMediaBar.Views.Windows
             UpdateNoticeDot.Visibility = ViewModel.HasUpdateAvailable ? Visibility.Visible : Visibility.Collapsed;
             UpdateNoticeNavItem.ToolTip = ViewModel.HasUpdateAvailable
                 ? ViewModel.UpdateNoticeText
-                : Translations.Get("ReleaseHighlights.Header.Subtitle");
+                : Translations.Get("QuickStart.Subtitle");
         }
 
         private void SettingsWindow_ClosedForUpdateNotice(object? sender, EventArgs e)
@@ -343,9 +332,7 @@ namespace AFMediaBar.Views.Windows
         public bool Navigate(Type pageType)
         {
             var resolved = SettingsPageProvider.ResolvePageType(pageType);
-            if (!RootNavigation.Navigate(resolved)) return false;
-            HighlightSidebarItem(resolved);
-            return true;
+            return RootNavigation.Navigate(resolved);
         }
 
         /// <summary>
@@ -365,7 +352,11 @@ namespace AFMediaBar.Views.Windows
 
         private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
         {
-            if (args.Page is Page destination) _currentPage = SettingsPageProvider.PageTypes.First(pair => pair.Value == destination.GetType()).Key;
+            if (args.Page is Page destination)
+            {
+                _currentPage = SettingsPageProvider.PageTypes.First(pair => pair.Value == destination.GetType()).Key;
+                HighlightSidebarItem(destination.GetType());
+            }
             SettingsRevealAnimator.Cancel(_transitionContent);
             _transitionContent = null;
             if (args.Page is Page page && page.FindName("PageScroll") is ScrollViewer { Content: Panel content })
@@ -409,8 +400,42 @@ namespace AFMediaBar.Views.Windows
 
         private async void SettingsWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
-            Navigate(typeof(ScreenAndPlacementPage));
+            FitToWorkArea();
+            Navigate(typeof(QuickStartPage));
             await _contexts.StartAsync();
+        }
+
+        private void OnReleaseBackRequested(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            if (!_closed && !RootNavigation.GoBack()) Navigate(typeof(QuickStartPage));
+        }
+
+        // HWND 所属窗口只负责工作区与 DPI 换算，不保存新的窗口设置。
+        private void FitToWorkArea()
+        {
+            var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            var monitor = NativeMethods.MonitorFromWindow(handle, (int)NativeMethods.MonitorFromWindowFlags.DEFAULTTONEAREST);
+            var info = new NativeMethods.MONITORINFOEX
+            {
+                cbSize = Marshal.SizeOf<NativeMethods.MONITORINFOEX>(),
+                szDevice = string.Empty
+            };
+            if (!NativeMethods.GetMonitorInfo(monitor, ref info) || !NativeMethods.GetWindowRect(handle, out var bounds)) return;
+            var scale = VisualTreeHelper.GetDpi(this).DpiScaleY;
+            var available = Math.Max(1, (info.rcWork.Bottom - info.rcWork.Top) / scale - 32);
+            MinHeight = Math.Min(MinHeight, available);
+            Height = Math.Min(Height, available);
+            var heightPx = Math.Min(bounds.Bottom - bounds.Top, (int)Math.Round(Height * scale));
+            var topPx = Math.Clamp(bounds.Top, info.rcWork.Top, Math.Max(info.rcWork.Top, info.rcWork.Bottom - heightPx));
+            NativeMethods.SetWindowPos(handle, 0, bounds.Left, topPx, bounds.Right - bounds.Left, heightPx,
+                NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
+        }
+
+        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+        {
+            base.OnDpiChanged(oldDpi, newDpi);
+            if (IsLoaded) FitToWorkArea();
         }
 
         private void RebuildNavigation()
@@ -423,14 +448,14 @@ namespace AFMediaBar.Views.Windows
             // The items are rebuilt, so the one named by an earlier programmatic navigation is gone; hand the
             // highlight back to SelectedItem.
             _sidebarSelection.Highlight(null);
-            foreach (var definition in SettingsPageCatalog.ForMode(_contexts.Current.Mode))
+            foreach (var definition in SettingsPageCatalog.ForMode(_contexts.Current.Mode).Where(page => page.ShowInNavigation))
             {
-                var item = definition.Key == SettingsPageKey.ReleaseHighlights ? UpdateNoticeNavItem : new NavigationViewItem
+                var item = definition.Key == SettingsPageKey.QuickStart ? UpdateNoticeNavItem : new NavigationViewItem
                 {
                     TargetPageType = SettingsPageProvider.PageTypes[definition.Key],
                     Icon = new SymbolIcon(Enum.Parse<SymbolRegular>(definition.IconName))
                 };
-                if (definition.Key != SettingsPageKey.ReleaseHighlights) item.SetResourceReference(ContentControl.ContentProperty, "Loc." + definition.TitleKey);
+                if (definition.Key != SettingsPageKey.QuickStart) item.SetResourceReference(ContentControl.ContentProperty, "Loc." + definition.TitleKey);
                 item.NavigationCacheMode = NavigationCacheMode.Disabled;
                 if (definition.IsFooter) RootNavigation.FooterMenuItems.Add(item);
                 else RootNavigation.MenuItems.Add(item);
