@@ -29,6 +29,13 @@ public partial class ExtraFeaturesViewModel : ObservableObject
 
     private bool _isRefreshing;
     private string? _statusKey;
+    // 状态行是瞬态反馈：写上去若干秒后自动清空，否则「已添加到快速启动」会一直挂在那里。
+    // The status line is transient feedback: it clears itself a few seconds after being written, otherwise
+    // "added to quick launch" would just stay there.
+    private readonly DispatcherTimer _statusTimer;
+
+    /// <summary>状态行留存时长：够读一句话，又不至于让用户觉得界面卡住。</summary>
+    private static readonly TimeSpan StatusDisplayDuration = TimeSpan.FromSeconds(4);
 
     public ObservableCollection<MediaSourceSettingItem> Sources { get; } = [];
     public IReadOnlyList<DisplayMonitorOption> MonitorOptions { get; private set; } = [];
@@ -93,6 +100,14 @@ public partial class ExtraFeaturesViewModel : ObservableObject
         _mediaSessions.DiscoveredSourcesChanged += OnDiscoveredSourcesChanged;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         _displayMonitorService.MonitorsChanged += OnMonitorsChanged;
+
+        _statusTimer = new DispatcherTimer(DispatcherPriority.Normal, _dispatcher) { Interval = StatusDisplayDuration };
+        _statusTimer.Tick += (_, _) =>
+        {
+            _statusTimer.Stop();
+            _statusKey = null;
+            OnPropertyChanged(nameof(StatusText));
+        };
 
         // 本页是单例，订阅与进程同寿命，不需要在关闭时取消。
         // This page is a singleton, so the subscription lives as long as the process and needs no unsubscription.
@@ -178,11 +193,15 @@ public partial class ExtraFeaturesViewModel : ObservableObject
     /// Writes the status line. The argument is a text key rather than a finished sentence, so the line follows a language
     /// change on its own.
     /// </summary>
-    /// <param name="key">状态文案的键。/ Key of the status text.</param>
-    private void SetStatus(string key)
+    /// <param name="key">状态文案的键；传空表示立即清除。/ Key of the status text; pass null to clear it at once.</param>
+    private void SetStatus(string? key)
     {
         _statusKey = key;
         OnPropertyChanged(nameof(StatusText));
+        // 每次写入都重新计时：连续操作时状态行从最后一次开始数，不会在中途消失。
+        // Every write restarts the countdown, so a burst of operations keeps the line until the last one lands.
+        _statusTimer.Stop();
+        if (key is not null) _statusTimer.Start();
     }
 
     private void AddQuickLaunch(QuickLaunchEntry entry)
