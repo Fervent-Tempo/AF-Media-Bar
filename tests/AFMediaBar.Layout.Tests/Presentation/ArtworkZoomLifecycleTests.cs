@@ -333,6 +333,32 @@ public sealed class ArtworkZoomLifecycleTests
         return Task.CompletedTask;
     });
 
+    [TestMethod]
+    public void FullPanelEntryAnchorHoldsStillWhileTheZoomPushesTheLayout() => RunIsolated(nameof(FullPanelEntryAnchorHoldsStillWhileTheZoomPushesTheLayout), (control, dispatcher) =>
+    {
+        SettingsManager.Current.Interaction = SettingsManager.Current.Interaction with { ArtworkHoverMode = ArtworkHoverMode.Zoom };
+        var rest = FullPanelEntryCenter(control);
+        // 立即路径的悬停放大：Popup 打开、推挤同步落到目标量，无需等待动画。
+        // Immediate-path hover zoom: the Popup opens and the push lands on its target synchronously, no animation wait.
+        Invoke(control, "AnimateArtworkHover", true, true);
+        Assert.IsTrue(GetPopup(control).IsOpen, "放大必须真的进入 Popup 态，推挤才会挂上。");
+        var pushOffset = (double)MediaBarTestAccess.GetField("_artworkZoomPushOffset", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+        Assert.IsTrue(pushOffset > 0, "放大必须真的推挤文字区，否则锚点断言是空转。");
+        // 反证：旧实现读取的正是这个被推走的元素——两者此时必须不同，锚点不变才有意义。
+        // Counter-proof: the old implementation read exactly this pushed element — the two must differ here,
+        // otherwise an unchanged anchor proves nothing.
+        var songInfo = (FrameworkElement)control.FindName("SongInfoStackPanel");
+        var pushedPanelCenter = songInfo.PointToScreen(new Point(songInfo.ActualWidth / 2, songInfo.ActualHeight / 2));
+        Assert.AreNotEqual(rest, pushedPanelCenter, "文字区中心必须已被推挤带离原位。");
+        Assert.AreEqual(rest, FullPanelEntryCenter(control), "放大推挤不得带动完整面板入口锚点（外侧拉杆）。");
+        Invoke(control, "HideArtworkHoverZoom", true);
+        AssertRestored(control);
+        return Task.CompletedTask;
+    });
+
+    private static Point FullPanelEntryCenter(TaskBarMediaControl control) =>
+        (Point)MediaBarTestAccess.GetMethod("GetFullPanelEntryScreenCenter", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(control, null)!;
+
     private static void RunIsolated(string name, Func<TaskBarMediaControl, Dispatcher, Task> verify)
     {
         const string IsolationVariable = "AFMB_ARTWORK_ZOOM_ISOLATED";
