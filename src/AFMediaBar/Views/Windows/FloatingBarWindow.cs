@@ -78,6 +78,9 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private Size? _layoutSizeDip;
     private double _layoutDpi;
     private Int32Rect? _nativeBoundsPx;
+    private PlacementContext? _placementContext;
+    private readonly record struct PlacementContext(Point CenterPx, LayoutOrientation Orientation,
+        FloatingBarLayer Layer, double DpiScale, double CrossDip);
     private nint _handle;
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
     private AudioDeviceTarget? _deviceMenuTarget;
@@ -441,6 +444,10 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private void ApplyBounds(bool refreshLayout = false)
     {
         if (_isClosing) return;
+        // 歌词伸缩会改变窗口边界；按逻辑位置和环境判断迁移，保留已打开的完整面板。
+        var context = new PlacementContext(_centerPx, _orientation, _layer, Dpi, _cross);
+        var preserveFullPanel = _nativeBoundsPx is not null && _placementContext == context &&
+            !_dragging && !IsEdgeConcealed;
         var requested = _orientation == LayoutOrientation.Vertical ? new Size(_cross, _primary) : new Size(_primary, _cross);
         var bounds = FloatingBarGeometryPolicy.Resolve(new Size(Monitor.WorkArea.Width / Dpi, Monitor.WorkArea.Height / Dpi),
             requested, new Point((_centerPx.X - Monitor.WorkArea.Left) / Dpi, (_centerPx.Y - Monitor.WorkArea.Top) / Dpi));
@@ -470,7 +477,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
                 _edgeContrastRefreshTick = 0;
             }
             _externalFullPanelHandle?.Dismiss(immediate: true);
-            if (_isFullPanelOpen) PlacementTransitionStarted?.Invoke(this, EventArgs.Empty);
+            if (_isFullPanelOpen && !preserveFullPanel) PlacementTransitionStarted?.Invoke(this, EventArgs.Empty);
             var flags = SWP_NOACTIVATE | SWP_NOZORDER;
             if (_nativeBoundsPx is { } previous && previous.Width == physical.Width && previous.Height == physical.Height)
                 flags |= SWP_NOSIZE;
@@ -479,6 +486,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             else if (IsEdgeConcealed) { FailEdgePlacement(); return; }
         }
         if (_handle != nint.Zero && !ApplyEdgeRegion(physical) && !_edgeFaulted) { FailEdgePlacement(); return; }
+        if (_nativeBoundsPx == physical) _placementContext = context with { CenterPx = _centerPx };
         UpdateEdgeObservation();
         RefreshEdgeContrast();
         if (!_dragging) _foregroundSamplingSession?.RequestRefresh();

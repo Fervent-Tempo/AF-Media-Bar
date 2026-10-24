@@ -1,8 +1,10 @@
 // 隔离进程内检查实际悬浮宿主；不启动用户媒体、鼠标 Hook 或音频采样。
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
@@ -54,6 +56,7 @@ internal static class FloatingBarHostChecks
             await Task.Delay(100);
             Assert.IsTrue(window.IsVisible);
             VerifyPureMoves(window);
+            await VerifyContentResizePreservesPanelAsync(window);
             Assert.IsTrue(limits.Range.HasAvailableRange);
             var handle = new WindowInteropHelper(window).Handle;
             Assert.AreEqual(nint.Zero, AFMediaBar.Classes.Interop.NativeMethods.GetParent(handle));
@@ -67,6 +70,7 @@ internal static class FloatingBarHostChecks
             Assert.AreEqual(center, window.CenterPx);
             Assert.IsTrue(window.ActualHeight > window.ActualWidth);
             VerifyPureMoves(window);
+            await VerifyContentResizePreservesPanelAsync(window);
             Assert.AreNotEqual(0, AFMediaBar.Classes.Interop.NativeMethods.GetWindowLong(handle, -20) & 8);
             window.Suspend();
             Assert.IsFalse(limits.Range.HasAvailableRange);
@@ -80,6 +84,72 @@ internal static class FloatingBarHostChecks
             Assert.IsFalse(limits.Range.HasAvailableRange);
         }
         finally { window?.Dispose(); SettingsManager.Current = previous; }
+    }
+
+    private static async Task VerifyContentResizePreservesPanelAsync(FloatingBarWindow window)
+    {
+        var resize = typeof(FloatingBarWindow).GetMethod("ResizeContent", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var apply = typeof(FloatingBarWindow).GetMethod("ApplyBounds", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var sizeTimer = (DispatcherTimer)typeof(FloatingBarWindow).GetField("_sizeTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
+        var targetLength = typeof(FloatingBarWindow).GetField("_targetPrimary", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var handle = new WindowInteropHelper(window).Handle;
+        var center = window.CenterPx;
+        var edge = window.DockEdge;
+        Assert.IsTrue(AFMediaBar.Classes.Interop.NativeMethods.GetWindowRect(handle, out var original));
+        var originalLength = window.IsVerticalPresentation ? original.Bottom - original.Top : original.Right - original.Left;
+        var transitions = 0;
+        void PlacementChanged(object? sender, EventArgs args) => transitions++;
+        void Resize(double length, bool immediate) => resize.Invoke(window, [new MediaBarSizeRequest(
+            window.IsVerticalPresentation ? LayoutOrientation.Vertical : LayoutOrientation.Horizontal,
+            window.IsVerticalPresentation ? 48 : length, window.IsVerticalPresentation ? length : 44,
+            "lyric-resize", false, immediate)]);
+        int NativeLength()
+        {
+            Assert.IsTrue(AFMediaBar.Classes.Interop.NativeMethods.GetWindowRect(handle, out var bounds));
+            return window.IsVerticalPresentation ? bounds.Bottom - bounds.Top : bounds.Right - bounds.Left;
+        }
+        window.PlacementTransitionStarted += PlacementChanged;
+        try
+        {
+            foreach (var dock in new[] { FloatingBarDockEdge.None, FloatingBarDockEdge.Left, FloatingBarDockEdge.Right,
+                FloatingBarDockEdge.Top, FloatingBarDockEdge.Bottom })
+            {
+                window.SetFullPanelOpen(false);
+                window.RestoreCenter(center, dock);
+                apply.Invoke(window, [false]);
+                window.SetFullPanelOpen(true);
+                transitions = 0;
+                foreach (var length in new[] { 300, 630, 250 })
+                {
+                    Resize(length, immediate: true);
+                    Assert.AreEqual(length, NativeLength(), "歌词尺寸请求必须真正更新原生窗口。");
+                    Assert.AreEqual(0, transitions, $"{dock} 的内容伸缩不能触发关闭完整面板的位置迁移。");
+                }
+                Resize(430, immediate: false);
+                var deadline = Stopwatch.StartNew();
+                while (sizeTimer.IsEnabled && deadline.Elapsed < TimeSpan.FromSeconds(3)) await Task.Delay(20);
+                Assert.IsFalse(sizeTimer.IsEnabled, "常规尺寸动画必须完成。");
+                // 竖排布局可以在过渡中重新申请长度，验证最终目标而不是中间请求。
+                Assert.AreEqual((int)Math.Ceiling((double)targetLength.GetValue(window)!), NativeLength());
+                Assert.AreEqual(0, transitions, "尺寸动画的中间帧也不能关闭完整面板。");
+            }
+            window.SetFullPanelOpen(false);
+            window.RestoreCenter(center);
+            apply.Invoke(window, [false]);
+            window.SetFullPanelOpen(true);
+            transitions = 0;
+            window.RestoreCenter(center + new Vector(20, 20));
+            apply.Invoke(window, [false]);
+            Assert.IsTrue(transitions > 0, "真实位置改变仍须通知关闭依赖原位置的面板。");
+        }
+        finally
+        {
+            window.PlacementTransitionStarted -= PlacementChanged;
+            window.SetFullPanelOpen(false);
+            window.RestoreCenter(center, edge);
+            Resize(originalLength, immediate: true);
+            apply.Invoke(window, [false]);
+        }
     }
 
     private static void VerifyPureMoves(FloatingBarWindow window)
