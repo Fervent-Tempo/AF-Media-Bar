@@ -1,4 +1,5 @@
 // Verifies physical taskbar anchors and safe-range selection as content widths change.
+using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
@@ -88,6 +89,33 @@ public sealed class TaskbarAlignmentTests
         Assert.AreEqual(0.0, TaskbarArrangementPolicy.RevealLeft(300, 50, TaskbarBarPosition.Start));
         Assert.AreEqual(5.0, TaskbarArrangementPolicy.ActionsLeft(200, 0, 40, 100, TaskbarBarPosition.End));
         Assert.IsTrue(TaskbarRestLayoutPolicy.Arrange([], _ => 40, _ => true, 3, 100, 8, 6, true).IsEmpty);
+    }
+
+    [TestMethod]
+    public void ZoomInputRegionExtensionFollowsTheExpansionDirection()
+    {
+        var rect = new NativeMethods.RECT { Left = 100, Top = 1040, Right = 600, Bottom = 1080 };
+        // 无放大扩展时原样返回，不碰输入区。
+        var idle = TaskbarArrangementPolicy.ExtendZoomOverflow(rect, 0, vertical: false, TaskbarContentArrangement.Right);
+        Assert.AreEqual(rect.Left, idle.Left);
+        Assert.AreEqual(rect.Right, idle.Right);
+        // 横向：左侧展开扩尾端（右），右侧展开扩首端（左）——放大把内容推向哪侧，输入区就扩哪侧。
+        // Horizontal: left-side expansion widens the trailing end (right), right-side expansion the leading end
+        // (left) — the region widens to whichever side the zoom pushes the content.
+        var horizontal = TaskbarArrangementPolicy.ExtendZoomOverflow(rect, 18, vertical: false, TaskbarContentArrangement.Left);
+        Assert.AreEqual(rect.Left, horizontal.Left);
+        Assert.AreEqual(618, horizontal.Right);
+        var mirrored = TaskbarArrangementPolicy.ExtendZoomOverflow(rect, 18, vertical: false, TaskbarContentArrangement.Right);
+        Assert.AreEqual(82, mirrored.Left);
+        Assert.AreEqual(rect.Right, mirrored.Right);
+        // 纵向：同一规则落在 Bottom/Top。
+        // Vertical: the same rule lands on Bottom/Top.
+        var vertical = TaskbarArrangementPolicy.ExtendZoomOverflow(rect, 18, vertical: true, TaskbarContentArrangement.Left);
+        Assert.AreEqual(rect.Top, vertical.Top);
+        Assert.AreEqual(1098, vertical.Bottom);
+        var verticalMirrored = TaskbarArrangementPolicy.ExtendZoomOverflow(rect, 18, vertical: true, TaskbarContentArrangement.Right);
+        Assert.AreEqual(1022, verticalMirrored.Top);
+        Assert.AreEqual(rect.Bottom, verticalMirrored.Bottom);
     }
 
     [TestMethod]

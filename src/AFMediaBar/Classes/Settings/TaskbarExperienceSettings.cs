@@ -133,7 +133,7 @@ public enum ArtworkHoverMode
     /// <summary>栏内紧凑放大 1.1 倍（默认）。/ Compact 1.1× zoom inside the bar (default).</summary>
     Off = 0,
 
-    /// <summary>原地放大：封面组件底部锚定、向上生长 <c>ArtworkHoverZoomScaleFactor</c>（2×），且右侧内容同步右移让位。/ In-place zoom: the artwork grows to <c>ArtworkHoverZoomScaleFactor</c> (2×) upward from its bottom, with the right-hand content shifting right to make room.</summary>
+    /// <summary>原地放大：封面组件底部锚定、向上生长 <c>ArtworkHoverZoomScaleFactor</c>（2×），且内容侧同步推开让位（方向随展开排布解析）。/ In-place zoom: the artwork grows to <c>ArtworkHoverZoomScaleFactor</c> (2×) upward from its bottom, with the content side pushed aside to make room (the direction follows the resolved expansion arrangement).</summary>
     Zoom = 1,
 
     /// <summary>大图预览：独立卡片突出任务栏上方。/ Large preview: a separate card popping above the taskbar.</summary>
