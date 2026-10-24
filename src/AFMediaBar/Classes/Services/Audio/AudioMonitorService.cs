@@ -26,6 +26,8 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
     private readonly SpectrumCaptureProcessResolver _processResolver;
     private volatile SpectrumCaptureSource _captureSource;
     private volatile string? _captureDeviceId;
+    // 生效的设备策略（旧配置的 null 已在写入前解析成等效模式）；采集分流与重建判定都只认这一个值。
+    private volatile SpectrumCaptureDeviceMode _captureDeviceMode;
     private SpectrumCaptureProcessResolver.MediaIdentity _mediaSource =
         SpectrumCaptureProcessResolver.MediaIdentity.FromSnapshot(MediaSnapshot.Disconnected);
     private readonly object _sourceGate = new();
@@ -73,6 +75,7 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         {
             var settings = SettingsManager.Current.SpectrumComponent.Normalize();
             _captureSource = settings.CaptureSource;
+            _captureDeviceMode = settings.ResolveCaptureDeviceMode();
             _captureDeviceId = settings.CaptureDeviceId;
         }
     }
@@ -89,7 +92,7 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
             _mediaSource = SpectrumCaptureProcessResolver.MediaIdentity.FromSnapshot(snapshot);
             _deviceResolver.UpdateMediaSource(_mediaSource);
             if (changed && (_captureSource == SpectrumCaptureSource.CurrentMediaApplication ||
-                _captureSource == SpectrumCaptureSource.CurrentDevice && _captureDeviceId is null))
+                _captureSource == SpectrumCaptureSource.CurrentDevice && _captureDeviceMode == SpectrumCaptureDeviceMode.FollowMediaSource))
             {
                 InvalidateSourceCapture();
                 WakeWorker();
@@ -110,12 +113,17 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
     {
         var settings = SettingsManager.Current.SpectrumComponent.Normalize();
         var source = _presentationCaptureSource ?? settings.CaptureSource;
+        var deviceMode = settings.ResolveCaptureDeviceMode();
         lock (_sourceGate)
         {
             if (_disposed) return;
+            // 设备策略必须参与判定：从「跟随媒体来源」切到「系统默认输出设备」时设备标识往往不变，
+            // 只比 CaptureDeviceId 会漏掉这次切换，频谱继续跟着旧端点。
             var changed = source != _captureSource || source == SpectrumCaptureSource.CurrentDevice &&
-                !string.Equals(settings.CaptureDeviceId, _captureDeviceId, StringComparison.OrdinalIgnoreCase);
+                (!string.Equals(settings.CaptureDeviceId, _captureDeviceId, StringComparison.OrdinalIgnoreCase) ||
+                 deviceMode != _captureDeviceMode);
             _captureSource = source;
+            _captureDeviceMode = deviceMode;
             _captureDeviceId = settings.CaptureDeviceId;
             if (!changed) return;
             InvalidateSourceCapture();
@@ -161,7 +169,7 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
             if (_disposed || _pruneLevel >= MemoryPruneLevel.DisplayOff)
                 return false;
             _lastDemandTick = Environment.TickCount64;
-            if (_captureSource == SpectrumCaptureSource.CurrentDevice && _captureDeviceId is null) _deviceResolver.RequestScan();
+            if (_captureSource == SpectrumCaptureSource.CurrentDevice && _captureDeviceMode == SpectrumCaptureDeviceMode.FollowMediaSource) _deviceResolver.RequestScan();
             WakeWorker();
             if (!_captureReady || _activeCaptureVersion != Volatile.Read(ref _captureVersion))
                 return false;
@@ -285,11 +293,13 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
     private async Task CaptureAsync(int version, CancellationToken token)
     {
         SpectrumCaptureSource source;
+        SpectrumCaptureDeviceMode deviceMode;
         string? configuredDeviceId;
         SpectrumCaptureProcessResolver.MediaIdentity media;
         lock (_sourceGate)
         {
             source = _captureSource;
+            deviceMode = _captureDeviceMode;
             configuredDeviceId = _captureDeviceId;
             media = _mediaSource;
         }
@@ -312,10 +322,15 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
             }
         }
         using var enumerator = source == SpectrumCaptureSource.CurrentDevice ? new MMDeviceEnumerator() : null;
-        var target = configuredDeviceId ?? _deviceResolver.TargetDeviceId;
-        using var device = source != SpectrumCaptureSource.CurrentDevice ? null : string.IsNullOrEmpty(target)
-            ? enumerator!.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia)
-            : configuredDeviceId is null ? enumerator!.GetDevice(target) : OpenConfiguredDevice(enumerator!, target);
+        // 设备策略按四种情况显式分流；旧配置（CaptureDeviceMode 为 null）已在写入前按 CaptureDeviceId
+        // 解析成等效的 FollowMediaSource / SpecificDevice，这里不再对模式做任何折叠。
+        // 非指定设备模式下 CaptureDeviceId 只是保留下来的旧选择，不参与设备选择。
+        using var device = source != SpectrumCaptureSource.CurrentDevice ? null : deviceMode switch
+        {
+            SpectrumCaptureDeviceMode.SpecificDevice => OpenConfiguredDevice(enumerator!, configuredDeviceId ?? string.Empty),
+            SpectrumCaptureDeviceMode.SystemDefault => OpenSystemDefaultDevice(enumerator!),
+            _ => OpenFollowedDevice(enumerator!, _deviceResolver.TargetDeviceId)
+        };
         if (source == SpectrumCaptureSource.CurrentDevice && device is null)
         {
             // 手动端点离线时保留选择，等待重新连接；不扩大到其它设备。
@@ -362,12 +377,23 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
             else AppLogService.Current?.Verbose("Audio", message);
             _captureLogSignature = signature;
             var lastProcessCheck = Environment.TickCount64;
+            var lastDefaultCheck = Environment.TickCount64;
             while (HasDemand(version) && !token.IsCancellationRequested)
             {
-                if (source == SpectrumCaptureSource.CurrentDevice && configuredDeviceId is null)
+                if (source == SpectrumCaptureSource.CurrentDevice && deviceMode == SpectrumCaptureDeviceMode.FollowMediaSource)
                 {
                     var nextTarget = _deviceResolver.TargetDeviceId;
                     if (!string.IsNullOrEmpty(nextTarget) && !string.Equals(nextTarget, deviceId, StringComparison.OrdinalIgnoreCase)) { stopReason = "device-changed"; break; }
+                }
+                else if (source == SpectrumCaptureSource.CurrentDevice && deviceMode == SpectrumCaptureDeviceMode.SystemDefault &&
+                    Environment.TickCount64 - lastDefaultCheck >= 1000)
+                {
+                    lastDefaultCheck = Environment.TickCount64;
+                    // 采集期间系统默认端点可能被改指（在系统设置里切换默认设备，或原默认设备拔出后系统改指），
+                    // 与 AF 内部发起切换时 ResetAfterEnvironmentChange 的重建合流；读不到默认端点就保持当前采集。
+                    if (TryReadDefaultEndpointId(enumerator!, out var currentDefault) &&
+                        !string.Equals(currentDefault, deviceId, StringComparison.OrdinalIgnoreCase))
+                    { stopReason = "default-device-changed"; break; }
                 }
                 else if (source == SpectrumCaptureSource.CurrentMediaApplication &&
                     Environment.TickCount64 - lastProcessCheck >= 2000)
@@ -407,6 +433,43 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         catch (COMException) { }
         device?.Dispose();
         return null;
+    }
+
+    /// <summary>
+    /// 系统默认输出设备。取 Console 角色，与音频设备管理页读写默认设备用的是同一个角色，
+    /// 用户在系统里看到的「默认设备」就是这一台；跟随媒体来源的回退仍保持历史上的 Multimedia 角色不变。
+    /// The system default output device. The Console role is used because it is the same role the audio device
+    /// management page reads and writes, i.e. the device users see as "default" in Windows; the media-source
+    /// fallback keeps its historical Multimedia role unchanged.
+    /// </summary>
+    private static MMDevice OpenSystemDefaultDevice(MMDeviceEnumerator enumerator) =>
+        enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Console);
+
+    /// <summary>
+    /// 跟随媒体来源：解析器给出目标端点时打开它（与升级前一致地不校验活动状态），
+    /// 没有目标时回退到系统默认设备（Multimedia 角色，与升级前一致）。
+    /// Follows the media source: opens the resolver's target when there is one, exactly as before the upgrade
+    /// without an active-state check, and falls back to the system default device (Multimedia role, unchanged).
+    /// </summary>
+    private static MMDevice OpenFollowedDevice(MMDeviceEnumerator enumerator, string? resolverTargetId) =>
+        string.IsNullOrEmpty(resolverTargetId)
+            ? enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia)
+            : enumerator.GetDevice(resolverTargetId);
+
+    /// <summary>读取当前系统默认输出端点标识；读取失败（例如当前没有默认设备）时返回 false。</summary>
+    private static bool TryReadDefaultEndpointId(MMDeviceEnumerator enumerator, out string? id)
+    {
+        try
+        {
+            using var device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Console);
+            id = device.ID;
+            return true;
+        }
+        catch (COMException)
+        {
+            id = null;
+            return false;
+        }
     }
 
     private static async Task<WasapiRecorder> CreateProcessCaptureAsync(uint processId, ProcessLoopbackMode mode, CancellationToken token)

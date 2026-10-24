@@ -72,14 +72,19 @@ public sealed class AudioSettingsPageLoadingTests
                 var widgets = new WidgetsSettingsPage(widgetsModel);
                 widgets.Measure(new Size(820, 900));
                 Assert.IsNotNull(widgets.Content);
-                Assert.IsNull(components.SelectedSpectrumCaptureDevice!.DeviceId);
-                Assert.AreEqual(2, components.SpectrumCaptureDevices.Count);
+                Assert.IsNull(components.SelectedSpectrumCaptureDevice!.DeviceId, "默认策略是跟随媒体来源。");
+                Assert.AreEqual(3, components.SpectrumCaptureDevices.Count, "跟随媒体来源、系统默认输出设备与离线设备各一项。");
+                Assert.IsTrue(components.SpectrumCaptureDevices.Any(option => option.Mode == SpectrumCaptureDeviceMode.SystemDefault),
+                    "设备下拉里新增系统默认输出设备。");
                 components.SelectedSpectrumCaptureDevice = components.SpectrumCaptureDevices.Single(option => option.DeviceId == "old");
                 await widgetsModel.RefreshAsync();
                 Assert.AreEqual("old", components.SelectedSpectrumCaptureDevice!.DeviceId, "刷新离线设备列表不能把手动选择改回自动。");
                 Assert.AreEqual("old", SettingsManager.Current.SpectrumComponent.CaptureDeviceId);
                 components.SelectedSpectrumCaptureDevice = components.SpectrumCaptureDevices.First();
-                Assert.IsNull(SettingsManager.Current.SpectrumComponent.CaptureDeviceId);
+                Assert.AreEqual(SpectrumCaptureDeviceMode.FollowMediaSource,
+                    SettingsManager.Current.SpectrumComponent.ResolveCaptureDeviceMode(), "选回跟随后策略切回跟随媒体来源。");
+                Assert.AreEqual("old", SettingsManager.Current.SpectrumComponent.CaptureDeviceId,
+                    "非指定设备模式保留设备标识，切回指定设备时恢复原选择；该标识不参与设备选择。");
                 using var viewModel = new InteractionViewModel(localization, new LegacySettingsConfiguration(context));
                 await devices.RefreshAsync();
                 var management = new DeviceManagementPage(devices);

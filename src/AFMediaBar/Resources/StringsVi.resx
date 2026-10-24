@@ -3188,10 +3188,13 @@ Nguồn: {2}</value></data>
     <value>Thiết bị thu âm</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Description" xml:space="preserve">
-    <value>Theo thiết bị đầu ra của nguồn phương tiện hiện tại trong AF; dùng thiết bị mặc định nếu không xác định được. Khi thiết bị đã chọn ngoại tuyến, tạm dừng thu và giữ lựa chọn.</value>
+    <value>Có thể theo nguồn phương tiện hiện tại, luôn thu thiết bị đầu ra mặc định của hệ thống, hoặc chọn một thiết bị cố định. Khi thiết bị đã chọn ngoại tuyến, tạm dừng thu và giữ lựa chọn.</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Automatic" xml:space="preserve">
     <value>Theo nguồn phương tiện hiện tại</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.SystemDefault" xml:space="preserve">
+    <value>Thiết bị đầu ra mặc định của hệ thống</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Offline" xml:space="preserve">
     <value>{0} (ngoại tuyến)</value>

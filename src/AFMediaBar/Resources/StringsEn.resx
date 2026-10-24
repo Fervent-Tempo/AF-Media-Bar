@@ -3150,10 +3150,13 @@ Source: {2}</value></data>
     <value>Capture device</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Description" xml:space="preserve">
-    <value>Follow the current AF media source’s output device, falling back to the system default when unidentified. A selected offline device pauses capture and remains selected.</value>
+    <value>Follow the current media source, always capture the system default output device, or pin a specific device. A selected offline device pauses capture and remains selected.</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Automatic" xml:space="preserve">
     <value>Follow current media source</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.SystemDefault" xml:space="preserve">
+    <value>System default output device</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Offline" xml:space="preserve">
     <value>{0} (offline)</value>

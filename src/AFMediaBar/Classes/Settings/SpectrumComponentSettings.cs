@@ -32,6 +32,24 @@ public enum SpectrumCaptureSource
     CurrentMediaApplication = 2
 }
 
+/// <summary>
+/// 频谱采集设备的来源策略；只在采集范围为「当前设备」时生效，与采集范围回答的是两个问题：
+/// 范围决定采什么（整机混音还是某个进程树），策略决定从哪个端点采。
+/// Which endpoint the spectrum is captured from. It only applies while the capture scope is the current device:
+/// the scope answers what is captured (the whole endpoint mix or one process tree), the strategy answers where.
+/// </summary>
+public enum SpectrumCaptureDeviceMode
+{
+    /// <summary>跟随 AF 当前媒体来源使用的输出设备；无法识别时回退到系统默认设备。</summary>
+    FollowMediaSource = 0,
+
+    /// <summary>始终采集系统默认输出设备，不随媒体来源变化。</summary>
+    SystemDefault = 1,
+
+    /// <summary>固定采集 <see cref="SpectrumComponentSettings.CaptureDeviceId"/> 指定的设备。</summary>
+    SpecificDevice = 2
+}
+
 /// <summary>任务栏频谱组件设置。 / Taskbar spectrum component settings.</summary>
 public readonly record struct SpectrumComponentSettings(int BandCount, int RefreshRateHz, int SensitivityPercent)
 {
@@ -49,6 +67,18 @@ public readonly record struct SpectrumComponentSettings(int BandCount, int Refre
 
     /// <summary>设备模式手动指定的输出端点；null 跟随 AF 当前媒体来源使用的设备。</summary>
     public string? CaptureDeviceId { get; init; }
+
+    /// <summary>
+    /// 采集设备策略；null 表示这份配置没有表达过该选择（升级前写下的设置文件正是如此）。
+    /// 该成员以 init 属性存在：设置文件缺这个字段时反序列化落到 null，再由 <see cref="ResolveCaptureDeviceMode"/>
+    /// 按 <see cref="CaptureDeviceId"/> 是否为空回退到升级前的判据，因此新增它不会改变任何既有配置选到的设备。
+    /// Device strategy. Null means the configuration never expressed a choice, which is exactly what a settings
+    /// file written before this field existed looks like. Missing the field deserializes to null, and
+    /// <see cref="ResolveCaptureDeviceMode"/> then falls back to the pre-upgrade rule driven by whether
+    /// <see cref="CaptureDeviceId"/> is set, so adding this member cannot change which device an existing
+    /// configuration selects.
+    /// </summary>
+    public SpectrumCaptureDeviceMode? CaptureDeviceMode { get; init; }
 
     /// <summary>手动设备离线后仍能显示其最后已知名称。</summary>
     public string CaptureDeviceName { get; init; } = string.Empty;
@@ -137,10 +167,31 @@ public readonly record struct SpectrumComponentSettings(int BandCount, int Refre
     {
         Style = Enum.IsDefined(Style) ? Style : SpectrumStyle.Bars,
         CaptureSource = Enum.IsDefined(CaptureSource) ? CaptureSource : SpectrumCaptureSource.CurrentDevice,
+        CaptureDeviceMode = CaptureDeviceMode is { } mode && Enum.IsDefined(mode) ? mode : null,
         CaptureDeviceId = string.IsNullOrWhiteSpace(CaptureDeviceId) ? null : CaptureDeviceId.Trim(),
         CaptureDeviceName = CaptureDeviceName ?? string.Empty,
         ContentHeightDip = SnapContentHeightDip(ContentHeightDip)
     };
+
+    /// <summary>
+    /// 把持久化的策略解析成生效模式，四种情况在这里显式分流，供采集器与设置页共用同一判据：
+    /// null 是旧配置缺字段，按 <see cref="CaptureDeviceId"/> 是否为空回退到升级前的行为
+    ///（为空跟随媒体来源，否则使用已保存的设备）；其余三种按配置字面执行。
+    /// 不能写成 mode ?? FollowMediaSource——那会把旧配置里已经保存的设备 ID 静默丢掉。
+    /// Resolves the persisted strategy into the mode that takes effect, branching all four cases explicitly so
+    /// the capture service and the settings page share one rule: null is a configuration that predates the field
+    /// and falls back to the pre-upgrade behaviour driven by whether <see cref="CaptureDeviceId"/> is set (empty
+    /// follows the media source, otherwise the saved device is used); the other three run as written.
+    /// It must not be folded into mode ?? FollowMediaSource, which would silently drop a device id an existing
+    /// configuration already stores.
+    /// </summary>
+    public SpectrumCaptureDeviceMode ResolveCaptureDeviceMode()
+    {
+        if (CaptureDeviceMode is { } mode) return mode;
+        return string.IsNullOrWhiteSpace(CaptureDeviceId)
+            ? SpectrumCaptureDeviceMode.FollowMediaSource
+            : SpectrumCaptureDeviceMode.SpecificDevice;
+    }
 
     /// <summary>
     /// 把灵敏度吸附到步长网格并夹取。旧设置文件里的 1–9 会被抬到下限，非整十的取值落到最近的整十值上，

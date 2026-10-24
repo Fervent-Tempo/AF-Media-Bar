@@ -165,6 +165,7 @@
       "bandCount": "v1.2.0",
       "captureSource": "v1.4.0",
       "captureDeviceId": "unreleased",
+      "captureDeviceMode": "unreleased",
       "captureDeviceName": "unreleased",
       "contentHeightDip": "v1.2.0",
       "refreshRateHz": "v1.2.0",
@@ -547,6 +548,14 @@
         "AppUserModelId": {"value": 2, "release": "v1.2.0"}
       }
     },
+    "SpectrumCaptureDeviceMode": {
+      "paths": ["settings.spectrumComponent.captureDeviceMode"],
+      "members": {
+        "FollowMediaSource": {"value": 0, "release": "unreleased"},
+        "SystemDefault": {"value": 1, "release": "unreleased"},
+        "SpecificDevice": {"value": 2, "release": "unreleased"}
+      }
+    },
     "SpectrumCaptureSource": {
       "paths": ["settings.spectrumComponent.captureSource"],
       "members": {
@@ -787,8 +796,8 @@
   "rules": [
     {
       "id": "spectrum-device-target",
-      "paths": ["settings.spectrumComponent.captureSource", "settings.spectrumComponent.captureDeviceId", "settings.spectrumComponent.captureDeviceName"],
-      "text": "设备采集默认跟随 AF 当前媒体来源实际使用的输出端点，无法匹配时回退系统默认；手动端点离线保留配置并暂停采集。程序采集范围忽略所存设备选择。新字段缺失或 ID 为空时使用自动模式。"
+      "paths": ["settings.spectrumComponent.captureSource", "settings.spectrumComponent.captureDeviceId", "settings.spectrumComponent.captureDeviceMode", "settings.spectrumComponent.captureDeviceName"],
+      "text": "设备策略缺失、null 或无效时按 ID 回退：为空跟随媒体来源，否则固定所存端点。显式策略分别跟随媒体实际输出、系统默认输出（Console）或指定端点；跟随媒体无法匹配时沿用 Multimedia 默认端点回退，指定端点离线保留配置并暂停采集。非指定策略保留设备标识但不用于选择；程序采集范围忽略设备策略与标识。"
     },
     {
       "id": "full-panel-entry-only",
@@ -808,7 +817,7 @@
     {
       "id": "enum-input",
       "whenEnum": true,
-      "text": "JSON 无效枚举先变成类型回退值再归一化，可能不同于代码直接传入未定义值。成员发布状态独立于父字段。"
+      "text": "JSON 无效枚举先按对应类型的读取规则回退再归一化，可能不同于代码直接传入未定义值。成员发布状态独立于父字段。"
     },
     {
       "id": "taskbar-reset",
