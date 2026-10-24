@@ -3241,7 +3241,7 @@
     <value>完整面板縮放</value>
   </data>
   <data name="Panel.Scale.Description" xml:space="preserve">
-    <value>拖曳面板外側邊緣等比縮放，始終貼合媒體列。範圍 75%—200%，重新啟動後保留；縮小時按鈕也會變小。</value>
+    <value>內容按 75%—200% 等比縮放，重新啟動後保留。拖曳外側邊緣可獨立調整視窗寬高，內容自動換行；靠近媒體列的一側無法調整。</value>
   </data>
   <data name="Panel.Scale.Reset" xml:space="preserve">
     <value>恢復 100%</value>

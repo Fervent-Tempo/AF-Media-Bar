@@ -331,9 +331,9 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     /// The section combination the full panel currently uses, shown as a status text. The three names come from the
     /// same keys as the captions on the "apply a preset" buttons.
     /// </summary>
-    public string FullPanelLayoutStatus => FullPanelSettings with { ScalePercent = 100, PerformanceVisuals = MetricVisualSettings.PanelDefault } == TaskbarFullPanelSettings.Compact
+    public string FullPanelLayoutStatus => FullPanelSettings with { ScalePercent = 100, WindowWidthDip = null, WindowHeightDip = null, PerformanceVisuals = MetricVisualSettings.PanelDefault } == TaskbarFullPanelSettings.Compact
         ? Translations.Get("DisplayModes.Full.Preset.Compact")
-        : FullPanelSettings with { ScalePercent = 100, PerformanceVisuals = MetricVisualSettings.PanelDefault } == TaskbarFullPanelSettings.Full
+        : FullPanelSettings with { ScalePercent = 100, WindowWidthDip = null, WindowHeightDip = null, PerformanceVisuals = MetricVisualSettings.PanelDefault } == TaskbarFullPanelSettings.Full
             ? Translations.Get("DisplayModes.Full.Preset.Full")
             : Translations.Get("DisplayModes.Full.Preset.Custom");
 
@@ -486,8 +486,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     [RelayCommand] private void SwitchToDynamicIslandMode() => SelectMode(DisplayModeSelection.DynamicIsland);
     [RelayCommand] private void SwitchToDesktopCardMode() => SelectMode(DisplayModeSelection.DesktopCard);
     [RelayCommand] private void SwitchToFloatingBallMode() => SelectMode(DisplayModeSelection.FloatingBall);
-    [RelayCommand] private void ApplyCompactFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Compact with { ScalePercent = FullPanelSettings.ScalePercent, PerformanceVisuals = FullPanelSettings.PerformanceVisuals });
-    [RelayCommand] private void ApplyFullFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Full with { ScalePercent = FullPanelSettings.ScalePercent, PerformanceVisuals = FullPanelSettings.PerformanceVisuals });
+    [RelayCommand] private void ApplyCompactFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Compact with { ScalePercent = FullPanelSettings.ScalePercent, WindowWidthDip = FullPanelSettings.WindowWidthDip, WindowHeightDip = FullPanelSettings.WindowHeightDip, PerformanceVisuals = FullPanelSettings.PerformanceVisuals });
+    [RelayCommand] private void ApplyFullFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Full with { ScalePercent = FullPanelSettings.ScalePercent, WindowWidthDip = FullPanelSettings.WindowWidthDip, WindowHeightDip = FullPanelSettings.WindowHeightDip, PerformanceVisuals = FullPanelSettings.PerformanceVisuals });
 
     [RelayCommand]
     private void ResetTaskbarPosition()

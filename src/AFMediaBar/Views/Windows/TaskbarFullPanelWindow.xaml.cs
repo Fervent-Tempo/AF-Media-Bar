@@ -64,7 +64,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         _presentation = presentation;
         InitializeResizeGrips();
         PanelRoot.SizeChanged += OnPanelContentSizeChanged;
-        DpiChanged += (_, _) => QueuePanelPosition();
+        DpiChanged += (_, _) => { if (_isResizing) CancelActiveResize(); QueuePanelPosition(); };
         ApplyMotionEffects();
         _mediaSessionService = mediaSessionService;
         _audioInteractionService = audioInteractionService;
@@ -105,6 +105,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 
         _isClosing = false;
         _anchor = anchor;
+        _resizedPosition = null;
         _targetMonitorDeviceId = targetMonitorDeviceId;
         _verticalAnchor = verticalAnchor;
         _placementSide = side;
@@ -197,13 +198,20 @@ public partial class TaskbarFullPanelWindow : FluentWindow
                 monitor.WorkArea.Height / scaleY);
         var side = _placementSide ?? FullPanelPlacementPolicy.ResolveSide(anchor, work, _verticalAnchor);
         var limit = FullPanelPlacementPolicy.GetPanelLimit(anchor, work, side);
+        _panelWorkArea = new Rect(side == FullPanelPlacementSide.Right ? work.Right - limit.Width : work.Left,
+            side == FullPanelPlacementSide.Below ? work.Bottom - limit.Height : work.Top, limit.Width, limit.Height);
         MaxWidth = limit.Width;
         MaxHeight = limit.Height;
         _resolvedSide = side;
         ApplyScaleGeometry(limit);
         UpdateResizeGrips();
         UpdateLayout();
-        var bounds = FullPanelPlacementPolicy.PlacePanel(anchor, new Size(ActualWidth, ActualHeight), work, side);
+        var size = new Size(ActualWidth, ActualHeight);
+        var bounds = _isResizing ? FullPanelScalePolicy.PlaceResizeBounds(_resizeInitialBounds, size, _resizeEdge)
+            : _resizedPosition is Point position ? new Rect(position, size) : FullPanelPlacementPolicy.PlacePanel(anchor, size, work, side);
+        bounds.X = Math.Clamp(bounds.X, _panelWorkArea.Left, Math.Max(_panelWorkArea.Left, _panelWorkArea.Right - bounds.Width));
+        bounds.Y = Math.Clamp(bounds.Y, _panelWorkArea.Top, Math.Max(_panelWorkArea.Top, _panelWorkArea.Bottom - bounds.Height));
+        if (_isResizing || _resizedPosition.HasValue) _resizedPosition = bounds.Location;
         Left = bounds.Left;
         Top = bounds.Top;
         PanelRoot.RenderTransformOrigin = side switch
@@ -299,7 +307,12 @@ public partial class TaskbarFullPanelWindow : FluentWindow
             return;
 
         var settings = PresentationSettings.TaskbarExperience.FullPanel.Normalize();
-        if (!_isResizing) _requestedScale = settings.ScalePercent / 100d;
+        if (!_isResizing)
+        {
+            _requestedScale = settings.ScalePercent / 100d;
+            _windowWidthDip = settings.WindowWidthDip;
+            _windowHeightDip = settings.WindowHeightDip;
+        }
         ApplyChartStyles(settings.PerformanceVisuals);
         var animationVersion = ++_sectionAnimationVersion;
         var audioBecameVisible = !_audioControlsVisible && settings.AudioControlsVisible;
@@ -640,8 +653,10 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape)
-            RequestClose();
+        if (e.Key != Key.Escape) return;
+        if (_isResizing) CancelActiveResize();
+        else RequestClose();
+        e.Handled = true;
     }
 
     /// <summary>标记窗口已进入关闭流程，覆盖所有外部关闭入口。 / Marks the window as closing for every external close path.</summary>

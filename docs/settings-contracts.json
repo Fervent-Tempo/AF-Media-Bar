@@ -197,6 +197,8 @@
       "fullLayerEnabled": "v1.2.0",
       "fullPanel": {
         "scalePercent": "unreleased",
+        "windowWidthDip": "unreleased",
+        "windowHeightDip": "unreleased",
         "performanceVisuals": {
           "$release": "unreleased",
           "systemMemory": "unreleased",
@@ -889,7 +891,7 @@
     {
       "id": "full-panel-presentation",
       "prefixes": ["settings.taskbarExperience.fullPanel"],
-      "text": "缩放缺省100%，持久化范围75%—200%；工作区夹取不覆盖偏好。完整面板缺少样式字段时百分比指标默认Area，其余Numeric；媒体栏缺少样式时均为Numeric。上下行共用SystemNetwork样式。缩放归内容布局页重置，性能样式归小组件页重置；均优先用户默认快照。"
+      "text": "内容缩放缺省100%，持久化范围75%—200%，与窗口宽高独立；windowWidthDip/windowHeightDip 缺省或无效值为 null，分别使用默认缩放宽度和内容自动高度。边缘拖动固定对侧并保存独立宽高；靠媒体栏的一侧锁定。手动高度下保留窗口尺寸并滚动内容，重开按原入口定位；工作区夹取不覆盖尺寸或缩放偏好。完整面板缺少样式字段时百分比指标默认Area，其余Numeric；媒体栏缺少样式时均为Numeric。上下行共用SystemNetwork样式。窗口尺寸和缩放归内容布局页重置，性能样式归小组件页重置；均优先用户默认快照。"
     },
     {
       "id": "full-panel",

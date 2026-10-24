@@ -3279,7 +3279,7 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
     <value>Tỷ lệ bảng đầy đủ</value>
   </data>
   <data name="Panel.Scale.Description" xml:space="preserve">
-    <value>Kéo cạnh ngoài để đổi tỷ lệ đồng đều, luôn gắn với thanh phương tiện. Tỷ lệ 75%–200% được lưu sau khi khởi động lại; nút cũng nhỏ đi khi thu nhỏ.</value>
+    <value>Phóng nội dung theo tỷ lệ từ 75% đến 200%, lưu sau khi khởi động lại. Kéo cạnh ngoài để đổi chiều rộng và chiều cao độc lập; nội dung tự xuống dòng. Cạnh sát thanh đa phương tiện được cố định.</value>
   </data>
   <data name="Panel.Scale.Reset" xml:space="preserve">
     <value>Đặt lại 100%</value>

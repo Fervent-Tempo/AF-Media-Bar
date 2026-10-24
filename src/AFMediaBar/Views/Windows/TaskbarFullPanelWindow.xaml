@@ -75,7 +75,7 @@
         </Style>
     </ui:FluentWindow.Resources>
     <Grid>
-    <Grid x:Name="PanelSizingRoot" Width="424" Margin="8" HorizontalAlignment="Left">
+    <Grid x:Name="PanelSizingRoot" Width="424" Margin="8">
         <Grid.LayoutTransform><ScaleTransform x:Name="ContentScale" /></Grid.LayoutTransform>
     <Grid x:Name="PanelRoot" RenderTransformOrigin="0.5,0.5">
         <Grid.RenderTransform><ScaleTransform x:Name="PanelScale" ScaleX="1" ScaleY="1" /></Grid.RenderTransform>
@@ -129,21 +129,20 @@
 
                 <Border x:Name="AudioControlsSection" Style="{StaticResource PanelCardStyle}" Margin="0,0,0,12">
                     <StackPanel>
-                        <Grid>
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition x:Name="InputDeviceGap" Width="12"/><ColumnDefinition x:Name="InputDeviceColumn" Width="*"/></Grid.ColumnDefinitions>
-                            <StackPanel>
+                        <components:ResponsiveUniformGrid MaximumColumns="2" MinimumColumnWidth="164">
+                            <StackPanel Margin="0,0,6,6">
                                 <TextBlock Text="{DynamicResource Loc.Common.OutputDevice}" Style="{StaticResource PanelLabelStyle}" Margin="0,0,0,6" />
                                 <components:ReleaseOpenComboBox x:Name="DeviceCombo" Style="{StaticResource PanelDeviceStyle}"
                                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DeviceHint}"
                                           DropDownOpened="DeviceCombo_DropDownOpened" SelectionChanged="DeviceCombo_SelectionChanged" PreviewMouseWheel="DeviceCombo_PreviewMouseWheel"/>
                             </StackPanel>
-                            <StackPanel Grid.Column="2">
+                            <StackPanel Margin="0,0,6,6">
                                 <TextBlock x:Name="InputDeviceLabel" Text="{DynamicResource Loc.Common.InputDevice}" Style="{StaticResource PanelLabelStyle}" Margin="0,0,0,6" />
                                 <components:ReleaseOpenComboBox x:Name="InputDeviceCombo" Style="{StaticResource PanelDeviceStyle}"
                                           ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DeviceHint}"
                                           DropDownOpened="InputDeviceCombo_DropDownOpened" SelectionChanged="InputDeviceCombo_SelectionChanged" PreviewMouseWheel="InputDeviceCombo_PreviewMouseWheel"/>
                             </StackPanel>
-                        </Grid>
+                        </components:ResponsiveUniformGrid>
                         <TextBlock x:Name="AudioDeviceStatusText">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock" BasedOn="{StaticResource PanelLabelStyle}">
@@ -172,40 +171,38 @@
                 </Border>
 
                 <Border x:Name="PerformanceSection" Style="{StaticResource PanelCardStyle}">
-                    <Grid>
-                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,8,8">
+                    <components:ResponsiveUniformGrid MaximumColumns="3" MinimumColumnWidth="112">
+                        <StackPanel Margin="0,0,8,8">
                             <TextBlock Text="CPU" Style="{StaticResource PanelLabelStyle}"/>
                             <TextBlock x:Name="CpuMetric" Text="—" Style="{StaticResource PanelMetricStyle}"/>
                             <components:MetricChart x:Name="CpuChart" Height="22" Margin="0,3,0,0" IsPercentage="True"/>
                         </StackPanel>
-                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,8,8">
+                        <StackPanel Margin="0,0,8,8">
                             <TextBlock Text="{DynamicResource Loc.Panel.Performance.Memory}" Style="{StaticResource PanelLabelStyle}"/>
                             <TextBlock x:Name="RamMetric" Text="—" Style="{StaticResource PanelMetricStyle}"/>
                             <components:MetricChart x:Name="RamChart" Height="22" Margin="0,3,0,0" IsPercentage="True"/>
                         </StackPanel>
-                        <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,8">
+                        <StackPanel Margin="0,0,8,8">
                             <TextBlock Text="GPU" Style="{StaticResource PanelLabelStyle}"/>
                             <TextBlock x:Name="GpuMetric" Text="—" Style="{StaticResource PanelMetricStyle}"/>
                             <components:MetricChart x:Name="GpuChart" Height="22" Margin="0,3,0,0" IsPercentage="True"/>
                         </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,8,0">
+                        <StackPanel Margin="0,0,8,8">
                             <TextBlock Text="{DynamicResource Loc.Panel.Performance.ProcessMemory}" Style="{StaticResource PanelLabelStyle}"/>
                             <TextBlock x:Name="ProcessMetric" Text="—" Style="{StaticResource PanelMetricStyle}"/>
                             <components:MetricChart x:Name="ProcessChart" Height="22" Margin="0,3,0,0" IsPercentage="False"/>
                         </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,8,0">
+                        <StackPanel Margin="0,0,8,8">
                             <TextBlock Text="{DynamicResource Loc.Panel.Performance.Upload}" Style="{StaticResource PanelLabelStyle}"/>
                             <TextBlock x:Name="UploadMetric" Text="—" Style="{StaticResource PanelMetricStyle}"/>
                             <components:MetricChart x:Name="UploadChart" Height="22" Margin="0,3,0,0" IsPercentage="False"/>
                         </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="2" Margin="0">
+                        <StackPanel Margin="0,0,8,8">
                             <TextBlock Text="{DynamicResource Loc.Panel.Performance.Download}" Style="{StaticResource PanelLabelStyle}"/>
                             <TextBlock x:Name="DownloadMetric" Text="—" Style="{StaticResource PanelMetricStyle}"/>
                             <components:MetricChart x:Name="DownloadChart" Height="22" Margin="0,3,0,0" IsPercentage="False"/>
                         </StackPanel>
-                    </Grid>
+                    </components:ResponsiveUniformGrid>
                 </Border>
             </StackPanel>
             </ScrollViewer>

@@ -1,4 +1,4 @@
-// 窗口拥有局部缩放手势和捕获，设置提交交给注入的呈现 ViewModel。
+// 窗口拥有局部尺寸手势和捕获，设置提交交给注入的呈现 ViewModel。
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -17,12 +17,18 @@ public partial class TaskbarFullPanelWindow
 {
     private double _requestedScale = 1;
     private double _effectiveScale = 1;
-    private double _resizeInitialScale;
-    private double _resizeSavedScale;
+    private double? _windowWidthDip;
+    private double? _windowHeightDip;
+    private double? _resizeSavedWidth;
+    private double? _resizeSavedHeight;
     private Point _resizeOriginScreen;
-    private Size _resizeBaseSize;
     private bool _isResizing;
     private bool _positionQueued;
+    private Rect _panelWorkArea;
+    private Rect _resizeInitialBounds;
+    private Point? _resizedPosition;
+    private Point? _resizeSavedPosition;
+    private string _resizeEdge = string.Empty;
     private FullPanelPlacementSide _resolvedSide;
 
     private IEnumerable<MetricChart> PanelCharts() => [CpuChart, RamChart, GpuChart, ProcessChart, UploadChart, DownloadChart];
@@ -48,30 +54,45 @@ public partial class TaskbarFullPanelWindow
 
     private void ApplyScaleGeometry(Size limit)
     {
-        // 阴影留白放在缩放层外，使可见贴合边及边缘命中区不随比例偏移。
+        // 阴影留白不参与内容缩放；边缘拖动只调整窗口，不改变字体和按钮尺寸。
         var inset = Math.Min(FullPanelScalePolicy.ShadowInsetDip, Math.Min(limit.Width, limit.Height) / 4);
-        var availableWidth = limit.Width - inset * 2;
-        _effectiveScale = Math.Max(TaskbarFullPanelSettings.MinimumScalePercent / 100d,
-            Math.Min(FullPanelScalePolicy.Clamp(_requestedScale), availableWidth / FullPanelScalePolicy.ContentWidthDip));
-        // 极窄工作区下保留 75% 字体并缩窄逻辑布局，不将临时夹取写回用户偏好。
-        PanelSizingRoot.Width = Math.Min(FullPanelScalePolicy.ContentWidthDip, availableWidth / _effectiveScale);
+        _effectiveScale = FullPanelScalePolicy.Clamp(_requestedScale);
+        var minimum = GetMinimumPanelSize();
+        Width = Math.Clamp(_windowWidthDip ?? FullPanelScalePolicy.ContentWidthDip * _effectiveScale + inset * 2,
+            Math.Min(minimum.Width, limit.Width), limit.Width);
+        PanelSizingRoot.Width = Math.Max(1, (Width - inset * 2) / _effectiveScale);
         PanelSizingRoot.Margin = new Thickness(inset);
         ResizeLayer.Margin = new Thickness(Math.Max(0, inset - 3));
         ContentScale.ScaleX = ContentScale.ScaleY = _effectiveScale;
-        Width = PanelSizingRoot.Width * _effectiveScale + inset * 2;
-        PanelContentScroll.MaxHeight = Math.Max(1, (limit.Height - inset * 2) / _effectiveScale - 26);
+        var heightLimit = limit.Height;
+        if (_windowHeightDip is double height)
+        {
+            SizeToContent = SizeToContent.Manual;
+            Height = Math.Clamp(height, Math.Min(minimum.Height, limit.Height), limit.Height);
+            heightLimit = Height;
+        }
+        else
+        {
+            SizeToContent = SizeToContent.Height;
+            Height = double.NaN;
+        }
+        PanelContentScroll.MaxHeight = Math.Max(1, (heightLimit - inset * 2) / _effectiveScale - 26);
     }
+
+    private Size GetMinimumPanelSize() => new(
+        FullPanelScalePolicy.MinimumContentWidthDip * _effectiveScale + FullPanelScalePolicy.ShadowInsetDip * 2,
+        FullPanelScalePolicy.MinimumContentHeightDip * _effectiveScale + FullPanelScalePolicy.ShadowInsetDip * 2);
 
     private void OnPanelContentSizeChanged(object sender, SizeChangedEventArgs e) => QueuePanelPosition();
 
     private void QueuePanelPosition()
     {
-        if (_positionQueued || _isClosing || !IsVisible) return;
+        if (_positionQueued || _isClosing || _isResizing || !IsVisible) return;
         _positionQueued = true;
         Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
         {
             _positionQueued = false;
-            if (!_isClosing && IsVisible && _anchor is Rect anchor && _targetMonitorDeviceId is string target)
+            if (!_isClosing && !_isResizing && IsVisible && _anchor is Rect anchor && _targetMonitorDeviceId is string target)
                 PositionNear(anchor, target);
         }));
     }
@@ -103,24 +124,20 @@ public partial class TaskbarFullPanelWindow
 
     private void UpdateResizeGrips()
     {
-        var attached = _resolvedSide switch
-        {
-            FullPanelPlacementSide.Above => 'B',
-            FullPanelPlacementSide.Below => 'T',
-            FullPanelPlacementSide.Left => 'R',
-            _ => 'L'
-        };
         foreach (Thumb thumb in ResizeLayer.Children)
-            thumb.Visibility = ((string)thumb.Tag).Contains(attached) ? Visibility.Collapsed : Visibility.Visible;
+            thumb.Visibility = FullPanelScalePolicy.CanResizeEdge((string)thumb.Tag, _resolvedSide) ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ResizeGrip_DragStarted(object sender, DragStartedEventArgs e)
     {
+        _resizeEdge = (string)((Thumb)sender).Tag;
+        if (_isClosing || !FullPanelScalePolicy.CanResizeEdge(_resizeEdge, _resolvedSide)) return;
         _isResizing = true;
-        _resizeSavedScale = _requestedScale;
-        _resizeInitialScale = _effectiveScale;
         _resizeOriginScreen = PointToScreen(Mouse.GetPosition(this));
-        _resizeBaseSize = new Size(PanelRoot.ActualWidth, PanelRoot.ActualHeight);
+        _resizeInitialBounds = new Rect(Left, Top, ActualWidth, ActualHeight);
+        _resizeSavedPosition = _resizedPosition;
+        _resizeSavedWidth = _windowWidthDip;
+        _resizeSavedHeight = _windowHeightDip;
         PanelScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
         PanelScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
         PanelScale.ScaleX = PanelScale.ScaleY = 1;
@@ -132,7 +149,9 @@ public partial class TaskbarFullPanelWindow
         var delta = PointToScreen(Mouse.GetPosition(this)) - _resizeOriginScreen;
         var dpi = VisualTreeHelper.GetDpi(this);
         delta = new Vector(delta.X / dpi.DpiScaleX, delta.Y / dpi.DpiScaleY);
-        _requestedScale = FullPanelScalePolicy.DragScale(_resizeInitialScale, delta, _resizeBaseSize, (string)((Thumb)sender).Tag, _resolvedSide);
+        var bounds = FullPanelScalePolicy.Resize(_resizeInitialBounds, delta, _resizeEdge, GetMinimumPanelSize(), _panelWorkArea, _resolvedSide);
+        _windowWidthDip = bounds.Width;
+        _windowHeightDip = bounds.Height;
         if (_anchor is Rect anchor && _targetMonitorDeviceId is string target) PositionNear(anchor, target);
     }
 
@@ -140,9 +159,21 @@ public partial class TaskbarFullPanelWindow
     {
         if (!_isResizing) return;
         _isResizing = false;
-        if (e.Canceled) _requestedScale = _resizeSavedScale;
-        else if (!_isClosing) _presentation.CommitScale((int)Math.Round(_requestedScale * 100));
+        // 点击边框或拖回原尺寸不应把自动高度转换成固定高度。
+        if (e.Canceled || Math.Abs(ActualWidth - _resizeInitialBounds.Width) < 0.01 && Math.Abs(ActualHeight - _resizeInitialBounds.Height) < 0.01)
+        {
+            _windowWidthDip = _resizeSavedWidth;
+            _windowHeightDip = _resizeSavedHeight;
+            _resizedPosition = _resizeSavedPosition;
+        }
+        else if (!_isClosing) _presentation.CommitSize(ActualWidth, ActualHeight);
         QueuePanelPosition();
+    }
+
+    private void CancelActiveResize()
+    {
+        foreach (Thumb thumb in ResizeLayer.Children)
+            if (thumb.IsDragging) thumb.CancelDrag();
     }
 
     private void CancelPanelResize()
