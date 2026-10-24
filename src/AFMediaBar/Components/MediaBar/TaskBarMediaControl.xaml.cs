@@ -72,9 +72,19 @@ namespace AFMediaBar.Components
         private AppSettings PresentationSettings => _presentationSettings ?? SettingsManager.Current;
         public BarPresentationContext PresentationContext { get; private set; } = new(WindowMode.Taskbar, LayoutOrientation.Horizontal);
         private bool IsBarPresentation => PresentationContext.SupportsBarInteractions;
-        internal Point GetFullPanelEntryScreenCenter() => SongInfoStackPanel.IsVisible && SongInfoStackPanel.ActualWidth > 0
-            ? SongInfoStackPanel.PointToScreen(new Point(SongInfoStackPanel.ActualWidth / 2, SongInfoStackPanel.ActualHeight / 2))
-            : PointToScreen(new Point(ActualWidth / 2, ActualHeight / 2));
+        /// <summary>
+        /// 外侧拉杆（完整面板入口）的锚点，取控件根的布局中心。
+        /// 不能用 SongInfoStackPanel：它是原地放大的推挤元素，PointToScreen 会把推挤支的 RenderTransform
+        /// 计入结果，放大动画期间锚点被带着平移，拉杆跟着晃。控件根不挂推挤变换，布局宽度也不随
+        /// 放大期间临时扩展的输入区变化，中心在动画全程稳定；两者中心位置本就基本重合，静态行为不变。
+        /// The anchor for the outer pull handle (full panel entry): the layout center of the control root.
+        /// SongInfoStackPanel must not be used — it is a zoom-push element, and PointToScreen folds its push
+        /// RenderTransform into the result, so the anchor slides during the zoom animation and the handle shakes
+        /// with it. The control root carries no push transform and its layout width ignores the temporary input-region
+        /// extension, so the center holds for the whole animation; the two centers nearly coincide, leaving the
+        /// resting behaviour unchanged.
+        /// </summary>
+        internal Point GetFullPanelEntryScreenCenter() => PointToScreen(new Point(ActualWidth / 2, ActualHeight / 2));
 
         public void ApplyPresentationSettings(AppSettings? settings) => _presentationSettings = settings;
 
