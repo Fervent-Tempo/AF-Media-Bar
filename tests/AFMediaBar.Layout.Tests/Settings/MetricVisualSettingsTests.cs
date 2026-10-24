@@ -6,7 +6,6 @@ using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.ViewModels.Pages;
-using AFMediaBar.ViewModels.Windows;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AFMediaBar.Layout.Tests;
@@ -30,8 +29,6 @@ public sealed class MetricVisualSettingsTests
             var settings = store.LoadUserDefaults()!;
             Assert.IsNotNull(settings);
             Assert.AreEqual(100, settings.TaskbarExperience.FullPanel.ScalePercent);
-            Assert.IsNull(settings.TaskbarExperience.FullPanel.WindowWidthDip);
-            Assert.IsNull(settings.TaskbarExperience.FullPanel.WindowHeightDip);
             Assert.AreEqual(MetricVisualStyle.Area, settings.TaskbarExperience.FullPanel.PerformanceVisuals.SystemCpu);
             Assert.AreEqual(MetricVisualStyle.Numeric, settings.PerformanceComponent.Visuals.SystemCpu);
             Assert.AreEqual(1500, settings.PerformanceComponent.RefreshIntervalMilliseconds);
@@ -59,8 +56,6 @@ public sealed class MetricVisualSettingsTests
                         FullPanel = TaskbarFullPanelSettings.Full with
                         {
                             ScalePercent = 175,
-                            WindowWidthDip = 623,
-                            WindowHeightDip = 417,
                             PerformanceVisuals = MetricVisualSettings.PanelDefault with { SystemNetwork = MetricVisualStyle.Line }
                         }
                     };
@@ -72,8 +67,6 @@ public sealed class MetricVisualSettingsTests
                 using var loaded = new SettingsPersistenceService(directory);
                 loaded.Initialize();
                 Assert.AreEqual(175, SettingsManager.Current.TaskbarExperience.FullPanel.ScalePercent);
-                Assert.AreEqual(623d, SettingsManager.Current.TaskbarExperience.FullPanel.WindowWidthDip);
-                Assert.AreEqual(417d, SettingsManager.Current.TaskbarExperience.FullPanel.WindowHeightDip);
                 Assert.AreEqual(MetricVisualStyle.Line, SettingsManager.Current.TaskbarExperience.FullPanel.PerformanceVisuals.SystemNetwork);
                 Assert.AreEqual(MetricVisualStyle.Ring, SettingsManager.Current.PerformanceComponent.Visuals.ProcessMemory);
                 SettingsManager.SetUserDefaults(loaded.LoadUserDefaults());
@@ -81,8 +74,6 @@ public sealed class MetricVisualSettingsTests
                 { FullPanel = TaskbarFullPanelSettings.Full with { ScalePercent = 80, PerformanceVisuals = new() { SystemCpu = MetricVisualStyle.Bar } } };
                 SettingsManager.ResetContentLayout();
                 Assert.AreEqual(175, SettingsManager.Current.TaskbarExperience.FullPanel.ScalePercent);
-                Assert.AreEqual(623d, SettingsManager.Current.TaskbarExperience.FullPanel.WindowWidthDip);
-                Assert.AreEqual(417d, SettingsManager.Current.TaskbarExperience.FullPanel.WindowHeightDip);
                 Assert.AreEqual(MetricVisualStyle.Bar, SettingsManager.Current.TaskbarExperience.FullPanel.PerformanceVisuals.SystemCpu,
                     "内容布局重置不得覆盖小组件页的样式。");
                 SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
@@ -90,13 +81,6 @@ public sealed class MetricVisualSettingsTests
                 SettingsManager.ResetComponents();
                 Assert.AreEqual(125, SettingsManager.Current.TaskbarExperience.FullPanel.ScalePercent,
                     "小组件重置不得覆盖面板缩放。");
-                Assert.AreEqual(623d, SettingsManager.Current.TaskbarExperience.FullPanel.WindowWidthDip);
-                Assert.AreEqual(417d, SettingsManager.Current.TaskbarExperience.FullPanel.WindowHeightDip);
-                new FullPanelPresentationViewModel().CommitSize(377, 514);
-                Assert.AreEqual(377d, SettingsManager.Current.TaskbarExperience.FullPanel.WindowWidthDip);
-                Assert.AreEqual(514d, SettingsManager.Current.TaskbarExperience.FullPanel.WindowHeightDip);
-                Assert.AreEqual(125, SettingsManager.Current.TaskbarExperience.FullPanel.ScalePercent,
-                    "拖动窗口尺寸不能更改内容缩放。");
                 Assert.AreEqual(MetricVisualStyle.Line, SettingsManager.Current.TaskbarExperience.FullPanel.PerformanceVisuals.SystemNetwork);
             }
             finally
@@ -107,14 +91,6 @@ public sealed class MetricVisualSettingsTests
             }
             return Task.CompletedTask;
         });
-    }
-
-    [TestMethod]
-    public void InvalidWindowDimensionsReturnToAutomaticSizing()
-    {
-        var settings = (TaskbarFullPanelSettings.Full with { WindowWidthDip = double.NaN, WindowHeightDip = -10 }).Normalize();
-        Assert.IsNull(settings.WindowWidthDip);
-        Assert.IsNull(settings.WindowHeightDip);
     }
 
     [TestMethod]

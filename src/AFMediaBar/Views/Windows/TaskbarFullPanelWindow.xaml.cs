@@ -105,7 +105,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 
         _isClosing = false;
         _anchor = anchor;
-        _resizedPosition = null;
+        _resizePlacement = null;
         _targetMonitorDeviceId = targetMonitorDeviceId;
         _verticalAnchor = verticalAnchor;
         _placementSide = side;
@@ -207,11 +207,11 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         UpdateResizeGrips();
         UpdateLayout();
         var size = new Size(ActualWidth, ActualHeight);
-        var bounds = _isResizing ? FullPanelScalePolicy.PlaceResizeBounds(_resizeInitialBounds, size, _resizeEdge)
-            : _resizedPosition is Point position ? new Rect(position, size) : FullPanelPlacementPolicy.PlacePanel(anchor, size, work, side);
+        var bounds = _resizePlacement is { } placement
+            ? FullPanelScalePolicy.PlaceResizeBounds(placement.Bounds, size, placement.Edge, placement.Side)
+            : FullPanelPlacementPolicy.PlacePanel(anchor, size, work, side);
         bounds.X = Math.Clamp(bounds.X, _panelWorkArea.Left, Math.Max(_panelWorkArea.Left, _panelWorkArea.Right - bounds.Width));
         bounds.Y = Math.Clamp(bounds.Y, _panelWorkArea.Top, Math.Max(_panelWorkArea.Top, _panelWorkArea.Bottom - bounds.Height));
-        if (_isResizing || _resizedPosition.HasValue) _resizedPosition = bounds.Location;
         Left = bounds.Left;
         Top = bounds.Top;
         PanelRoot.RenderTransformOrigin = side switch
@@ -307,12 +307,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
             return;
 
         var settings = PresentationSettings.TaskbarExperience.FullPanel.Normalize();
-        if (!_isResizing)
-        {
-            _requestedScale = settings.ScalePercent / 100d;
-            _windowWidthDip = settings.WindowWidthDip;
-            _windowHeightDip = settings.WindowHeightDip;
-        }
+        if (!_isResizing) _requestedScale = settings.ScalePercent / 100d;
         ApplyChartStyles(settings.PerformanceVisuals);
         var animationVersion = ++_sectionAnimationVersion;
         var audioBecameVisible = !_audioControlsVisible && settings.AudioControlsVisible;

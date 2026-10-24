@@ -95,8 +95,6 @@ public readonly record struct TaskbarFullPanelSettings(
     public const int MinimumScalePercent = 75;
     public const int MaximumScalePercent = 200;
     public int ScalePercent { get; init; } = 100;
-    public double? WindowWidthDip { get; init; }
-    public double? WindowHeightDip { get; init; }
     public MetricVisualSettings PerformanceVisuals { get; init; } = MetricVisualSettings.PanelDefault;
 
     /// <summary>仅显示媒体信息和媒体控制。 / Shows only media information and media controls.</summary>
@@ -116,8 +114,6 @@ public readonly record struct TaskbarFullPanelSettings(
         return result with
         {
             ScalePercent = Math.Clamp(ScalePercent, MinimumScalePercent, MaximumScalePercent),
-            WindowWidthDip = WindowWidthDip is double width && double.IsFinite(width) && width > 0 ? width : null,
-            WindowHeightDip = WindowHeightDip is double height && double.IsFinite(height) && height > 0 ? height : null,
             PerformanceVisuals = PerformanceVisuals.Normalize(MetricVisualSettings.PanelDefault)
         };
     }

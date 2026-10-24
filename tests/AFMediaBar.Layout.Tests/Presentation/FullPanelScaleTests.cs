@@ -1,14 +1,12 @@
-// 验证自由宽高拖动的鼠标跟随、对侧固定、贴合边锁定及工作区限制。
+// 验证等比拖动的边缘跟随、对侧与贴合边固定，以及工作区限制。
 using System.Windows;
-using System.Windows.Controls;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Layout;
-using AFMediaBar.Components;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AFMediaBar.Layout.Tests;
 
-/// <summary>内容缩放不参与窗口边缘拖动，不代替真实 DPI 和鼠标验收。</summary>
+/// <summary>窗口和内容同步缩放，不代替真实 DPI 和鼠标验收。</summary>
 [TestClass]
 public sealed class FullPanelScaleTests
 {
@@ -23,15 +21,22 @@ public sealed class FullPanelScaleTests
     [DataRow(FullPanelPlacementSide.Below, "RB")]
     [DataRow(FullPanelPlacementSide.Left, "L")]
     [DataRow(FullPanelPlacementSide.Right, "R")]
-    public void DraggedEdgesFollowEachMouseAxisAndOppositeEdgesStayFixed(FullPanelPlacementSide side, string edge)
+    public void DraggedEdgeFollowsMouseWhileWindowAndContentKeepOneScale(FullPanelPlacementSide side, string edge)
     {
-        var initial = new Rect(-1000, 250, 440, 500);
-        var delta = new Vector(-37, 69);
-        var bounds = FullPanelScalePolicy.Resize(initial, delta, edge, new Size(280, 136), new Rect(-1600, 0, 1600, 1000), side);
-        Assert.AreEqual(initial.Left + (edge.Contains('L') ? delta.X : 0), bounds.Left, 0.001);
-        Assert.AreEqual(initial.Right + (edge.Contains('R') ? delta.X : 0), bounds.Right, 0.001);
-        Assert.AreEqual(initial.Top + (edge.Contains('T') ? delta.Y : 0), bounds.Top, 0.001);
-        Assert.AreEqual(initial.Bottom + (edge.Contains('B') ? delta.Y : 0), bounds.Bottom, 0.001);
+        var initial = new Rect(-1000, 250, 440, 516);
+        var delta = new Vector(edge.Contains('L') ? -42.4 : edge.Contains('R') ? 42.4 : 0,
+            edge.Contains('T') ? -50 : edge.Contains('B') ? 50 : 0);
+        var scale = FullPanelScalePolicy.DragScale(1, delta, new Size(424, 500), edge, new Size(2000, 1500));
+        Assert.AreEqual(1.1, scale, 0.001);
+        var bounds = FullPanelScalePolicy.PlaceResizeBounds(initial, new Size(16 + 424 * scale, 16 + 500 * scale), edge, side);
+        if (edge.Contains('L')) Assert.AreEqual(initial.Left + delta.X, bounds.Left, 0.001);
+        if (edge.Contains('R')) Assert.AreEqual(initial.Right + delta.X, bounds.Right, 0.001);
+        if (edge.Contains('T')) Assert.AreEqual(initial.Top + delta.Y, bounds.Top, 0.001);
+        if (edge.Contains('B')) Assert.AreEqual(initial.Bottom + delta.Y, bounds.Bottom, 0.001);
+        if (edge.Contains('L') || side == FullPanelPlacementSide.Left) Assert.AreEqual(initial.Right, bounds.Right, 0.001);
+        if (edge.Contains('R') || side == FullPanelPlacementSide.Right) Assert.AreEqual(initial.Left, bounds.Left, 0.001);
+        if (edge.Contains('T') || side == FullPanelPlacementSide.Above) Assert.AreEqual(initial.Bottom, bounds.Bottom, 0.001);
+        if (edge.Contains('B') || side == FullPanelPlacementSide.Below) Assert.AreEqual(initial.Top, bounds.Top, 0.001);
     }
 
     [DataTestMethod]
@@ -43,50 +48,23 @@ public sealed class FullPanelScaleTests
     [DataRow(FullPanelPlacementSide.Right, "L")]
     public void AttachedEdgeCannotBeResized(FullPanelPlacementSide side, string edge)
     {
-        var initial = new Rect(300, 200, 440, 500);
         Assert.IsFalse(FullPanelScalePolicy.CanResizeEdge(edge, side));
-        Assert.AreEqual(initial, FullPanelScalePolicy.Resize(initial, new Vector(100, 100), edge,
-            new Size(280, 136), new Rect(0, 0, 1600, 1000), side));
     }
 
     [TestMethod]
-    public void WorkAreaAndMinimumSizeLimitDraggedEdgeWithoutMovingOppositeCorner()
+    public void WorkAreaLimitsUniformScaleWithoutMovingOppositeCorner()
     {
-        var initial = new Rect(-1000, 250, 440, 500);
+        var initial = new Rect(-1000, 250, 440, 516);
         var work = new Rect(-1600, 0, 1600, 1000);
-        var minimum = new Size(280, 136);
-        var large = FullPanelScalePolicy.Resize(initial, new Vector(-5000, -5000), "LT", minimum, work, FullPanelPlacementSide.Above);
-        Assert.AreEqual(work.Left, large.Left);
-        Assert.AreEqual(work.Top, large.Top);
-        Assert.AreEqual(initial.BottomRight, large.BottomRight);
-        var small = FullPanelScalePolicy.Resize(initial, new Vector(5000, 5000), "LT", minimum, work, FullPanelPlacementSide.Above);
-        Assert.AreEqual(minimum, small.Size);
-        Assert.AreEqual(initial.BottomRight, small.BottomRight);
+        var limit = FullPanelScalePolicy.GetResizeLimit(initial, work, "LT", FullPanelPlacementSide.Above);
+        var scale = FullPanelScalePolicy.DragScale(1, new Vector(-5000, -5000), new Size(424, 500), "LT", limit);
+        var bounds = FullPanelScalePolicy.PlaceResizeBounds(initial, new Size(16 + 424 * scale, 16 + 500 * scale), "LT", FullPanelPlacementSide.Above);
+        Assert.IsTrue(work.Contains(bounds));
+        Assert.AreEqual(work.Top, bounds.Top);
+        Assert.AreEqual(initial.BottomRight, bounds.BottomRight);
+        Assert.AreEqual(0.75, FullPanelScalePolicy.DragScale(1, new Vector(5000, 5000), new Size(424, 500), "LT", limit));
         Assert.AreEqual(0.75, FullPanelScalePolicy.Clamp(-1));
         Assert.AreEqual(2, FullPanelScalePolicy.Clamp(100));
         Assert.AreEqual(1, FullPanelScalePolicy.Clamp(double.NaN));
-    }
-
-    [TestMethod]
-    public void ResponsiveGridReflowsWithoutReducingChildSizes()
-    {
-        StaTest.Run(_ =>
-        {
-            var grid = new ResponsiveUniformGrid { MinimumColumnWidth = 112, MaximumColumns = 3 };
-            for (var i = 0; i < 6; i++) grid.Children.Add(new Border { MinWidth = 100, Height = 48 });
-            foreach (var width in new[] { 400d, 240d, 120d, 400d })
-            {
-                grid.Measure(new Size(width, double.PositiveInfinity));
-                grid.Arrange(new Rect(0, 0, width, grid.DesiredSize.Height));
-                Assert.AreEqual(width >= 336 ? 3 : width >= 224 ? 2 : 1, grid.Columns);
-                foreach (FrameworkElement child in grid.Children)
-                {
-                    Assert.IsTrue(child.ActualWidth >= 100);
-                    Assert.AreEqual(48d, child.ActualHeight);
-                    Assert.IsTrue(child.TranslatePoint(new Point(), grid).X + child.ActualWidth <= width + 0.01);
-                }
-            }
-            return Task.CompletedTask;
-        });
     }
 }

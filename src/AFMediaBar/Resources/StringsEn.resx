@@ -3241,9 +3241,9 @@ Double-click to launch · Scroll to select · Click for list</value>
     <value>Full panel scale</value>
   </data>
   <data name="Panel.Scale.Description" xml:space="preserve">
-    <value>Scale content proportionally from 75% to 200%, saved across restarts. Drag outer edges to resize width and height independently; content reflows. The edge next to the media bar stays fixed.</value>
+    <value>Scale the window and content together from 75% to 200%, saved across restarts. Drag an outer edge with the opposite side fixed; the edge next to the media bar is locked. Restore default size returns to 100%.</value>
   </data>
   <data name="Panel.Scale.Reset" xml:space="preserve">
-    <value>Reset to 100%</value>
+    <value>Restore default size</value>
   </data>
 </root>

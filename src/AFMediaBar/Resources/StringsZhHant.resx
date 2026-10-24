@@ -3241,9 +3241,9 @@
     <value>完整面板縮放</value>
   </data>
   <data name="Panel.Scale.Description" xml:space="preserve">
-    <value>內容按 75%—200% 等比縮放，重新啟動後保留。拖曳外側邊緣可獨立調整視窗寬高，內容自動換行；靠近媒體列的一側無法調整。</value>
+    <value>視窗與內容一起等比縮放（75%—200%），重新啟動後保留。拖曳外側邊緣時固定對側，靠近媒體列的一側無法調整。恢復預設尺寸會回到 100%。</value>
   </data>
   <data name="Panel.Scale.Reset" xml:space="preserve">
-    <value>恢復 100%</value>
+    <value>恢復預設尺寸</value>
   </data>
 </root>
