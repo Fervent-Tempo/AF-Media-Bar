@@ -535,6 +535,14 @@
                                 <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Full.Entry.Hover}" />
                             </ComboBox>
                         </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Panel.Scale.Title}" Description="{DynamicResource Loc.Panel.Scale.Description}" Icon="{ui:SymbolIcon ResizeLarge24}">
+                            <StackPanel Orientation="Horizontal">
+                                <components:SettingsNumericEditor Value="{Binding ViewModel.Layers.FullPanelScalePercent, Mode=TwoWay}"
+                                    Minimum="{Binding ViewModel.Layers.MinimumFullPanelScalePercent}" Maximum="{Binding ViewModel.Layers.MaximumFullPanelScalePercent}"
+                                    Step="1" Unit="%" />
+                                <ui:Button Margin="8,0,0,0" Content="{DynamicResource Loc.Panel.Scale.Reset}" Command="{Binding ViewModel.Layers.ResetFullPanelScaleCommand}" />
+                            </StackPanel>
+                        </components:SettingsRow>
                         <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Info24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>

@@ -1,4 +1,4 @@
-﻿// 维护当前设置、变更通知与重置门面；持久化由设置服务负责。
+// 维护当前设置、变更通知与重置门面；持久化由设置服务负责。
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
@@ -266,7 +266,11 @@ public static class SettingsManager
         next.PerformanceComponent = defaults.PerformanceComponent;
         next.BluetoothBatteryWidget = defaults.BluetoothBatteryWidget;
         next.TaskbarExperience = next.TaskbarExperience with
-        { SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible, PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible };
+        {
+            SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible,
+            PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible,
+            FullPanel = next.TaskbarExperience.FullPanel with { PerformanceVisuals = defaults.TaskbarExperience.FullPanel.PerformanceVisuals }
+        };
         Replace(next, SettingsResetScope.Components);
     }
     public static void ResetDeviceManagement()

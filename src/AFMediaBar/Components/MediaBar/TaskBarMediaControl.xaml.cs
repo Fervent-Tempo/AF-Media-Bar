@@ -185,6 +185,7 @@ namespace AFMediaBar.Components
             };
             Unloaded += (_, _) =>
             {
+                ClearPerformanceHistory();
                 FinishColorTransitions();
                 SuspendQuickLaunchPresentation();
                 _artworkHover.Detach();
@@ -1334,6 +1335,7 @@ namespace AFMediaBar.Components
             // hover all belong to the outer one, otherwise the surface's one-DIP padding is not clickable and hover flickers at the edges.
             var performanceVisible = Visible(TaskbarRestComponent.Performance);
             IsPerformanceComponentVisible = performanceVisible;
+            if (!performanceVisible) ClearPerformanceHistory();
             var outputDeviceVisible = Visible(TaskbarRestComponent.OutputDevice);
             var inputDeviceVisible = Visible(TaskbarRestComponent.InputDevice);
             var volumeVisible = Visible(TaskbarRestComponent.Volume);
@@ -1560,6 +1562,7 @@ namespace AFMediaBar.Components
             _isHostVisibilitySuspended = suspended;
             if (suspended)
             {
+                ClearPerformanceHistory();
                 FinishColorTransitions();
                 SuspendQuickLaunchPresentation();
                 SettleTaskbarPointerVisuals();

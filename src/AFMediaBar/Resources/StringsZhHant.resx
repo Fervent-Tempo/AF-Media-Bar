@@ -1637,10 +1637,10 @@
     <value>跟隨前景視窗所在的顯示器</value>
   </data>
   <data name="Media.Performance.Metrics.Description" xml:space="preserve">
-    <value>選擇要顯示的指標；複選時輪流顯示。</value>
+    <value>統一設定指標的顯示、樣式和順序；關閉的指標也可預設。</value>
   </data>
   <data name="Media.Performance.Metrics.Title" xml:space="preserve">
-    <value>顯示哪些指標</value>
+    <value>顯示指標</value>
   </data>
   <data name="Media.Performance.OpenTaskManager.Description" xml:space="preserve">
     <value>點擊效能元件時開啟工作管理員。</value>
@@ -2646,7 +2646,7 @@
     <value>並排顯示</value>
   </data>
   <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>拖曳調整已選指標順序；兩種顯示方式共用順序，至少保留一個指標。</value>
+    <value>拖曳可調整全部指標的順序，依序輪播或並排顯示已開啟項；關閉再開啟會保留位置和樣式，至少保留一項。</value>
   </data>
   <data name="Panel.Performance.Upload" xml:space="preserve">
     <value>上傳</value>
@@ -3210,4 +3210,43 @@
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>邊緣自動收合</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>預設開啟。拖到工作區邊緣後，移開滑鼠收合，靠近時展開；支援四邊。</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展開桌面媒體列</value></data>
+  <data name="Performance.Visual.Numeric" xml:space="preserve">
+    <value>純數值</value>
+  </data>
+  <data name="Performance.Visual.Bar" xml:space="preserve">
+    <value>條形</value>
+  </data>
+  <data name="Performance.Visual.Ring" xml:space="preserve">
+    <value>環形</value>
+  </data>
+  <data name="Performance.Visual.Line" xml:space="preserve">
+    <value>趨勢折線</value>
+  </data>
+  <data name="Performance.Visual.Area" xml:space="preserve">
+    <value>趨勢面積圖</value>
+  </data>
+  <data name="Performance.Visual.Style" xml:space="preserve">
+    <value>顯示樣式</value>
+  </data>
+  <data name="Performance.Visual.BarSurface" xml:space="preserve">
+    <value>媒體列樣式</value>
+  </data>
+  <data name="Performance.Visual.Panel" xml:space="preserve">
+    <value>完整面板樣式</value>
+  </data>
+  <data name="Performance.Visual.Description" xml:space="preserve">
+    <value>每項可獨立選擇，圖形保留即時數值。網路上下行共用樣式；預覽使用範例資料。程式記憶體和網路的條形、環形表示近期相對水準。</value>
+  </data>
+  <data name="Performance.Visual.Relative" xml:space="preserve">
+    <value>相對於最近一分鐘的峰值，不代表容量或頻寬使用率。</value>
+  </data>
+  <data name="Panel.Scale.Title" xml:space="preserve">
+    <value>完整面板縮放</value>
+  </data>
+  <data name="Panel.Scale.Description" xml:space="preserve">
+    <value>視窗與內容一起等比縮放（75%—200%），重新啟動後保留。拖曳外側邊緣時固定對側，靠近媒體列的一側無法調整。恢復預設尺寸會回到 100%。</value>
+  </data>
+  <data name="Panel.Scale.Reset" xml:space="preserve">
+    <value>恢復預設尺寸</value>
+  </data>
 </root>

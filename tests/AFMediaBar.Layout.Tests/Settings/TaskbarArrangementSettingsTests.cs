@@ -70,6 +70,12 @@ public sealed class TaskbarArrangementSettingsTests
                 vm.TaskbarPosition = TaskbarBarPosition.End;
                 Assert.IsNull(SettingsManager.Current.TaskbarExperience.Arrangement);
                 Assert.AreEqual(0.0, SettingsManager.Current.TaskbarBarManualPadding);
+                var panel = TaskbarFullPanelSettings.Full with
+                { ScalePercent = 199, PerformanceVisuals = MetricVisualSettings.PanelDefault with { SystemCpu = MetricVisualStyle.Ring } };
+                SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { FullPanel = panel };
+                vm.ResetFullPanelScaleCommand.Execute(null);
+                Assert.AreEqual(panel with { ScalePercent = 100 }, SettingsManager.Current.TaskbarExperience.FullPanel,
+                    "恢复默认尺寸应恢复100%，同时保留分区和性能样式。");
             }
             finally
             {

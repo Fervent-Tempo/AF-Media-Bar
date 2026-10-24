@@ -21,12 +21,14 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     private readonly LocalizationService _localization;
     private readonly Dispatcher _dispatcher = DispatcherHelper.Current;
     private bool _disposed;
+    private IReadOnlyList<PerformanceMetricSettingItem> _metricOrderEntries = [];
 
     /// <summary>创建参数编辑器，订阅设置、语言与共享音频目录的变更。</summary>
     public ComponentsSettingsViewModel(ISettingsConfiguration configuration, LocalizationService localization,
         AFMediaBar.Classes.Services.Audio.IAudioDeviceCatalog? captureDevices = null)
     {
         _configuration = configuration;
+        RefreshMetricEntries();
         InitializeCaptureDevices(captureDevices);
         ReorderMetricCommand = new RelayCommand<SettingsReorderRequest>(ReorderMetric);
         MoveMetricUpCommand = new RelayCommand<PerformanceMetricSettingItem>(item => MoveMetric(item, -1));
@@ -178,20 +180,21 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     public IRelayCommand<PerformanceMetricSettingItem> MoveMetricUpCommand { get; }
     public IRelayCommand<PerformanceMetricSettingItem> MoveMetricDownCommand { get; }
 
-    public IReadOnlyList<PerformanceMetricSettingItem> MetricOrderEntries
+    public IReadOnlyList<PerformanceMetricSettingItem> MetricOrderEntries => _metricOrderEntries;
+
+    private void RefreshMetricEntries()
     {
-        get
+        var order = _configuration.Current.PerformanceComponent.Normalize().GetMetricOrder();
+        var existing = _metricOrderEntries.ToDictionary(item => item.Metric);
+        var updated = order.Select(metric => existing.TryGetValue(metric, out var item)
+            ? item : new PerformanceMetricSettingItem(metric, this)).ToArray();
+        // 开关和样式只刷新行属性，不替换 ItemsSource，避免关闭选择框或丢失焦点。
+        if (!_metricOrderEntries.Select(item => item.Metric).SequenceEqual(order))
         {
-            var metrics = _configuration.Current.PerformanceComponent.Normalize().GetOrderedMetrics();
-            return metrics.Select((metric, index) => new PerformanceMetricSettingItem(metric, metric switch
-            {
-                MetricKind.SystemMemory => Translations.Get("Media.Metric.SystemMemory.Title"),
-                MetricKind.ProcessMemory => Translations.Get("Media.Metric.ProcessMemory.Title"),
-                MetricKind.SystemNetwork => Translations.Get("Media.Metric.SystemNetwork.Title"),
-                MetricKind.SystemGpu => "GPU",
-                _ => "CPU"
-            }, index > 0, index < metrics.Count - 1)).ToArray();
+            _metricOrderEntries = updated;
+            OnPropertyChanged(nameof(MetricOrderEntries));
         }
+        for (var index = 0; index < updated.Length; index++) updated[index].Refresh(index, updated.Length);
     }
 
     private void MoveMetric(PerformanceMetricSettingItem? item, int offset)
@@ -207,7 +210,7 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
         if (_disposed || !_configuration.IsActive || request is null ||
             !request.TryResolve(MetricOrderEntries, entry => entry.Metric, out var index, out var target)) return;
         var settings = _configuration.Current.PerformanceComponent.Normalize();
-        var order = settings.GetOrderedMetrics().ToList();
+        var order = settings.GetMetricOrder().ToList();
         var metric = order[index];
         order.RemoveAt(index);
         order.Insert(target, metric);
@@ -269,25 +272,25 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     public bool CanConfigurePerformance => PerformanceVisible || TaskbarRestLayoutPolicy.ResolveIdleComponents(
         _configuration.Current.TaskbarExperience.IdleComponents).Contains(TaskbarRestComponent.Performance);
 
-    private bool HasMetric(MetricKind metric) => _configuration.Current.PerformanceComponent.Metrics!.Contains(metric);
+    internal bool HasMetric(MetricKind metric) => _configuration.Current.PerformanceComponent.Metrics!.Contains(metric);
 
-    private bool CanUncheck(MetricKind metric) =>
+    internal bool CanUncheck(MetricKind metric) =>
         !HasMetric(metric) || _configuration.Current.PerformanceComponent.Metrics!.Count > 1;
 
-    private void SetMetric(MetricKind metric, bool enabled)
+    internal void SetMetric(MetricKind metric, bool enabled)
     {
+        if (_disposed || !_configuration.IsActive) return;
         var metrics = _configuration.Current.PerformanceComponent.Metrics!.ToList();
-        var order = _configuration.Current.PerformanceComponent.GetOrderedMetrics().ToList();
+        var order = _configuration.Current.PerformanceComponent.GetMetricOrder();
         if (enabled && !metrics.Contains(metric)) metrics.Add(metric);
         if (!enabled && metrics.Count > 1) metrics.Remove(metric);
-        order.RemoveAll(metric => !metrics.Contains(metric));
-        order.AddRange(metrics.Where(metric => !order.Contains(metric)));
         _configuration.SetPerformance(_configuration.Current.PerformanceComponent with { Metrics = metrics, MetricOrder = order });
         RaiseMetricProperties();
     }
 
     private void RaiseMetricProperties()
     {
+        RefreshMetricEntries();
         OnPropertyChanged(nameof(ShowSystemMemory));
         OnPropertyChanged(nameof(ShowSystemCpu));
         OnPropertyChanged(nameof(ShowSystemGpu));
@@ -305,13 +308,14 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args) => DispatcherHelper.Run(_dispatcher, () =>
     {
         if (_disposed || !_configuration.IsActive) return;
+        if (args.PropertyName is null or nameof(AppSettings.PerformanceComponent)) RefreshMetricEntries();
         if (args.PropertyName is null or nameof(AppSettings.SpectrumComponent)) RefreshCaptureDeviceOptions();
         if (args.PropertyName == nameof(AppSettings.AudioDevices)) QueueCaptureDeviceRefresh();
         OnPropertyChanged(string.Empty);
     });
-    private void OnLanguageChanged(object? sender, EventArgs args) { if (!_disposed) { RefreshCaptureDeviceOptions(); OnPropertyChanged(string.Empty); } }
+    private void OnLanguageChanged(object? sender, EventArgs args) { if (!_disposed) { RefreshCaptureDeviceOptions(); RefreshMetricEntries(); OnPropertyChanged(string.Empty); } }
     /// <summary>Unsubscribes when the cached page scope is removed.</summary>
-    private void OnActivated(object? sender, EventArgs e) { QueueCaptureDeviceRefresh(); OnPropertyChanged(string.Empty); }
+    private void OnActivated(object? sender, EventArgs e) { QueueCaptureDeviceRefresh(); RefreshMetricEntries(); OnPropertyChanged(string.Empty); }
     public void Dispose()
     {
         if (_disposed) return;

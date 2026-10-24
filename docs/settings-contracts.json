@@ -126,6 +126,14 @@
     "lyricsTextAlignment": "v1.2.0",
     "lyricsUnsungOpacityPercent": "v1.2.0",
     "performanceComponent": {
+      "visuals": {
+        "$release": "unreleased",
+        "systemMemory": "unreleased",
+        "systemCpu": "unreleased",
+        "systemGpu": "unreleased",
+        "processMemory": "unreleased",
+        "systemNetwork": "unreleased"
+      },
       "$release": "v1.2.0",
       "displayMode": "v1.4.0",
       "metricOrder": "v1.4.0",
@@ -189,6 +197,15 @@
       "fixedLengthDip": "v1.2.0",
       "fullLayerEnabled": "v1.2.0",
       "fullPanel": {
+        "scalePercent": "unreleased",
+        "performanceVisuals": {
+          "$release": "unreleased",
+          "systemMemory": "unreleased",
+          "systemCpu": "unreleased",
+          "systemGpu": "unreleased",
+          "processMemory": "unreleased",
+          "systemNetwork": "unreleased"
+        },
         "$release": "v1.2.0",
         "audioControlsVisible": "v1.2.0",
         "mediaControlsVisible": "v1.2.0",
@@ -735,6 +752,42 @@
         "FloatingBar": {"value": 2, "release": "v1.5.0"}
       }
     },
+    "MetricVisualStyle": {
+      "paths": [
+        "settings.performanceComponent.visuals.systemMemory",
+        "settings.performanceComponent.visuals.systemCpu",
+        "settings.performanceComponent.visuals.systemGpu",
+        "settings.performanceComponent.visuals.processMemory",
+        "settings.performanceComponent.visuals.systemNetwork",
+        "settings.taskbarExperience.fullPanel.performanceVisuals.systemMemory",
+        "settings.taskbarExperience.fullPanel.performanceVisuals.systemCpu",
+        "settings.taskbarExperience.fullPanel.performanceVisuals.systemGpu",
+        "settings.taskbarExperience.fullPanel.performanceVisuals.processMemory",
+        "settings.taskbarExperience.fullPanel.performanceVisuals.systemNetwork"
+      ],
+      "members": {
+        "Numeric": {
+          "value": 0,
+          "release": "unreleased"
+        },
+        "Bar": {
+          "value": 1,
+          "release": "unreleased"
+        },
+        "Ring": {
+          "value": 2,
+          "release": "unreleased"
+        },
+        "Line": {
+          "value": 3,
+          "release": "unreleased"
+        },
+        "Area": {
+          "value": 4,
+          "release": "unreleased"
+        }
+      }
+    },
     "PerformanceDisplayMode": {
       "paths": ["settings.performanceComponent.displayMode"],
       "members": {
@@ -843,6 +896,11 @@
       "relatedPaths": ["settings.position"]
     },
     {
+      "id": "full-panel-presentation",
+      "prefixes": ["settings.taskbarExperience.fullPanel"],
+      "text": "窗口与内容共用缩放比例，缺省100%，持久化范围75%—200%；高度随内容自动适配，不保存独立窗口宽高。边缘拖动固定对侧与媒体栏贴合边；靠媒体栏的一侧锁定。恢复默认尺寸仅将比例恢复100%；已去掉未发布的独立宽高字段，开发中旧值不迁移，反序列化忽略。重开按原入口定位；工作区夹取不覆盖缩放偏好。完整面板缺少样式字段时百分比指标默认Area，其余Numeric；媒体栏缺少样式时均为Numeric。上下行共用SystemNetwork样式。缩放归内容布局页重置，性能样式归小组件页重置；均优先用户默认快照。"
+    },
+    {
       "id": "full-panel",
       "prefixes": ["settings.taskbarExperience.fullPanel"],
       "text": "四项全关时回 Compact：媒体信息和控制开启，音频与性能关闭；不可只孤立判断一个开关。",
@@ -914,8 +972,8 @@
     },
     {
       "id": "components",
-      "prefixes": ["settings.spectrumComponent", "settings.performanceComponent"],
-      "text": "小组件页 ResetComponents 恢复频谱、性能、蓝牙电量参数及显隐；ResetContentLayout 和 ResetDeviceManagement 保留这些设置。性能 metrics 空或全无效回 SystemMemory；metricOrder 只决定已选指标顺序，缺失或 null 沿用原顺序。枚举新增成员的发布状态独立核对。"
+      "prefixes": ["settings.spectrumComponent", "settings.performanceComponent", "settings.taskbarExperience.fullPanel.performanceVisuals"],
+      "text": "小组件页 ResetComponents 恢复频谱、性能、蓝牙电量参数及显隐，以及媒体栏和完整面板的性能样式；保留完整面板缩放与分区显隐。ResetContentLayout 和 ResetDeviceManagement 保留这些小组件设置。性能 metrics 空或全无效回 SystemMemory；metricOrder 保存全部指标的顺序，运行时按此筛选已开启项；关闭再开启保留位置。读取旧列表时保留原有已开启顺序并将缺失指标补到末尾，不改变原来的选中项；缺失或 null 保留原有选中顺序后补齐未选项。枚举新增成员的发布状态独立核对。"
     },
     {
       "id": "startup",

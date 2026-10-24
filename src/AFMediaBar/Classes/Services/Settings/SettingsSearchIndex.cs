@@ -179,7 +179,7 @@ public static class SettingsSearchIndex
         Create(SettingsPageKey.Widgets, "Widgets.Spectrum", "Widgets.Spectrum.Description", language,
             ["小组件", "小元件", "组件设置", "widgets", "频谱", "spectrum", "音频采集范围", "采集设备", "前台程序音频", "audio capture scope", "current media application", "all applications", "音訊擷取範圍", "phạm vi thu âm thanh", "柱数", "刷新率", "灵敏度", "波形", "像素", "上下对称"]),
         Create(SettingsPageKey.Widgets, "Widgets.Performance", "Media.Performance.Metrics.Description", language,
-            ["性能", "performance", "网速", "网络速率", "網路速率", "上传", "下载", "轮换", "并排", "network", "upload", "download", "cycle", "side by side", "tốc độ mạng", "luân phiên", "cạnh nhau", "内存", "cpu", "gpu", "任务管理器", "采样间隔", "刷新间隔"]),
+            ["图表", "折线", "面积图", "环形", "chart", "graph", "ring", "樣式", "biểu đồ", "性能", "performance", "网速", "网络速率", "網路速率", "上传", "下载", "轮换", "并排", "network", "upload", "download", "cycle", "side by side", "tốc độ mạng", "luân phiên", "cạnh nhau", "内存", "cpu", "gpu", "任务管理器", "采样间隔", "刷新间隔"]),
         Create(
             SettingsPageKey.Components,
             "Common.HoverLayer",
@@ -191,7 +191,7 @@ public static class SettingsSearchIndex
             "Common.FullLayer",
             "Search.DisplayModes.FullLayer.Description",
             language,
-            ["完整", "完整层", "完整層", "完整面板", "面板", "full", "full layer", "panel", "预设", "preset", "分区", "媒体信息", "播放控制", "音频控制", "性能", "套用预设", "完整层入口", "外侧入口", "横杆", "细杠", "进入完整层", "handle", "hover", "0.5"]),
+            ["完整", "完整层", "完整層", "面板缩放", "panel scale", "75%", "完整面板", "面板", "full", "full layer", "panel", "预设", "preset", "分区", "媒体信息", "播放控制", "音频控制", "性能", "套用预设", "完整层入口", "外侧入口", "横杆", "细杠", "进入完整层", "handle", "hover", "0.5"]),
 
         // ---- 媒体与通知 / Media and notifications ----
         Create(

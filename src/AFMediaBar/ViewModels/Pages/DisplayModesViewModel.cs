@@ -288,6 +288,15 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     private TaskbarHoverControlsSettings HoverControls =>
         _configuration.Current.TaskbarExperience.HoverControls;
 
+    public int FullPanelScalePercent
+    {
+        get => FullPanelSettings.ScalePercent;
+        set { if (!_isRefreshing) UpdateFullPanel(FullPanelSettings with { ScalePercent = value }); }
+    }
+    public int MinimumFullPanelScalePercent => TaskbarFullPanelSettings.MinimumScalePercent;
+    public int MaximumFullPanelScalePercent => TaskbarFullPanelSettings.MaximumScalePercent;
+    [RelayCommand] private void ResetFullPanelScale() => FullPanelScalePercent = 100;
+
     public bool FullPanelMediaInfoVisible
     {
         get => FullPanelSettings.MediaInfoVisible;
@@ -322,9 +331,9 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     /// The section combination the full panel currently uses, shown as a status text. The three names come from the
     /// same keys as the captions on the "apply a preset" buttons.
     /// </summary>
-    public string FullPanelLayoutStatus => FullPanelSettings == TaskbarFullPanelSettings.Compact
+    public string FullPanelLayoutStatus => FullPanelSettings with { ScalePercent = 100, PerformanceVisuals = MetricVisualSettings.PanelDefault } == TaskbarFullPanelSettings.Compact
         ? Translations.Get("DisplayModes.Full.Preset.Compact")
-        : FullPanelSettings == TaskbarFullPanelSettings.Full
+        : FullPanelSettings with { ScalePercent = 100, PerformanceVisuals = MetricVisualSettings.PanelDefault } == TaskbarFullPanelSettings.Full
             ? Translations.Get("DisplayModes.Full.Preset.Full")
             : Translations.Get("DisplayModes.Full.Preset.Custom");
 
@@ -477,8 +486,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     [RelayCommand] private void SwitchToDynamicIslandMode() => SelectMode(DisplayModeSelection.DynamicIsland);
     [RelayCommand] private void SwitchToDesktopCardMode() => SelectMode(DisplayModeSelection.DesktopCard);
     [RelayCommand] private void SwitchToFloatingBallMode() => SelectMode(DisplayModeSelection.FloatingBall);
-    [RelayCommand] private void ApplyCompactFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Compact);
-    [RelayCommand] private void ApplyFullFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Full);
+    [RelayCommand] private void ApplyCompactFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Compact with { ScalePercent = FullPanelSettings.ScalePercent, PerformanceVisuals = FullPanelSettings.PerformanceVisuals });
+    [RelayCommand] private void ApplyFullFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Full with { ScalePercent = FullPanelSettings.ScalePercent, PerformanceVisuals = FullPanelSettings.PerformanceVisuals });
 
     [RelayCommand]
     private void ResetTaskbarPosition()
@@ -725,6 +734,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CanToggleFullPanelAudioControls));
         OnPropertyChanged(nameof(CanToggleFullPanelPerformance));
         OnPropertyChanged(nameof(FullPanelLayoutStatus));
+        OnPropertyChanged(nameof(FullPanelScalePercent));
     }
 
     private enum FullPanelGroup

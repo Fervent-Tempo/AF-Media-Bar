@@ -76,7 +76,8 @@ public sealed class PerformanceSettingsTests
                 SettingsManager.Current = new AppSettings();
                 using var viewModel = new ComponentsSettingsViewModel(new LegacySettingsConfiguration(page), localization);
                 viewModel.ShowSystemNetwork = true;
-                viewModel.MoveMetricUpCommand.Execute(viewModel.MetricOrderEntries.Last());
+                var entries = viewModel.MetricOrderEntries;
+                viewModel.ReorderMetricCommand.Execute(new SettingsReorderRequest(entries.Single(item => item.Metric == MetricKind.SystemNetwork), 0, entries));
                 viewModel.PerformanceMode = PerformanceDisplayMode.Parallel;
                 CollectionAssert.AreEqual(new[] { MetricKind.SystemNetwork, MetricKind.SystemMemory },
                     SettingsManager.Current.PerformanceComponent.GetOrderedMetrics().ToArray());
@@ -86,11 +87,53 @@ public sealed class PerformanceSettingsTests
                 viewModel.ShowSystemNetwork = false;
                 Assert.IsTrue(viewModel.ShowSystemNetwork);
                 Assert.IsFalse(viewModel.CanUncheckSystemNetwork);
+                var cpuPosition = viewModel.MetricOrderEntries.ToList().FindIndex(item => item.Metric == MetricKind.SystemCpu);
                 viewModel.ShowSystemCpu = true;
-                Assert.AreEqual(MetricKind.SystemCpu, viewModel.MetricOrderEntries.Last().Metric);
+                Assert.AreEqual(cpuPosition, viewModel.MetricOrderEntries.ToList().FindIndex(item => item.Metric == MetricKind.SystemCpu));
                 page.Deactivate();
                 viewModel.MoveMetricDownCommand.Execute(viewModel.MetricOrderEntries.First());
                 Assert.AreEqual(MetricKind.SystemNetwork, viewModel.MetricOrderEntries.First().Metric);
+            }
+            finally { SettingsManager.Current = previous; }
+            return Task.CompletedTask;
+        });
+    }
+
+    [TestMethod]
+    public void DisabledMetricCanBeOrderedAndStyledWithoutReplacingRows()
+    {
+        StaTest.Run(_ =>
+        {
+            var previous = SettingsManager.Current.Clone();
+            using var page = new SettingsPageContext();
+            page.Initialize(SettingsContext.Initial);
+            using var localization = new LocalizationService();
+            try
+            {
+                SettingsManager.Current = new AppSettings();
+                using var model = new ComponentsSettingsViewModel(new LegacySettingsConfiguration(page), localization);
+                var entries = model.MetricOrderEntries;
+                var gpu = entries.Single(item => item.Metric == MetricKind.SystemGpu);
+                Assert.IsFalse(gpu.IsSelected);
+                gpu.VisualStyle = MetricVisualStyle.Area;
+                Assert.AreSame(entries, model.MetricOrderEntries, "样式变更不应重建列表或选择器。");
+                model.ReorderMetricCommand.Execute(new SettingsReorderRequest(gpu, 0, entries));
+                Assert.AreEqual(MetricKind.SystemGpu, model.MetricOrderEntries[0].Metric);
+                CollectionAssert.AreEqual(new[] { MetricKind.SystemMemory }, SettingsManager.Current.PerformanceComponent.GetOrderedMetrics().ToArray());
+                var reordered = model.MetricOrderEntries;
+                gpu.IsSelected = true;
+                Assert.AreSame(reordered, model.MetricOrderEntries);
+                CollectionAssert.AreEqual(new[] { MetricKind.SystemGpu, MetricKind.SystemMemory }, SettingsManager.Current.PerformanceComponent.GetOrderedMetrics().ToArray());
+                gpu.IsSelected = false;
+                gpu.IsSelected = true;
+                Assert.AreSame(gpu, model.MetricOrderEntries[0]);
+                Assert.AreEqual(MetricVisualStyle.Area, gpu.VisualStyle);
+                Assert.AreEqual(5, model.MetricOrderEntries.Count);
+                page.Deactivate();
+                gpu.IsSelected = false;
+                gpu.VisualStyle = MetricVisualStyle.Bar;
+                Assert.IsTrue(gpu.IsSelected);
+                Assert.AreEqual(MetricVisualStyle.Area, gpu.VisualStyle);
             }
             finally { SettingsManager.Current = previous; }
             return Task.CompletedTask;
@@ -111,7 +154,8 @@ public sealed class PerformanceSettingsTests
                 var settings = new PerformanceComponentSettings([MetricKind.SystemMemory, MetricKind.SystemNetwork], 500, false)
                 {
                     DisplayMode = PerformanceDisplayMode.Parallel,
-                    MetricOrder = [MetricKind.SystemNetwork, MetricKind.SystemMemory]
+                    MetricOrder = [MetricKind.SystemGpu, MetricKind.SystemNetwork, MetricKind.SystemMemory],
+                    Visuals = new MetricVisualSettings { SystemGpu = MetricVisualStyle.Ring }
                 }.Normalize();
                 using (var store = new SettingsPersistenceService(directory))
                 {
@@ -126,6 +170,10 @@ public sealed class PerformanceSettingsTests
                     reloaded.Initialize();
                     Assert.AreEqual(PerformanceDisplayMode.Parallel, SettingsManager.Current.PerformanceComponent.DisplayMode);
                     CollectionAssert.AreEqual(settings.GetOrderedMetrics().ToArray(), SettingsManager.Current.PerformanceComponent.GetOrderedMetrics().ToArray());
+                    CollectionAssert.AreEqual(settings.GetMetricOrder().ToArray(), SettingsManager.Current.PerformanceComponent.GetMetricOrder().ToArray());
+                    Assert.AreEqual(MetricKind.SystemGpu, SettingsManager.Current.PerformanceComponent.GetMetricOrder()[0]);
+                    Assert.IsFalse(SettingsManager.Current.PerformanceComponent.Metrics!.Contains(MetricKind.SystemGpu));
+                    Assert.AreEqual(MetricVisualStyle.Ring, SettingsManager.Current.PerformanceComponent.Visuals.SystemGpu);
                     var snapshot = reloaded.LoadUserDefaults()!;
                     SettingsManager.SetUserDefaults(snapshot);
                     SettingsManager.Current.PerformanceComponent = PerformanceComponentSettings.Default;
@@ -133,6 +181,7 @@ public sealed class PerformanceSettingsTests
                     Assert.IsFalse(SettingsManager.Current.LyricsEnabled);
                     Assert.AreEqual(PerformanceDisplayMode.Parallel, SettingsManager.Current.PerformanceComponent.DisplayMode);
                     CollectionAssert.AreEqual(settings.GetOrderedMetrics().ToArray(), SettingsManager.Current.PerformanceComponent.GetOrderedMetrics().ToArray());
+                    CollectionAssert.AreEqual(settings.GetMetricOrder().ToArray(), SettingsManager.Current.PerformanceComponent.GetMetricOrder().ToArray());
                     Assert.AreNotSame(snapshot.PerformanceComponent.MetricOrder, SettingsManager.Current.PerformanceComponent.MetricOrder);
                 }
             }
