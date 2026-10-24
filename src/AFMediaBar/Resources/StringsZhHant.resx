@@ -3207,4 +3207,43 @@
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>邊緣自動收合</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>預設開啟。拖到工作區邊緣後，移開滑鼠收合，靠近時展開；支援四邊。</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展開桌面媒體列</value></data>
+  <data name="Performance.Visual.Numeric" xml:space="preserve">
+    <value>純數值</value>
+  </data>
+  <data name="Performance.Visual.Bar" xml:space="preserve">
+    <value>條形</value>
+  </data>
+  <data name="Performance.Visual.Ring" xml:space="preserve">
+    <value>環形</value>
+  </data>
+  <data name="Performance.Visual.Line" xml:space="preserve">
+    <value>趨勢折線</value>
+  </data>
+  <data name="Performance.Visual.Area" xml:space="preserve">
+    <value>趨勢面積圖</value>
+  </data>
+  <data name="Performance.Visual.Style" xml:space="preserve">
+    <value>顯示樣式</value>
+  </data>
+  <data name="Performance.Visual.BarSurface" xml:space="preserve">
+    <value>媒體列樣式</value>
+  </data>
+  <data name="Performance.Visual.Panel" xml:space="preserve">
+    <value>完整面板樣式</value>
+  </data>
+  <data name="Performance.Visual.Description" xml:space="preserve">
+    <value>每項可獨立選擇，圖形保留即時數值。網路上下行共用樣式；預覽使用範例資料。程式記憶體和網路的條形、環形表示近期相對水準。</value>
+  </data>
+  <data name="Performance.Visual.Relative" xml:space="preserve">
+    <value>相對於最近一分鐘的峰值，不代表容量或頻寬使用率。</value>
+  </data>
+  <data name="Panel.Scale.Title" xml:space="preserve">
+    <value>完整面板縮放</value>
+  </data>
+  <data name="Panel.Scale.Description" xml:space="preserve">
+    <value>拖曳面板外側邊緣等比縮放，始終貼合媒體列。範圍 75%—200%，重新啟動後保留；縮小時按鈕也會變小。</value>
+  </data>
+  <data name="Panel.Scale.Reset" xml:space="preserve">
+    <value>恢復 100%</value>
+  </data>
 </root>

@@ -5,6 +5,7 @@ using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Resources;
+using AFMediaBar.ViewModels.Windows;
 using System.Diagnostics;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -19,6 +20,7 @@ namespace AFMediaBar.Views.Windows;
 /// <summary>任务栏外的完整媒体、音频与性能面板。 / Full media, audio, and performance panel outside the taskbar.</summary>
 public partial class TaskbarFullPanelWindow : FluentWindow
 {
+    private readonly FullPanelPresentationViewModel _presentation;
     private AppSettings? _presentationSettings;
     private AppSettings PresentationSettings => _presentationSettings ?? SettingsManager.Current;
     public void ApplyPresentationSettings(AppSettings? settings)
@@ -55,9 +57,14 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         AudioInteractionService audioInteractionService,
         SystemMetricsMonitorService metricsMonitor,
         WindowAppearanceService appearanceService,
-        IDisplayMonitorService displayMonitorService)
+        IDisplayMonitorService displayMonitorService,
+        FullPanelPresentationViewModel presentation)
     {
         InitializeComponent();
+        _presentation = presentation;
+        InitializeResizeGrips();
+        PanelRoot.SizeChanged += OnPanelContentSizeChanged;
+        DpiChanged += (_, _) => QueuePanelPosition();
         ApplyMotionEffects();
         _mediaSessionService = mediaSessionService;
         _audioInteractionService = audioInteractionService;
@@ -104,6 +111,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         ApplyMotionEffects();
         Show();
         UpdateLayout();
+        ApplyFullPanelSettings(animate: false);
         PositionNear(anchor, targetMonitorDeviceId);
         BeginOpenAnimation();
         Activate();
@@ -191,6 +199,9 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         var limit = FullPanelPlacementPolicy.GetPanelLimit(anchor, work, side);
         MaxWidth = limit.Width;
         MaxHeight = limit.Height;
+        _resolvedSide = side;
+        ApplyScaleGeometry(limit);
+        UpdateResizeGrips();
         UpdateLayout();
         var bounds = FullPanelPlacementPolicy.PlacePanel(anchor, new Size(ActualWidth, ActualHeight), work, side);
         Left = bounds.Left;
@@ -208,6 +219,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 
     private void ApplySnapshot(MediaSnapshot snapshot)
     {
+        if (_isClosing) return;
         _snapshot = snapshot;
         TitleText.Text = string.IsNullOrWhiteSpace(snapshot.Title) ? Translations.Get("Panel.FullPanel.NoMedia") : snapshot.Title;
         ArtistText.Text = snapshot.Artist;
@@ -250,8 +262,13 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     /// Recomputes the one line built in code (the lyric source) after a language change; bound text re-reads itself, and this is
     /// the only composed one.
     /// </summary>
-    private void OnLanguageChanged(object? sender, EventArgs e) =>
-        Dispatcher.BeginInvoke(() => ApplyLyricsSourceLine(_snapshot));
+    private void OnLanguageChanged(object? sender, EventArgs e) => Dispatcher.BeginInvoke(() =>
+    {
+        if (_isClosing) return;
+        ApplyLyricsSourceLine(_snapshot);
+        ApplyChartStyles(PresentationSettings.TaskbarExperience.FullPanel.PerformanceVisuals);
+        QueuePanelPosition();
+    });
 
     /// <summary>
     /// 显示当前曲目的歌词来源。
@@ -282,6 +299,8 @@ public partial class TaskbarFullPanelWindow : FluentWindow
             return;
 
         var settings = PresentationSettings.TaskbarExperience.FullPanel.Normalize();
+        if (!_isResizing) _requestedScale = settings.ScalePercent / 100d;
+        ApplyChartStyles(settings.PerformanceVisuals);
         var animationVersion = ++_sectionAnimationVersion;
         var audioBecameVisible = !_audioControlsVisible && settings.AudioControlsVisible;
         var mediaInfoWasVisible = MediaInfoSection.Visibility == Visibility.Visible;
@@ -346,8 +365,8 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         MediaControlsSection.Visibility = settings.MediaControlsVisible ? Visibility.Visible : Visibility.Collapsed;
         AudioControlsSection.Visibility = settings.AudioControlsVisible ? Visibility.Visible : Visibility.Collapsed;
         PerformanceSection.Visibility = settings.PerformanceVisible ? Visibility.Visible : Visibility.Collapsed;
-        DisposeMetricsSubscription();
-        if (settings.PerformanceVisible)
+        if (!settings.PerformanceVisible || !IsVisible) DisposeMetricsSubscription();
+        else if (_metricsSubscription is null)
         {
             var generation = _metricsSubscriptionGeneration;
             _metricsSubscription = _metricsMonitor.Subscribe(
@@ -457,6 +476,12 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         ProcessMetric.Text = metrics.ProcessMemoryMegabytes is long process ? $"{process} MB" : "—";
         UploadMetric.Text = MetricPresentationPolicy.FormatRate(metrics.NetworkUploadBytesPerSecond);
         DownloadMetric.Text = MetricPresentationPolicy.FormatRate(metrics.NetworkDownloadBytesPerSecond);
+        CpuChart.ApplySample(metrics.SystemCpuPercent);
+        RamChart.ApplySample(metrics.SystemMemoryPercent);
+        GpuChart.ApplySample(metrics.SystemGpuPercent);
+        ProcessChart.ApplySample(metrics.ProcessMemoryMegabytes);
+        UploadChart.ApplySample(metrics.NetworkUploadBytesPerSecond);
+        DownloadChart.ApplySample(metrics.NetworkDownloadBytesPerSecond);
     }
 
     private void DisposeMetricsSubscription()
@@ -464,6 +489,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         _metricsSubscriptionGeneration++;
         _metricsSubscription?.Dispose();
         _metricsSubscription = null;
+        foreach (var chart in PanelCharts()) chart.Reset();
     }
 
     private void UpdateProgress()
@@ -635,6 +661,8 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         _audioInteractionService.CancelDeviceOwner(this);
         _volumeApplyVersion++;
         _timer.Stop();
+        PanelRoot.SizeChanged -= OnPanelContentSizeChanged;
+        CancelPanelResize();
         DisposeMetricsSubscription();
         _mediaSessionService.SnapshotChanged -= OnSnapshotChanged;
         SettingsManager.TaskbarExperienceSettingsChanged -= OnTaskbarExperienceSettingsChanged;

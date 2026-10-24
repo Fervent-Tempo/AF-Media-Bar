@@ -82,13 +82,21 @@ public enum PlayerSurfaceStyle
     ThemeTint = 2
 }
 
-/// <summary>任务栏完整层的功能组显隐设置。 / Visibility settings for taskbar full-panel feature groups.</summary>
+/// <summary>完整面板的分区、缩放与性能样式设置。</summary>
 public readonly record struct TaskbarFullPanelSettings(
     bool MediaInfoVisible,
     bool MediaControlsVisible,
     bool AudioControlsVisible,
     bool PerformanceVisible)
 {
+    // System.Text.Json 对结构体默认走无参构造，显式声明才会执行新增字段的初始化。
+    public TaskbarFullPanelSettings() : this(false, false, false, false) { }
+
+    public const int MinimumScalePercent = 75;
+    public const int MaximumScalePercent = 200;
+    public int ScalePercent { get; init; } = 100;
+    public MetricVisualSettings PerformanceVisuals { get; init; } = MetricVisualSettings.PanelDefault;
+
     /// <summary>仅显示媒体信息和媒体控制。 / Shows only media information and media controls.</summary>
     public static TaskbarFullPanelSettings Compact { get; } = new(true, true, false, false);
 
@@ -99,10 +107,16 @@ public readonly record struct TaskbarFullPanelSettings(
     public static TaskbarFullPanelSettings Default => Full;
 
     /// <summary>确保至少保留一个功能组。 / Ensures at least one feature group remains visible.</summary>
-    public TaskbarFullPanelSettings Normalize() =>
-        MediaInfoVisible || MediaControlsVisible || AudioControlsVisible || PerformanceVisible
-            ? this
-            : Compact;
+    public TaskbarFullPanelSettings Normalize()
+    {
+        var result = MediaInfoVisible || MediaControlsVisible || AudioControlsVisible || PerformanceVisible
+            ? this : this with { MediaInfoVisible = true, MediaControlsVisible = true };
+        return result with
+        {
+            ScalePercent = Math.Clamp(ScalePercent, MinimumScalePercent, MaximumScalePercent),
+            PerformanceVisuals = PerformanceVisuals.Normalize(MetricVisualSettings.PanelDefault)
+        };
+    }
 }
 
 /// <summary>任务栏悬停层中各项控制的显隐设置。 / Visibility settings for controls in the taskbar hover layer.</summary>

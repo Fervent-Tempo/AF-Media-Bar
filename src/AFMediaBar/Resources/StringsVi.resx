@@ -3245,4 +3245,43 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>Tự thu gọn ở cạnh màn hình</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>Mặc định bật. Kéo đến một trong bốn cạnh vùng làm việc; di chuột ra để thu gọn và đến gần để mở.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>Mở thanh phương tiện trên màn hình</value></data>
+  <data name="Performance.Visual.Numeric" xml:space="preserve">
+    <value>Số liệu</value>
+  </data>
+  <data name="Performance.Visual.Bar" xml:space="preserve">
+    <value>Thanh</value>
+  </data>
+  <data name="Performance.Visual.Ring" xml:space="preserve">
+    <value>Vòng</value>
+  </data>
+  <data name="Performance.Visual.Line" xml:space="preserve">
+    <value>Đường xu hướng</value>
+  </data>
+  <data name="Performance.Visual.Area" xml:space="preserve">
+    <value>Vùng xu hướng</value>
+  </data>
+  <data name="Performance.Visual.Style" xml:space="preserve">
+    <value>Kiểu hiển thị</value>
+  </data>
+  <data name="Performance.Visual.BarSurface" xml:space="preserve">
+    <value>Kiểu thanh phương tiện</value>
+  </data>
+  <data name="Performance.Visual.Panel" xml:space="preserve">
+    <value>Kiểu bảng đầy đủ</value>
+  </data>
+  <data name="Performance.Visual.Description" xml:space="preserve">
+    <value>Chọn kiểu riêng cho từng chỉ số. Biểu đồ giữ số liệu trực tiếp; tải lên và tải xuống dùng chung kiểu. Xem trước dùng dữ liệu mẫu. Thanh và vòng của bộ nhớ ứng dụng và mạng thể hiện mức tương đối gần đây.</value>
+  </data>
+  <data name="Performance.Visual.Relative" xml:space="preserve">
+    <value>So với đỉnh trong phút gần nhất; không phải tỷ lệ sử dụng dung lượng hoặc băng thông.</value>
+  </data>
+  <data name="Panel.Scale.Title" xml:space="preserve">
+    <value>Tỷ lệ bảng đầy đủ</value>
+  </data>
+  <data name="Panel.Scale.Description" xml:space="preserve">
+    <value>Kéo cạnh ngoài để đổi tỷ lệ đồng đều, luôn gắn với thanh phương tiện. Tỷ lệ 75%–200% được lưu sau khi khởi động lại; nút cũng nhỏ đi khi thu nhỏ.</value>
+  </data>
+  <data name="Panel.Scale.Reset" xml:space="preserve">
+    <value>Đặt lại 100%</value>
+  </data>
 </root>

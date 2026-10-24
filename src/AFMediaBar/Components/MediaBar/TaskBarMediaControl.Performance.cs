@@ -11,6 +11,8 @@ namespace AFMediaBar.Components;
 public partial class TaskBarMediaControl
 {
     private readonly Dictionary<MetricKind, TextBlock> _performanceCells = [];
+    private readonly Dictionary<MetricKind, FrameworkElement> _performanceContainers = [];
+    private readonly Dictionary<MetricKind, MetricChart[]> _performanceCharts = [];
     private IReadOnlyList<MetricKind> _performanceMetrics = [];
     private PerformanceComponentSettings _performanceSettings;
     private SystemMetricsSnapshot _performanceSnapshot;
@@ -28,7 +30,7 @@ public partial class TaskBarMediaControl
             26 + RestWidgetVerticalInset(TaskbarPerformanceHoverSurface) + _textBudget.PaddingDip * 2;
         var metrics = settings.GetOrderedMetrics();
         var font = TextElement.GetFontFamily(TaskbarPerformanceItems).Source;
-        if (_performanceCells.Count > 0 && _performanceSettings.DisplayMode == settings.DisplayMode &&
+        if (_performanceCells.Count > 0 && _performanceSettings.DisplayMode == settings.DisplayMode && _performanceSettings.Visuals == settings.Visuals &&
             _performanceMetrics.SequenceEqual(metrics) && _performanceFont == font && _performanceVertical == _isVertical && _performanceCompact == compact)
             return false;
 
@@ -38,6 +40,8 @@ public partial class TaskBarMediaControl
         _performanceCompact = compact;
         _performanceFont = font;
         _performanceCells.Clear();
+        _performanceContainers.Clear();
+        _performanceCharts.Clear();
         TaskbarPerformanceItems.Children.Clear();
         foreach (var metric in metrics)
         {
@@ -60,12 +64,60 @@ public partial class TaskBarMediaControl
                 cell.LineHeight = 11;
                 cell.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
             }
-            TaskbarPerformanceItems.Children.Add(cell);
+            var container = new Grid { IsHitTestVisible = false };
+            container.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            container.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            container.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            container.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            container.Children.Add(cell);
+            var visual = settings.Visuals.Get(metric);
+            var networkRings = metric == MetricKind.SystemNetwork && visual == MetricVisualStyle.Ring;
+            var charts = new StackPanel { Orientation = networkRings ? Orientation.Horizontal : Orientation.Vertical, VerticalAlignment = VerticalAlignment.Center };
+            var chartItems = Enumerable.Range(0, metric == MetricKind.SystemNetwork ? 2 : 1).Select(_ => new MetricChart
+            {
+                Width = networkRings ? 16 : 32,
+                Height = networkRings ? 16 : metric == MetricKind.SystemNetwork ? 10 : 16,
+                IsPercentage = metric is not (MetricKind.SystemNetwork or MetricKind.ProcessMemory),
+                VisualStyle = visual
+            }).ToArray();
+            foreach (var chart in chartItems) charts.Children.Add(chart);
+            Grid.SetColumn(charts, _isVertical ? 0 : 1);
+            Grid.SetRow(charts, _isVertical ? 1 : 0);
+            charts.Margin = visual == MetricVisualStyle.Numeric ? new Thickness(0) : _isVertical ? new Thickness(0, 2, 0, 0) : new Thickness(4, 0, 0, 0);
+            container.Children.Add(charts);
+            if (metric is MetricKind.ProcessMemory or MetricKind.SystemNetwork && visual is MetricVisualStyle.Bar or MetricVisualStyle.Ring)
+            {
+                container.SetResourceReference(ToolTipProperty, "Loc.Performance.Visual.Relative");
+                container.SetResourceReference(System.Windows.Automation.AutomationProperties.HelpTextProperty, "Loc.Performance.Visual.Relative");
+            }
+            if (visual == MetricVisualStyle.Numeric)
+            {
+                container.Children.Remove(cell);
+                _performanceContainers.Add(metric, cell);
+                TaskbarPerformanceItems.Children.Add(cell);
+            }
+            else
+            {
+                _performanceContainers.Add(metric, container);
+                TaskbarPerformanceItems.Children.Add(container);
+            }
+            _performanceCharts.Add(metric, chartItems);
             cell.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             cell.Width = Math.Ceiling(cell.DesiredSize.Width);
             _performanceCells.Add(metric, cell);
         }
 
+        var relative = metrics.Any(metric => metric is MetricKind.ProcessMemory or MetricKind.SystemNetwork && settings.Visuals.Get(metric) is MetricVisualStyle.Bar or MetricVisualStyle.Ring);
+        if (relative)
+        {
+            TaskbarPerformanceHoverSurface.SetResourceReference(ToolTipProperty, "Loc.Performance.Visual.Relative");
+            TaskbarPerformanceHoverSurface.SetResourceReference(System.Windows.Automation.AutomationProperties.HelpTextProperty, "Loc.Performance.Visual.Relative");
+        }
+        else
+        {
+            TaskbarPerformanceHoverSurface.ClearValue(ToolTipProperty);
+            TaskbarPerformanceHoverSurface.ClearValue(System.Windows.Automation.AutomationProperties.HelpTextProperty);
+        }
         UpdatePerformanceCells();
         return UpdatePerformanceWidth();
     }
@@ -75,6 +127,15 @@ public partial class TaskBarMediaControl
         _performanceSnapshot = snapshot;
         _performanceCycleIndex = cycleIndex;
         UpdatePerformanceCells();
+        if (IsPerformanceComponentVisible)
+        {
+            foreach (var pair in _performanceCharts)
+            {
+                if (_performanceSettings.Visuals.Get(pair.Key) == MetricVisualStyle.Numeric) continue;
+                pair.Value[0].ApplySample(MetricChartValue(pair.Key, snapshot));
+                if (pair.Value.Length > 1) pair.Value[1].ApplySample(snapshot.NetworkDownloadBytesPerSecond);
+            }
+        }
         if (_isVertical)
         {
             var verticalCursor = canOpenTaskManager ? System.Windows.Input.Cursors.Hand : System.Windows.Input.Cursors.Arrow;
@@ -112,9 +173,10 @@ public partial class TaskBarMediaControl
                 pair.Value.Text = _performanceCompact
                     ? MetricPresentationPolicy.Format(pair.Key, _performanceSnapshot).Replace("\n", " · ")
                     : MetricPresentationPolicy.Format(pair.Key, _performanceSnapshot);
-            pair.Value.Visibility = _performanceSettings.DisplayMode == PerformanceDisplayMode.Parallel || pair.Key == current
+            var container = _performanceContainers[pair.Key];
+            container.Visibility = _performanceSettings.DisplayMode == PerformanceDisplayMode.Parallel || pair.Key == current
                 ? Visibility.Visible : Visibility.Collapsed;
-            pair.Value.Margin = _isVertical
+            container.Margin = _isVertical
                 ? new Thickness(0, _performanceSettings.DisplayMode == PerformanceDisplayMode.Parallel && index++ > 0 ? 4 : 0, 0, 0)
                 : new Thickness(_performanceSettings.DisplayMode == PerformanceDisplayMode.Parallel && index++ > 0 ? 8 : 0, 0, 0, 0);
         }
@@ -159,21 +221,38 @@ public partial class TaskBarMediaControl
         UpdateLine(secondLine, values.Length > 1 ? values[1] : "—", 14);
     }
 
+    private static double? MetricChartValue(MetricKind metric, SystemMetricsSnapshot snapshot) => metric switch
+    {
+        MetricKind.SystemMemory => snapshot.SystemMemoryPercent,
+        MetricKind.SystemCpu => snapshot.SystemCpuPercent,
+        MetricKind.SystemGpu => snapshot.SystemGpuPercent,
+        MetricKind.ProcessMemory => snapshot.ProcessMemoryMegabytes,
+        _ => snapshot.NetworkUploadBytesPerSecond
+    };
+
+    private void ClearPerformanceHistory()
+    {
+        foreach (var chart in _performanceCharts.Values.SelectMany(charts => charts)) chart.Reset();
+    }
+
     private bool UpdatePerformanceWidth()
     {
         if (_isVertical)
         {
             var count = _performanceSettings.DisplayMode == PerformanceDisplayMode.Parallel ? Math.Max(1, _performanceCells.Count) : 1;
-            var length = Math.Ceiling(count * 32d + (count - 1) * 4 + 2 + RestWidgetVerticalInset(TaskbarPerformanceHoverSurface));
+            var heights = _performanceMetrics.Select(metric => _performanceSettings.Visuals.Get(metric) == MetricVisualStyle.Numeric ? 32d : metric == MetricKind.SystemNetwork ? 54d : 50d).ToArray();
+            var contentLength = _performanceSettings.DisplayMode == PerformanceDisplayMode.Parallel ? heights.Sum() : heights.DefaultIfEmpty(32).Max();
+            var length = Math.Ceiling(contentLength + (count - 1) * 4 + 2 + RestWidgetVerticalInset(TaskbarPerformanceHoverSurface));
             var changedLength = Math.Abs(length - _verticalPerformanceLength) > 0.1;
             _verticalPerformanceLength = length;
             return changedLength;
         }
         TaskbarPerformanceSurface.Height = PreferredPerformanceHeight;
         TaskbarPerformanceSurface.Padding = _performanceCompact ? new Thickness(4, 0, 4, 0) : new Thickness(8, 2, 8, 2);
+        double CellWidth(KeyValuePair<MetricKind, TextBlock> pair) => pair.Value.Width + (_performanceSettings.Visuals.Get(pair.Key) == MetricVisualStyle.Numeric ? 0 : 36);
         var width = _performanceCells.Count == 0 ? 74 : _performanceSettings.DisplayMode == PerformanceDisplayMode.Parallel
-            ? _performanceCells.Values.Sum(cell => cell.Width) + 8 * (_performanceCells.Count - 1) + 16
-            : _performanceCells.Values.Max(cell => cell.Width) + 16;
+            ? _performanceCells.Sum(CellWidth) + 8 * (_performanceCells.Count - 1) + 16
+            : _performanceCells.Max(CellWidth) + 16;
         width = Math.Max(74, width);
         var changed = Math.Abs(width - _performanceWidth) > 0.1;
         _performanceWidth = width;

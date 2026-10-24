@@ -3207,4 +3207,43 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>Auto-hide at desktop edges</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>On by default. Drag to any work-area edge; move away to hide and approach to reveal.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>Reveal desktop media bar</value></data>
+  <data name="Performance.Visual.Numeric" xml:space="preserve">
+    <value>Numbers</value>
+  </data>
+  <data name="Performance.Visual.Bar" xml:space="preserve">
+    <value>Bar</value>
+  </data>
+  <data name="Performance.Visual.Ring" xml:space="preserve">
+    <value>Ring</value>
+  </data>
+  <data name="Performance.Visual.Line" xml:space="preserve">
+    <value>Trend line</value>
+  </data>
+  <data name="Performance.Visual.Area" xml:space="preserve">
+    <value>Trend area</value>
+  </data>
+  <data name="Performance.Visual.Style" xml:space="preserve">
+    <value>Display style</value>
+  </data>
+  <data name="Performance.Visual.BarSurface" xml:space="preserve">
+    <value>Media bar styles</value>
+  </data>
+  <data name="Performance.Visual.Panel" xml:space="preserve">
+    <value>Full panel styles</value>
+  </data>
+  <data name="Performance.Visual.Description" xml:space="preserve">
+    <value>Choose a style for each metric. Charts keep live values; upload and download share a style. Previews use sample data. Bars and rings for app memory and network show recent relative levels.</value>
+  </data>
+  <data name="Performance.Visual.Relative" xml:space="preserve">
+    <value>Relative to the peak in the last minute; not capacity or bandwidth utilization.</value>
+  </data>
+  <data name="Panel.Scale.Title" xml:space="preserve">
+    <value>Full panel scale</value>
+  </data>
+  <data name="Panel.Scale.Description" xml:space="preserve">
+    <value>Drag an outer panel edge to scale proportionally while staying attached to the media bar. The 75%–200% scale is saved across restarts; buttons shrink too.</value>
+  </data>
+  <data name="Panel.Scale.Reset" xml:space="preserve">
+    <value>Reset to 100%</value>
+  </data>
 </root>

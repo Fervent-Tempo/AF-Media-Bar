@@ -395,6 +395,47 @@
                             </StackPanel>
                         </ui:CardExpander>
 
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Header="{DynamicResource Loc.Performance.Visual.BarSurface}" Icon="{ui:SymbolIcon DataUsage24}">
+                            <StackPanel>
+                                <components:SettingsCallout Text="{DynamicResource Loc.Performance.Visual.Description}" Margin="0,0,0,4" />
+                                <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Media.Metric.SystemMemory.Title}">
+                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.BarSystemMemoryVisual, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow IsNested="True" Title="CPU">
+                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.BarSystemCpuVisual, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow IsNested="True" Title="GPU">
+                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.BarSystemGpuVisual, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Media.Metric.ProcessMemory.Title}">
+                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.BarProcessMemoryVisual, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Media.Metric.SystemNetwork.Title}">
+                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.BarSystemNetworkVisual, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Header="{DynamicResource Loc.Performance.Visual.Panel}" Icon="{ui:SymbolIcon DataUsage24}">
+                            <StackPanel>
+                                <components:SettingsCallout Text="{DynamicResource Loc.Performance.Visual.Description}" Margin="0,0,0,4" />
+                                <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Media.Metric.SystemMemory.Title}">
+                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.PanelSystemMemoryVisual, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow IsNested="True" Title="CPU">
+                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.PanelSystemCpuVisual, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow IsNested="True" Title="GPU">
+                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.PanelSystemGpuVisual, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Media.Metric.ProcessMemory.Title}">
+                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.PanelProcessMemoryVisual, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                                <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Media.Metric.SystemNetwork.Title}">
+                                    <components:MetricStylePicker VisualStyle="{Binding ViewModel.Components.PanelSystemNetworkVisual, Mode=TwoWay}" />
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
+
                         <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
                             <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.WidgetLayout}"
                                 Destination="Components" GroupId="Common.Group.ComponentOrder" HorizontalAlignment="Left"/>

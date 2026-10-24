@@ -18,6 +18,7 @@ public readonly record struct PerformanceComponentSettings(
     int RefreshIntervalMilliseconds,
     bool OpenTaskManagerOnClick)
 {
+    public MetricVisualSettings Visuals { get; init; }
     public PerformanceDisplayMode DisplayMode { get; init; } = PerformanceDisplayMode.Cycle;
     public IReadOnlyList<MetricKind>? MetricOrder { get; init; }
 
@@ -75,6 +76,7 @@ public readonly record struct PerformanceComponentSettings(
             SnapRefreshIntervalMilliseconds(RefreshIntervalMilliseconds),
             OpenTaskManagerOnClick)
         {
+            Visuals = Visuals.Normalize(),
             DisplayMode = Enum.IsDefined(DisplayMode) ? DisplayMode : PerformanceDisplayMode.Cycle,
             MetricOrder = order is null ? null : order.Where(metrics.Contains).Distinct()
                 .Concat(metrics.Where(metric => !order.Contains(metric))).ToArray()
