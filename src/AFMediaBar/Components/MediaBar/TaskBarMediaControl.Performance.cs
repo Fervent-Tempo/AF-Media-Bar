@@ -45,7 +45,12 @@ public partial class TaskBarMediaControl
             {
                 FontSize = metric == MetricKind.SystemNetwork ? 10 : 12,
                 VerticalAlignment = VerticalAlignment.Center,
-                TextAlignment = TextAlignment.Center,
+                // 网速横向两行（↑ / ↓）必须左对齐：cell 宽度按最大占位固定后只增不减，两行各自居中的话
+                // 短行的箭头会随速率左右漂移，和长行的箭头对不齐。其余指标是单行，居中不变。
+                // The horizontal network cell (two lines, up/down) must be left-aligned: its width is pinned by the
+                // widest placeholder and never shrinks, so centering each line would let the short line's arrow drift
+                // with the rate and miss the long line's arrow. The other metrics are single-line and stay centered.
+                TextAlignment = metric == MetricKind.SystemNetwork && !compact ? TextAlignment.Left : TextAlignment.Center,
                 IsHitTestVisible = false,
                 Text = metric switch
                 {
