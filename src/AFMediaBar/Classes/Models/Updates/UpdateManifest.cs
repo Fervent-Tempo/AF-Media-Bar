@@ -38,7 +38,7 @@ public sealed record UpdatePackageAsset(string Url, long? Size, string Sha256);
 /// <param name="ReleasePageUrl">最新 Release 页面；人工下载入口。/ Latest release page used by the manual download entry.</param>
 /// <param name="MinimumSupportedVersion">低于该版本时视为必须更新。/ Versions below this one are treated as a required update.</param>
 /// <param name="Mandatory">清单是否直接把该版本标记为必须更新。/ Whether the manifest marks the release as required.</param>
-/// <param name="Packages">可自动安装的安装包直链，按清单顺序尝试。/ Installer links that may be installed automatically, attempted in manifest order.</param>
+/// <param name="Packages">可自动安装的安装包直链；非 GitHub 来源与镜像优先，组内保持清单顺序。</param>
 /// <param name="Accelerators">
 /// 加速站点模板覆盖：<c>null</c> 表示使用程序内置默认列表，空列表表示明确禁用加速，非空列表表示按该顺序尝试。
 /// Accelerator template override: <c>null</c> keeps the built-in defaults, an empty list disables acceleration
