@@ -1,10 +1,10 @@
 {
-  "generatedUtc": "2026-10-17T06:16:20Z",
+  "generatedUtc": "2026-10-24T15:54:23Z",
   "source": "https://api.github.com/repos/Fervent-Tempo/AF-Media-Bar/contributors?per_page=100&anon=0",
   "contributors": [
     {
       "login": "Fervent-Tempo",
-      "contributions": 472,
+      "contributions": 618,
       "html_url": "https://github.com/Fervent-Tempo",
       "avatar_url": "https://avatars.githubusercontent.com/u/160240486?v=4"
     },
@@ -13,6 +13,12 @@
       "contributions": 80,
       "html_url": "https://github.com/Miaoyww",
       "avatar_url": "https://avatars.githubusercontent.com/u/52089819?v=4"
+    },
+    {
+      "login": "Gorden-86",
+      "contributions": 32,
+      "html_url": "https://github.com/Gorden-86",
+      "avatar_url": "https://avatars.githubusercontent.com/u/88560651?v=4"
     },
     {
       "login": "x1a0Y4NGren",
@@ -25,12 +31,6 @@
       "contributions": 15,
       "html_url": "https://github.com/cXp1r",
       "avatar_url": "https://avatars.githubusercontent.com/u/105576804?v=4"
-    },
-    {
-      "login": "Gorden-86",
-      "contributions": 12,
-      "html_url": "https://github.com/Gorden-86",
-      "avatar_url": "https://avatars.githubusercontent.com/u/88560651?v=4"
     },
     {
       "login": "furinamikuvn",
@@ -57,10 +57,22 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/48646541?v=4"
     },
     {
+      "login": "yu77776",
+      "contributions": 1,
+      "html_url": "https://github.com/yu77776",
+      "avatar_url": "https://avatars.githubusercontent.com/u/174418904?v=4"
+    },
+    {
       "login": "Heartestrella",
       "contributions": 1,
       "html_url": "https://github.com/Heartestrella",
       "avatar_url": "https://avatars.githubusercontent.com/u/110215026?v=4"
+    },
+    {
+      "login": "Wangxiaolu0716",
+      "contributions": 1,
+      "html_url": "https://github.com/Wangxiaolu0716",
+      "avatar_url": "https://avatars.githubusercontent.com/u/110671501?v=4"
     }
   ]
 }
