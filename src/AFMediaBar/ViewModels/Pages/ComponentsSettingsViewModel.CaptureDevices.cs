@@ -8,8 +8,15 @@ namespace AFMediaBar.ViewModels.Pages;
 
 public sealed partial class ComponentsSettingsViewModel
 {
-    /// <summary>频谱设备选择的呈现条目；null 标识表示跟随当前媒体来源。</summary>
-    public sealed record CaptureDeviceOption(string? DeviceId, string DisplayName, string SystemName);
+    /// <summary>
+    /// 频谱设备选择的呈现条目。<see cref="Mode"/> 表达该条目代表的设备策略；<see cref="DeviceId"/> 只在
+    /// <see cref="SpectrumCaptureDeviceMode.SpecificDevice"/> 下有意义，「跟随媒体来源」与「系统默认输出设备」
+    /// 两个条目都带 null 标识，靠模式区分。
+    /// A spectrum device entry. Mode states the strategy the entry stands for; DeviceId only means anything under
+    /// SpecificDevice, while the follow-media-source and system-default entries both carry a null id and are told
+    /// apart by their mode.
+    /// </summary>
+    public sealed record CaptureDeviceOption(string? DeviceId, string DisplayName, string SystemName, SpectrumCaptureDeviceMode Mode);
 
     private IAudioDeviceCatalog? _captureDevicesCatalog;
     private IReadOnlyList<AudioDeviceOption> _lastCaptureDevices = [];
@@ -22,13 +29,34 @@ public sealed partial class ComponentsSettingsViewModel
 
     public CaptureDeviceOption? SelectedSpectrumCaptureDevice
     {
-        get => SpectrumCaptureDevices.FirstOrDefault(option => string.Equals(option.DeviceId,
-            _configuration.Current.SpectrumComponent.CaptureDeviceId, StringComparison.OrdinalIgnoreCase));
+        get
+        {
+            var settings = _configuration.Current.SpectrumComponent;
+            // 选中项按生效策略匹配：旧配置缺策略字段时按 CaptureDeviceId 回退，显示与升级前一致。
+            // 非指定设备模式下保存的设备标识不参与匹配，否则切过去再回来会看到错选的设备。
+            return settings.ResolveCaptureDeviceMode() switch
+            {
+                SpectrumCaptureDeviceMode.SystemDefault => SpectrumCaptureDevices.FirstOrDefault(option =>
+                    option.Mode == SpectrumCaptureDeviceMode.SystemDefault),
+                SpectrumCaptureDeviceMode.FollowMediaSource => SpectrumCaptureDevices.FirstOrDefault(option =>
+                    option.Mode == SpectrumCaptureDeviceMode.FollowMediaSource),
+                _ => SpectrumCaptureDevices.FirstOrDefault(option => option.Mode == SpectrumCaptureDeviceMode.SpecificDevice &&
+                    string.Equals(option.DeviceId, settings.CaptureDeviceId, StringComparison.OrdinalIgnoreCase))
+            };
+        }
         set
         {
             if (_disposed || !_configuration.IsActive || _updatingCaptureDevices || value is null) return;
-            _configuration.SetSpectrum(_configuration.Current.SpectrumComponent with
-            { CaptureDeviceId = value.DeviceId, CaptureDeviceName = value.SystemName });
+            var current = _configuration.Current.SpectrumComponent;
+            // 非指定设备模式保留已保存的设备标识与名称，切回「指定设备」时恢复原选择；
+            // 该标识在这些模式下不参与设备选择，保留只是为了让用户的选择不丢失。
+            var specific = value.Mode == SpectrumCaptureDeviceMode.SpecificDevice;
+            _configuration.SetSpectrum(current with
+            {
+                CaptureDeviceMode = value.Mode,
+                CaptureDeviceId = specific ? value.DeviceId : current.CaptureDeviceId,
+                CaptureDeviceName = specific ? value.SystemName : current.CaptureDeviceName
+            });
             OnPropertyChanged();
         }
     }
@@ -80,14 +108,20 @@ public sealed partial class ComponentsSettingsViewModel
         try
         {
             var options = new List<CaptureDeviceOption>
-            { new(null, Translations.Get("Media.Spectrum.CaptureDevice.Automatic"), string.Empty) };
+            {
+                new(null, Translations.Get("Media.Spectrum.CaptureDevice.Automatic"), string.Empty, SpectrumCaptureDeviceMode.FollowMediaSource),
+                new(null, Translations.Get("Media.Spectrum.CaptureDevice.SystemDefault"), string.Empty, SpectrumCaptureDeviceMode.SystemDefault)
+            };
             foreach (var device in _lastCaptureDevices.DistinctBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase))
                 options.Add(new(device.PolicyId, device.IsActive ? device.DisplayName :
-                    Translations.Format("Media.Spectrum.CaptureDevice.Offline", device.DisplayName), device.SystemName));
+                    Translations.Format("Media.Spectrum.CaptureDevice.Offline", device.DisplayName), device.SystemName, SpectrumCaptureDeviceMode.SpecificDevice));
             var settings = _configuration.Current.SpectrumComponent;
-            if (settings.CaptureDeviceId is { } id && !options.Any(option => string.Equals(option.DeviceId, id, StringComparison.OrdinalIgnoreCase)))
+            // 只有指定设备模式才需要把当前离线设备补回列表；其它模式下保存的设备标识不参与选择，
+            // 补回来只会多一个永远选不中的幽灵项。
+            if (settings.ResolveCaptureDeviceMode() == SpectrumCaptureDeviceMode.SpecificDevice &&
+                settings.CaptureDeviceId is { } id && !options.Any(option => string.Equals(option.DeviceId, id, StringComparison.OrdinalIgnoreCase)))
                 options.Add(new(id, Translations.Format("Media.Spectrum.CaptureDevice.Offline",
-                    string.IsNullOrWhiteSpace(settings.CaptureDeviceName) ? id : settings.CaptureDeviceName), settings.CaptureDeviceName));
+                    string.IsNullOrWhiteSpace(settings.CaptureDeviceName) ? id : settings.CaptureDeviceName), settings.CaptureDeviceName, SpectrumCaptureDeviceMode.SpecificDevice));
             SpectrumCaptureDevices = options;
             OnPropertyChanged(nameof(SpectrumCaptureDevices));
             OnPropertyChanged(nameof(SelectedSpectrumCaptureDevice));

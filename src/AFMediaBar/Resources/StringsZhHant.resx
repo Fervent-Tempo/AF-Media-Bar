@@ -3150,10 +3150,13 @@
     <value>擷取裝置</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Description" xml:space="preserve">
-    <value>預設跟隨 AF 目前媒體來源的輸出裝置；無法識別時使用系統預設裝置。手動裝置離線時暫停擷取並保留選擇。</value>
+    <value>可跟隨目前媒體來源、一律擷取系統預設輸出裝置，或固定指定某個裝置。手動裝置離線時暫停擷取並保留選擇。</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Automatic" xml:space="preserve">
     <value>跟隨目前媒體來源</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.SystemDefault" xml:space="preserve">
+    <value>系統預設輸出裝置</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Offline" xml:space="preserve">
     <value>{0}（離線）</value>

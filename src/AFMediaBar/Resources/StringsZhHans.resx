@@ -3150,10 +3150,13 @@
     <value>采集设备</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Description" xml:space="preserve">
-    <value>默认跟随 AF 当前媒体来源的输出设备；无法识别时使用系统默认设备。手动设备离线时暂停采集并保留选择。</value>
+    <value>可跟随当前媒体来源、始终采集系统默认输出设备，或固定指定某个设备。手动设备离线时暂停采集并保留选择。</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Automatic" xml:space="preserve">
     <value>跟随当前媒体来源</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.SystemDefault" xml:space="preserve">
+    <value>系统默认输出设备</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Offline" xml:space="preserve">
     <value>{0}（离线）</value>
