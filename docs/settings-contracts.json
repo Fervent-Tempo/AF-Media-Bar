@@ -1,12 +1,12 @@
 {
   "formatVersion": 2,
-  "latestRelease": "v1.5.0",
+  "latestRelease": "v1.6.0",
   "settingsSchemaVersion": 2,
   "settings": {
     "experiments": {
-      "bluetoothBattery": "unreleased",
-      "memoryTools": "unreleased",
-      "systemMemoryCleanup": "unreleased",
+      "bluetoothBattery": "v1.6.0",
+      "memoryTools": "v1.6.0",
+      "systemMemoryCleanup": "v1.6.0",
       "floatingBar": "v1.5.0",
       "$release": "v1.5.0",
       "verticalTaskbar": "v1.5.0"
@@ -29,14 +29,14 @@
       },
       "orientation": "v1.5.0",
       "layer": "v1.5.0",
-      "edgeCollapseEnabled": "unreleased",
+      "edgeCollapseEnabled": "v1.6.0",
       "monitorDeviceIds": "v1.5.0",
       "positions": {
         "$items": {
           "centerXDip": "v1.5.0",
           "monitorDeviceId": "v1.5.0",
           "centerYDip": "v1.5.0",
-          "dockEdge": "unreleased"
+          "dockEdge": "v1.6.0"
         },
         "$release": "v1.5.0"
       }
@@ -100,16 +100,16 @@
     "layoutOrientationMode": "v1.2.0",
     "layoutThicknessScalePercent": "v1.2.0",
     "lyricsArtistSeparators": "v1.3.2",
-    "lyricsBracketSymbolsHidden": "unreleased",
+    "lyricsBracketSymbolsHidden": "v1.6.0",
     "lyricsCharacterSpacingPercent": "v1.3.0",
     "lyricsChineseConversion": "v1.4.0",
     "lyricsEnabled": "v1.2.0",
     "lyricsFixedWidthDip": "v1.3.0",
     "lyricsFixedWidthEnabled": "v1.3.0",
-    "lyricsFuriganaFilterEnabled": "unreleased",
+    "lyricsFuriganaFilterEnabled": "v1.6.0",
     "lyricsInfoLineFilterEnabled": "v1.2.0",
     "lyricsLineGapPercent": "v1.3.0",
-    "lyricsLongLineScrollEnabled": "unreleased",
+    "lyricsLongLineScrollEnabled": "v1.6.0",
     "lyricsSecondaryLine": {
       "$release": "v1.2.0",
       "order": "v1.2.0"
@@ -135,15 +135,15 @@
     },
     "position": "v1.2.0",
     "mediaSelection": {
-      "$release": "unreleased",
-      "mode": "unreleased",
-      "preferredSourceId": "unreleased"
+      "$release": "v1.6.0",
+      "mode": "v1.6.0",
+      "preferredSourceId": "v1.6.0"
     },
     "quickLaunch": {
       "$release": "v1.2.0",
-      "interactionMode": "unreleased",
-      "showApplicationIconOnHover": "unreleased",
-      "selectedEntryId": "unreleased",
+      "interactionMode": "v1.6.0",
+      "showApplicationIconOnHover": "v1.6.0",
+      "selectedEntryId": "v1.6.0",
       "entries": {
         "$release": "v1.2.0",
         "$items": {
@@ -164,9 +164,9 @@
       "$release": "v1.2.0",
       "bandCount": "v1.2.0",
       "captureSource": "v1.4.0",
-      "captureDeviceId": "unreleased",
-      "captureDeviceMode": "unreleased",
-      "captureDeviceName": "unreleased",
+      "captureDeviceId": "v1.6.0",
+      "captureDeviceMode": "v1.6.0",
+      "captureDeviceName": "v1.6.0",
       "contentHeightDip": "v1.2.0",
       "refreshRateHz": "v1.2.0",
       "sensitivityPercent": "v1.2.0",
@@ -196,7 +196,7 @@
         "performanceVisible": "v1.2.0"
       },
       "fullPanelEntryVisible": "v1.2.0",
-      "fullPanelEntryTrigger": "unreleased",
+      "fullPanelEntryTrigger": "v1.6.0",
       "hoverButtonSpacingDip": "v1.3.0",
       "hoverControls": {
         "$release": "v1.2.0",
@@ -249,17 +249,17 @@
     },
     "windowMode": "v1.2.0",
     "bluetoothBatteryWidget": {
-      "$release": "unreleased", "enabled": "unreleased", "deviceId": "unreleased", "lastKnownName": "unreleased",
-      "displayMode": "unreleased", "notifications": "unreleased", "lowThreshold": "unreleased"
+      "$release": "v1.6.0", "enabled": "v1.6.0", "deviceId": "v1.6.0", "lastKnownName": "v1.6.0",
+      "displayMode": "v1.6.0", "notifications": "v1.6.0", "lowThreshold": "v1.6.0"
     },
     "systemMemoryOptimization": {
-      "$release": "unreleased", "timerEnabled": "unreleased", "intervalMinutes": "unreleased",
-      "thresholdEnabled": "unreleased", "thresholdPercent": "unreleased", "level": "unreleased"
+      "$release": "v1.6.0", "timerEnabled": "v1.6.0", "intervalMinutes": "v1.6.0",
+      "thresholdEnabled": "v1.6.0", "thresholdPercent": "v1.6.0", "level": "v1.6.0"
     },
     "audioDevices": {
-      "preferences": { "$release": "unreleased", "$items": { "direction": "unreleased", "endpointId": "unreleased", "lastKnownName": "unreleased", "alias": "unreleased" } },
-      "outputCycleHotkey": "unreleased",
-      "inputCycleHotkey": "unreleased",
+      "preferences": { "$release": "v1.6.0", "$items": { "direction": "v1.6.0", "endpointId": "v1.6.0", "lastKnownName": "v1.6.0", "alias": "v1.6.0" } },
+      "outputCycleHotkey": "v1.6.0",
+      "inputCycleHotkey": "v1.6.0",
       "$release": "v1.5.0",
       "outputBlacklist": {
         "$release": "v1.5.0",
@@ -282,31 +282,31 @@
   "enums": {
     "BluetoothBatteryDisplayMode": {
       "paths": ["settings.bluetoothBatteryWidget.displayMode"],
-      "members": { "WhenConnected": { "value": 0, "release": "unreleased" }, "WhenLow": { "value": 1, "release": "unreleased" } }
+      "members": { "WhenConnected": { "value": 0, "release": "v1.6.0" }, "WhenLow": { "value": 1, "release": "v1.6.0" } }
     },
     "SystemMemoryOptimizationLevel": {
       "paths": ["settings.systemMemoryOptimization.level"],
-      "members": { "Standard": { "value": 0, "release": "unreleased" }, "Deep": { "value": 1, "release": "unreleased" } }
+      "members": { "Standard": { "value": 0, "release": "v1.6.0" }, "Deep": { "value": 1, "release": "v1.6.0" } }
     },
     "AudioDeviceDirection": {
       "paths": ["settings.audioDevices.preferences[].direction"],
-      "members": { "Output": { "value": 0, "release": "unreleased" }, "Input": { "value": 1, "release": "unreleased" } }
+      "members": { "Output": { "value": 0, "release": "v1.6.0" }, "Input": { "value": 1, "release": "v1.6.0" } }
     },
     "FullPanelHandleTrigger": {
       "paths": ["settings.taskbarExperience.fullPanelEntryTrigger"],
       "members": {
-        "Click": {"value": 0, "release": "unreleased"},
-        "Hover": {"value": 1, "release": "unreleased"}
+        "Click": {"value": 0, "release": "v1.6.0"},
+        "Hover": {"value": 1, "release": "v1.6.0"}
       }
     },
     "FloatingBarDockEdge": {
       "paths": ["settings.floatingBar.positions[].dockEdge"],
       "members": {
-        "None": {"value": 0, "release": "unreleased"},
-        "Left": {"value": 1, "release": "unreleased"},
-        "Right": {"value": 2, "release": "unreleased"},
-        "Top": {"value": 3, "release": "unreleased"},
-        "Bottom": {"value": 4, "release": "unreleased"}
+        "None": {"value": 0, "release": "v1.6.0"},
+        "Left": {"value": 1, "release": "v1.6.0"},
+        "Right": {"value": 2, "release": "v1.6.0"},
+        "Top": {"value": 3, "release": "v1.6.0"},
+        "Bottom": {"value": 4, "release": "v1.6.0"}
       }
     },
     "FloatingBarLayer": {
@@ -528,16 +528,16 @@
     "MediaSelectionMode": {
       "paths": ["settings.mediaSelection.mode"],
       "members": {
-        "Automatic": {"value": 0, "release": "unreleased"},
-        "LatestSession": {"value": 1, "release": "unreleased"},
-        "PreferredApplication": {"value": 2, "release": "unreleased"}
+        "Automatic": {"value": 0, "release": "v1.6.0"},
+        "LatestSession": {"value": 1, "release": "v1.6.0"},
+        "PreferredApplication": {"value": 2, "release": "v1.6.0"}
       }
     },
     "QuickLaunchInteractionMode": {
       "paths": ["settings.quickLaunch.interactionMode"],
       "members": {
-        "ListLaunch": {"value": 0, "release": "unreleased"},
-        "SelectThenLaunch": {"value": 1, "release": "unreleased"}
+        "ListLaunch": {"value": 0, "release": "v1.6.0"},
+        "SelectThenLaunch": {"value": 1, "release": "v1.6.0"}
       }
     },
     "QuickLaunchTargetKind": {
@@ -551,9 +551,9 @@
     "SpectrumCaptureDeviceMode": {
       "paths": ["settings.spectrumComponent.captureDeviceMode"],
       "members": {
-        "FollowMediaSource": {"value": 0, "release": "unreleased"},
-        "SystemDefault": {"value": 1, "release": "unreleased"},
-        "SpecificDevice": {"value": 2, "release": "unreleased"}
+        "FollowMediaSource": {"value": 0, "release": "v1.6.0"},
+        "SystemDefault": {"value": 1, "release": "v1.6.0"},
+        "SpecificDevice": {"value": 2, "release": "v1.6.0"}
       }
     },
     "SpectrumCaptureSource": {
@@ -671,7 +671,7 @@
         },
         "BluetoothBattery": {
           "value": 7,
-          "release": "unreleased"
+          "release": "v1.6.0"
         }
       }
     },
@@ -769,7 +769,7 @@
     "settings.experiments.newAudioControl": {
       "firstReleased": "v1.5.0",
       "lastPresentRelease": "v1.5.0",
-      "firstAbsentRelease": "unreleased",
+      "firstAbsentRelease": "v1.6.0",
       "currentHandling": "legacy flag ignored; audio controls always available; saved device preferences and hotkeys preserved"
     },
     "settings.lyricsMatchStrictness": {
