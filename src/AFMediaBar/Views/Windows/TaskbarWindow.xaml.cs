@@ -871,16 +871,16 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private static bool HasArea(RECT rect) => rect.Right > rect.Left && rect.Bottom > rect.Top;
 
     /// <summary>
-    /// 沿主轴末端扩展放大期间的可见与输入区，窗口仍铺满任务栏；WPF 裁剪由控件配合解除。
+    /// 沿主轴把放大期间的可见与输入区扩到内容溢出的一侧（随展开方向翻到首端或尾端），窗口仍铺满任务栏；
+    /// WPF 裁剪由控件配合解除。扩展带在重定位时保留。
+    /// Widens the zoom's visible and input region along the primary axis to the side the content overflows (flipping to the
+    /// leading or trailing end with the expansion direction) while the window still spans the taskbar; the WPF clip is
+    /// released by the control in step. The extension band survives repositioning.
     /// </summary>
     private void ApplyBarInputRegion(IntPtr taskbarWindowHandle, RECT baseRect, bool redraw)
     {
-        var effective = baseRect;
-        if (_artworkZoomExtensionPx > 0)
-        {
-            if (IsVerticalPresentation) effective.Bottom += _artworkZoomExtensionPx;
-            else effective.Right += _artworkZoomExtensionPx;
-        }
+        var effective = TaskbarArrangementPolicy.ExtendZoomOverflow(
+            baseRect, _artworkZoomExtensionPx, IsVerticalPresentation, MediaControl.ResolvedTaskbarArrangement);
         _taskBarService.ApplyInputRegion(taskbarWindowHandle, [effective], redraw);
     }
 
@@ -954,7 +954,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     }
 
     /// <summary>
-    /// 原地放大时同步推挤组件的输入区；收回后还原。扩展带暂时占用主轴末端的任务栏区域，重定位时保留该扩展量。
+    /// 原地放大时同步推挤组件的输入区；收回后还原。扩展带暂时沿主轴扩占任务栏区域（落在内容溢出侧，
+    /// 随展开方向翻到首端或尾端），重定位时保留该扩展量。
     /// </summary>
     private void MediaControl_ArtworkZoomExtensionChanged(object? sender, double extraDip)
     {

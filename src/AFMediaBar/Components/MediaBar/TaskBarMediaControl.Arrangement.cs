@@ -39,7 +39,16 @@ public partial class TaskBarMediaControl
         return Math.Max(Math.Ceiling(_minimumPrimaryLength * scale), minimum) / scale;
     }
 
-    private TaskbarContentArrangement ResolvedTaskbarArrangement => TaskbarArrangementPolicy.ResolveContent(
+    /// <summary>
+    /// 解析后生效的展开方向（用户手动选择优先，否则跟随任务栏对齐）。原地放大链路以它为单一事实源：
+    /// 推挤符号与宿主输入区的扩展侧都按它取，见 <see cref="ArtworkHoverController.AnimateArtworkZoomPush"/>
+    /// 与 <see cref="TaskbarArrangementPolicy.ExtendZoomOverflow"/>。
+    /// The resolved expansion direction (the user's manual choice first, the taskbar alignment otherwise). The in-place zoom
+    /// chain treats it as the single source of truth: both the push sign and the host's input-region extension side follow
+    /// it — see <see cref="ArtworkHoverController.AnimateArtworkZoomPush"/> and
+    /// <see cref="TaskbarArrangementPolicy.ExtendZoomOverflow"/>.
+    /// </summary>
+    internal TaskbarContentArrangement ResolvedTaskbarArrangement => TaskbarArrangementPolicy.ResolveContent(
         PresentationSettings.TaskbarExperience.Normalize().Arrangement, PresentationSettings.Position);
 
     private TaskbarBarPosition ResolvedTaskbarHoverAlignment => PresentationSettings.Position;

@@ -1,4 +1,5 @@
 // Resolves horizontal presentation anchors without changing text, icons or stored component order.
+using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.Classes.Services;
@@ -39,4 +40,37 @@ public static class TaskbarArrangementPolicy
             TaskbarBarPosition.Center => Math.Max(0, (width - revealedWidth) / 2),
             _ => 0
         };
+
+    /// <summary>
+    /// 原地放大期间把媒体栏的输入/可见区沿主轴扩到内容溢出的一侧。内容从右侧展开时封面在主轴尾端、被推挤的内容
+    /// 从首端溢出，扩展改到首端（横向 <c>Left</c>、纵向 <c>Top</c>）；其余情形维持既有的尾端扩展（横向
+    /// <c>Right</c>、纵向 <c>Bottom</c>）。与 <see cref="TaskBarMediaControl"/> 放大链路的推挤符号同源于
+    /// <see cref="ResolveContent"/>：两侧必须同时翻，否则放大的组件仍被 HWND 裁掉、点不到。
+    /// Widens the bar's input/visible region along the primary axis to the side the pushed content overflows during the
+    /// in-place zoom: with right-side expansion the artwork sits at the trailing end and the pushed content overflows the
+    /// leading end, so the extension moves there (<c>Left</c> horizontally, <c>Top</c> vertically); every other case keeps
+    /// the established trailing-side extension (<c>Right</c> horizontally, <c>Bottom</c> vertically). It shares its source
+    /// with the control's zoom-push sign through <see cref="ResolveContent"/>: both sides must flip together, or the
+    /// enlarged widgets stay clipped by the HWND region and unclickable.
+    /// </summary>
+    /// <param name="rect">媒体栏窗口矩形（屏幕物理像素）。/ The bar window rect, in screen physical pixels.</param>
+    /// <param name="extensionPx">放大期间的扩展量（物理像素）；不大于 0 时原样返回。/ The zoom extension, in physical pixels; the rect returns unchanged when it is not positive.</param>
+    /// <param name="vertical">是否为纵向任务栏。/ Whether the taskbar is vertical.</param>
+    /// <param name="arrangement">解析后生效的展开方向。/ The resolved expansion direction.</param>
+    public static NativeMethods.RECT ExtendZoomOverflow(NativeMethods.RECT rect, int extensionPx, bool vertical, TaskbarContentArrangement arrangement)
+    {
+        if (extensionPx <= 0)
+            return rect;
+        if (arrangement == TaskbarContentArrangement.Right)
+        {
+            if (vertical) rect.Top -= extensionPx;
+            else rect.Left -= extensionPx;
+        }
+        else
+        {
+            if (vertical) rect.Bottom += extensionPx;
+            else rect.Right += extensionPx;
+        }
+        return rect;
+    }
 }
