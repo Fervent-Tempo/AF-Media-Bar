@@ -15,6 +15,7 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INaviga
     /// <summary>View-layer mapping for semantic navigation and search destinations.</summary>
     public static IReadOnlyDictionary<SettingsPageKey, Type> PageTypes { get; } = new Dictionary<SettingsPageKey, Type>
     {
+        [SettingsPageKey.QuickStart] = typeof(QuickStartPage),
         [SettingsPageKey.ScreenAndPlacement] = typeof(ScreenAndPlacementPage),
         [SettingsPageKey.Appearance] = typeof(AppearancePage),
         [SettingsPageKey.Interaction] = typeof(InteractionPage),
@@ -23,6 +24,7 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INaviga
         [SettingsPageKey.Components] = typeof(ComponentsSettingsPage),
         [SettingsPageKey.Widgets] = typeof(WidgetsSettingsPage),
         [SettingsPageKey.MediaAndNotifications] = typeof(ExtraFeaturesPage),
+        [SettingsPageKey.PluginCenter] = typeof(PluginCenterPage),
         [SettingsPageKey.Application] = typeof(ApplicationPage),
         [SettingsPageKey.Experimental] = typeof(ExperimentalPage),
         [SettingsPageKey.ReleaseHighlights] = typeof(ReleaseHighlightsPage),

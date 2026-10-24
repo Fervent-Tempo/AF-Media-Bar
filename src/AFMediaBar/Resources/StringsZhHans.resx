@@ -3207,4 +3207,340 @@
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>边缘自动折叠</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>默认开启。拖到工作区边缘后，移开鼠标收起，靠近时展开；支持四边。</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展开桌面媒体栏</value></data>
+  <data name="Common.Page.PluginCenter" xml:space="preserve"><value>插件中心</value></data>
+  <data name="Plugins.Architecture" xml:space="preserve"><value>播放器架构</value></data>
+  <data name="Plugins.Attribution" xml:space="preserve"><value>作者：{0}    版本：{1}</value></data>
+  <data name="Plugins.Author" xml:space="preserve"><value>作者：{0}</value></data>
+  <data name="Plugins.Cancel" xml:space="preserve"><value>取消下载</value></data>
+  <data name="Plugins.Catalog" xml:space="preserve"><value>播放器扩展</value></data>
+  <data name="Plugins.Catalog.foobar.Install" xml:space="preserve"><value>1. 在 foobar2000 的 Preferences → Components 中选择 Install。
+2. 选择下载的 .fb2k-component，应用并重启播放器。
+3. 播放歌曲，检查系统媒体面板的信息和进度。</value></data>
+  <data name="Plugins.Catalog.foobar.Requirements" xml:space="preserve"><value>选择与 foobar2000 一致的 x86 或 x64 组件。功能以播放器和上游组件版本为准。</value></data>
+  <data name="Plugins.Catalog.foobar.Restore" xml:space="preserve"><value>在 Components 中移除 foo_mediacontrol 并重启；回退时安装保留的旧版组件。</value></data>
+  <data name="Plugins.Catalog.foobar.Summary" xml:space="preserve"><value>补全专辑、专辑艺术家、时长和播放进度，接入 Windows 媒体控制。</value></data>
+  <data name="Plugins.Catalog.foobar.Target" xml:space="preserve"><value>foobar2000</value></data>
+  <data name="Plugins.Catalog.foobar.Upgrade" xml:space="preserve"><value>通过 Components 安装新版组件并重启；保留原组件包，以便需要时回退。</value></data>
+  <data name="Plugins.Catalog.itunes.Install" xml:space="preserve"><value>1. 将压缩包完整解压到普通文件夹，保留所有文件。
+2. 启动 iTunes.SMTC.exe，再打开 iTunes 播放音乐。
+3. 检查 Windows 媒体面板；AF 不替你运行工具或设置开机自启。</value></data>
+  <data name="Plugins.Catalog.itunes.Requirements" xml:space="preserve"><value>Windows 10/11 和 iTunes；选择可在本机运行且匹配 iTunes 的附件。上游也提到 Apple Music Preview，不将其视为当前 Apple Music 的通用修复。</value></data>
+  <data name="Plugins.Catalog.itunes.Restore" xml:space="preserve"><value>退出桥接工具，移除其文件夹以及你手动添加的启动入口；回退时使用备份。</value></data>
+  <data name="Plugins.Catalog.itunes.Summary" xml:space="preserve"><value>独立运行的桥接工具，将 iTunes 接入 Windows 媒体控制；不是复制到播放器目录的 DLL 插件。</value></data>
+  <data name="Plugins.Catalog.itunes.Target" xml:space="preserve"><value>iTunes</value></data>
+  <data name="Plugins.Catalog.itunes.Upgrade" xml:space="preserve"><value>先退出桥接工具，备份其目录，再完整解压新版；保留需要的个人配置。</value></data>
+  <data name="Plugins.Catalog.musicbee.Install" xml:space="preserve"><value>1. 完全退出 MusicBee。
+2. 将 mb_MediaControl.dll 放入该 MusicBee 安装的 Plugins 目录。
+3. 重启后在插件设置中确认已启用。Microsoft Store 版请使用播放器的 Add Plugin 入口，不修改 WindowsApps。</value></data>
+  <data name="Plugins.Catalog.musicbee.Requirements" xml:space="preserve"><value>适用于 Windows 10/11 的 MusicBee，需 .NET Framework 4.8。附件为 AnyCPU。避免同时启用多个发布 SMTC 会话的插件。</value></data>
+  <data name="Plugins.Catalog.musicbee.Restore" xml:space="preserve"><value>在插件设置中卸载并重启，或完全退出后删除添加的 DLL；需要回退时恢复备份。</value></data>
+  <data name="Plugins.Catalog.musicbee.Summary" xml:space="preserve"><value>提供曲目信息、播放控制、时间轴、进度跳转、随机和循环控制。</value></data>
+  <data name="Plugins.Catalog.musicbee.Target" xml:space="preserve"><value>MusicBee</value></data>
+  <data name="Plugins.Catalog.musicbee.Upgrade" xml:space="preserve"><value>退出 MusicBee，备份旧 DLL 后替换并重启；通过 Add Plugin 安装的组件按播放器流程升级。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Install" xml:space="preserve"><value>1. 完全退出 QQ 音乐，确认当前真正使用的版本安装目录，其中应有 QQMusicAgent.exe；不要使用升级后的残留目录。
+2. 如已有 msimg32.dll，先确认来源并另存备份，不直接覆盖。
+3. 将 payload.dll 重命名为 msimg32.dll 放入该目录，再启动验证。写入 Program Files 可能需要管理员权限。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Requirements" xml:space="preserve"><value>实验性进程内插件，仅 x86；上游主要验证 QQ 音乐 22.71。客户端更新可能导致失效或崩溃，不与其它同名代理 DLL 混装。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Restore" xml:space="preserve"><value>完全退出 QQ 音乐，仅删除此次安装的 msimg32.dll；若原先有同名文件，将原备份还原。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Summary" xml:space="preserve"><value>补齐 SMTC 进度跳转，并提供 QQ 歌曲 ID 和高清封面；沿用 QQMusic.exe 会话身份。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Target" xml:space="preserve"><value>QQ 音乐</value></data>
+  <data name="Plugins.Catalog.qqmusic.Upgrade" xml:space="preserve"><value>先核对新客户端和插件兼容性，退出播放器后替换插件；不要用插件覆盖安装前保留的原文件备份。</value></data>
+  <data name="Plugins.Catalog.vlc.Install" xml:space="preserve"><value>1. 退出 VLC，将压缩包中的 libwin10smtc_plugin.dll 解压到 VLC\plugins\misc。
+2. 重启 VLC，打开高级首选项 → 界面 → 控制界面。
+3. 勾选 Windows SMTC integration 并保存，重新播放媒体。</value></data>
+  <data name="Plugins.Catalog.vlc.Requirements" xml:space="preserve"><value>VLC 3.0.x 或 4.0.0-dev；Windows 10 1607+ / 11。插件和 Visual C++ 2022 或更新运行库必须匹配 VLC 架构。</value></data>
+  <data name="Plugins.Catalog.vlc.Restore" xml:space="preserve"><value>取消勾选该控制界面，退出 VLC 后移除新增 DLL；回退时恢复备份。</value></data>
+  <data name="Plugins.Catalog.vlc.Summary" xml:space="preserve"><value>接入 SMTC 元数据、播放控制和进度跳转。v5.0.0 已声明修复播放进度上报。</value></data>
+  <data name="Plugins.Catalog.vlc.Target" xml:space="preserve"><value>VLC</value></data>
+  <data name="Plugins.Catalog.vlc.Upgrade" xml:space="preserve"><value>退出 VLC，备份原插件后替换为匹配架构的新 DLL，重启并检查控制界面选项。</value></data>
+  <data name="Plugins.ChooseArchitecture" xml:space="preserve"><value>请选择播放器的架构，与 Windows 或 AF 的架构无关。</value></data>
+  <data name="Plugins.Download" xml:space="preserve"><value>下载</value></data>
+  <data name="Plugins.Empty" xml:space="preserve"><value>没有匹配的插件或配置指引。</value></data>
+  <data name="Plugins.Error.File" xml:space="preserve"><value>无法保存或读取插件文件，请检查目录权限与可用空间。</value></data>
+  <data name="Plugins.Error.Integrity" xml:space="preserve"><value>文件大小或 SHA-256 校验失败，未保存为完成文件。请重试或查看上游版本。</value></data>
+  <data name="Plugins.Error.Network" xml:space="preserve"><value>下载来源均未成功。请重试或从上游发布页手动下载。</value></data>
+  <data name="Plugins.Error.Open" xml:space="preserve"><value>无法打开链接或显示文件。文件可能已移动，请检查默认浏览器或重新下载。</value></data>
+  <data name="Plugins.Experimental" xml:space="preserve"><value>实验性 · 请核对兼容条件</value></data>
+  <data name="Plugins.Guide" xml:space="preserve"><value>安装、升级与还原指引</value></data>
+  <data name="Plugins.Install" xml:space="preserve"><value>安装</value></data>
+  <data name="Plugins.ManualNotice" xml:space="preserve">
+    <value>下载后按指引手动安装。</value>
+  </data>
+  <data name="Plugins.Native" xml:space="preserve"><value>原生功能配置指引，无需下载插件。</value></data>
+  <data name="Plugins.Project" xml:space="preserve"><value>上游项目与说明</value></data>
+  <data name="Plugins.Restore" xml:space="preserve"><value>卸载或还原</value></data>
+  <data name="Plugins.Retry" xml:space="preserve"><value>重试下载</value></data>
+  <data name="Plugins.Reveal" xml:space="preserve"><value>在文件夹中显示</value></data>
+  <data name="Plugins.Search" xml:space="preserve"><value>搜索插件名称或播放器</value></data>
+  <data name="Plugins.Source" xml:space="preserve"><value>当前下载来源：{0}</value></data>
+  <data name="Plugins.Status.Available" xml:space="preserve"><value>可下载。目录版本随 AF 更新。</value></data>
+  <data name="Plugins.Status.Canceled" xml:space="preserve"><value>已取消，可重试下载。</value></data>
+  <data name="Plugins.Status.Completed" xml:space="preserve"><value>已下载并校验，请按指引手动安装。</value></data>
+  <data name="Plugins.Status.Downloading" xml:space="preserve"><value>正在下载并校验…</value></data>
+  <data name="Plugins.Status.Failed" xml:space="preserve"><value>下载失败，可重试或访问上游项目。</value></data>
+  <data name="Plugins.Status.Verifying" xml:space="preserve"><value>正在校验文件…</value></data>
+  <data name="Plugins.Subtitle" xml:space="preserve"><value>下载播放器 SMTC 扩展，按说明手动安装。</value></data>
+  <data name="Plugins.Upgrade" xml:space="preserve"><value>升级</value></data>
+  <data name="Plugins.VerifyOrDownload" xml:space="preserve"><value>校验或重新下载</value></data>
+  <data name="Common.Page.QuickStart" xml:space="preserve">
+    <value>快速开始</value>
+  </data>
+  <data name="QuickStart.Subtitle" xml:space="preserve">
+    <value>开始使用 AF，查看播放器支持与版本亮点。</value>
+  </data>
+  <data name="QuickStart.Latest" xml:space="preserve">
+    <value>版本亮点</value>
+  </data>
+  <data name="QuickStart.Latest.Description" xml:space="preserve">
+    <value>查看版本新功能与历史亮点。</value>
+  </data>
+  <data name="QuickStart.Latest.Unavailable" xml:space="preserve">
+    <value>暂时无法读取版本资料，可打开版本亮点重试。</value>
+  </data>
+  <data name="QuickStart.AllReleases" xml:space="preserve">
+    <value>查看所有版本</value>
+  </data>
+  <data name="QuickStart.Basics" xml:space="preserve">
+    <value>基础教程</value>
+  </data>
+  <data name="QuickStart.Basics.Description" xml:space="preserve">
+    <value>播放、显示位置、外观与歌词的使用方法。</value>
+  </data>
+  <data name="QuickStart.Players" xml:space="preserve">
+    <value>播放器支持</value>
+  </data>
+  <data name="QuickStart.Players.Description" xml:space="preserve">
+    <value>查看原生媒体控制、AF 补全与插件建议。</value>
+  </data>
+  <data name="QuickStart.Reference" xml:space="preserve">
+    <value>兼容性参考截至 2026-10-24。源码与上游说明不等于本机验收；未确认的能力标为待验证。</value>
+  </data>
+  <data name="QuickStart.Search" xml:space="preserve">
+    <value>搜索播放器</value>
+  </data>
+  <data name="QuickStart.OpenSettings" xml:space="preserve">
+    <value>打开相关设置</value>
+  </data>
+  <data name="QuickStart.ViewPlugin" xml:space="preserve">
+    <value>查看插件</value>
+  </data>
+  <data name="QuickStart.Source" xml:space="preserve">
+    <value>查看依据</value>
+  </data>
+  <data name="QuickStart.Back" xml:space="preserve">
+    <value>返回</value>
+  </data>
+  <data name="QuickStart.Capabilities" xml:space="preserve">
+    <value>原生信息：{0}；时间轴：{1}；控制与跳转：{2}。</value>
+  </data>
+  <data name="QuickStart.Capability.Unknown" xml:space="preserve">
+    <value>待验证</value>
+  </data>
+  <data name="QuickStart.Capability.Implemented" xml:space="preserve">
+    <value>源码已实现</value>
+  </data>
+  <data name="QuickStart.Capability.Reported" xml:space="preserve">
+    <value>上游有说明</value>
+  </data>
+  <data name="QuickStart.Capability.RequiresPlugin" xml:space="preserve">
+    <value>需扩展接入</value>
+  </data>
+  <data name="QuickStart.Capability.Partial" xml:space="preserve">
+    <value>部分支持</value>
+  </data>
+  <data name="QuickStart.PluginAvailable" xml:space="preserve">
+    <value>有补充缺项的插件，按版本与需要选择。</value>
+  </data>
+  <data name="QuickStart.NoRecommendation" xml:space="preserve">
+    <value>需先验证，暂不推荐安装插件。</value>
+  </data>
+  <data name="QuickStart.UseBuiltIn" xml:space="preserve">
+    <value>使用内置媒体控制，无需另装 SMTC 插件。</value>
+  </data>
+  <data name="QuickStart.Af.NetEase" xml:space="preserve">
+    <value>AF 内置网易云信息与进度读取；播放、切歌和跳转仍取决于同来源 SMTC 能力。</value>
+  </data>
+  <data name="QuickStart.Af.KuGou" xml:space="preserve">
+    <value>AF 可补充酷狗进度；元数据、封面与控制仍依赖播放器 SMTC。适配效果需按客户端版本验证。</value>
+  </data>
+  <data name="QuickStart.Af.Smtc" xml:space="preserve">
+    <value>AF 使用播放器上报的媒体会话；没有上报的信息和控制不会自动变为可用。</value>
+  </data>
+  <data name="QuickStart.Note.NetEase" xml:space="preserve">
+    <value>3.1.41 的原生 SMTC 尚未实机验证。InfLink-rs 上游验证 3.1.20–3.1.41 和 2.10.13，依赖 BetterNCM；确认 AF 仍有缺项后再考虑。</value>
+  </data>
+  <data name="QuickStart.Note.QQ" xml:space="preserve">
+    <value>上游在 22.71 验证原生时间轴缺少跳转。插件通过进程注入补充跳转；22.61 尚未验证，不能推断兼容。</value>
+  </data>
+  <data name="QuickStart.Note.KuGou" xml:space="preserve">
+    <value>当前版本尚未本机验收。旧插件仅支持 8.3.97.21592 且不支持跳转，不适用于当前 20.x 客户端。</value>
+  </data>
+  <data name="QuickStart.Note.Pending" xml:space="preserve">
+    <value>未找到足够的版本化证据，需检查歌曲信息、封面、时长、进度及实际控制。不能仅凭出现系统媒体卡片认定完整支持。</value>
+  </data>
+  <data name="QuickStart.Note.Browser" xml:space="preserve">
+    <value>桌面端与网页版分别验证；网页版取决于网站及浏览器的媒体会话实现。</value>
+  </data>
+  <data name="QuickStart.Note.Bodian" xml:space="preserve">
+    <value>上游插件提供元数据、时间轴和控制，但未确认当前播放器版本是否仍需要；暂不提供下载。</value>
+  </data>
+  <data name="QuickStart.Note.BuiltIn" xml:space="preserve">
+    <value>已核对标注发行版本中的 Media Session 元数据、位置上报和跳转处理；Windows 安装包实际表现待维护者验收。</value>
+  </data>
+  <data name="QuickStart.Note.Listen1" xml:space="preserve">
+    <value>已核对桌面项目引用的播放器子模块，实现媒体信息、时间轴与跳转。网页版、扩展版和桌面版须分别验收。</value>
+  </data>
+  <data name="QuickStart.Note.SPlayer" xml:space="preserve">
+    <value>桌面版含原生 Windows SMTC，需开启播放器的 SMTC 选项；网页回退使用 Media Session。实际安装包待验收。</value>
+  </data>
+  <data name="QuickStart.Note.MusicFree" xml:space="preserve">
+    <value>已确认元数据、播放状态及切歌处理；尚未确认时间轴与跳转完整性。MusicFree 音源插件与 SMTC 扩展用途不同。</value>
+  </data>
+  <data name="QuickStart.Note.Foobar" xml:space="preserve">
+    <value>上游 SMTC 使用指引指出内置模式可能缺少专辑与时长；需要这些信息时可用 foo_mediacontrol。当前播放器版本仍需实测。</value>
+  </data>
+  <data name="QuickStart.Note.Plugin" xml:space="preserve">
+    <value>上游提供 SMTC 接入插件。缺少媒体会话或现有组件功能不足时使用，先检查是否已安装同类组件。</value>
+  </data>
+  <data name="QuickStart.Note.Vlc" xml:space="preserve">
+    <value>目录提供上游 VLC 3.0.x 接入方案；4.0 开发版兼容性须单独核对。插件与 VC++ 运行库须匹配 VLC 架构。</value>
+  </data>
+  <data name="QuickStart.Note.ITunes" xml:space="preserve">
+    <value>适用于传统 iTunes 的独立桥接工具；不能据此认定现代 Apple Music 客户端也需要。</value>
+  </data>
+  <data name="QuickStart.Note.Mpv" xml:space="preserve">
+    <value>v0.41.0 原生实现元数据、时间轴和跳转。可在 mpv.conf 设置 media-controls=yes；libmpv 和第三方前端需分别确认。</value>
+  </data>
+  <data name="QuickStart.Note.PotPlayer" xml:space="preserve">
+    <value>桥接项目主要补歌曲、艺术家和专辑等元数据；上游称时间轴与控制原本已提供。本机版本未实测，暂不推荐注入工具。</value>
+  </data>
+  <data name="QuickStart.Note.Aimp" xml:space="preserve">
+    <value>旧桥接作者已因原生支持停止维护，但稳定版与测试版范围尚未核实；不推荐旧桥接作为必装项。</value>
+  </data>
+  <data name="QuickStart.Note.MpcHc" xml:space="preserve">
+    <value>使用仍维护的 clsid2 分支，检查 Windows 集成中的 SMTC 选项；完整元数据、时间轴和控制仍需按版本验收。</value>
+  </data>
+  <data name="Plugins.Catalog.foobar.Compatibility" xml:space="preserve">
+    <value>按 foobar2000 架构选择组件。</value>
+  </data>
+  <data name="Plugins.Catalog.musicbee.Compatibility" xml:space="preserve">
+    <value>需要 .NET Framework 4.8。</value>
+  </data>
+  <data name="Plugins.Catalog.vlc.Compatibility" xml:space="preserve">
+    <value>适配 VLC 3.0.x；需要匹配架构的 VC++ 2022 运行库。</value>
+  </data>
+  <data name="Plugins.Catalog.itunes.Compatibility" xml:space="preserve">
+    <value>用于传统 iTunes，独立运行。</value>
+  </data>
+  <data name="Plugins.Catalog.qqmusic.Compatibility" xml:space="preserve">
+    <value>仅 x86，主要验证 22.71；通过 DLL 注入，更新后可能失效或崩溃。</value>
+  </data>
+  <data name="Plugins.DownloadDetails" xml:space="preserve">
+    <value>下载说明</value>
+  </data>
+  <data name="Plugins.DownloadDetails.Body" xml:space="preserve">
+    <value>AF 只下载和校验文件，不自动解压或安装。优先尝试镜像，失败后回退官方；切换页面或关闭设置后继续，退出 AF 时取消。文件保存在本地应用数据目录的 AFMediaBar\PluginDownloads。</value>
+  </data>
+  <data name="QuickStart.Tutorial.Playback.Title" xml:space="preserve">
+    <value>播放与来源</value>
+  </data>
+  <data name="QuickStart.Tutorial.Playback.Body" xml:space="preserve">
+    <value>先在播放器中播放歌曲，再在 AF 媒体菜单选择来源。未显示时检查媒体与通知中的来源过滤，并查看下方播放器支持。</value>
+  </data>
+  <data name="QuickStart.Tutorial.Placement.Title" xml:space="preserve">
+    <value>显示与位置</value>
+  </data>
+  <data name="QuickStart.Tutorial.Placement.Body" xml:space="preserve">
+    <value>选择任务栏或桌面悬浮模式，再设置目标显示器、位置和尺寸。桌面悬浮模式可拖动并按需锁定。</value>
+  </data>
+  <data name="QuickStart.Tutorial.Appearance.Title" xml:space="preserve">
+    <value>内容与外观</value>
+  </data>
+  <data name="QuickStart.Tutorial.Appearance.Body" xml:space="preserve">
+    <value>在内容与布局中选择封面、文字和控制等组件；在外观中调整主题、背景和字体。小组件可单独配置。</value>
+  </data>
+  <data name="QuickStart.Tutorial.Lyrics.Title" xml:space="preserve">
+    <value>歌词与进度</value>
+  </data>
+  <data name="QuickStart.Tutorial.Lyrics.Body" xml:space="preserve">
+    <value>在歌词设置中调整显示与来源。歌词同步需要可靠的歌曲信息和进度；若缺少时间轴，先查看播放器支持，不要重复安装同类插件。</value>
+  </data>
+  <data name="QuickStart.Player.netease.Name" xml:space="preserve">
+    <value>网易云音乐</value>
+  </data>
+  <data name="QuickStart.Player.qqmusic.Name" xml:space="preserve">
+    <value>QQ 音乐</value>
+  </data>
+  <data name="QuickStart.Player.kugou.Name" xml:space="preserve">
+    <value>酷狗音乐</value>
+  </data>
+  <data name="QuickStart.Player.soda.Name" xml:space="preserve">
+    <value>汽水音乐</value>
+  </data>
+  <data name="QuickStart.Player.kuwo.Name" xml:space="preserve">
+    <value>酷我音乐</value>
+  </data>
+  <data name="QuickStart.Player.migu.Name" xml:space="preserve">
+    <value>咪咕音乐</value>
+  </data>
+  <data name="QuickStart.Player.qianqian.Name" xml:space="preserve">
+    <value>千千音乐</value>
+  </data>
+  <data name="QuickStart.Player.bodian.Name" xml:space="preserve">
+    <value>波点音乐</value>
+  </data>
+  <data name="QuickStart.Player.lx.Name" xml:space="preserve">
+    <value>洛雪音乐桌面版</value>
+  </data>
+  <data name="QuickStart.Player.yesplay.Name" xml:space="preserve">
+    <value>YesPlayMusic</value>
+  </data>
+  <data name="QuickStart.Player.moekoe.Name" xml:space="preserve">
+    <value>MoeKoeMusic</value>
+  </data>
+  <data name="QuickStart.Player.listen1.Name" xml:space="preserve">
+    <value>Listen 1</value>
+  </data>
+  <data name="QuickStart.Player.splayer.Name" xml:space="preserve">
+    <value>SPlayer</value>
+  </data>
+  <data name="QuickStart.Player.alger.Name" xml:space="preserve">
+    <value>AlgerMusicPlayer</value>
+  </data>
+  <data name="QuickStart.Player.musicfree.Name" xml:space="preserve">
+    <value>MusicFree Desktop</value>
+  </data>
+  <data name="QuickStart.Player.foobar.Name" xml:space="preserve">
+    <value>foobar2000</value>
+  </data>
+  <data name="QuickStart.Player.musicbee.Name" xml:space="preserve">
+    <value>MusicBee</value>
+  </data>
+  <data name="QuickStart.Player.vlc.Name" xml:space="preserve">
+    <value>VLC</value>
+  </data>
+  <data name="QuickStart.Player.itunes.Name" xml:space="preserve">
+    <value>iTunes</value>
+  </data>
+  <data name="QuickStart.Player.mpv.Name" xml:space="preserve">
+    <value>mpv</value>
+  </data>
+  <data name="QuickStart.Player.potplayer.Name" xml:space="preserve">
+    <value>PotPlayer</value>
+  </data>
+  <data name="QuickStart.Player.spotify.Name" xml:space="preserve">
+    <value>Spotify</value>
+  </data>
+  <data name="QuickStart.Player.applemusic.Name" xml:space="preserve">
+    <value>Apple Music</value>
+  </data>
+  <data name="QuickStart.Player.aimp.Name" xml:space="preserve">
+    <value>AIMP</value>
+  </data>
+  <data name="QuickStart.Player.mpchc.Name" xml:space="preserve">
+    <value>MPC-HC</value>
+  </data>
+  <data name="QuickStart.Player.tidal.Name" xml:space="preserve">
+    <value>TIDAL</value>
+  </data>
 </root>

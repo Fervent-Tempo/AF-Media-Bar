@@ -48,6 +48,10 @@ public enum SettingsPageKey
     DeviceManagement,
     /// <summary>频谱、性能与蓝牙电量的小组件配置。</summary>
     Widgets,
+    /// <summary>全局插件目录、下载和手动安装指引。</summary>
+    PluginCenter,
+    /// <summary>基础教程、版本亮点入口和播放器兼容性参考。</summary>
+    QuickStart,
 }
 
 /// <summary>

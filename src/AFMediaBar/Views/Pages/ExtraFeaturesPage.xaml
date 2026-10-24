@@ -119,6 +119,8 @@
                         </TextBlock>
 
                         <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Page.PluginCenter}"
+                                Destination="PluginCenter" GroupId="Plugins.Catalog"/>
                             <components:SettingsNavigationButton Content="{DynamicResource Loc.Widgets.Note.Manage}"
                                 Destination="Widgets" GroupId="Widgets.Note"/>
                         </WrapPanel>

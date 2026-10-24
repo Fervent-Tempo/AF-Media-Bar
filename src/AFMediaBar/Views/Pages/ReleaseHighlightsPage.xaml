@@ -116,7 +116,11 @@
     </Page.Resources>
     <Grid>
         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-        <components:SettingsGroupStrip Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Target="{Binding ElementName=PageScroll}" Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}" />
+        <StackPanel Margin="{StaticResource AfSettingsHeaderMargin}">
+            <ui:Button Content="{DynamicResource Loc.QuickStart.Back}" Click="OnBackRequested" HorizontalAlignment="Left"
+                Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,0,8" />
+            <components:SettingsGroupStrip MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Target="{Binding ElementName=PageScroll}" Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}" />
+        </StackPanel>
         <ScrollViewer x:Name="PageScroll" Grid.Row="1" Margin="{StaticResource AfSettingsScrollMargin}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel MaxWidth="{StaticResource AfSettingsContentMaxWidth}">
 

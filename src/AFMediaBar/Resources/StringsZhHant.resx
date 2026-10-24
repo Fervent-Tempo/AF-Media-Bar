@@ -3207,4 +3207,340 @@
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>邊緣自動收合</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>預設開啟。拖到工作區邊緣後，移開滑鼠收合，靠近時展開；支援四邊。</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展開桌面媒體列</value></data>
+  <data name="Common.Page.PluginCenter" xml:space="preserve"><value>外掛程式中心</value></data>
+  <data name="Plugins.Architecture" xml:space="preserve"><value>播放器架構</value></data>
+  <data name="Plugins.Attribution" xml:space="preserve"><value>作者：{0}    版本：{1}</value></data>
+  <data name="Plugins.Author" xml:space="preserve"><value>作者：{0}</value></data>
+  <data name="Plugins.Cancel" xml:space="preserve"><value>取消下載</value></data>
+  <data name="Plugins.Catalog" xml:space="preserve"><value>播放器擴充功能</value></data>
+  <data name="Plugins.Catalog.foobar.Install" xml:space="preserve"><value>1. 在 foobar2000 的 Preferences → Components 選擇 Install。
+2. 選取下載的 .fb2k-component，套用並重新啟動播放器。
+3. 播放歌曲，檢查系統媒體面板的資訊與進度。</value></data>
+  <data name="Plugins.Catalog.foobar.Requirements" xml:space="preserve"><value>請選擇與 foobar2000 相同的 x86 或 x64 元件。功能依播放器與上游元件版本而定。</value></data>
+  <data name="Plugins.Catalog.foobar.Restore" xml:space="preserve"><value>在 Components 移除 foo_mediacontrol 並重新啟動；還原時安裝保留的舊版元件。</value></data>
+  <data name="Plugins.Catalog.foobar.Summary" xml:space="preserve"><value>補齊專輯、專輯演出者、長度與播放進度，連接 Windows 媒體控制。</value></data>
+  <data name="Plugins.Catalog.foobar.Target" xml:space="preserve"><value>foobar2000</value></data>
+  <data name="Plugins.Catalog.foobar.Upgrade" xml:space="preserve"><value>透過 Components 安裝新版元件並重新啟動；保留原元件套件，以便還原。</value></data>
+  <data name="Plugins.Catalog.itunes.Install" xml:space="preserve"><value>1. 將套件完整解壓縮至一般資料夾，保留所有檔案。
+2. 啟動 iTunes.SMTC.exe，再開啟 iTunes 播放音樂。
+3. 檢查 Windows 媒體面板；AF 不會代為執行工具或設定開機啟動。</value></data>
+  <data name="Plugins.Catalog.itunes.Requirements" xml:space="preserve"><value>Windows 10/11 與 iTunes；選擇可在本機執行且符合 iTunes 的附件。上游亦提及 Apple Music Preview，不應視為目前 Apple Music 的通用修正。</value></data>
+  <data name="Plugins.Catalog.itunes.Restore" xml:space="preserve"><value>結束橋接工具，移除其資料夾與自行新增的啟動項目；還原時使用備份。</value></data>
+  <data name="Plugins.Catalog.itunes.Summary" xml:space="preserve"><value>獨立執行的橋接工具，將 iTunes 連接至 Windows 媒體控制；並非複製到播放器目錄的 DLL 外掛程式。</value></data>
+  <data name="Plugins.Catalog.itunes.Target" xml:space="preserve"><value>iTunes</value></data>
+  <data name="Plugins.Catalog.itunes.Upgrade" xml:space="preserve"><value>先結束橋接工具，備份其目錄，再完整解壓縮新版；保留需要的個人設定。</value></data>
+  <data name="Plugins.Catalog.musicbee.Install" xml:space="preserve"><value>1. 完全結束 MusicBee。
+2. 將 mb_MediaControl.dll 放入該 MusicBee 安裝的 Plugins 資料夾。
+3. 重新啟動後確認已啟用。Microsoft Store 版請使用播放器的 Add Plugin，不修改 WindowsApps。</value></data>
+  <data name="Plugins.Catalog.musicbee.Requirements" xml:space="preserve"><value>適用於 Windows 10/11 的 MusicBee，須有 .NET Framework 4.8。附件為 AnyCPU。請避免同時啟用多個發佈 SMTC 工作階段的外掛程式。</value></data>
+  <data name="Plugins.Catalog.musicbee.Restore" xml:space="preserve"><value>在外掛程式設定解除安裝並重新啟動，或完全結束後刪除新增的 DLL；需要還原時使用備份。</value></data>
+  <data name="Plugins.Catalog.musicbee.Summary" xml:space="preserve"><value>提供曲目資訊、播放控制、時間軸、進度跳轉、隨機與重複播放控制。</value></data>
+  <data name="Plugins.Catalog.musicbee.Target" xml:space="preserve"><value>MusicBee</value></data>
+  <data name="Plugins.Catalog.musicbee.Upgrade" xml:space="preserve"><value>結束 MusicBee，備份舊 DLL 後替換並重新啟動；透過 Add Plugin 安裝的元件依播放器流程升級。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Install" xml:space="preserve"><value>1. 完全結束 QQ 音樂，確認實際使用的版本安裝目錄，內應有 QQMusicAgent.exe；不要使用升級後殘留的目錄。
+2. 若已有 msimg32.dll，先確認來源並另存備份，勿直接覆寫。
+3. 將 payload.dll 改名為 msimg32.dll 放入該目錄，再啟動驗證。寫入 Program Files 可能需要系統管理員權限。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Requirements" xml:space="preserve"><value>實驗性處理程序內外掛程式，僅 x86；上游主要驗證 QQ 音樂 22.71。用戶端更新可能導致失效或當機，請勿與其他同名代理 DLL 混裝。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Restore" xml:space="preserve"><value>完全結束 QQ 音樂，只刪除本次安裝的 msimg32.dll；若原先已有同名檔案，請還原原始備份。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Summary" xml:space="preserve"><value>補齊 SMTC 進度跳轉，並提供 QQ 歌曲 ID 與高畫質封面；沿用 QQMusic.exe 工作階段身分。</value></data>
+  <data name="Plugins.Catalog.qqmusic.Target" xml:space="preserve"><value>QQ 音樂</value></data>
+  <data name="Plugins.Catalog.qqmusic.Upgrade" xml:space="preserve"><value>先確認新用戶端與外掛程式相容性，結束播放器後再替換；不要用外掛程式覆寫安裝前保留的原檔備份。</value></data>
+  <data name="Plugins.Catalog.vlc.Install" xml:space="preserve"><value>1. 結束 VLC，將 libwin10smtc_plugin.dll 解壓縮至 VLC\plugins\misc。
+2. 重新啟動 VLC，開啟進階偏好設定 → 介面 → 控制介面。
+3. 勾選 Windows SMTC integration 並儲存，重新播放媒體。</value></data>
+  <data name="Plugins.Catalog.vlc.Requirements" xml:space="preserve"><value>VLC 3.0.x 或 4.0.0-dev；Windows 10 1607+ / 11。外掛程式與 Visual C++ 2022 或更新執行階段必須符合 VLC 架構。</value></data>
+  <data name="Plugins.Catalog.vlc.Restore" xml:space="preserve"><value>取消勾選該控制介面，結束 VLC 後移除新增的 DLL；還原時使用備份。</value></data>
+  <data name="Plugins.Catalog.vlc.Summary" xml:space="preserve"><value>連接 SMTC 中繼資料、播放控制與進度跳轉。v5.0.0 已宣告修正播放進度回報。</value></data>
+  <data name="Plugins.Catalog.vlc.Target" xml:space="preserve"><value>VLC</value></data>
+  <data name="Plugins.Catalog.vlc.Upgrade" xml:space="preserve"><value>結束 VLC，備份原外掛程式後換成符合架構的新 DLL，重新啟動並檢查控制介面選項。</value></data>
+  <data name="Plugins.ChooseArchitecture" xml:space="preserve"><value>請選擇播放器的架構，與 Windows 或 AF 的架構無關。</value></data>
+  <data name="Plugins.Download" xml:space="preserve"><value>下載</value></data>
+  <data name="Plugins.Empty" xml:space="preserve"><value>沒有符合的外掛程式或設定指引。</value></data>
+  <data name="Plugins.Error.File" xml:space="preserve"><value>無法儲存或讀取外掛程式檔案，請檢查資料夾權限與可用空間。</value></data>
+  <data name="Plugins.Error.Integrity" xml:space="preserve"><value>檔案大小或 SHA-256 驗證失敗，未儲存為完成檔案。請重試或查看上游版本。</value></data>
+  <data name="Plugins.Error.Network" xml:space="preserve"><value>所有下載來源均失敗。請重試或從上游發佈頁手動下載。</value></data>
+  <data name="Plugins.Error.Open" xml:space="preserve"><value>無法開啟連結或顯示檔案。檔案可能已移動，請檢查預設瀏覽器或重新下載。</value></data>
+  <data name="Plugins.Experimental" xml:space="preserve"><value>實驗性 · 請確認相容條件</value></data>
+  <data name="Plugins.Guide" xml:space="preserve"><value>安裝、升級與還原指引</value></data>
+  <data name="Plugins.Install" xml:space="preserve"><value>安裝</value></data>
+  <data name="Plugins.ManualNotice" xml:space="preserve">
+    <value>下載後依指引手動安裝。</value>
+  </data>
+  <data name="Plugins.Native" xml:space="preserve"><value>原生功能設定指引，無須下載外掛程式。</value></data>
+  <data name="Plugins.Project" xml:space="preserve"><value>上游專案與說明</value></data>
+  <data name="Plugins.Restore" xml:space="preserve"><value>解除安裝或還原</value></data>
+  <data name="Plugins.Retry" xml:space="preserve"><value>重試下載</value></data>
+  <data name="Plugins.Reveal" xml:space="preserve"><value>在資料夾中顯示</value></data>
+  <data name="Plugins.Search" xml:space="preserve"><value>搜尋外掛程式名稱或播放器</value></data>
+  <data name="Plugins.Source" xml:space="preserve"><value>目前下載來源：{0}</value></data>
+  <data name="Plugins.Status.Available" xml:space="preserve"><value>可下載。目錄版本隨 AF 更新。</value></data>
+  <data name="Plugins.Status.Canceled" xml:space="preserve"><value>已取消，可重試下載。</value></data>
+  <data name="Plugins.Status.Completed" xml:space="preserve"><value>已下載並驗證，請依指引手動安裝。</value></data>
+  <data name="Plugins.Status.Downloading" xml:space="preserve"><value>正在下載並驗證…</value></data>
+  <data name="Plugins.Status.Failed" xml:space="preserve"><value>下載失敗，可重試或前往上游專案。</value></data>
+  <data name="Plugins.Status.Verifying" xml:space="preserve"><value>正在驗證檔案…</value></data>
+  <data name="Plugins.Subtitle" xml:space="preserve"><value>下載播放器 SMTC 擴充功能，依說明手動安裝。</value></data>
+  <data name="Plugins.Upgrade" xml:space="preserve"><value>升級</value></data>
+  <data name="Plugins.VerifyOrDownload" xml:space="preserve"><value>驗證或重新下載</value></data>
+  <data name="Common.Page.QuickStart" xml:space="preserve">
+    <value>快速開始</value>
+  </data>
+  <data name="QuickStart.Subtitle" xml:space="preserve">
+    <value>開始使用 AF，查看播放器支援與版本亮點。</value>
+  </data>
+  <data name="QuickStart.Latest" xml:space="preserve">
+    <value>版本亮點</value>
+  </data>
+  <data name="QuickStart.Latest.Description" xml:space="preserve">
+    <value>查看版本新功能與歷史亮點。</value>
+  </data>
+  <data name="QuickStart.Latest.Unavailable" xml:space="preserve">
+    <value>暫時無法讀取版本資料，可開啟版本亮點重試。</value>
+  </data>
+  <data name="QuickStart.AllReleases" xml:space="preserve">
+    <value>查看所有版本</value>
+  </data>
+  <data name="QuickStart.Basics" xml:space="preserve">
+    <value>基礎教學</value>
+  </data>
+  <data name="QuickStart.Basics.Description" xml:space="preserve">
+    <value>播放、顯示位置、外觀與歌詞的使用方式。</value>
+  </data>
+  <data name="QuickStart.Players" xml:space="preserve">
+    <value>播放器支援</value>
+  </data>
+  <data name="QuickStart.Players.Description" xml:space="preserve">
+    <value>查看原生媒體控制、AF 補全與外掛程式建議。</value>
+  </data>
+  <data name="QuickStart.Reference" xml:space="preserve">
+    <value>相容性參考截至 2026-10-24。原始碼與上游說明不等於本機驗收；未確認的能力標為待驗證。</value>
+  </data>
+  <data name="QuickStart.Search" xml:space="preserve">
+    <value>搜尋播放器</value>
+  </data>
+  <data name="QuickStart.OpenSettings" xml:space="preserve">
+    <value>開啟相關設定</value>
+  </data>
+  <data name="QuickStart.ViewPlugin" xml:space="preserve">
+    <value>查看外掛程式</value>
+  </data>
+  <data name="QuickStart.Source" xml:space="preserve">
+    <value>查看依據</value>
+  </data>
+  <data name="QuickStart.Back" xml:space="preserve">
+    <value>返回</value>
+  </data>
+  <data name="QuickStart.Capabilities" xml:space="preserve">
+    <value>原生資訊：{0}；時間軸：{1}；控制與跳轉：{2}。</value>
+  </data>
+  <data name="QuickStart.Capability.Unknown" xml:space="preserve">
+    <value>待驗證</value>
+  </data>
+  <data name="QuickStart.Capability.Implemented" xml:space="preserve">
+    <value>原始碼已實作</value>
+  </data>
+  <data name="QuickStart.Capability.Reported" xml:space="preserve">
+    <value>上游有說明</value>
+  </data>
+  <data name="QuickStart.Capability.RequiresPlugin" xml:space="preserve">
+    <value>需擴充接入</value>
+  </data>
+  <data name="QuickStart.Capability.Partial" xml:space="preserve">
+    <value>部分支援</value>
+  </data>
+  <data name="QuickStart.PluginAvailable" xml:space="preserve">
+    <value>有補充缺項的外掛程式，依版本與需要選擇。</value>
+  </data>
+  <data name="QuickStart.NoRecommendation" xml:space="preserve">
+    <value>須先驗證，暫不建議安裝外掛程式。</value>
+  </data>
+  <data name="QuickStart.UseBuiltIn" xml:space="preserve">
+    <value>使用內建媒體控制，無須另裝 SMTC 外掛程式。</value>
+  </data>
+  <data name="QuickStart.Af.NetEase" xml:space="preserve">
+    <value>AF 內建網易雲資訊與進度讀取；播放、切歌與跳轉仍取決於同來源 SMTC 能力。</value>
+  </data>
+  <data name="QuickStart.Af.KuGou" xml:space="preserve">
+    <value>AF 可補充酷狗進度；中繼資料、封面與控制仍依賴播放器 SMTC。適配效果須依用戶端版本驗證。</value>
+  </data>
+  <data name="QuickStart.Af.Smtc" xml:space="preserve">
+    <value>AF 使用播放器回報的媒體工作階段；未回報的資訊與控制不會自動變為可用。</value>
+  </data>
+  <data name="QuickStart.Note.NetEase" xml:space="preserve">
+    <value>3.1.41 的原生 SMTC 尚未實機驗證。InfLink-rs 上游驗證 3.1.20–3.1.41 與 2.10.13，依賴 BetterNCM；確認 AF 仍有缺項後再考慮。</value>
+  </data>
+  <data name="QuickStart.Note.QQ" xml:space="preserve">
+    <value>上游在 22.71 驗證原生時間軸缺少跳轉。外掛程式透過處理程序注入補充跳轉；22.61 尚未驗證，不能推斷相容。</value>
+  </data>
+  <data name="QuickStart.Note.KuGou" xml:space="preserve">
+    <value>目前版本尚未本機驗收。舊外掛程式僅支援 8.3.97.21592 且不支援跳轉，不適用於目前 20.x 用戶端。</value>
+  </data>
+  <data name="QuickStart.Note.Pending" xml:space="preserve">
+    <value>未找到足夠的版本化證據，須檢查歌曲資訊、封面、時長、進度與實際控制。不能僅憑出現系統媒體卡片認定完整支援。</value>
+  </data>
+  <data name="QuickStart.Note.Browser" xml:space="preserve">
+    <value>桌面端與網頁版分別驗證；網頁版取決於網站及瀏覽器的媒體工作階段實作。</value>
+  </data>
+  <data name="QuickStart.Note.Bodian" xml:space="preserve">
+    <value>上游外掛程式提供中繼資料、時間軸與控制，但尚未確認目前播放器版本是否仍需要；暫不提供下載。</value>
+  </data>
+  <data name="QuickStart.Note.BuiltIn" xml:space="preserve">
+    <value>已核對標註發行版本的 Media Session 中繼資料、位置回報與跳轉處理；Windows 安裝套件實際表現待維護者驗收。</value>
+  </data>
+  <data name="QuickStart.Note.Listen1" xml:space="preserve">
+    <value>已核對桌面專案引用的播放器子模組，實作媒體資訊、時間軸與跳轉。網頁版、擴充功能版與桌面版須分別驗收。</value>
+  </data>
+  <data name="QuickStart.Note.SPlayer" xml:space="preserve">
+    <value>桌面版含原生 Windows SMTC，須開啟播放器的 SMTC 選項；網頁回退使用 Media Session。實際安裝套件待驗收。</value>
+  </data>
+  <data name="QuickStart.Note.MusicFree" xml:space="preserve">
+    <value>已確認中繼資料、播放狀態與切歌處理；尚未確認時間軸與跳轉完整性。MusicFree 音源外掛程式與 SMTC 擴充用途不同。</value>
+  </data>
+  <data name="QuickStart.Note.Foobar" xml:space="preserve">
+    <value>上游 SMTC 使用指引指出內建模式可能缺少專輯與時長；需要這些資訊時可用 foo_mediacontrol。目前播放器版本仍須實測。</value>
+  </data>
+  <data name="QuickStart.Note.Plugin" xml:space="preserve">
+    <value>上游提供 SMTC 接入外掛程式。缺少媒體工作階段或現有元件功能不足時使用，先檢查是否已安裝同類元件。</value>
+  </data>
+  <data name="QuickStart.Note.Vlc" xml:space="preserve">
+    <value>目錄提供上游 VLC 3.0.x 接入方案；4.0 開發版相容性須另行核對。外掛程式與 VC++ 執行階段須符合 VLC 架構。</value>
+  </data>
+  <data name="QuickStart.Note.ITunes" xml:space="preserve">
+    <value>適用於傳統 iTunes 的獨立橋接工具；不能據此認定現代 Apple Music 用戶端也需要。</value>
+  </data>
+  <data name="QuickStart.Note.Mpv" xml:space="preserve">
+    <value>v0.41.0 原生實作中繼資料、時間軸與跳轉。可於 mpv.conf 設定 media-controls=yes；libmpv 與第三方前端須分別確認。</value>
+  </data>
+  <data name="QuickStart.Note.PotPlayer" xml:space="preserve">
+    <value>橋接專案主要補歌曲、演出者與專輯等中繼資料；上游表示時間軸與控制原已提供。本機版本尚未實測，暫不建議注入工具。</value>
+  </data>
+  <data name="QuickStart.Note.Aimp" xml:space="preserve">
+    <value>舊橋接作者已因原生支援停止維護，但穩定版與測試版範圍尚未核實；不建議將舊橋接列為必裝。</value>
+  </data>
+  <data name="QuickStart.Note.MpcHc" xml:space="preserve">
+    <value>使用仍維護的 clsid2 分支，檢查 Windows 整合中的 SMTC 選項；完整中繼資料、時間軸與控制仍須依版本驗收。</value>
+  </data>
+  <data name="Plugins.Catalog.foobar.Compatibility" xml:space="preserve">
+    <value>依 foobar2000 架構選擇元件。</value>
+  </data>
+  <data name="Plugins.Catalog.musicbee.Compatibility" xml:space="preserve">
+    <value>需要 .NET Framework 4.8。</value>
+  </data>
+  <data name="Plugins.Catalog.vlc.Compatibility" xml:space="preserve">
+    <value>適用 VLC 3.0.x；需要符合架構的 VC++ 2022 執行階段。</value>
+  </data>
+  <data name="Plugins.Catalog.itunes.Compatibility" xml:space="preserve">
+    <value>用於傳統 iTunes，獨立執行。</value>
+  </data>
+  <data name="Plugins.Catalog.qqmusic.Compatibility" xml:space="preserve">
+    <value>僅 x86，主要驗證 22.71；透過 DLL 注入，更新後可能失效或當機。</value>
+  </data>
+  <data name="Plugins.DownloadDetails" xml:space="preserve">
+    <value>下載說明</value>
+  </data>
+  <data name="Plugins.DownloadDetails.Body" xml:space="preserve">
+    <value>AF 僅下載及驗證檔案，不自動解壓縮或安裝。優先嘗試鏡像，失敗後回到官方；切換頁面或關閉設定後繼續，結束 AF 時取消。檔案儲存於本機應用程式資料目錄的 AFMediaBar\PluginDownloads。</value>
+  </data>
+  <data name="QuickStart.Tutorial.Playback.Title" xml:space="preserve">
+    <value>播放與來源</value>
+  </data>
+  <data name="QuickStart.Tutorial.Playback.Body" xml:space="preserve">
+    <value>先在播放器播放歌曲，再於 AF 媒體選單選擇來源。未顯示時檢查媒體與通知的來源篩選，並查看下方播放器支援。</value>
+  </data>
+  <data name="QuickStart.Tutorial.Placement.Title" xml:space="preserve">
+    <value>顯示與位置</value>
+  </data>
+  <data name="QuickStart.Tutorial.Placement.Body" xml:space="preserve">
+    <value>選擇工作列或桌面懸浮模式，再設定目標顯示器、位置與尺寸。桌面懸浮模式可拖曳並依需求鎖定。</value>
+  </data>
+  <data name="QuickStart.Tutorial.Appearance.Title" xml:space="preserve">
+    <value>內容與外觀</value>
+  </data>
+  <data name="QuickStart.Tutorial.Appearance.Body" xml:space="preserve">
+    <value>在內容與版面配置選擇封面、文字與控制等元件；於外觀調整主題、背景與字型。小工具可另行設定。</value>
+  </data>
+  <data name="QuickStart.Tutorial.Lyrics.Title" xml:space="preserve">
+    <value>歌詞與進度</value>
+  </data>
+  <data name="QuickStart.Tutorial.Lyrics.Body" xml:space="preserve">
+    <value>在歌詞設定調整顯示與來源。歌詞同步需要可靠的歌曲資訊與進度；若缺少時間軸，先查看播放器支援，避免重複安裝同類外掛程式。</value>
+  </data>
+  <data name="QuickStart.Player.netease.Name" xml:space="preserve">
+    <value>網易雲音樂</value>
+  </data>
+  <data name="QuickStart.Player.qqmusic.Name" xml:space="preserve">
+    <value>QQ 音樂</value>
+  </data>
+  <data name="QuickStart.Player.kugou.Name" xml:space="preserve">
+    <value>酷狗音樂</value>
+  </data>
+  <data name="QuickStart.Player.soda.Name" xml:space="preserve">
+    <value>汽水音樂</value>
+  </data>
+  <data name="QuickStart.Player.kuwo.Name" xml:space="preserve">
+    <value>酷我音樂</value>
+  </data>
+  <data name="QuickStart.Player.migu.Name" xml:space="preserve">
+    <value>咪咕音樂</value>
+  </data>
+  <data name="QuickStart.Player.qianqian.Name" xml:space="preserve">
+    <value>千千音樂</value>
+  </data>
+  <data name="QuickStart.Player.bodian.Name" xml:space="preserve">
+    <value>波點音樂</value>
+  </data>
+  <data name="QuickStart.Player.lx.Name" xml:space="preserve">
+    <value>洛雪音樂桌面版</value>
+  </data>
+  <data name="QuickStart.Player.yesplay.Name" xml:space="preserve">
+    <value>YesPlayMusic</value>
+  </data>
+  <data name="QuickStart.Player.moekoe.Name" xml:space="preserve">
+    <value>MoeKoeMusic</value>
+  </data>
+  <data name="QuickStart.Player.listen1.Name" xml:space="preserve">
+    <value>Listen 1</value>
+  </data>
+  <data name="QuickStart.Player.splayer.Name" xml:space="preserve">
+    <value>SPlayer</value>
+  </data>
+  <data name="QuickStart.Player.alger.Name" xml:space="preserve">
+    <value>AlgerMusicPlayer</value>
+  </data>
+  <data name="QuickStart.Player.musicfree.Name" xml:space="preserve">
+    <value>MusicFree Desktop</value>
+  </data>
+  <data name="QuickStart.Player.foobar.Name" xml:space="preserve">
+    <value>foobar2000</value>
+  </data>
+  <data name="QuickStart.Player.musicbee.Name" xml:space="preserve">
+    <value>MusicBee</value>
+  </data>
+  <data name="QuickStart.Player.vlc.Name" xml:space="preserve">
+    <value>VLC</value>
+  </data>
+  <data name="QuickStart.Player.itunes.Name" xml:space="preserve">
+    <value>iTunes</value>
+  </data>
+  <data name="QuickStart.Player.mpv.Name" xml:space="preserve">
+    <value>mpv</value>
+  </data>
+  <data name="QuickStart.Player.potplayer.Name" xml:space="preserve">
+    <value>PotPlayer</value>
+  </data>
+  <data name="QuickStart.Player.spotify.Name" xml:space="preserve">
+    <value>Spotify</value>
+  </data>
+  <data name="QuickStart.Player.applemusic.Name" xml:space="preserve">
+    <value>Apple Music</value>
+  </data>
+  <data name="QuickStart.Player.aimp.Name" xml:space="preserve">
+    <value>AIMP</value>
+  </data>
+  <data name="QuickStart.Player.mpchc.Name" xml:space="preserve">
+    <value>MPC-HC</value>
+  </data>
+  <data name="QuickStart.Player.tidal.Name" xml:space="preserve">
+    <value>TIDAL</value>
+  </data>
 </root>

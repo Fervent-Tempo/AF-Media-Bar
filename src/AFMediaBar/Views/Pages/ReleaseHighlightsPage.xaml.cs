@@ -21,6 +21,12 @@ public partial class ReleaseHighlightsPage : INavigableView<ReleaseHighlightsVie
         InitializeComponent();
     }
 
+    /// <summary>由设置宿主处理返回，不让页面依赖窗口。</summary>
+    public static readonly RoutedEvent BackRequestedEvent = EventManager.RegisterRoutedEvent(
+        "BackRequested", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ReleaseHighlightsPage));
+
+    private void OnBackRequested(object sender, RoutedEventArgs e) => RaiseEvent(new RoutedEventArgs(BackRequestedEvent));
+
     private async void OnPageLoaded(object sender, RoutedEventArgs e) => await ViewModel.ActivateAsync();
     private void OnPageUnloaded(object sender, RoutedEventArgs e) => ViewModel.Deactivate();
     private void OnOpenReleaseNotes(object sender, RoutedEventArgs e)
