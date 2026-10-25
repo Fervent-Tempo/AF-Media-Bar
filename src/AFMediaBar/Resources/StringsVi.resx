@@ -3248,4 +3248,73 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>Tự thu gọn ở cạnh màn hình</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>Mặc định bật. Kéo đến một trong bốn cạnh vùng làm việc; di chuột ra để thu gọn và đến gần để mở.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>Mở thanh phương tiện trên màn hình</value></data>
+  <data name="Widgets.Pet" xml:space="preserve">
+    <value>Thú cưng</value>
+  </data>
+  <data name="Widgets.Pet.Description" xml:space="preserve"><value>Thú cưng tròn có hai sừng nhỏ, mắt dõi chuột toàn màn hình, chớp mắt, biểu cảm, xoay, nhảy và biến hình.</value></data>
+  <data name="Widgets.Pet.Visible" xml:space="preserve">
+    <value>Hiện thú cưng khi có phương tiện kết nối</value>
+  </data>
+  <data name="Widgets.Pet.Visible.Description" xml:space="preserve">
+    <value>Mặc định tắt. Để hiện khi không có phương tiện, chọn thú cưng trong danh sách thành phần được giữ lại ở Nội dung và bố cục.</value>
+  </data>
+  <data name="Widgets.Pet.Idle" xml:space="preserve"><value>Hoạt ảnh khi nhàn rỗi</value></data>
+  <data name="Widgets.Pet.Idle.Description" xml:space="preserve"><value>Điều khiển luân phiên tự động, nhịp thở và chớp mắt tự nhiên. Hoạt ảnh khác được chọn thủ công vẫn phát. Giảm chuyển động hoặc ẩn thanh sẽ dừng chuyển động.</value></data>
+  <data name="Widgets.Pet.Color" xml:space="preserve"><value>Màu tô</value></data>
+  <data name="Widgets.Pet.Color.Hint" xml:space="preserve"><value>Chọn ô màu hoặc nhập #RRGGBB. Màu tô sáng tự động dùng mắt tối.</value></data>
+  <data name="Widgets.Pet.Color.Invalid" xml:space="preserve"><value>Nhập mã màu HEX hợp lệ. Nội dung này chưa được lưu.</value></data>
+  <data name="Widgets.Pet.Color.Reset" xml:space="preserve"><value>Khôi phục màu mặc định</value></data>
+  <data name="Widgets.Pet.Size" xml:space="preserve"><value>Kích thước hiển thị</value></data>
+  <data name="Widgets.Pet.Size.Description" xml:space="preserve"><value>20–160 DIP. Khi tắt hiển thị vượt biên, thú cưng nằm trong độ dày của thanh phương tiện.</value></data>
+  <data name="Widgets.Pet.Overflow" xml:space="preserve"><value>Cho phép hiển thị vượt biên</value></data>
+  <data name="Widgets.Pet.Overflow.Description" xml:space="preserve"><value>Thú cưng lớn hơn vươn vào phía trong màn hình, di chuyển và ẩn cùng thanh phương tiện mà không tăng độ dày thanh tác vụ.</value></data>
+  <data name="Widgets.Pet.Animation" xml:space="preserve"><value>Trạng thái hoạt ảnh</value></data>
+  <data name="Widgets.Pet.Animation.Description" xml:space="preserve"><value>Chế độ tự động luân phiên vòng đời và biểu cảm. Biến hình và trạng thái sản phẩm được chọn thủ công, chỉ là hoạt ảnh.</value></data>
+  <data name="Widgets.Pet.Preview" xml:space="preserve"><value>Mở bản xem trước hoạt ảnh</value></data>
+  <data name="Widgets.Pet.Animation.auto" xml:space="preserve"><value>Luân phiên vòng đời và biểu cảm</value></data>
+  <data name="Widgets.Pet.Animation.sleeping" xml:space="preserve"><value>Vòng đời · Ngủ</value></data>
+  <data name="Widgets.Pet.Animation.waking" xml:space="preserve"><value>Vòng đời · Thức dậy</value></data>
+  <data name="Widgets.Pet.Animation.idle" xml:space="preserve"><value>Vòng đời · Nghỉ</value></data>
+  <data name="Widgets.Pet.Animation.listening" xml:space="preserve"><value>Vòng đời · Lắng nghe</value></data>
+  <data name="Widgets.Pet.Animation.thinking" xml:space="preserve"><value>Vòng đời · Suy nghĩ</value></data>
+  <data name="Widgets.Pet.Animation.searching" xml:space="preserve"><value>Vòng đời · Tìm kiếm</value></data>
+  <data name="Widgets.Pet.Animation.working" xml:space="preserve"><value>Vòng đời · Làm việc</value></data>
+  <data name="Widgets.Pet.Animation.excited" xml:space="preserve"><value>Biểu cảm · Phấn khích</value></data>
+  <data name="Widgets.Pet.Animation.surprised" xml:space="preserve"><value>Biểu cảm · Ngạc nhiên</value></data>
+  <data name="Widgets.Pet.Animation.suspicious" xml:space="preserve"><value>Biểu cảm · Nghi ngờ</value></data>
+  <data name="Widgets.Pet.Animation.angry" xml:space="preserve"><value>Biểu cảm · Giận dữ</value></data>
+  <data name="Widgets.Pet.Animation.drowsy" xml:space="preserve"><value>Biểu cảm · Buồn ngủ</value></data>
+  <data name="Widgets.Pet.Animation.happy" xml:space="preserve"><value>Biểu cảm · Vui vẻ</value></data>
+  <data name="Widgets.Pet.Animation.curious" xml:space="preserve"><value>Biểu cảm · Tò mò</value></data>
+  <data name="Widgets.Pet.Animation.confused" xml:space="preserve"><value>Biểu cảm · Bối rối</value></data>
+  <data name="Widgets.Pet.Animation.bored" xml:space="preserve"><value>Biểu cảm · Chán</value></data>
+  <data name="Widgets.Pet.Animation.proud" xml:space="preserve"><value>Biểu cảm · Tự hào</value></data>
+  <data name="Widgets.Pet.Animation.shy" xml:space="preserve"><value>Biểu cảm · Ngại ngùng</value></data>
+  <data name="Widgets.Pet.Animation.sad" xml:space="preserve"><value>Biểu cảm · Buồn</value></data>
+  <data name="Widgets.Pet.Animation.laughing" xml:space="preserve"><value>Biểu cảm · Cười</value></data>
+  <data name="Widgets.Pet.Animation.scared" xml:space="preserve"><value>Biểu cảm · Sợ</value></data>
+  <data name="Widgets.Pet.Animation.playful" xml:space="preserve"><value>Biểu cảm · Tinh nghịch</value></data>
+  <data name="Widgets.Pet.Animation.celebrate" xml:space="preserve"><value>Biểu cảm · Ăn mừng</value></data>
+  <data name="Widgets.Pet.Animation.orbit" xml:space="preserve"><value>Biến hình · Quỹ đạo</value></data>
+  <data name="Widgets.Pet.Animation.radar" xml:space="preserve"><value>Biến hình · Ra đa</value></data>
+  <data name="Widgets.Pet.Animation.progress" xml:space="preserve"><value>Biến hình · Tiến độ</value></data>
+  <data name="Widgets.Pet.Animation.spawning" xml:space="preserve"><value>Trạng thái sản phẩm · Xuất hiện</value></data>
+  <data name="Widgets.Pet.Animation.humming" xml:space="preserve"><value>Trạng thái sản phẩm · Ngân nga</value></data>
+  <data name="Widgets.Pet.Animation.loading" xml:space="preserve"><value>Trạng thái sản phẩm · Đang tải</value></data>
+  <data name="Widgets.Pet.Animation.dictating" xml:space="preserve"><value>Trạng thái sản phẩm · Dạng sóng đọc chính tả</value></data>
+  <data name="Widgets.Pet.Animation.writing" xml:space="preserve"><value>Trạng thái sản phẩm · Viết</value></data>
+  <data name="Widgets.Pet.Animation.sending" xml:space="preserve"><value>Trạng thái sản phẩm · Gửi</value></data>
+  <data name="Widgets.Pet.Animation.receiving" xml:space="preserve"><value>Trạng thái sản phẩm · Nhận</value></data>
+  <data name="Widgets.Pet.Animation.uploading" xml:space="preserve"><value>Trạng thái sản phẩm · Tải lên</value></data>
+  <data name="Widgets.Pet.Animation.notifying" xml:space="preserve"><value>Trạng thái sản phẩm · Thông báo</value></data>
+  <data name="Widgets.Pet.Animation.alerting" xml:space="preserve"><value>Trạng thái sản phẩm · Cảnh báo</value></data>
+  <data name="Widgets.Pet.Animation.dragging" xml:space="preserve"><value>Trạng thái sản phẩm · Dáng kéo</value></data>
+  <data name="Widgets.Pet.Animation.bouncing" xml:space="preserve"><value>Trạng thái sản phẩm · Bóng nảy</value></data>
+  <data name="Widgets.Pet.Animation.powering-down" xml:space="preserve"><value>Trạng thái sản phẩm · Tắt nguồn</value></data>
+  <data name="Widgets.Pet.Animation.emphasis" xml:space="preserve"><value>Động tác · Nhấn mạnh</value></data>
+  <data name="Widgets.Pet.Animation.hop" xml:space="preserve"><value>Động tác · Nhảy liên tiếp</value></data>
+  <data name="Widgets.Pet.Animation.spin" xml:space="preserve"><value>Động tác · Xoay một vòng</value></data>
+  <data name="Widgets.Pet.Animation.spin-dizzy" xml:space="preserve"><value>Động tác · Xoay chóng mặt</value></data>
+  <data name="Widgets.Pet.Animation.spin-wild" xml:space="preserve"><value>Động tác · Xoay nhanh</value></data>
+  <data name="Widgets.Pet.Animation.particles" xml:space="preserve"><value>Động tác · Hạt tỏa ra</value></data>
 </root>

@@ -229,7 +229,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         TaskbarRestComponent.OutputDevice,
         TaskbarRestComponent.InputDevice,
         TaskbarRestComponent.Volume,
-        TaskbarRestComponent.BluetoothBattery
+        TaskbarRestComponent.BluetoothBattery,
+        TaskbarRestComponent.Pet
     ];
 
     private void OnRestComponentVisibilityChanged(TaskbarRestComponentSettingItem entry) => SaveIdleComponents();

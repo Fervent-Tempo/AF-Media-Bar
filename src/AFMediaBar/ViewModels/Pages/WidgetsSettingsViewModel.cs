@@ -4,7 +4,7 @@ using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.ViewModels.Pages;
 
-/// <summary>小音符、频谱、性能与蓝牙电量的全局配置。</summary>
+/// <summary>小音符、宠物、频谱、性能与蓝牙电量的全局配置。</summary>
 public sealed class WidgetsSettingsViewModel(
     ComponentsSettingsViewModel components,
     BluetoothBatterySettingsViewModel battery,

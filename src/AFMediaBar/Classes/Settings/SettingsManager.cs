@@ -222,6 +222,7 @@ public static class SettingsManager
             FullLayerEnabled = defaults.TaskbarExperience.FullLayerEnabled,
             FullPanel = defaults.TaskbarExperience.FullPanel,
             SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible,
+            PetVisible = defaults.TaskbarExperience.PetVisible,
             PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible,
             RestProgressVisible = defaults.TaskbarExperience.RestProgressVisible,
             ArtworkProgressVisible = defaults.TaskbarExperience.ArtworkProgressVisible,
@@ -265,8 +266,13 @@ public static class SettingsManager
         next.SpectrumComponent = defaults.SpectrumComponent;
         next.PerformanceComponent = defaults.PerformanceComponent;
         next.BluetoothBatteryWidget = defaults.BluetoothBatteryWidget;
+        next.PetComponent = defaults.PetComponent;
         next.TaskbarExperience = next.TaskbarExperience with
-        { SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible, PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible };
+        {
+            SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible,
+            PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible,
+            PetVisible = defaults.TaskbarExperience.PetVisible
+        };
         Replace(next, SettingsResetScope.Components);
     }
     public static void ResetDeviceManagement()
@@ -363,7 +369,8 @@ public static class SettingsManager
             case nameof(AppSettings.LyricsArtistSeparators):
             case nameof(AppSettings.LyricsSource): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.LyricsTextAlignment): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
-            case nameof(AppSettings.TaskbarExperience): TaskbarExperienceSettingsChanged?.Invoke(null, EventArgs.Empty); break;
+            case nameof(AppSettings.TaskbarExperience):
+            case nameof(AppSettings.PetComponent): TaskbarExperienceSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.Interaction): InteractionSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.Experiments):
                 InteractionSettingsChanged?.Invoke(null, EventArgs.Empty);

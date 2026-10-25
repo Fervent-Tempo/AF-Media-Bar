@@ -1168,6 +1168,7 @@ public partial class TaskBarMediaControl
             yield return _owner.TaskbarRestProgress;
             yield return _owner.TaskbarSpectrumHoverSurface;
             yield return _owner.TaskbarPerformanceHoverSurface;
+            yield return _owner.TaskbarPetSurface;
             yield return _owner.TaskbarOutputDeviceHoverSurface;
             yield return _owner.TaskbarVolumeHoverSurface;
             yield return _owner.TaskbarInputDeviceHoverSurface;

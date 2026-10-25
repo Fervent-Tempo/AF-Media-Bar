@@ -21,6 +21,7 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     private readonly LocalizationService _localization;
     private readonly Dispatcher _dispatcher = DispatcherHelper.Current;
     private bool _disposed;
+    private string _petFillColorHex = PetComponentSettings.DefaultFillColorHex;
 
     /// <summary>创建参数编辑器，订阅设置、语言与共享音频目录的变更。</summary>
     public ComponentsSettingsViewModel(ISettingsConfiguration configuration, LocalizationService localization,
@@ -35,6 +36,7 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
         _localization = localization;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         localization.LanguageChanged += OnLanguageChanged;
+        RefreshPetColor();
     }
     public int SpectrumBandCount
     {
@@ -263,6 +265,79 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
         }
     }
 
+    /// <summary>有媒体时显示宠物，无媒体保留由内容与布局页独立编辑。</summary>
+    public bool PetVisible
+    {
+        get => _configuration.Current.TaskbarExperience.PetVisible;
+        set
+        {
+            _configuration.SetTaskbarExperience(
+                _configuration.Current.TaskbarExperience with { PetVisible = value });
+            OnPropertyChanged();
+        }
+    }
+
+    public bool PetIdleAnimationsEnabled
+    {
+        get => _configuration.Current.PetComponent.IdleAnimationsEnabled;
+        set => _configuration.SetPetComponent(_configuration.Current.PetComponent with { IdleAnimationsEnabled = value });
+    }
+
+    public double PetSizeDip
+    {
+        get => _configuration.Current.PetComponent.SizeDip;
+        set => _configuration.SetPetComponent(_configuration.Current.PetComponent with { SizeDip = value });
+    }
+
+    public bool PetAllowOverflow
+    {
+        get => _configuration.Current.PetComponent.AllowOverflow;
+        set => _configuration.SetPetComponent(_configuration.Current.PetComponent with { AllowOverflow = value });
+    }
+
+    public string PetAnimation
+    {
+        get => _configuration.Current.PetComponent.Animation;
+        set { if (value is not null) _configuration.SetPetComponent(_configuration.Current.PetComponent with { Animation = value }); }
+    }
+
+    public PetComponentSettings PetSettings => _configuration.Current.PetComponent;
+    public IReadOnlyList<PetAnimationOption> PetAnimations => PetAnimationCatalog.Ids
+        .Select(id => new PetAnimationOption(id, Translations.Get("Widgets.Pet.Animation." + id))).ToArray();
+
+    /// <summary>不完整的颜色只保留在编辑框，有效后才写入设置。</summary>
+    public string PetFillColorHex
+    {
+        get => _petFillColorHex;
+        set
+        {
+            if (_disposed || !_configuration.IsActive || !SetProperty(ref _petFillColorHex, value ?? string.Empty)) return;
+            OnPropertyChanged(nameof(PetColorStatus));
+            if (ColorHex.TryParse(_petFillColorHex, out var color))
+                _configuration.SetPetComponent(_configuration.Current.PetComponent with { FillColorHex = ColorHex.Format(color) });
+        }
+    }
+
+    public string PetColorStatus => Translations.Get(ColorHex.TryParse(_petFillColorHex, out _)
+        ? "Widgets.Pet.Color.Hint" : "Widgets.Pet.Color.Invalid");
+
+    private void RefreshPetColor()
+    {
+        SetProperty(ref _petFillColorHex, _configuration.Current.PetComponent.FillColorHex, nameof(PetFillColorHex));
+        OnPropertyChanged(nameof(PetColorStatus));
+    }
+
+    [RelayCommand]
+    private void SetPetFillColor(string? hex)
+    {
+        if (_disposed || !_configuration.IsActive || !ColorHex.TryParse(hex, out var color)) return;
+        _configuration.SetPetComponent(_configuration.Current.PetComponent with { FillColorHex = ColorHex.Format(color) });
+        RefreshPetColor();
+    }
+
+    [RelayCommand]
+    private void ResetPetFillColor() => SetPetFillColor(PetComponentSettings.DefaultFillColorHex);
+
     /// <summary>无媒体时独立保留的组件也允许调整参数。</summary>
     public bool CanConfigureSpectrum => SpectrumVisible || TaskbarRestLayoutPolicy.ResolveIdleComponents(
         _configuration.Current.TaskbarExperience.IdleComponents).Contains(TaskbarRestComponent.Spectrum);
@@ -305,13 +380,14 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args) => DispatcherHelper.Run(_dispatcher, () =>
     {
         if (_disposed || !_configuration.IsActive) return;
+        if (args.PropertyName is null or nameof(AppSettings.PetComponent)) RefreshPetColor();
         if (args.PropertyName is null or nameof(AppSettings.SpectrumComponent)) RefreshCaptureDeviceOptions();
         if (args.PropertyName == nameof(AppSettings.AudioDevices)) QueueCaptureDeviceRefresh();
         OnPropertyChanged(string.Empty);
     });
     private void OnLanguageChanged(object? sender, EventArgs args) { if (!_disposed) { RefreshCaptureDeviceOptions(); OnPropertyChanged(string.Empty); } }
     /// <summary>Unsubscribes when the cached page scope is removed.</summary>
-    private void OnActivated(object? sender, EventArgs e) { QueueCaptureDeviceRefresh(); OnPropertyChanged(string.Empty); }
+    private void OnActivated(object? sender, EventArgs e) { RefreshPetColor(); QueueCaptureDeviceRefresh(); OnPropertyChanged(string.Empty); }
     public void Dispose()
     {
         if (_disposed) return;

@@ -62,7 +62,7 @@ public partial class TaskBarMediaControl
             HoverRevealHost.VerticalAlignment = VerticalAlignment.Center;
             TaskbarHoverContent.Margin = new Thickness(5, 0, 6, 0);
             TaskbarHoverActions.HorizontalAlignment = HorizontalAlignment.Left;
-            foreach (var surface in new FrameworkElement[] { TaskbarSpectrumHoverSurface, TaskbarPerformanceHoverSurface, TaskbarBatterySurface, TaskbarOutputDeviceHoverSurface, TaskbarInputDeviceHoverSurface, TaskbarVolumeHoverSurface })
+            foreach (var surface in new FrameworkElement[] { TaskbarSpectrumHoverSurface, TaskbarPerformanceHoverSurface, TaskbarBatterySurface, TaskbarPetSurface, TaskbarOutputDeviceHoverSurface, TaskbarInputDeviceHoverSurface, TaskbarVolumeHoverSurface })
                 surface.VerticalAlignment = VerticalAlignment.Center;
         }
     }
@@ -97,6 +97,7 @@ public partial class TaskBarMediaControl
         TaskbarRestComponent.Spectrum => _verticalSpectrumLength,
         TaskbarRestComponent.Performance => _verticalPerformanceLength,
         TaskbarRestComponent.BluetoothBattery => BatteryVerticalLength,
+        TaskbarRestComponent.Pet => PetSurfaceLength,
         TaskbarRestComponent.OutputDevice or TaskbarRestComponent.InputDevice or TaskbarRestComponent.Volume =>
             VerticalAudioButtonSize(metrics) + RestWidgetVerticalInset(TaskbarOutputDeviceHoverSurface),
         _ => 0
@@ -170,6 +171,7 @@ public partial class TaskBarMediaControl
         Place(TaskbarSpectrumHoverSurface, TaskbarRestComponent.Spectrum);
         Place(TaskbarPerformanceHoverSurface, TaskbarRestComponent.Performance);
         Place(TaskbarBatterySurface, TaskbarRestComponent.BluetoothBattery);
+        Place(TaskbarPetSurface, TaskbarRestComponent.Pet);
         Place(TaskbarOutputDeviceHoverSurface, TaskbarRestComponent.OutputDevice);
         Place(TaskbarInputDeviceHoverSurface, TaskbarRestComponent.InputDevice);
         Place(TaskbarVolumeHoverSurface, TaskbarRestComponent.Volume);

@@ -112,6 +112,9 @@
     <EmbeddedResource Include="Web\Lyrics\*.html" />
     <EmbeddedResource Include="Web\Lyrics\*.css" />
     <EmbeddedResource Include="Web\Lyrics\*.js" />
+    <EmbeddedResource Include="Web\Pet\*.html" />
+    <EmbeddedResource Include="Web\Pet\*.css" />
+    <EmbeddedResource Include="Web\Pet\*.js" />
   </ItemGroup>
 
   <!-- WebView2's package adds reference XML documentation after the single-file bundle is computed. Those files are not

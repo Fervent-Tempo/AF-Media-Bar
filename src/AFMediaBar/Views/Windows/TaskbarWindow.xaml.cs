@@ -166,7 +166,9 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         bool startImmediately = true,
         Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null,
         QuickLaunchService? quickLaunch = null,
-        QuickLaunchIconService? quickLaunchIcons = null)
+        QuickLaunchIconService? quickLaunchIcons = null,
+        PetInputService? petInput = null,
+        PetWebEnvironment? petWebEnvironment = null)
     {
         _quickLaunch = quickLaunch;
         WindowHelper.SetNoActivate(this);
@@ -179,6 +181,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         InitializeExternalFullPanelHandle(externalFullPanelHandleFactory);
         DataContext = ViewModel;
         MediaControl.BindBatterySource(batterySource);
+        if (petInput is not null) MediaControl.BindPetInput(petInput, petWebEnvironment);
         ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
         appearanceService.Attach(PlayerMenu, this);
         PlayerMenu.OpenSettingsRequested += PlayerMenu_OpenSettingsRequested;
@@ -2445,6 +2448,12 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
         var menuSource = e.CursorLeft < 0 && e.CursorTop < 0 ? Keyboard.FocusedElement as DependencyObject
             : MediaControl.InputHitTest(Mouse.GetPosition(MediaControl)) as DependencyObject ?? e.OriginalSource as DependencyObject;
+        if (MediaControl.IsPetComponentClick(menuSource))
+        {
+            e.Handled = true;
+            PlayerMenu.IsOpen = false;
+            return;
+        }
         IsPerformanceMenuRequested = SettingsManager.Current.Experiments.MemoryTools && MediaControl.IsPerformanceComponentClick(menuSource);
         IsBatteryMenuRequested = MediaControl.IsBatteryComponentClick(menuSource);
         PlayerMenu.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);

@@ -172,8 +172,13 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
             {
                 // 旧入口维持原有范围；当前内容与布局页保留小组件设置。
                 next.TaskbarExperience = next.TaskbarExperience with
-                { SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible, PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible };
+                {
+                    SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible,
+                    PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible,
+                    PetVisible = defaults.TaskbarExperience.PetVisible
+                };
                 next.SpectrumComponent = defaults.SpectrumComponent;
+                next.PetComponent = defaults.PetComponent;
                 next.PerformanceComponent = defaults.PerformanceComponent;
                 next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
             }

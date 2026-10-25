@@ -139,6 +139,14 @@
       "mode": "v1.6.0",
       "preferredSourceId": "v1.6.0"
     },
+    "petComponent": {
+      "$release": "unreleased",
+      "fillColorHex": "unreleased",
+      "idleAnimationsEnabled": "unreleased",
+      "sizeDip": "unreleased",
+      "allowOverflow": "unreleased",
+      "animation": "unreleased"
+    },
     "quickLaunch": {
       "$release": "v1.2.0",
       "interactionMode": "v1.6.0",
@@ -214,6 +222,7 @@
       "mediaTextAlignment": "v1.2.0",
       "outputDeviceVisible": "v1.2.1",
       "performanceVisible": "v1.2.0",
+      "petVisible": "unreleased",
       "restComponentOrder": "v1.2.1",
       "restProgressVisible": "v1.2.0",
       "spectrumVisible": "v1.2.0",
@@ -672,6 +681,10 @@
         "BluetoothBattery": {
           "value": 7,
           "release": "v1.6.0"
+        },
+        "Pet": {
+          "value": 8,
+          "release": "unreleased"
         }
       }
     },
@@ -822,7 +835,7 @@
     {
       "id": "taskbar-reset",
       "prefixes": ["settings.taskbarExperience"],
-      "text": "ResetContentLayout 恢复任务栏体验但保留媒体字号及频谱、性能显隐；字号由 ResetTaskbarAppearance 恢复，小组件显隐由 ResetComponents 恢复。旧 ResetDisplayModes 仍会恢复组件显隐等，不等于当前页面重置；两者均保留交互中的封面悬停模式。"
+      "text": "ResetContentLayout 恢复任务栏体验但保留媒体字号及频谱、性能、宠物显隐；字号由 ResetTaskbarAppearance 恢复，小组件显隐由 ResetComponents 恢复。旧 ResetDisplayModes 仍会恢复组件显隐等，不等于当前页面重置；两者均保留交互中的封面悬停模式。"
     },
     {
       "id": "artwork-progress",

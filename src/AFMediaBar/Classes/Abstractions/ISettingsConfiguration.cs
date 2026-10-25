@@ -7,6 +7,11 @@ namespace AFMediaBar.Classes.Abstractions;
 /// <summary>Configuration access for a context-bound settings view model.</summary>
 public interface ISettingsConfiguration
 {
+    /// <summary>宠物外观属于共用值，写入仍受当前编辑上下文保护。</summary>
+    void SetPetComponent(PetComponentSettings settings)
+    {
+        if (IsActive) SettingsManager.Current.PetComponent = settings.Normalize();
+    }
     /// <summary>Permanent presentation context of this page scope.</summary>
     SettingsContext Context { get; }
     /// <summary>Whether this scope is active; background callbacks must check before publishing.</summary>

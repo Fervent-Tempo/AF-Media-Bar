@@ -81,7 +81,8 @@ public static class TaskbarRestLayoutPolicy
         TaskbarRestComponent.OutputDevice,
         TaskbarRestComponent.InputDevice,
         TaskbarRestComponent.Volume,
-        TaskbarRestComponent.BluetoothBattery
+        TaskbarRestComponent.BluetoothBattery,
+        TaskbarRestComponent.Pet
     ];
 
     /// <summary>默认的完整顺序（固定头 + 可排序段）。 / The full default order: the pinned head followed by the reorderable tail.</summary>
@@ -190,7 +191,8 @@ public static class TaskbarRestLayoutPolicy
         bool VolumeEnabled,
         bool ArtworkEnabled = true,
         bool InputDeviceEnabled = false,
-        bool BatteryEnabled = false);
+        bool BatteryEnabled = false,
+        bool PetEnabled = false);
 
     /// <summary>
     /// 判定一个静置层组件这次是否可见。
@@ -233,6 +235,7 @@ public static class TaskbarRestLayoutPolicy
             TaskbarRestComponent.Spectrum => visibility.SpectrumEnabled,
             TaskbarRestComponent.Performance => visibility.PerformanceEnabled,
             TaskbarRestComponent.BluetoothBattery => visibility.BatteryEnabled,
+            TaskbarRestComponent.Pet => visibility.PetEnabled,
             TaskbarRestComponent.OutputDevice => visibility.OutputDeviceEnabled,
             TaskbarRestComponent.InputDevice => visibility.InputDeviceEnabled,
             TaskbarRestComponent.Volume => visibility.VolumeEnabled,

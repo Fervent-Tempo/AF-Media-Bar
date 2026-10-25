@@ -136,6 +136,66 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
+                <components:SettingsGroup GroupId="Widgets.Pet" Header="{DynamicResource Loc.Widgets.Pet}"
+                    Description="{DynamicResource Loc.Widgets.Pet.Description}" Icon="{ui:SymbolIcon Emoji24}">
+                    <StackPanel>
+                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Visible}"
+                            Description="{DynamicResource Loc.Widgets.Pet.Visible.Description}" Icon="{ui:SymbolIcon Eye24}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetVisible, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Idle}"
+                            Description="{DynamicResource Loc.Widgets.Pet.Idle.Description}" Icon="{ui:SymbolIcon WeatherSunny24}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetIdleAnimationsEnabled, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Size}"
+                            Description="{DynamicResource Loc.Widgets.Pet.Size.Description}" Icon="{ui:SymbolIcon ArrowSort24}">
+                            <components:SettingsNumericEditor Value="{Binding ViewModel.Components.PetSizeDip, Mode=TwoWay}"
+                                Minimum="20" Maximum="160" Step="2" Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Overflow}"
+                            Description="{DynamicResource Loc.Widgets.Pet.Overflow.Description}" Icon="{ui:SymbolIcon Window24}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetAllowOverflow, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Animation}"
+                            Description="{DynamicResource Loc.Widgets.Pet.Animation.Description}" Icon="{ui:SymbolIcon Emoji24}">
+                            <ComboBox ItemsSource="{Binding ViewModel.Components.PetAnimations}" DisplayMemberPath="DisplayName"
+                                SelectedValuePath="Id" SelectedValue="{Binding ViewModel.Components.PetAnimation, Mode=TwoWay}"
+                                MinWidth="{StaticResource AfSettingsSelectMinWidth}" MaxWidth="{StaticResource AfSettingsSelectLongMaxWidth}" />
+                        </components:SettingsRow>
+                        <Expander Header="{DynamicResource Loc.Widgets.Pet.Preview}" Margin="12,4"
+                            Expanded="PetPreviewExpanded" Collapsed="PetPreviewCollapsed">
+                            <Border Width="136" Height="136" Background="Transparent"
+                                MouseEnter="PetPreviewMouseEnter" MouseLeave="PetPreviewMouseLeave"
+                                MouseMove="PetPreviewMouseMove" MouseDown="PetPreviewMouseDown">
+                                <components:PetView x:Name="PetPreview" Width="120" Height="120" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                        </Expander>
+                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Color}" Description="{Binding ViewModel.Components.PetColorStatus}"
+                            Icon="{ui:SymbolIcon Color24}">
+                            <StackPanel>
+                                <WrapPanel Margin="0,0,0,8">
+                                    <Button Background="#84282B" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
+                                        ToolTip="#84282B" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#84282B" />
+                                    <Button Background="#1C1D21" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
+                                        ToolTip="#1C1D21" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#1C1D21" />
+                                    <Button Background="#0078D4" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
+                                        ToolTip="#0078D4" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#0078D4" />
+                                    <Button Background="#42CBA6" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
+                                        ToolTip="#42CBA6" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#42CBA6" />
+                                    <Button Background="#F7C948" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
+                                        ToolTip="#F7C948" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#F7C948" />
+                                    <Button Background="#FFFFFF" Style="{StaticResource AfSettingsColorSwatchStyle}"
+                                        ToolTip="#FFFFFF" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#FFFFFF" />
+                                </WrapPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:TextBox Width="120" MaxLength="9" Text="{Binding ViewModel.Components.PetFillColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <ui:Button Margin="8,0,0,0" Content="{DynamicResource Loc.Widgets.Pet.Color.Reset}"
+                                        Command="{Binding ViewModel.Components.ResetPetFillColorCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </components:SettingsRow>
+                    </StackPanel>
+                </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Widgets.Spectrum" Header="{DynamicResource Loc.Widgets.Spectrum}"
                     Description="{DynamicResource Loc.Widgets.Spectrum.Description}" Icon="{ui:SymbolIcon DataHistogram24}">
                     <StackPanel>

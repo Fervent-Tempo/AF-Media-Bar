@@ -3210,4 +3210,73 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>Auto-hide at desktop edges</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>On by default. Drag to any work-area edge; move away to hide and approach to reveal.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>Reveal desktop media bar</value></data>
+  <data name="Widgets.Pet" xml:space="preserve">
+    <value>Pet</value>
+  </data>
+  <data name="Widgets.Pet.Description" xml:space="preserve"><value>A round pet with two small horns, global gaze tracking, blinks, expressions, spins, hops and morph animations.</value></data>
+  <data name="Widgets.Pet.Visible" xml:space="preserve">
+    <value>Show pet while media is connected</value>
+  </data>
+  <data name="Widgets.Pet.Visible.Description" xml:space="preserve">
+    <value>Off by default. To show it without media, select it in the retained components list under Content and layout.</value>
+  </data>
+  <data name="Widgets.Pet.Idle" xml:space="preserve"><value>Idle animations</value></data>
+  <data name="Widgets.Pet.Idle.Description" xml:space="preserve"><value>Controls automatic cycling, breathing and natural blinks. Other manually selected animations can still play. Reduced motion or hiding the bar stops movement.</value></data>
+  <data name="Widgets.Pet.Color" xml:space="preserve"><value>Fill color</value></data>
+  <data name="Widgets.Pet.Color.Hint" xml:space="preserve"><value>Choose a swatch or enter #RRGGBB. Light fills automatically use dark eyes.</value></data>
+  <data name="Widgets.Pet.Color.Invalid" xml:space="preserve"><value>Enter a valid HEX color. This input has not been saved.</value></data>
+  <data name="Widgets.Pet.Color.Reset" xml:space="preserve"><value>Restore default color</value></data>
+  <data name="Widgets.Pet.Size" xml:space="preserve"><value>Display size</value></data>
+  <data name="Widgets.Pet.Size.Description" xml:space="preserve"><value>20–160 DIP. With overflow off, the pet fits within the media bar thickness.</value></data>
+  <data name="Widgets.Pet.Overflow" xml:space="preserve"><value>Allow overflow beyond the bar</value></data>
+  <data name="Widgets.Pet.Overflow.Description" xml:space="preserve"><value>The larger pet extends toward the screen interior and moves and hides with the media bar, without increasing taskbar thickness.</value></data>
+  <data name="Widgets.Pet.Animation" xml:space="preserve"><value>Animation state</value></data>
+  <data name="Widgets.Pet.Animation.Description" xml:space="preserve"><value>Automatic cycling includes lifecycle and reactions. Morphs and product states are manual visual animations only.</value></data>
+  <data name="Widgets.Pet.Preview" xml:space="preserve"><value>Expand animation preview</value></data>
+  <data name="Widgets.Pet.Animation.auto" xml:space="preserve"><value>Cycle lifecycle and reactions</value></data>
+  <data name="Widgets.Pet.Animation.sleeping" xml:space="preserve"><value>Lifecycle · Sleeping</value></data>
+  <data name="Widgets.Pet.Animation.waking" xml:space="preserve"><value>Lifecycle · Waking</value></data>
+  <data name="Widgets.Pet.Animation.idle" xml:space="preserve"><value>Lifecycle · Idle</value></data>
+  <data name="Widgets.Pet.Animation.listening" xml:space="preserve"><value>Lifecycle · Listening</value></data>
+  <data name="Widgets.Pet.Animation.thinking" xml:space="preserve"><value>Lifecycle · Thinking</value></data>
+  <data name="Widgets.Pet.Animation.searching" xml:space="preserve"><value>Lifecycle · Searching</value></data>
+  <data name="Widgets.Pet.Animation.working" xml:space="preserve"><value>Lifecycle · Working</value></data>
+  <data name="Widgets.Pet.Animation.excited" xml:space="preserve"><value>Reactions · Excited</value></data>
+  <data name="Widgets.Pet.Animation.surprised" xml:space="preserve"><value>Reactions · Surprised</value></data>
+  <data name="Widgets.Pet.Animation.suspicious" xml:space="preserve"><value>Reactions · Suspicious</value></data>
+  <data name="Widgets.Pet.Animation.angry" xml:space="preserve"><value>Reactions · Angry</value></data>
+  <data name="Widgets.Pet.Animation.drowsy" xml:space="preserve"><value>Reactions · Drowsy</value></data>
+  <data name="Widgets.Pet.Animation.happy" xml:space="preserve"><value>Reactions · Happy</value></data>
+  <data name="Widgets.Pet.Animation.curious" xml:space="preserve"><value>Reactions · Curious</value></data>
+  <data name="Widgets.Pet.Animation.confused" xml:space="preserve"><value>Reactions · Confused</value></data>
+  <data name="Widgets.Pet.Animation.bored" xml:space="preserve"><value>Reactions · Bored</value></data>
+  <data name="Widgets.Pet.Animation.proud" xml:space="preserve"><value>Reactions · Proud</value></data>
+  <data name="Widgets.Pet.Animation.shy" xml:space="preserve"><value>Reactions · Shy</value></data>
+  <data name="Widgets.Pet.Animation.sad" xml:space="preserve"><value>Reactions · Sad</value></data>
+  <data name="Widgets.Pet.Animation.laughing" xml:space="preserve"><value>Reactions · Laughing</value></data>
+  <data name="Widgets.Pet.Animation.scared" xml:space="preserve"><value>Reactions · Scared</value></data>
+  <data name="Widgets.Pet.Animation.playful" xml:space="preserve"><value>Reactions · Playful</value></data>
+  <data name="Widgets.Pet.Animation.celebrate" xml:space="preserve"><value>Reactions · Celebrate</value></data>
+  <data name="Widgets.Pet.Animation.orbit" xml:space="preserve"><value>Morphs · Orbit</value></data>
+  <data name="Widgets.Pet.Animation.radar" xml:space="preserve"><value>Morphs · Radar</value></data>
+  <data name="Widgets.Pet.Animation.progress" xml:space="preserve"><value>Morphs · Progress</value></data>
+  <data name="Widgets.Pet.Animation.spawning" xml:space="preserve"><value>Product states · Spawning</value></data>
+  <data name="Widgets.Pet.Animation.humming" xml:space="preserve"><value>Product states · Humming</value></data>
+  <data name="Widgets.Pet.Animation.loading" xml:space="preserve"><value>Product states · Loading</value></data>
+  <data name="Widgets.Pet.Animation.dictating" xml:space="preserve"><value>Product states · Dictating</value></data>
+  <data name="Widgets.Pet.Animation.writing" xml:space="preserve"><value>Product states · Writing</value></data>
+  <data name="Widgets.Pet.Animation.sending" xml:space="preserve"><value>Product states · Sending</value></data>
+  <data name="Widgets.Pet.Animation.receiving" xml:space="preserve"><value>Product states · Receiving</value></data>
+  <data name="Widgets.Pet.Animation.uploading" xml:space="preserve"><value>Product states · Uploading</value></data>
+  <data name="Widgets.Pet.Animation.notifying" xml:space="preserve"><value>Product states · Notifying</value></data>
+  <data name="Widgets.Pet.Animation.alerting" xml:space="preserve"><value>Product states · Alerting</value></data>
+  <data name="Widgets.Pet.Animation.dragging" xml:space="preserve"><value>Product states · Dragging pose</value></data>
+  <data name="Widgets.Pet.Animation.bouncing" xml:space="preserve"><value>Product states · Bouncing ball</value></data>
+  <data name="Widgets.Pet.Animation.powering-down" xml:space="preserve"><value>Product states · Powering down</value></data>
+  <data name="Widgets.Pet.Animation.emphasis" xml:space="preserve"><value>Tricks · Emphasis</value></data>
+  <data name="Widgets.Pet.Animation.hop" xml:space="preserve"><value>Tricks · Hop</value></data>
+  <data name="Widgets.Pet.Animation.spin" xml:space="preserve"><value>Tricks · Spin</value></data>
+  <data name="Widgets.Pet.Animation.spin-dizzy" xml:space="preserve"><value>Tricks · Dizzy spin</value></data>
+  <data name="Widgets.Pet.Animation.spin-wild" xml:space="preserve"><value>Tricks · Fast spin</value></data>
+  <data name="Widgets.Pet.Animation.particles" xml:space="preserve"><value>Tricks · Particles</value></data>
 </root>

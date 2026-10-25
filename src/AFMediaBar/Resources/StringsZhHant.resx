@@ -3210,4 +3210,73 @@
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>邊緣自動收合</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>預設開啟。拖到工作區邊緣後，移開滑鼠收合，靠近時展開；支援四邊。</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展開桌面媒體列</value></data>
+  <data name="Widgets.Pet" xml:space="preserve">
+    <value>小寵物</value>
+  </data>
+  <data name="Widgets.Pet.Description" xml:space="preserve"><value>圓形雙角寵物，支援全域視線跟隨、眨眼、表情、旋轉跳躍及形變動畫。</value></data>
+  <data name="Widgets.Pet.Visible" xml:space="preserve">
+    <value>有媒體時顯示小寵物</value>
+  </data>
+  <data name="Widgets.Pet.Visible.Description" xml:space="preserve">
+    <value>預設關閉。無媒體時是否顯示，請在「內容與配置」的保留元件清單中設定。</value>
+  </data>
+  <data name="Widgets.Pet.Idle" xml:space="preserve"><value>待機動效</value></data>
+  <data name="Widgets.Pet.Idle.Description" xml:space="preserve"><value>控制自動輪換、呼吸和自然眨眼。手動選擇的其它動畫仍可播放；減少系統動效或隱藏媒體列時停止。</value></data>
+  <data name="Widgets.Pet.Color" xml:space="preserve"><value>填滿色彩</value></data>
+  <data name="Widgets.Pet.Color.Hint" xml:space="preserve"><value>選擇色塊或輸入 #RRGGBB。淺色填滿會自動使用深色眼睛。</value></data>
+  <data name="Widgets.Pet.Color.Invalid" xml:space="preserve"><value>請輸入有效的 HEX 色彩；目前輸入尚未儲存。</value></data>
+  <data name="Widgets.Pet.Color.Reset" xml:space="preserve"><value>還原預設色彩</value></data>
+  <data name="Widgets.Pet.Size" xml:space="preserve"><value>顯示大小</value></data>
+  <data name="Widgets.Pet.Size.Description" xml:space="preserve"><value>20–160 DIP。關閉越界顯示時，大小受媒體列厚度限制。</value></data>
+  <data name="Widgets.Pet.Overflow" xml:space="preserve"><value>允許超出列邊界</value></data>
+  <data name="Widgets.Pet.Overflow.Description" xml:space="preserve"><value>放大的寵物向螢幕內側伸出；隨媒體列一起移動和隱藏，不增加工作列厚度。</value></data>
+  <data name="Widgets.Pet.Animation" xml:space="preserve"><value>動畫狀態</value></data>
+  <data name="Widgets.Pet.Animation.Description" xml:space="preserve"><value>自動輪換只包含生命週期和表情；形變及產品狀態可手動選擇，僅作為動畫顯示。</value></data>
+  <data name="Widgets.Pet.Preview" xml:space="preserve"><value>展開動畫預覽</value></data>
+  <data name="Widgets.Pet.Animation.auto" xml:space="preserve"><value>自動輪換生命週期與表情</value></data>
+  <data name="Widgets.Pet.Animation.sleeping" xml:space="preserve"><value>生命週期 · 睡眠</value></data>
+  <data name="Widgets.Pet.Animation.waking" xml:space="preserve"><value>生命週期 · 甦醒</value></data>
+  <data name="Widgets.Pet.Animation.idle" xml:space="preserve"><value>生命週期 · 待機</value></data>
+  <data name="Widgets.Pet.Animation.listening" xml:space="preserve"><value>生命週期 · 聆聽</value></data>
+  <data name="Widgets.Pet.Animation.thinking" xml:space="preserve"><value>生命週期 · 思考</value></data>
+  <data name="Widgets.Pet.Animation.searching" xml:space="preserve"><value>生命週期 · 搜尋</value></data>
+  <data name="Widgets.Pet.Animation.working" xml:space="preserve"><value>生命週期 · 工作</value></data>
+  <data name="Widgets.Pet.Animation.excited" xml:space="preserve"><value>表情 · 興奮</value></data>
+  <data name="Widgets.Pet.Animation.surprised" xml:space="preserve"><value>表情 · 驚訝</value></data>
+  <data name="Widgets.Pet.Animation.suspicious" xml:space="preserve"><value>表情 · 懷疑</value></data>
+  <data name="Widgets.Pet.Animation.angry" xml:space="preserve"><value>表情 · 生氣</value></data>
+  <data name="Widgets.Pet.Animation.drowsy" xml:space="preserve"><value>表情 · 睏倦</value></data>
+  <data name="Widgets.Pet.Animation.happy" xml:space="preserve"><value>表情 · 開心</value></data>
+  <data name="Widgets.Pet.Animation.curious" xml:space="preserve"><value>表情 · 好奇</value></data>
+  <data name="Widgets.Pet.Animation.confused" xml:space="preserve"><value>表情 · 困惑</value></data>
+  <data name="Widgets.Pet.Animation.bored" xml:space="preserve"><value>表情 · 無聊</value></data>
+  <data name="Widgets.Pet.Animation.proud" xml:space="preserve"><value>表情 · 自豪</value></data>
+  <data name="Widgets.Pet.Animation.shy" xml:space="preserve"><value>表情 · 害羞</value></data>
+  <data name="Widgets.Pet.Animation.sad" xml:space="preserve"><value>表情 · 難過</value></data>
+  <data name="Widgets.Pet.Animation.laughing" xml:space="preserve"><value>表情 · 大笑</value></data>
+  <data name="Widgets.Pet.Animation.scared" xml:space="preserve"><value>表情 · 害怕</value></data>
+  <data name="Widgets.Pet.Animation.playful" xml:space="preserve"><value>表情 · 頑皮</value></data>
+  <data name="Widgets.Pet.Animation.celebrate" xml:space="preserve"><value>表情 · 慶祝</value></data>
+  <data name="Widgets.Pet.Animation.orbit" xml:space="preserve"><value>形變 · 軌道環</value></data>
+  <data name="Widgets.Pet.Animation.radar" xml:space="preserve"><value>形變 · 雷達</value></data>
+  <data name="Widgets.Pet.Animation.progress" xml:space="preserve"><value>形變 · 進度環</value></data>
+  <data name="Widgets.Pet.Animation.spawning" xml:space="preserve"><value>產品狀態 · 出現</value></data>
+  <data name="Widgets.Pet.Animation.humming" xml:space="preserve"><value>產品狀態 · 哼唱</value></data>
+  <data name="Widgets.Pet.Animation.loading" xml:space="preserve"><value>產品狀態 · 載入</value></data>
+  <data name="Widgets.Pet.Animation.dictating" xml:space="preserve"><value>產品狀態 · 聽寫波形</value></data>
+  <data name="Widgets.Pet.Animation.writing" xml:space="preserve"><value>產品狀態 · 書寫</value></data>
+  <data name="Widgets.Pet.Animation.sending" xml:space="preserve"><value>產品狀態 · 傳送</value></data>
+  <data name="Widgets.Pet.Animation.receiving" xml:space="preserve"><value>產品狀態 · 接收</value></data>
+  <data name="Widgets.Pet.Animation.uploading" xml:space="preserve"><value>產品狀態 · 上傳</value></data>
+  <data name="Widgets.Pet.Animation.notifying" xml:space="preserve"><value>產品狀態 · 通知</value></data>
+  <data name="Widgets.Pet.Animation.alerting" xml:space="preserve"><value>產品狀態 · 警示</value></data>
+  <data name="Widgets.Pet.Animation.dragging" xml:space="preserve"><value>產品狀態 · 拖曳姿態</value></data>
+  <data name="Widgets.Pet.Animation.bouncing" xml:space="preserve"><value>產品狀態 · 彈跳球</value></data>
+  <data name="Widgets.Pet.Animation.powering-down" xml:space="preserve"><value>產品狀態 · 關機</value></data>
+  <data name="Widgets.Pet.Animation.emphasis" xml:space="preserve"><value>短動作 · 強調</value></data>
+  <data name="Widgets.Pet.Animation.hop" xml:space="preserve"><value>短動作 · 連跳</value></data>
+  <data name="Widgets.Pet.Animation.spin" xml:space="preserve"><value>短動作 · 轉一圈</value></data>
+  <data name="Widgets.Pet.Animation.spin-dizzy" xml:space="preserve"><value>短動作 · 旋轉後暈眩</value></data>
+  <data name="Widgets.Pet.Animation.spin-wild" xml:space="preserve"><value>短動作 · 快速旋轉</value></data>
+  <data name="Widgets.Pet.Animation.particles" xml:space="preserve"><value>短動作 · 粒子散開</value></data>
 </root>

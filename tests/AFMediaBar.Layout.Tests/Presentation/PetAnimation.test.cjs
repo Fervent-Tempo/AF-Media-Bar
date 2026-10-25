@@ -1,0 +1,142 @@
+// 执行真实内嵌脚本，验证暂停、旧消息与局部/全局反馈，不断言精确动画帧或像素。
+const { test } = require("node:test");
+const assert = require("node:assert/strict");
+const vm = require("node:vm");
+const fs = require("node:fs");
+const path = require("node:path");
+const source = name => fs.readFileSync(path.join(__dirname, "../../../src/AFMediaBar/Web/Pet/", name), "utf8");
+const script = ["motion.js", "effects.js", "pet.js"].map(source).join("\n");
+
+function page() {
+  let time = 0, serial = 0, receiver;
+  const frames = new Map(), timers = new Map(), nodes = new Map();
+  const make = () => ({ attributes: {}, style: {}, setAttribute(key, value) { this.attributes[key] = value; }, children: [] });
+  for (const match of source("index.html").matchAll(/id="([^"]+)"/g)) nodes.set(match[1], make());
+  for (let n = 0; n < 16; n++) nodes.set("particle-" + n, make());
+  nodes.get("fx-dots").children = [make(), make(), make()];
+  nodes.get("fx-dictating").children = Array.from({ length: 5 }, make);
+  const classes = new Set();
+  const document = {
+    hidden: false,
+    documentElement: { ...make(), classList: { toggle(key, enabled) { if (enabled) classes.add(key); else classes.delete(key); } } },
+    getElementById: key => nodes.get(key),
+    addEventListener() {}
+  };
+  const context = {
+    document, performance: { now: () => time },
+    window: { addEventListener() {}, matchMedia: () => ({ matches: false, addEventListener() {} }),
+      chrome: { webview: { addEventListener: (_, handler) => { receiver = handler; }, postMessage() {} } } },
+    requestAnimationFrame: callback => { const id = ++serial; frames.set(id, callback); return id; },
+    cancelAnimationFrame: id => frames.delete(id),
+    setTimeout: callback => { const id = ++serial; timers.set(id, callback); return id; },
+    clearTimeout: id => timers.delete(id)
+  };
+  vm.runInNewContext(script, context);
+  let state = { gazeX: 0, gazeY: 0, hovered: false, blinkSequence: 0, pressSequence: 0,
+    bodyColor: "#84282B", eyeColor: "#FFFFFF", highContrast: false, idleAnimationsEnabled: true, motion: 0, active: true, animation: "auto" };
+  return {
+    nodes, classes, frames, timers, document, engine: context.window.PetMotion,
+    receive(change = {}, initial = false) { state = { ...state, ...change }; receiver({ data: { type: "state", id: ++serial, initial, state } }); },
+    advance(milliseconds) {
+      const end = time + milliseconds;
+      while (time < end) {
+        time = Math.min(end, time + 16);
+        const callbacks = [...frames.values()]; frames.clear();
+        callbacks.forEach(callback => callback(time));
+      }
+    }
+  };
+}
+
+test("global blink does not squash the body; local press does", () => {
+  const p = page();
+  p.receive({ idleAnimationsEnabled: false }, true);
+  p.receive({ blinkSequence: 1 });
+  p.advance(80);
+  assert.match(p.nodes.get("lids").attributes.transform, /scale\(1 0\.08\)/);
+  assert.match(p.nodes.get("pose").attributes.transform, /scale\(1 1\)/);
+  p.receive({ pressSequence: 1 });
+  p.advance(80);
+  assert.doesNotMatch(p.nodes.get("pose").attributes.transform, /scale\(1 1\)/);
+});
+
+test("pause stops work and resumed initial state never replays old clicks", () => {
+  const p = page();
+  p.receive({}, true);
+  assert.equal(p.timers.size, 1);
+  p.receive({ active: false, blinkSequence: 50, pressSequence: 50 });
+  assert.equal(p.frames.size, 0);
+  assert.equal(p.timers.size, 0);
+  assert.equal(p.classes.has("active"), false);
+  p.receive({ active: true, idleAnimationsEnabled: false }, true);
+  p.advance(32);
+  assert.match(p.nodes.get("lids").attributes.transform, /scale\(1 1\)/);
+  assert.match(p.nodes.get("pose").attributes.transform, /scale\(1 1\)/);
+  p.receive({ idleAnimationsEnabled: false });
+  assert.equal(p.timers.size, 0);
+});
+
+test("automatic cycling stays within lifecycle and reactions; morphs require selection", () => {
+  const p = page();
+  p.receive({}, true);
+  const seen = new Set();
+  const manualOnly = new Set(["orbit", "radar", "progress", "spawning", "humming", "loading", "dictating", "writing",
+    "sending", "receiving", "uploading", "notifying", "alerting", "dragging", "bouncing", "powering-down"]);
+  for (let n = 0; n < 130; n++) {
+    p.advance(1000);
+    const id = p.document.documentElement.attributes["data-animation"];
+    assert.equal(manualOnly.has(id), false, id);
+    seen.add(id);
+  }
+  assert.equal(seen.size, 23);
+  p.receive({ animation: "radar" });
+  p.advance(1000);
+  assert.equal(p.document.documentElement.attributes["data-animation"], "radar");
+  assert.ok(Number(p.nodes.get("character").attributes.opacity) < 0.05);
+  assert.equal(p.nodes.get("fx-radar").style.display, "inline");
+});
+
+test("all selectable motions remain finite and a rapid change uses the latest state", () => {
+  const p = page();
+  p.receive({}, true);
+  const catalog = fs.readFileSync(path.join(__dirname, "../../../src/AFMediaBar/Classes/Settings/PetAnimationCatalog.cs"), "utf8");
+  const ids = [...catalog.matchAll(/"([a-z-]+)"/g)].map(match => match[1]);
+  assert.equal(ids.length, 46);
+  for (const animation of ids) {
+    p.receive({ animation });
+    p.advance(2200);
+    if (animation !== "auto") assert.equal(p.document.documentElement.attributes["data-animation"], animation);
+    for (const node of p.nodes.values()) for (const value of Object.values(node.attributes))
+      assert.doesNotMatch(String(value), /NaN|Infinity/, animation);
+  }
+  p.receive({ animation: "sleeping" });
+  p.receive({ animation: "loading" });
+  p.receive({ animation: "happy" });
+  p.advance(32);
+  assert.equal(p.document.documentElement.attributes["data-animation"], "happy");
+  p.receive({ active: false });
+  assert.equal(p.frames.size, 0);
+  assert.equal(p.timers.size, 0);
+});
+
+test("multi-turn targets keep moving forward when the spring lags and the cycle wraps", () => {
+  const p = page(), turn = { raw: 0, offset: 0 };
+  assert.equal(p.engine.unwrapTurn(turn, 0, 0, true), 0);
+  assert.equal(p.engine.unwrapTurn(turn, 720, 180, false), 720);
+  assert.equal(p.engine.unwrapTurn(turn, 2160, 1600, false), 2160);
+  assert.equal(p.engine.unwrapTurn(turn, 0, 1900, false), 2160);
+  assert.equal(p.engine.unwrapTurn(turn, 90, 2000, false), 2250);
+  assert.equal(p.engine.unwrapTurn(turn, 0, 2200, true), 2160);
+});
+
+test("reduced motion disables idle and body movement while preserving click feedback", () => {
+  const p = page();
+  p.receive({ motion: 1 }, true);
+  assert.equal(p.timers.size, 0);
+  assert.equal(p.classes.has("full"), false);
+  p.receive({ hovered: true, pressSequence: 1, blinkSequence: 1, gazeX: 4 });
+  p.advance(80);
+  assert.match(p.nodes.get("pose").attributes.transform, /scale\(1 1\)/);
+  assert.match(p.nodes.get("gaze").attributes.transform, /translate\(4 0\)/);
+  assert.match(p.nodes.get("lids").attributes.transform, /scale\(1 0\.08\)/);
+});

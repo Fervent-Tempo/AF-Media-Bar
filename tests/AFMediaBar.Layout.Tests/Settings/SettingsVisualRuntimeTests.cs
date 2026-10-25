@@ -138,7 +138,7 @@ public sealed class SettingsVisualRuntimeTests
         app.Resources["AppTextStrongFontWeight"] = FontWeights.SemiBold;
         var root = FindRepository();
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
-        var eventNames = new HashSet<string> { "Loaded", "Unloaded", "Click", "SelectionChanged", "Checked", "Unchecked", "SizeChanged", "MouseLeftButtonDown", "KeyDown", "IsVisibleChanged", "PreviewKeyDown", "LostKeyboardFocus" };
+        var eventNames = new HashSet<string> { "Loaded", "Unloaded", "Click", "SelectionChanged", "Checked", "Unchecked", "SizeChanged", "MouseLeftButtonDown", "KeyDown", "IsVisibleChanged", "PreviewKeyDown", "LostKeyboardFocus", "Expanded", "Collapsed", "MouseEnter", "MouseLeave", "MouseMove", "MouseDown" };
         foreach (var name in new[] { "DisplayModes", "ScreenAndPlacement", "Appearance", "ApplicationAppearance", "Interaction", "Lyrics", "ComponentsSettings", "WidgetsSettings", "ExtraFeatures", "Application", "DeviceManagement", "Experimental", "ReleaseHighlights", "About" })
         {
             var document = XDocument.Load(Path.Combine(root, "src", "AFMediaBar", "Views", "Pages", name + "Page.xaml"));

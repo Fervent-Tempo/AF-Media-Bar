@@ -112,7 +112,9 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         WindowAppearanceService appearance, ScreenBackgroundSampler sampler, AppLogService log, FloatingBarLengthConstraints lengthConstraints,
         Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null,
         QuickLaunchService? quickLaunch = null,
-        QuickLaunchIconService? quickLaunchIcons = null)
+        QuickLaunchIconService? quickLaunchIcons = null,
+        PetInputService? petInput = null,
+        PetWebEnvironment? petWebEnvironment = null)
     {
         _quickLaunch = quickLaunch;
         TargetMonitorDeviceId = targetMonitorDeviceId;
@@ -136,6 +138,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         ShowActivated = false;
         WindowHelper.SetNoActivate(this);
         _mediaControl.BindBatterySource(batterySource);
+        if (petInput is not null) _mediaControl.BindPetInput(petInput, petWebEnvironment);
         InitializeEdgeCollapse();
         PresentationSettings = ProjectSettings();
         _centerPx = new Point(monitor.WorkArea.Left + monitor.WorkArea.Width / 2,
@@ -242,6 +245,11 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         PreviewMouseRightButtonUp += (_, args) =>
         {
             if (!IsOperational || DateTime.UtcNow < _suppressClickUntil || _mouse.ConsumeSuppressedClick()) return;
+            if (_mediaControl.IsPetComponentClick(args.OriginalSource as DependencyObject))
+            {
+                args.Handled = true;
+                return;
+            }
             IsPerformanceMenuRequested = SettingsManager.Current.Experiments.MemoryTools && _mediaControl.IsPerformanceComponentClick(args.OriginalSource as DependencyObject);
             IsBatteryMenuRequested = _mediaControl.IsBatteryComponentClick(args.OriginalSource as DependencyObject);
             _externalFullPanelHandle?.Dismiss(immediate: true);

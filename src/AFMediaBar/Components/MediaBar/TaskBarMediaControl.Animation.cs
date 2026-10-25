@@ -217,6 +217,7 @@ public partial class TaskBarMediaControl
     {
         if (_isPlacementMotionActive == suspended) return;
         _isPlacementMotionActive = suspended;
+        UpdatePetPresentation();
         if (suspended)
         {
             _artworkHover.AnimateArtworkHover(false, immediate: true);
@@ -249,6 +250,7 @@ public partial class TaskBarMediaControl
         return surface.Visibility == Visibility.Visible &&
             (ReferenceEquals(surface, TaskbarSpectrumHoverSurface) ||
              ReferenceEquals(surface, TaskbarPerformanceHoverSurface) ||
+             ReferenceEquals(surface, TaskbarPetSurface) ||
              ReferenceEquals(surface, TaskbarOutputDeviceHoverSurface) ||
              ReferenceEquals(surface, TaskbarVolumeHoverSurface));
     }
@@ -498,6 +500,7 @@ public partial class TaskBarMediaControl
         AnimateComponentHover(TaskbarOutputDeviceHoverSurface, TaskbarOutputDeviceHoverSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
         AnimateComponentHover(TaskbarVolumeHoverSurface, TaskbarVolumeHoverSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
         AnimateComponentHover(TaskbarBatterySurface, TaskbarBatterySurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
+        AnimateComponentHover(TaskbarPetSurface, TaskbarPetSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
     }
 
     private void SongImageBorder_MouseEnter(object sender, MouseEventArgs e)
@@ -797,6 +800,7 @@ public partial class TaskBarMediaControl
         AnimateComponentHover(TaskbarPerformanceHoverSurface, false, immediate: true);
         AnimateComponentHover(TaskbarOutputDeviceHoverSurface, false, immediate: true);
         AnimateComponentHover(TaskbarVolumeHoverSurface, false, immediate: true);
+        AnimateComponentHover(TaskbarPetSurface, false, immediate: true);
     }
 
     /// <summary>

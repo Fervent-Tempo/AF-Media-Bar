@@ -198,6 +198,8 @@ public sealed class TaskbarArrangementPresentationTests
                 AssertPerformanceLayout(control);
                 VerticalTaskbarPresentationChecks.Verify(control);
                 SmallTaskbarPresentationChecks.Verify(control);
+                PetPresentationChecks.Verify();
+                PetWebLifecycleChecks.Verify();
                 AssertMetadataSurvivesOrientationChanges();
                 AssertLyricsSurviveOrientationChanges();
                 AssertLyricsTimelineChangesResizeRepeatedText();

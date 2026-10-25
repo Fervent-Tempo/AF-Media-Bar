@@ -11,6 +11,7 @@ internal static class SettingsResetPolicy
         {
             MediaFontSizePercent = current.MediaFontSizePercent,
             SpectrumVisible = current.SpectrumVisible,
+            PetVisible = current.PetVisible,
             PerformanceVisible = current.PerformanceVisible
         };
 }

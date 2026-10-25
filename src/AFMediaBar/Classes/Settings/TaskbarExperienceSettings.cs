@@ -71,7 +71,9 @@ public enum TaskbarRestComponent
     Volume = 5,
     InputDevice = 6,
     /// <summary>所选蓝牙设备的电量组件。</summary>
-    BluetoothBattery = 7
+    BluetoothBattery = 7,
+    /// <summary>跟随全局鼠标并响应点击的小宠物。</summary>
+    Pet = 8
 }
 
 /// <summary>播放器表面的基础背景方案。 / Basic background style for a player surface.</summary>
@@ -172,6 +174,9 @@ public readonly record struct TaskbarExperienceSettings(
 
     /// <summary>静置层是否显示性能组件。 / Whether the rest layer shows the performance component.</summary>
     public bool PerformanceVisible { get; init; } = true;
+
+    /// <summary>有媒体时显示小宠物；无媒体时由保留列表独立控制。</summary>
+    public bool PetVisible { get; init; } = false;
 
     /// <summary>
     /// 静置层是否显示底部的播放进度条，默认关闭。关闭后只在媒体报告了时长时消失的那条进度不再绘制，

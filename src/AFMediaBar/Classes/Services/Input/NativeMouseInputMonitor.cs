@@ -9,12 +9,16 @@ namespace AFMediaBar.Classes.Services;
 /// <summary>托盘滚轮事件参数。/ Tray-wheel event arguments.</summary>
 public sealed record TrayWheelEventArgs(int Delta, bool IsShiftDown, bool IsLeftButtonDown, bool IsRightButtonDown);
 
-/// <summary>全局左键事件的屏幕坐标。/ Screen coordinates for a global left-button event.</summary>
-public sealed record NativeMouseButtonEventArgs(int ScreenX, int ScreenY);
+/// <summary>全局鼠标按键事件的物理屏幕坐标。</summary>
+public sealed record NativeMouseButtonEventArgs(int ScreenX, int ScreenY)
+{
+    /// <summary>Hook 观察到按键的单调时间，用于丢弃跨租约的迟到点击。</summary>
+    public long ObservedAtTicks { get; init; }
+}
 
 /// <summary>
-/// 通过低级鼠标钩子监听托盘滚轮和全局左键，不拦截系统输入。
-/// Watches tray-wheel and global left-button input without consuming system input.
+/// 通过低级鼠标钩子监听托盘滚轮和全局鼠标按键，不拦截系统输入。
+/// Watches tray-wheel and global mouse-button input without consuming system input.
 /// </summary>
 public sealed class NativeMouseInputMonitor : IDisposable
 {
@@ -54,6 +58,7 @@ public sealed class NativeMouseInputMonitor : IDisposable
 
     public event EventHandler<TrayWheelEventArgs>? WheelChanged;
     public event EventHandler<NativeMouseButtonEventArgs>? LeftButtonPressed;
+    public event EventHandler<NativeMouseButtonEventArgs>? RightButtonPressed;
 
     /// <summary>
     /// 全局左键抬起（钩子线程观察到后投递到 UI 线程）。陈旧鼠标捕获存续期间 WPF 会把命中测试整体锁进捕获子树，
@@ -185,7 +190,8 @@ public sealed class NativeMouseInputMonitor : IDisposable
     }
 
     private IntPtr OnMouseEvent(int code, IntPtr wParam, IntPtr lParam)
-    {        try
+    {
+        try
         {
             if (code >= 0)
             {
@@ -194,9 +200,10 @@ public sealed class NativeMouseInputMonitor : IDisposable
                 if (message == NativeMethods.WM_LBUTTONDOWN)
                 {
                     _isLeftButtonDown = true;
+                    var observedAtTicks = Stopwatch.GetTimestamp();
                     Post(() => LeftButtonPressed?.Invoke(
                         this,
-                        new NativeMouseButtonEventArgs(data.Point.X, data.Point.Y)));
+                        new NativeMouseButtonEventArgs(data.Point.X, data.Point.Y) { ObservedAtTicks = observedAtTicks }));
                 }
                 else if (message == NativeMethods.WM_LBUTTONUP)
                 {
@@ -209,6 +216,10 @@ public sealed class NativeMouseInputMonitor : IDisposable
                 else if (message == NativeMethods.WM_RBUTTONDOWN)
                 {
                     _isRightButtonDown = true;
+                    var observedAtTicks = Stopwatch.GetTimestamp();
+                    Post(() => RightButtonPressed?.Invoke(
+                        this,
+                        new NativeMouseButtonEventArgs(data.Point.X, data.Point.Y) { ObservedAtTicks = observedAtTicks }));
                 }
                 else if (message == NativeMethods.WM_RBUTTONUP)
                 {
@@ -279,7 +290,10 @@ public sealed class NativeMouseInputMonitor : IDisposable
             return;
         }
 
-        _dispatcher.BeginInvoke(callback, DispatcherPriority.Input);
+        _dispatcher.BeginInvoke(() =>
+        {
+            if (!_disposed && !_dispatcher.HasShutdownStarted) callback();
+        }, DispatcherPriority.Input);
     }
 
     /// <summary>移除鼠标钩子并清理事件。/ Removes the mouse hook and clears events.</summary>
@@ -315,6 +329,7 @@ public sealed class NativeMouseInputMonitor : IDisposable
 
         WheelChanged = null;
         LeftButtonPressed = null;
+        RightButtonPressed = null;
         LeftButtonReleased = null;
     }
 }

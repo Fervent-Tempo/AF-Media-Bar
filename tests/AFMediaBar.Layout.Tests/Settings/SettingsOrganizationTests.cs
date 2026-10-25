@@ -48,6 +48,7 @@ public sealed class SettingsOrganizationTests
                 FixedLengthDip = 420
             },
             SpectrumComponent = SpectrumComponentSettings.Default with { BandCount = 20 },
+            PetComponent = new() { FillColorHex = "#F7C948", IdleAnimationsEnabled = false, SizeDip = 96, AllowOverflow = true, Animation = "writing" },
             PerformanceComponent = PerformanceComponentSettings.Default with { Metrics = [MetricKind.SystemCpu] },
             LyricsTextAlignment = LyricsTextAlignment.Left,
             LyricsFixedWidthEnabled = true,
@@ -56,7 +57,7 @@ public sealed class SettingsOrganizationTests
         SettingsManager.SetUserDefaults(saved);
         var current = SettingsManager.Current;
         current.Appearance = current.Appearance with { FontWeight = 700, TaskbarFrostedStyle = TaskbarFrostedStyle.Warm };
-        current.TaskbarExperience = current.TaskbarExperience with { MediaFontSizePercent = 120, ArtworkProgressVisible = true };
+        current.TaskbarExperience = current.TaskbarExperience with { MediaFontSizePercent = 120, ArtworkProgressVisible = true, PetVisible = true };
         current.Position = TaskbarBarPosition.End;
         current.TaskbarTargetMonitorDeviceIds = ["secondary"];
         current.LyricsEnabled = false;
@@ -65,6 +66,7 @@ public sealed class SettingsOrganizationTests
         current.Interaction = current.Interaction with { ArtworkHoverMode = ArtworkHoverMode.Zoom };
         var appearance = current.Appearance;
         var spectrum = current.SpectrumComponent;
+        var pet = current.PetComponent;
         var performance = current.PerformanceComponent;
         current.BluetoothBatteryWidget = current.BluetoothBatteryWidget with { LastKnownName = "Keep me" };
         var battery = current.BluetoothBatteryWidget;
@@ -72,10 +74,11 @@ public sealed class SettingsOrganizationTests
         SettingsManager.ResetContentLayout();
 
         current = SettingsManager.Current;
-        Assert.AreEqual(saved.TaskbarExperience.Normalize() with { MediaFontSizePercent = 120, RestComponentOrder = null, SpectrumVisible = true, PerformanceVisible = true },
+        Assert.AreEqual(saved.TaskbarExperience.Normalize() with { MediaFontSizePercent = 120, RestComponentOrder = null, SpectrumVisible = true, PerformanceVisible = true, PetVisible = true },
             current.TaskbarExperience with { RestComponentOrder = null });
         CollectionAssert.AreEqual(saved.TaskbarExperience.RestComponentOrder!.ToArray(), current.TaskbarExperience.RestComponentOrder!.ToArray());
         Assert.AreEqual(spectrum, current.SpectrumComponent);
+        Assert.AreEqual(pet, current.PetComponent);
         Assert.AreEqual(JsonSerializer.Serialize(performance), JsonSerializer.Serialize(current.PerformanceComponent));
         Assert.AreEqual(battery, current.BluetoothBatteryWidget);
         Assert.AreEqual(LyricsTextAlignment.Left, current.LyricsTextAlignment);
@@ -96,9 +99,10 @@ public sealed class SettingsOrganizationTests
         var saved = new AppSettings
         {
             SpectrumComponent = SpectrumComponentSettings.Default with { CaptureDeviceId = "saved-endpoint", CaptureDeviceName = "Saved" },
+            PetComponent = new() { FillColorHex = "#42CBA6", IdleAnimationsEnabled = false, SizeDip = 120, AllowOverflow = true, Animation = "radar" },
             PerformanceComponent = PerformanceComponentSettings.Default with { RefreshIntervalMilliseconds = 4000 },
             BluetoothBatteryWidget = new() { Enabled = true, DeviceId = "headphones", LastKnownName = "Headphones" },
-            TaskbarExperience = TaskbarExperienceSettings.Default with { SpectrumVisible = false, PerformanceVisible = false }
+            TaskbarExperience = TaskbarExperienceSettings.Default with { SpectrumVisible = false, PerformanceVisible = false, PetVisible = true }
         };
         SettingsManager.SetUserDefaults(saved);
         SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
@@ -110,9 +114,10 @@ public sealed class SettingsOrganizationTests
         SettingsManager.ResetComponents();
 
         Assert.AreEqual(saved.SpectrumComponent, SettingsManager.Current.SpectrumComponent);
+        Assert.AreEqual(saved.PetComponent, SettingsManager.Current.PetComponent);
         Assert.AreEqual(JsonSerializer.Serialize(saved.PerformanceComponent.Normalize()), JsonSerializer.Serialize(SettingsManager.Current.PerformanceComponent));
         Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize(), SettingsManager.Current.BluetoothBatteryWidget);
-        Assert.AreEqual(layout with { SpectrumVisible = false, PerformanceVisible = false }, SettingsManager.Current.TaskbarExperience);
+        Assert.AreEqual(layout with { SpectrumVisible = false, PerformanceVisible = false, PetVisible = true }, SettingsManager.Current.TaskbarExperience);
         Assert.AreEqual(JsonSerializer.Serialize(devices), JsonSerializer.Serialize(SettingsManager.Current.AudioDevices));
         SettingsManager.ResetDeviceManagement();
         Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize(), SettingsManager.Current.BluetoothBatteryWidget);

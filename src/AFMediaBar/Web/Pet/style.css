@@ -1,0 +1,5 @@
+/* SVG 只占宠物槽位；不产生滚动、焦点或浏览器输入表面。 */
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; pointer-events: none; user-select: none; }
+svg { display: block; width: 100%; height: 100%; overflow: hidden; }
+#effects > g { display: none; }
+#effects, #particles { pointer-events: none; }

@@ -178,6 +178,8 @@ public static class SettingsSearchIndex
             ["组件顺序", "順序", "排序", "order", "上移", "下移", "layout", "组件位置"]),
         Create(SettingsPageKey.Widgets, "Widgets.Spectrum", "Widgets.Spectrum.Description", language,
             ["小组件", "小元件", "组件设置", "widgets", "频谱", "spectrum", "音频采集范围", "采集设备", "前台程序音频", "audio capture scope", "current media application", "all applications", "音訊擷取範圍", "phạm vi thu âm thanh", "柱数", "刷新率", "灵敏度", "波形", "像素", "上下对称"]),
+        Create(SettingsPageKey.Widgets, "Widgets.Pet", "Widgets.Pet.Description", language,
+            ["宠物", "寵物", "小宠物", "pet", "mascot", "mouse", "blink", "鼠标跟随", "眨眼", "thú cưng", "小角", "填充颜色", "填滿色彩", "呼吸", "待机动效", "fill color", "idle animation", "HEX", "màu tô", "越界", "大小", "尺寸", "动画", "動畫", "overflow", "size", "animation", "kích thước"]),
         Create(SettingsPageKey.Widgets, "Widgets.Performance", "Media.Performance.Metrics.Description", language,
             ["性能", "performance", "网速", "网络速率", "網路速率", "上传", "下载", "轮换", "并排", "network", "upload", "download", "cycle", "side by side", "tốc độ mạng", "luân phiên", "cạnh nhau", "内存", "cpu", "gpu", "任务管理器", "采样间隔", "刷新间隔"]),
         Create(

@@ -150,6 +150,7 @@ namespace AFMediaBar.Components
             _marqueeTexts.Add(new MetadataMarqueePresenter(SongArtist, SongArtistDuplicate));
             IsVisibleChanged += (_, _) => ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
             IsVisibleChanged += (_, _) => { if (!IsVisible) SuspendQuickLaunchPresentation(); };
+            IsVisibleChanged += (_, _) => UpdatePetPresentation();
             _lyrics.InitializeWebLyrics();
             // 程序内的全局滚轮提示各挂在一个全局滚轮面上：文字区与封面。两个 ToolTip 实例不能共用（一个实例只属于一个元素），
             // 因此实例各自独立、**内容**由同一处写入，随手势与结果实时改写。
@@ -180,11 +181,13 @@ namespace AFMediaBar.Components
             // a taskbar rebuilt during a dark screen, for instance — and starting it outright there would undo the prune.
             Loaded += (_, _) =>
             {
+                UpdatePetPresentation();
                 _artworkHover.Resume();
                 ResumeBackgroundTimers();
             };
             Unloaded += (_, _) =>
             {
+                SuspendPetPresentation();
                 FinishColorTransitions();
                 SuspendQuickLaunchPresentation();
                 _artworkHover.Detach();
@@ -210,6 +213,7 @@ namespace AFMediaBar.Components
         /// <summary>宿主最终关闭时释放控件级呈现资源；普通卸载仍允许重新加载。</summary>
         internal void DisposePresentation()
         {
+            DisposePetPresentation();
             FinishColorTransitions();
             SuspendQuickLaunchPresentation();
             CancelQuickLaunchInteraction();
@@ -1277,6 +1281,8 @@ namespace AFMediaBar.Components
             PlaceRestWidget(TaskbarSpectrumHoverSurface, layout.Find(TaskbarRestComponent.Spectrum), hoverHeight);
             PlaceRestWidget(TaskbarPerformanceHoverSurface, layout.Find(TaskbarRestComponent.Performance), hoverHeight);
             PlaceRestWidget(TaskbarBatterySurface, layout.Find(TaskbarRestComponent.BluetoothBattery), hoverHeight);
+            PlaceRestWidget(TaskbarPetSurface, layout.Find(TaskbarRestComponent.Pet), Math.Min(
+                PresentationSettings.PetComponent.SizeDip + 2, Math.Max(1, MainBorder.Height - 2)));
             PlaceRestWidget(TaskbarOutputDeviceHoverSurface, layout.Find(TaskbarRestComponent.OutputDevice), hoverHeight);
             PlaceRestWidget(TaskbarInputDeviceHoverSurface, layout.Find(TaskbarRestComponent.InputDevice), hoverHeight);
             PlaceRestWidget(TaskbarVolumeHoverSurface, layout.Find(TaskbarRestComponent.Volume), hoverHeight);
@@ -1342,6 +1348,9 @@ namespace AFMediaBar.Components
             SetRestComponentVisible(TaskbarPerformanceHoverSurface, performanceVisible);
             SetRestComponentVisible(TaskbarPerformanceSurface, performanceVisible);
             SetRestComponentVisible(TaskbarBatterySurface, Visible(TaskbarRestComponent.BluetoothBattery));
+            SetRestComponentVisible(TaskbarPetSurface, Visible(TaskbarRestComponent.Pet));
+            if (!Visible(TaskbarRestComponent.Pet)) AnimateComponentHover(TaskbarPetSurface, false);
+            UpdatePetPresentation();
             SetRestComponentVisible(TaskbarOutputDeviceHoverSurface, outputDeviceVisible);
             SetRestComponentVisible(TaskbarOutputDeviceSurface, outputDeviceVisible);
             SetRestComponentVisible(TaskbarInputDeviceHoverSurface, inputDeviceVisible);
@@ -1432,7 +1441,7 @@ namespace AFMediaBar.Components
                 experience.PerformanceVisible,
                 experience.OutputDeviceVisible,
                 experience.VolumeVisible,
-                experience.ArtworkVisible, experience.InputDeviceVisible, _batteryCanShow);
+                experience.ArtworkVisible, experience.InputDeviceVisible, _batteryCanShow, experience.PetVisible);
 
         /// <summary>
         /// 一个静置层组件占用的固定宽度；媒体文字不吃固定宽度，它取剩余长度。
@@ -1444,6 +1453,7 @@ namespace AFMediaBar.Components
             TaskbarRestComponent.Spectrum => SpectrumSurfaceWidth,
             TaskbarRestComponent.Performance => _performanceWidth + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.BluetoothBattery => BatterySurfaceWidth,
+            TaskbarRestComponent.Pet => PetSurfaceLength,
             TaskbarRestComponent.OutputDevice => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.InputDevice => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.Volume => metrics.ButtonSize + TaskbarWidgetPadding * 2,
@@ -1589,6 +1599,7 @@ namespace AFMediaBar.Components
 
         private void ApplyTimerSuspensionState()
         {
+            UpdatePetPresentation();
             if (!_isHostVisibilitySuspended && _backgroundPruneLevel == MemoryPruneLevel.None)
             {
                 ResumeBackgroundTimers();

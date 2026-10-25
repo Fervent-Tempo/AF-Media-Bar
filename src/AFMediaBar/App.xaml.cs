@@ -208,6 +208,8 @@ namespace AFMediaBar
                 services.AddSingleton<ShellTrayIconService>();
                 services.AddSingleton<ISystemNotificationService>(sp => sp.GetRequiredService<ShellTrayIconService>());
                 services.AddSingleton<NativeMouseInputMonitor>();
+                services.AddSingleton<PetInputService>();
+                services.AddSingleton<PetWebEnvironment>();
                 services.AddSingleton<NativeWindowBackdropAdapter>();
                 services.AddSingleton<AppIconService>();
                 services.AddSingleton<WindowAppearanceService>();
@@ -803,11 +805,16 @@ namespace AFMediaBar
         {
             // 原生图形故障没有应用调用点可包裹；仅在堆栈匹配且有效宿主接受处理时拦截。
             var recoveryAction = WebView2GraphicsFaultPolicy.Classify(e.Exception);
-            if (recoveryAction != WebLyricsRecoveryAction.None &&
-                WebLyricsGraphicsRecovery.Session.Request(recoveryAction))
+            var recoveryAccepted = false;
+            if (recoveryAction != WebLyricsRecoveryAction.None)
+            {
+                recoveryAccepted = WebLyricsGraphicsRecovery.Session.Request(recoveryAction);
+                recoveryAccepted |= PetGraphicsRecovery.Request();
+            }
+            if (recoveryAccepted)
             {
                 AppLogService.Current?.Warn(
-                    "Lyrics",
+                    "Rendering",
                     $"WebView2 图形层故障已接收: action={recoveryAction}, HRESULT=0x{e.Exception.HResult:X8}",
                     e.Exception);
                 e.Handled = true;
