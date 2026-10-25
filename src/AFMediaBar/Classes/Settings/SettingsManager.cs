@@ -221,8 +221,6 @@ public static class SettingsManager
             HoverLayerEnabled = defaults.TaskbarExperience.HoverLayerEnabled,
             FullLayerEnabled = defaults.TaskbarExperience.FullLayerEnabled,
             FullPanel = defaults.TaskbarExperience.FullPanel,
-            SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible,
-            PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible,
             RestProgressVisible = defaults.TaskbarExperience.RestProgressVisible,
             ArtworkProgressVisible = defaults.TaskbarExperience.ArtworkProgressVisible,
             ArtworkVisible = defaults.TaskbarExperience.ArtworkVisible,
@@ -264,11 +262,9 @@ public static class SettingsManager
         next.QuickLaunch = defaults.QuickLaunch;
         next.SpectrumComponent = defaults.SpectrumComponent;
         next.PerformanceComponent = defaults.PerformanceComponent;
-        next.BluetoothBatteryWidget = defaults.BluetoothBatteryWidget;
+        next.BluetoothBatteryWidget = defaults.BluetoothBatteryWidget with { Enabled = next.BluetoothBatteryWidget.Enabled };
         next.TaskbarExperience = next.TaskbarExperience with
         {
-            SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible,
-            PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible,
             FullPanel = next.TaskbarExperience.FullPanel with { PerformanceVisuals = defaults.TaskbarExperience.FullPanel.PerformanceVisuals }
         };
         Replace(next, SettingsResetScope.Components);

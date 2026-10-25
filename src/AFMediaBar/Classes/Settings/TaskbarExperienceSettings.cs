@@ -71,7 +71,16 @@ public enum TaskbarRestComponent
     Volume = 5,
     InputDevice = 6,
     /// <summary>所选蓝牙设备的电量组件。</summary>
-    BluetoothBattery = 7
+    BluetoothBattery = 7,
+    SystemMemory = 8,
+    SystemCpu = 9,
+    SystemGpu = 10,
+    ProcessMemory = 11,
+    SystemNetwork = 12,
+    DragHandle = 13,
+    PreviousTrack = 14,
+    PlayPause = 15,
+    NextTrack = 16
 }
 
 /// <summary>播放器表面的基础背景方案。 / Basic background style for a player surface.</summary>
@@ -236,6 +245,7 @@ public readonly record struct TaskbarExperienceSettings(
     /// settings file never loses a component a newer version added; the relative order the user gave MUST NOT be rearranged.
     /// </summary>
     public IReadOnlyList<TaskbarRestComponent>? RestComponentOrder { get; init; }
+    public ComponentLayoutsSettings? ComponentLayouts { get; init; }
 
     /// <summary>
     /// 没有媒体（没有 SMTC 来源）时仍然留在任务栏上的静置层组件。这个行为没有开关：没有媒体时媒体栏本来就没有内容可显示，
@@ -309,6 +319,7 @@ public readonly record struct TaskbarExperienceSettings(
             MediaTextAlignment = Enum.IsDefined(MediaTextAlignment) ? MediaTextAlignment : defaults.MediaTextAlignment,
             Arrangement = Arrangement is { } arrangement && Enum.IsDefined(arrangement) ? arrangement : null,
             FullPanel = FullPanel.Normalize(),
+            ComponentLayouts = ComponentLayouts?.Normalize(),
             LengthMode = Enum.IsDefined(LengthMode) ? LengthMode : defaults.LengthMode,
             FixedLengthDip = double.IsFinite(FixedLengthDip) && FixedLengthDip >= MinimumStoredFixedLengthDip
                 ? Math.Clamp(FixedLengthDip, MinimumStoredFixedLengthDip, MaximumStoredFixedLengthDip)

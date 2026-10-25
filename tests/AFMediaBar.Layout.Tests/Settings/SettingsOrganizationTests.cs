@@ -72,7 +72,7 @@ public sealed class SettingsOrganizationTests
         SettingsManager.ResetContentLayout();
 
         current = SettingsManager.Current;
-        Assert.AreEqual(saved.TaskbarExperience.Normalize() with { MediaFontSizePercent = 120, RestComponentOrder = null, SpectrumVisible = true, PerformanceVisible = true },
+        Assert.AreEqual(saved.TaskbarExperience.Normalize() with { MediaFontSizePercent = 120, RestComponentOrder = null },
             current.TaskbarExperience with { RestComponentOrder = null });
         CollectionAssert.AreEqual(saved.TaskbarExperience.RestComponentOrder!.ToArray(), current.TaskbarExperience.RestComponentOrder!.ToArray());
         Assert.AreEqual(spectrum, current.SpectrumComponent);
@@ -111,11 +111,11 @@ public sealed class SettingsOrganizationTests
 
         Assert.AreEqual(saved.SpectrumComponent, SettingsManager.Current.SpectrumComponent);
         Assert.AreEqual(JsonSerializer.Serialize(saved.PerformanceComponent.Normalize()), JsonSerializer.Serialize(SettingsManager.Current.PerformanceComponent));
-        Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize(), SettingsManager.Current.BluetoothBatteryWidget);
-        Assert.AreEqual(layout with { SpectrumVisible = false, PerformanceVisible = false }, SettingsManager.Current.TaskbarExperience);
+        Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize() with { Enabled = false }, SettingsManager.Current.BluetoothBatteryWidget);
+        Assert.AreEqual(layout, SettingsManager.Current.TaskbarExperience);
         Assert.AreEqual(JsonSerializer.Serialize(devices), JsonSerializer.Serialize(SettingsManager.Current.AudioDevices));
         SettingsManager.ResetDeviceManagement();
-        Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize(), SettingsManager.Current.BluetoothBatteryWidget);
+        Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize() with { Enabled = false }, SettingsManager.Current.BluetoothBatteryWidget);
     }
 
     [TestMethod]
