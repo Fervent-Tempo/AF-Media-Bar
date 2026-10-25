@@ -29,6 +29,45 @@ public sealed class TaskbarArrangementSettingsTests
     }
 
     [TestMethod]
+    public void LayoutListsSynchronizeDisabledRowsAndKeepModeAndHostPreferences()
+    {
+        StaTest.Run(_ =>
+        {
+            var original = SettingsManager.Current.Clone();
+            using var localization = new LocalizationService();
+            try
+            {
+                foreach (var mode in new[] { AFMediaBar.Classes.Models.Settings.SettingsMode.Taskbar, AFMediaBar.Classes.Models.Settings.SettingsMode.FloatingBar })
+                {
+                    SettingsManager.Current = new AppSettings();
+                    SettingsManager.Current.PerformanceComponent = SettingsManager.Current.PerformanceComponent with { DisplayMode = PerformanceDisplayMode.Parallel };
+                    using var context = new SettingsPageContext();
+                    context.Initialize(AFMediaBar.Classes.Models.Settings.SettingsContext.Initial with { Mode = mode });
+                    var configuration = new LegacySettingsConfiguration(context);
+                    using var vm = new DisplayModesViewModel(new Monitors(), localization, configuration);
+                    var rows = vm.ResidentLayoutEntries;
+                    var gpu = rows.Single(row => row.Component == TaskbarRestComponent.SystemGpu);
+                    Assert.IsFalse(gpu.IsVisible);
+                    vm.ReorderLayoutCommand.Execute(new SettingsReorderRequest(gpu, 2, rows.Cast<object>()));
+                    Assert.AreSame(gpu, vm.ResidentLayoutEntries[2]);
+                    gpu.IsVisible = true;
+                    Assert.IsTrue(ComponentLayoutPolicy.Resolve(SettingsManager.Current, BarLayoutState.Resident)[2].IsVisible);
+                    Assert.IsFalse(vm.IdleLayoutEntries.Any(row => row.Component == TaskbarRestComponent.SystemGpu && row.IsVisible));
+                    SettingsManager.Current.PerformanceComponent = SettingsManager.Current.PerformanceComponent with { DisplayMode = PerformanceDisplayMode.Cycle };
+                    Assert.IsFalse(vm.ResidentLayoutEntries.Any(row => row.Component == TaskbarRestComponent.SystemGpu));
+                    Assert.AreEqual(1, vm.ResidentLayoutEntries.Count(row => row.Component == TaskbarRestComponent.Performance));
+                    SettingsManager.Current.PerformanceComponent = SettingsManager.Current.PerformanceComponent with { DisplayMode = PerformanceDisplayMode.Parallel };
+                    Assert.AreSame(gpu, vm.ResidentLayoutEntries[2]);
+                    context.Deactivate(); gpu.IsVisible = false;
+                    Assert.IsTrue(gpu.IsVisible, "非活动页面不能提交旧输入。");
+                }
+            }
+            finally { SettingsManager.Replace(original); }
+            return Task.CompletedTask;
+        });
+    }
+
+    [TestMethod]
     public void SwitchingPositionRefreshesTheEffectiveArrangementInTheComboBox()
     {
         StaTest.Run(_ =>

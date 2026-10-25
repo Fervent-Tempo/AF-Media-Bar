@@ -190,6 +190,7 @@ public static class SettingsManager
         var defaults = Defaults;
         next.TaskbarExperience = AFMediaBar.Classes.Services.Settings.SettingsResetPolicy.Content(next.TaskbarExperience,
             defaults.TaskbarExperience);
+        next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
         next.LyricsTextAlignment = defaults.LyricsTextAlignment;
         next.LyricsFixedWidthEnabled = defaults.LyricsFixedWidthEnabled;
         next.LyricsFixedWidthDip = defaults.LyricsFixedWidthDip;

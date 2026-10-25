@@ -399,6 +399,7 @@ public sealed partial class FloatingBarWindow
 
     private void SynchronizeMetricsSubscription(PerformanceComponentSettings performance)
     {
+        performance = _mediaControl.EffectivePerformanceSettings.Normalize();
         var metrics = performance.GetOrderedMetrics().ToArray();
         var interval = TimeSpan.FromMilliseconds(performance.RefreshIntervalMilliseconds);
         var shouldSubscribe = IsOperational && !IsEdgeFullyCollapsed && _mediaControl.IsPerformanceComponentVisible;
@@ -435,7 +436,7 @@ public sealed partial class FloatingBarWindow
     {
         if (generation != _metricsSubscriptionGeneration || !IsOperational || IsEdgeFullyCollapsed)
             return;
-        var settings = PresentationSettings.PerformanceComponent.Normalize();
+        var settings = _mediaControl.EffectivePerformanceSettings.Normalize();
         var metrics = settings.GetOrderedMetrics();
         if (metrics.Count == 0)
             return;

@@ -3126,7 +3126,7 @@
   <data name="Settings.Related.TextSize" xml:space="preserve"><value>文字大小</value></data>
   <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>記憶體最佳化策略</value></data>
   <data name="Common.Page.Widgets" xml:space="preserve">
-    <value>小元件</value>
+    <value>元件設定</value>
   </data>
   <data name="Widgets.Header.Subtitle" xml:space="preserve">
     <value>設定小音符、頻譜、效能和藍牙電量；元件順序在內容與配置中調整。</value>
@@ -3246,4 +3246,13 @@
   <data name="Panel.Scale.Reset" xml:space="preserve">
     <value>恢復預設尺寸</value>
   </data>
+  <data name="ComponentLayout.Resident" xml:space="preserve"><value>常駐顯示</value></data>
+  <data name="ComponentLayout.Idle" xml:space="preserve"><value>無媒體顯示</value></data>
+  <data name="ComponentLayout.Hover" xml:space="preserve"><value>懸停控制</value></data>
+  <data name="ComponentLayout.Description" xml:space="preserve"><value>在此調整顯隱和順序；關閉項仍可排序。也可直接拖曳欄上元件排序。</value></data>
+  <data name="ComponentLayout.FixedHead" xml:space="preserve"><value>固定在媒體欄頭部</value></data>
+  <data name="ComponentLayout.Move" xml:space="preserve"><value>拖曳此處移動媒體欄</value></data>
+  <data name="ComponentLayout.Locked" xml:space="preserve"><value>位置已鎖定</value></data>
+  <data name="ComponentLayout.Cycle" xml:space="preserve"><value>輪換指標與順序</value></data>
+  <data name="ComponentLayout.CycleDescription" xml:space="preserve"><value>僅控制輪換參與項及順序；常駐與無媒體的顯隱、順序在「內容與佈局」調整。圖表樣式適用於對應指標。</value></data>
 </root>

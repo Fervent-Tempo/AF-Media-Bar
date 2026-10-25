@@ -172,6 +172,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
         ViewModel = viewModel;
+        MediaControl.ComponentReorderCommand = viewModel?.CommitComponentReorderCommand;
         PlayerMenu.ViewModel = menuViewModel;
         _targetMonitorDeviceId = targetMonitorDeviceId;
         _surfaceSession = surfaceSessions.Get(targetMonitorDeviceId);
@@ -1907,7 +1908,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     {
         var spectrum = SettingsManager.Current.SpectrumComponent.Normalize();
         _spectrumSession.Interval = TimeSpan.FromMilliseconds(1000d / spectrum.RefreshRateHz);
-        var performance = SettingsManager.Current.PerformanceComponent.Normalize();
+        var performance = MediaControl.EffectivePerformanceSettings.Normalize();
         MediaControl.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);
         MediaControl.ApplyTaskbarExperienceSettings();
         // 是否订阅指标采样按控件算出的性能组件显隐决定：静置层显隐的唯一判据在 TaskbarRestLayoutPolicy 里，
@@ -1938,6 +1939,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void SynchronizeMetricsSubscription(PerformanceComponentSettings performance)
     {
+        performance = MediaControl.EffectivePerformanceSettings.Normalize();
         var metrics = performance.GetOrderedMetrics().ToArray();
         var interval = TimeSpan.FromMilliseconds(performance.RefreshIntervalMilliseconds);
         var shouldSubscribe = !_isClosing && !_isEnvironmentSuspended && !IsBackgroundPruned &&
@@ -2005,6 +2007,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void MediaControl_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (!MediaControl.IsBarDragHandleHit(e.OriginalSource as DependencyObject)) return;
         if (e.ChangedButton != MouseButton.Left ||
             SettingsManager.Current.TaskbarBarPositionLocked ||
             e.OriginalSource is DependencyObject source && IsMediaAction(source))
@@ -2081,6 +2084,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                 return;
             _isDragPending = false;
             _isDragging = true;
+            MediaControl.SetBarDragActive(true);
             MediaControl.SuspendQuickLaunchPresentation();
             _externalFullPanelHandle?.Dismiss(immediate: true);
             MediaControl.CollapseArtworkZoomForDrag();
@@ -2128,6 +2132,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void MediaControl_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
+        if (MediaControl.HasComponentGesture) return;
         if (e.ChangedButton != MouseButton.Left)
             return;
 
@@ -2399,6 +2404,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void EndTaskbarDrag(bool releaseCapture = true)
     {
+        MediaControl.SetBarDragActive(false);
         _isDragging = false;
         _isDragPending = false;
         _isTaskManagerClickPending = false;

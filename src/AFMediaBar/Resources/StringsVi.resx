@@ -3164,7 +3164,7 @@ Nguồn: {2}</value></data>
   <data name="Settings.Related.TextSize" xml:space="preserve"><value>Cỡ chữ</value></data>
   <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>Chính sách tối ưu bộ nhớ</value></data>
   <data name="Common.Page.Widgets" xml:space="preserve">
-    <value>Tiện ích</value>
+    <value>Cài đặt thành phần</value>
   </data>
   <data name="Widgets.Header.Subtitle" xml:space="preserve">
     <value>Cấu hình nốt nhạc khởi chạy, phổ âm, hiệu năng và pin Bluetooth. Sắp xếp thành phần trong Nội dung và bố cục.</value>
@@ -3284,4 +3284,13 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Panel.Scale.Reset" xml:space="preserve">
     <value>Khôi phục kích thước mặc định</value>
   </data>
+  <data name="ComponentLayout.Resident" xml:space="preserve"><value>Thành phần thường trực</value></data>
+  <data name="ComponentLayout.Idle" xml:space="preserve"><value>Khi không có phương tiện</value></data>
+  <data name="ComponentLayout.Hover" xml:space="preserve"><value>Điều khiển khi di chuột</value></data>
+  <data name="ComponentLayout.Description" xml:space="preserve"><value>Chọn hiển thị và thứ tự, kể cả mục đã tắt. Kéo thành phần trên thanh để sắp xếp.</value></data>
+  <data name="ComponentLayout.FixedHead" xml:space="preserve"><value>Cố định ở đầu thanh</value></data>
+  <data name="ComponentLayout.Move" xml:space="preserve"><value>Kéo tại đây để di chuyển thanh</value></data>
+  <data name="ComponentLayout.Locked" xml:space="preserve"><value>Vị trí đã khóa</value></data>
+  <data name="ComponentLayout.Cycle" xml:space="preserve"><value>Chỉ số luân phiên và thứ tự</value></data>
+  <data name="ComponentLayout.CycleDescription" xml:space="preserve"><value>Chọn chỉ số luân phiên và thứ tự tại đây. Đặt hiển thị và thứ tự thường trực, khi không có phương tiện trong Nội dung và bố cục. Kiểu biểu đồ áp dụng cho từng chỉ số.</value></data>
 </root>

@@ -163,6 +163,28 @@ public sealed class SettingsVisualRuntimeTests
                 + AFMediaBar.Classes.Services.Layout.FullPanelScalePolicy.ShadowInsetDip * 2;
             Assert.IsTrue(window.MinWidth <= minimumWidth, "隐式窗口样式的最小宽度不能撑大已缩小的面板。");
             Assert.AreEqual(0d, window.MinHeight, "内容高度应能随缩放和区段折叠收缩。");
+            var section = (Border)window.FindName("PerformanceSection");
+            var cards = ((Grid)section.Child).Children.OfType<MetricPresenter>().ToArray();
+            Assert.AreEqual(5, cards.Length, "网速应合并成一张双向卡片。");
+            foreach (var scale in new[] { .75, 1d, 2d })
+                foreach (var style in Enum.GetValues<MetricVisualStyle>())
+                {
+                    section.LayoutTransform = new ScaleTransform(scale, scale);
+                    foreach (var card in cards)
+                    {
+                        card.VisualStyle = style;
+                        card.ApplySnapshot(new(100, 99, 88, 9999999, 1024 * 1024 * 1024d, 99999999999));
+                    }
+                    section.Measure(new Size(400 * scale, double.PositiveInfinity));
+                    section.Arrange(new Rect(new Point(), section.DesiredSize)); section.UpdateLayout();
+                    Assert.IsTrue(cards.All(card => card.ActualWidth > 0 && card.ActualHeight >= 60));
+                    var network = cards.Single(card => card.Metric == MetricKind.SystemNetwork);
+                    Assert.AreEqual(2, network.Charts.Count);
+                    Assert.IsTrue(network.ToolTip.ToString()!.Contains("↑") && network.ToolTip.ToString()!.Contains("↓"));
+                    var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)Math.Ceiling(section.ActualWidth * scale),
+                        (int)Math.Ceiling(section.ActualHeight * scale), 96, 96, PixelFormats.Pbgra32);
+                    bitmap.Render(section);
+                }
         }
         finally { window.Close(); }
     }

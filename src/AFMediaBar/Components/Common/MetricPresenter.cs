@@ -74,8 +74,8 @@ public sealed class MetricPresenter : Grid
 
     public void ShowPreview()
     {
-        ApplySnapshot(new(68, 42, 25, 250, 1740, 36200));
         foreach (var chart in _charts) chart.ShowPreview();
+        ApplySnapshot(new(68, 42, 25, 250, 1740, 36200));
     }
     public void Reset() { foreach (var chart in _charts) chart.Reset(); }
     protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo) { base.OnRenderSizeChanged(sizeInfo); Refresh(); }

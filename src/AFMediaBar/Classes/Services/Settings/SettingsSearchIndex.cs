@@ -84,7 +84,13 @@ public static class SettingsSearchIndex
             page,
             titleKey,
             Translations.Get(PageTitleKey(page), language),
-            Translations.Get(titleKey, language),
+            Translations.Get(titleKey switch
+            {
+                "Common.RestLayer" => "ComponentLayout.Idle",
+                "Common.Group.ComponentOrder" => "ComponentLayout.Resident",
+                "Common.HoverLayer" => "ComponentLayout.Hover",
+                _ => titleKey
+            }, language),
             Translations.Get(descriptionKey, language),
             ComposeKeywords(titleKey, descriptionKey, keywords));
 
@@ -171,11 +177,11 @@ public static class SettingsSearchIndex
         Create(
             SettingsPageKey.Components,
             "Common.RestLayer",
-            "Search.DisplayModes.RestLayer.Description",
+            "ComponentLayout.Description",
             language,
             ["静置", "静置层", "靜置層", "常驻", "常驻状态", "常駐狀態", "rest", "rest layer", "always-on view", "进度", "播放进度", "progress", "设备按钮", "输出设备", "音量按钮", "没有媒体", "无媒体", "空闲", "idle", "隐藏", "保留组件", "小音符", "封面放大", "artwork zoom"]),
-        Create(SettingsPageKey.Components, "Common.Group.ComponentOrder", "Common.ComponentOrder.Description", language,
-            ["组件顺序", "順序", "排序", "order", "上移", "下移", "layout", "组件位置"]),
+        Create(SettingsPageKey.Components, "Common.Group.ComponentOrder", "ComponentLayout.Description", language,
+            ["常驻显示", "显示指标", "Resident components", "组件顺序", "順序", "排序", "order", "上移", "下移", "layout", "组件位置"]),
         Create(SettingsPageKey.Widgets, "Widgets.Spectrum", "Widgets.Spectrum.Description", language,
             ["小组件", "小元件", "组件设置", "widgets", "频谱", "spectrum", "音频采集范围", "采集设备", "前台程序音频", "audio capture scope", "current media application", "all applications", "音訊擷取範圍", "phạm vi thu âm thanh", "柱数", "刷新率", "灵敏度", "波形", "像素", "上下对称"]),
         Create(SettingsPageKey.Widgets, "Widgets.Performance", "Media.Performance.Metrics.Description", language,

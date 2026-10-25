@@ -461,6 +461,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         // 无媒体时保留组件列表由代码构建，首次打开页面前必须填充。
         // The idle-component list is built in code and must be populated before the page first opens.
         RefreshIdleComponentEntries();
+        RefreshComponentLayouts();
     }
 
     /// <summary>
@@ -479,6 +480,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         // notification on their own (the list instance is unchanged and so are the items' properties), so this has to refresh explicitly;
         // otherwise the column would keep the previous language after a switch.
         RefreshIdleComponentEntries();
+        RefreshComponentLayouts();
         OnPropertyChanged(string.Empty);
     }
 
@@ -560,6 +562,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         if (e.PropertyName is nameof(AppSettings.Experiments) or nameof(AppSettings.FloatingBar) ||
             e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.Components or SettingsResetScope.All)
             RaiseAll();
+        else if (e.PropertyName == nameof(AppSettings.PerformanceComponent)) RefreshComponentLayouts();
         else if (!_isRefreshing && (e.PropertyName is nameof(AppSettings.Position) or nameof(AppSettings.TaskbarExperience)))
         {
             // Arrangement is derived from both properties. Publish their effective values while
@@ -720,6 +723,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(RestInputDeviceVisible)); OnPropertyChanged(nameof(HoverInputDeviceVisible));
         OnPropertyChanged(nameof(RestOutputDeviceVisible)); OnPropertyChanged(nameof(RestVolumeVisible));
         RefreshIdleComponentEntries();
+        RefreshComponentLayouts();
         RaiseFullPanel();
     }
 

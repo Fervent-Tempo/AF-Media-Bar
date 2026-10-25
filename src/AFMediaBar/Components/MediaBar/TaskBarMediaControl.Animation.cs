@@ -249,6 +249,8 @@ public partial class TaskBarMediaControl
         return surface.Visibility == Visibility.Visible &&
             (ReferenceEquals(surface, TaskbarSpectrumHoverSurface) ||
              ReferenceEquals(surface, TaskbarPerformanceHoverSurface) ||
+             _metricSurfaces.Values.Contains(surface) ||
+             ReferenceEquals(surface, TaskbarInputDeviceHoverSurface) ||
              ReferenceEquals(surface, TaskbarOutputDeviceHoverSurface) ||
              ReferenceEquals(surface, TaskbarVolumeHoverSurface));
     }
@@ -498,6 +500,7 @@ public partial class TaskBarMediaControl
         AnimateComponentHover(TaskbarOutputDeviceHoverSurface, TaskbarOutputDeviceHoverSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
         AnimateComponentHover(TaskbarVolumeHoverSurface, TaskbarVolumeHoverSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
         AnimateComponentHover(TaskbarBatterySurface, TaskbarBatterySurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
+        foreach (var surface in _metricSurfaces.Values) AnimateComponentHover(surface, surface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
     }
 
     private void SongImageBorder_MouseEnter(object sender, MouseEventArgs e)
@@ -694,6 +697,8 @@ public partial class TaskBarMediaControl
 
     private void HideTaskbarHoverLayer(bool immediate = false)
     {
+        if (_componentGestureActive && !immediate) return;
+        if (immediate) CancelComponentGesture();
         if (!immediate && !_isTaskbarHoverVisible && HoverRevealHost.Visibility == Visibility.Visible && CurrentMotion.UseTransitions)
             return;
         var generation = ++_hoverRevealGeneration;

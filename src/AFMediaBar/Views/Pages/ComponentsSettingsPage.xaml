@@ -62,150 +62,46 @@
             HorizontalScrollBarVisibility="Disabled"
             VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="PageRoot" MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded">
-                <components:SettingsGroup
-                    GroupId="Common.RestLayer"
-                    Description="{DynamicResource Loc.DisplayModes.Rest.Group.Description}"
-                    Header="{DynamicResource Loc.Common.RestLayer}"
-                    Icon="{ui:SymbolIcon Layer24}"
-                    StatusText="{DynamicResource Loc.DisplayModes.Rest.Group.Status}"
-                    StatusTone="Accent">
+                <components:SettingsGroup GroupId="Common.Group.ComponentOrder" Header="{DynamicResource Loc.ComponentLayout.Resident}" Description="{DynamicResource Loc.ComponentLayout.Description}" Icon="{ui:SymbolIcon ArrowSort24}">
                     <StackPanel>
-                        <components:SettingsDiagram Margin="0,0,0,12" Kind="LayerRest" />
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.Artwork.Description}"
-                            Icon="{ui:SymbolIcon Image24}"
-                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.Artwork.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestArtworkVisible, Mode=TwoWay}" />
-                        </components:SettingsRow>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkProgress.Description}"
-                            Icon="{ui:SymbolIcon DataBarVertical24}"
-                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkProgress.Title}">
+                        <AdornerDecorator>
+                            <ItemsControl Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layers.ReorderLayoutCommand}" ItemsSource="{Binding ViewModel.Layers.ResidentLayoutEntries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" KeepControlInline="True" Title="{Binding DisplayName}" Description="{Binding Description}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <ui:ToggleSwitch IsChecked="{Binding IsVisible, Mode=TwoWay}" IsEnabled="{Binding CanToggle}" Margin="0,0,12,0" />
+                                                <components:SettingsReorderHandle ItemKey="{Binding Component}" Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                                            </StackPanel>
+                                        </components:SettingsRow>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </AdornerDecorator>
+                        <components:SettingsRow Title="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkProgress.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.ArtworkProgressVisible, Mode=TwoWay}" />
                         </components:SettingsRow>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.Progress.Description}"
-                            Icon="{ui:SymbolIcon Play24}"
-                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.Progress.Title}">
+                        <components:SettingsRow Title="{DynamicResource Loc.DisplayModes.Rest.Row.Progress.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestProgressVisible, Mode=TwoWay}" />
                         </components:SettingsRow>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.DeviceButton.Description}"
-                            Icon="{ui:SymbolIcon Speaker224}"
-                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.DeviceButton.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestOutputDeviceVisible, Mode=TwoWay}" />
-                        </components:SettingsRow>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Audio.Device.InputDescription}"
-                            Icon="{ui:SymbolIcon Mic24}"
-                            Title="{DynamicResource Loc.Common.InputDevice}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestInputDeviceVisible, Mode=TwoWay}" />
-                        </components:SettingsRow>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.VolumeButton.Description}"
-                            Icon="{ui:SymbolIcon Speaker124}"
-                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.VolumeButton.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestVolumeVisible, Mode=TwoWay}" />
-                        </components:SettingsRow>
-                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Eye24}">
-                            <ui:CardExpander.Header>
-                                <StackPanel>
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowTitleStyle}"
-                                        Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Expander.Title}" />
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                        Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Expander.Description}" />
-                                </StackPanel>
-                            </ui:CardExpander.Header>
-                            <StackPanel>
-                                <components:SettingsCallout
-                                    Margin="0,0,0,4"
-                                    Symbol="Info24"
-                                    Text="{DynamicResource Loc.DisplayModes.Rest.Idle.Notice}" />
-                                <ItemsControl Margin="0,0,0,4" ItemsSource="{Binding ViewModel.Layers.IdleComponentEntries}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <components:SettingsRow
-                                                Description="{Binding Description}"
-                                                IsNested="True"
-                                                Title="{Binding DisplayName}">
-                                                <ui:ToggleSwitch IsChecked="{Binding IsVisible, Mode=TwoWay}" />
-                                            </components:SettingsRow>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </ui:CardExpander>
-                        <components:SettingsCallout
-                            Margin="0,4,0,0"
-                            IsAccent="True"
-                            Symbol="DataHistogram24"
-                            Text="{DynamicResource Loc.DisplayModes.Rest.Notice}" />
-
-                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer"/>
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.IdleNote}" Destination="Appearance" GroupId="Appearance.IdleNote.Title"/>
-                            <!-- 上面那条提示点名了这两处：频谱与性能参数在「小组件」，文字大小在「外观」的字体分组。 -->
-                            <!-- The notice above names exactly these two: spectrum and performance live under Widgets, text size under the appearance fonts group. -->
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.WidgetsSpectrum}" Destination="Widgets" GroupId="Widgets.Spectrum"/>
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextSize}" Destination="Appearance" GroupId="Common.Group.Fonts"/>
-                        </WrapPanel>
                     </StackPanel>
                 </components:SettingsGroup>
-                <components:SettingsGroup GroupId="Common.Group.ComponentOrder" Header="{DynamicResource Loc.Common.Group.ComponentOrder}"
-                    Description="{DynamicResource Loc.Common.ComponentOrder.Description}" Icon="{ui:SymbolIcon ArrowSort24}">
+                <components:SettingsGroup GroupId="Common.RestLayer" Header="{DynamicResource Loc.ComponentLayout.Idle}" Description="{DynamicResource Loc.ComponentLayout.Description}" Icon="{ui:SymbolIcon ArrowSort24}">
                     <StackPanel>
-                        <ui:CardExpander
-                            Style="{StaticResource AfSettingsExpanderStyle}"
-                            Icon="{ui:SymbolIcon ArrowSort24}"
-                            Visibility="{Binding ViewModel.Layout.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                            <ui:CardExpander.Header>
-                                <StackPanel>
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowTitleStyle}"
-                                        Text="{DynamicResource Loc.DisplayModes.Rest.Order.Expander.Title}" />
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                        Text="{DynamicResource Loc.DisplayModes.Rest.Order.Expander.Description}" />
-                                </StackPanel>
-                            </ui:CardExpander.Header>
-                            <StackPanel>
-                                <components:SettingsCallout
-                                    Margin="0,0,0,4"
-                                    Symbol="Info24"
-                                    Text="{DynamicResource Loc.DisplayModes.Rest.Order.Notice}" />
-                                <AdornerDecorator>
-                                    <ItemsControl Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layout.ReorderRestComponentCommand}" ItemsSource="{Binding ViewModel.Layout.RestOrderEntries}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" KeepControlInline="True"
-                                                    Description="{Binding Description}"
-                                                    IsNested="True"
-                                                    Title="{Binding DisplayName}">
-                                                    <components:SettingsReorderHandle ItemKey="{Binding Component}" Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                                                </components:SettingsRow>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </AdornerDecorator>
-                                <components:SettingsRow
-                                    Description="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Description}"
-                                    Icon="{ui:SymbolIcon ArrowReset24}"
-                                    IsNested="True"
-                                    Title="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Title}">
-                                    <ui:Button
-                                        Command="{Binding ViewModel.Layout.ResetRestComponentOrderCommand}"
-                                        Content="{DynamicResource Loc.DisplayModes.Rest.Order.Reset.Title}"
-                                        Icon="{ui:SymbolIcon ArrowReset24}"
-                                        Style="{StaticResource AfSettingsButtonStyle}" />
-                                </components:SettingsRow>
-                            </StackPanel>
-                        </ui:CardExpander>
-
-                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Page.Widgets}" Destination="Widgets" GroupId="Widgets.Spectrum" HorizontalAlignment="Left"/>
-                        </WrapPanel>
+                        <AdornerDecorator>
+                            <ItemsControl Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layers.ReorderLayoutCommand}" ItemsSource="{Binding ViewModel.Layers.IdleLayoutEntries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" KeepControlInline="True" Title="{Binding DisplayName}" Description="{Binding Description}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <ui:ToggleSwitch IsChecked="{Binding IsVisible, Mode=TwoWay}" IsEnabled="{Binding CanToggle}" Margin="0,0,12,0" />
+                                                <components:SettingsReorderHandle ItemKey="{Binding Component}" Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                                            </StackPanel>
+                                        </components:SettingsRow>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </AdornerDecorator>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup
@@ -455,7 +351,7 @@
                 <components:SettingsGroup
                     GroupId="Common.HoverLayer"
                     Description="{DynamicResource Loc.DisplayModes.Hover.Group.Description}"
-                    Header="{DynamicResource Loc.Common.HoverLayer}"
+                    Header="{DynamicResource Loc.ComponentLayout.Hover}"
                     Icon="{ui:SymbolIcon HandDraw24}">
                     <StackPanel>
                         <components:SettingsDiagram Margin="0,0,0,12" Kind="LayerHover" />
@@ -466,50 +362,20 @@
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverLayerEnabled, Mode=TwoWay}" />
                         </components:SettingsRow>
                         <TextBlock Style="{StaticResource HoverDependencyHintStyle}" Margin="0,4,0,8" Text="{DynamicResource Loc.ContentLayout.Hover.Prerequisite}" />
-                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Layer24}">
-                            <ui:CardExpander.Header>
-                                <StackPanel>
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowTitleStyle}"
-                                        Text="{DynamicResource Loc.DisplayModes.Hover.Expander.Title}" />
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                        Text="{DynamicResource Loc.DisplayModes.Hover.Expander.Description}" />
-                                </StackPanel>
-                            </ui:CardExpander.Header>
-                            <StackPanel>
-                                <components:SettingsRow
-                                    Icon="{ui:SymbolIcon Play24}"
-                                    IsNested="True"
-                                    Title="{DynamicResource Loc.Common.PlayPause}">
-                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverPlayPauseVisible, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Icon="{ui:SymbolIcon Previous24}"
-                                    IsNested="True"
-                                    Title="{DynamicResource Loc.Common.PreviousNextTrack}">
-                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverPreviousNextVisible, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Icon="{ui:SymbolIcon Speaker224}"
-                                    IsNested="True"
-                                    Title="{DynamicResource Loc.Common.OutputDevice}">
-                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverOutputDeviceVisible, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                        <components:SettingsRow
-                                    Icon="{ui:SymbolIcon Mic24}"
-                                    IsNested="True"
-                                    Title="{DynamicResource Loc.Common.InputDevice}">
-                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverInputDeviceVisible, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Icon="{ui:SymbolIcon Speaker124}"
-                                    IsNested="True"
-                                    Title="{DynamicResource Loc.Common.AudioControl}">
-                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverAudioControlVisible, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                            </StackPanel>
-                        </ui:CardExpander>
+                        <AdornerDecorator>
+                            <ItemsControl Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layers.ReorderLayoutCommand}" ItemsSource="{Binding ViewModel.Layers.HoverLayoutEntries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" KeepControlInline="True" Title="{Binding DisplayName}" Description="{Binding Description}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <ui:ToggleSwitch IsChecked="{Binding IsVisible, Mode=TwoWay}" IsEnabled="{Binding CanToggle}" Margin="0,0,12,0" />
+                                                <components:SettingsReorderHandle ItemKey="{Binding Component}" Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                                            </StackPanel>
+                                        </components:SettingsRow>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </AdornerDecorator>
 
                         <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
                             <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer"/>

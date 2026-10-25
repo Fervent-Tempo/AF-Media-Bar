@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Controls;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
@@ -199,6 +200,7 @@ public sealed class TaskbarArrangementPresentationTests
                 VerticalTaskbarPresentationChecks.Verify(control);
                 SmallTaskbarPresentationChecks.Verify(control);
                 MetricVisualPresentationChecks.Verify(control);
+                ComponentLayoutPresentationChecks.Verify(control);
                 AssertMetadataSurvivesOrientationChanges();
                 AssertLyricsSurviveOrientationChanges();
                 AssertLyricsTimelineChangesResizeRepeatedText();
@@ -384,32 +386,31 @@ public sealed class TaskbarArrangementPresentationTests
         SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { PerformanceVisible = true };
         control.ApplyTaskbarExperienceSettings();
         control.ApplyPerformanceSnapshot(new(40, 60, null, null, 1024, 2048), 0, true);
-        var items = (StackPanel)control.FindName("TaskbarPerformanceItems");
-        var surface = (Border)control.FindName("TaskbarPerformanceSurface");
-        var cells = items.Children.Cast<TextBlock>().ToArray();
-        Assert.AreEqual(3, cells.Length);
-        Assert.IsTrue(cells.All(item => item.Visibility == Visibility.Visible));
-        Assert.IsTrue(cells[0].Text.StartsWith("↑ ") && cells[0].Text.Contains("\n↓ "));
-        Assert.IsTrue(cells[1].Text.StartsWith("CPU "));
-        Assert.IsTrue(cells[2].Text.StartsWith("MEM "));
-        var parallelWidth = surface.Width;
+        IEnumerable<MetricPresenter> Cards(DependencyObject root)
+        {
+            for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+            {
+                var child = VisualTreeHelper.GetChild(root, index);
+                if (child is MetricPresenter card && card.Parent is Border { Visibility: Visibility.Visible }) yield return card;
+                foreach (var descendant in Cards(child)) yield return descendant;
+            }
+        }
+        var cards = Cards(control).ToArray();
+        CollectionAssert.AreEquivalent(new[] { MetricKind.SystemMemory, MetricKind.SystemCpu, MetricKind.SystemNetwork }, cards.Select(card => card.Metric).ToArray());
+        var widths = cards.Select(card => ((Border)card.Parent).Width).ToArray();
         control.ApplyPerformanceSnapshot(new(80, 100, null, null, 0, 0), 2, true);
-        Assert.AreEqual(parallelWidth, surface.Width, "Changing ordinary readings must not resize the widget.");
-
+        CollectionAssert.AreEqual(widths, Cards(control).Select(card => ((Border)card.Parent).Width).ToArray(), "读数变化不应改变卡片宽度。");
         SettingsManager.Current.PerformanceComponent = SettingsManager.Current.PerformanceComponent with { DisplayMode = PerformanceDisplayMode.Cycle };
         control.ApplyTaskbarExperienceSettings();
         control.ApplyPerformanceSnapshot(new(40, 60, null, null, 1024, 2048), 0, true);
-        var cycleWidth = surface.Width;
+        var cycleWidth = ((Border)Cards(control).Single().Parent).Width;
         control.ApplyPerformanceSnapshot(new(40, 60, null, null, 1024, 2048), 1, true);
-        Assert.AreEqual(cycleWidth, surface.Width, "Cycling reserves the widest selected metric.");
-        Assert.AreEqual(1, items.Children.Cast<TextBlock>().Count(item => item.Visibility == Visibility.Visible));
-        Assert.IsTrue(items.Children.Cast<TextBlock>().Single(item => item.Visibility == Visibility.Visible).Text.StartsWith("CPU "));
-        Assert.IsTrue(cycleWidth < parallelWidth);
-
+        Assert.AreEqual(cycleWidth, ((Border)Cards(control).Single().Parent).Width, "轮换保留最大宽度。");
+        Assert.AreEqual(MetricKind.SystemCpu, Cards(control).Single().Metric);
         SettingsManager.Current.PerformanceComponent = new([MetricKind.SystemNetwork], 500, true);
         control.ApplyTaskbarExperienceSettings();
-        Assert.AreEqual(1, items.Children.Count);
         control.ApplyPerformanceSnapshot(default, 0, true);
-        Assert.IsTrue(((TextBlock)items.Children[0]).Text.Contains("—"));
+        Assert.AreEqual(MetricKind.SystemNetwork, Cards(control).Single().Metric);
+        Assert.IsTrue(Cards(control).Single().ToolTip.ToString()!.Contains("—"));
     }
 }
