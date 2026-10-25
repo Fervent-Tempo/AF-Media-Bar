@@ -209,6 +209,7 @@ internal sealed class PetWebRenderer(PetWebEnvironment environment) : IPetWebRen
         return Read("index.html")
             .Replace("{{BODY_PATH}}", PetVisualDefinition.BodyPath, StringComparison.Ordinal)
             .Replace("{{STYLE}}", Read("style.css"), StringComparison.Ordinal)
+            .Replace("{{GEOMETRY}}", Read("geometry.js"), StringComparison.Ordinal)
             .Replace("{{MOTION}}", Read("motion.js"), StringComparison.Ordinal)
             .Replace("{{EFFECTS}}", Read("effects.js"), StringComparison.Ordinal)
             .Replace("{{PARTICLES}}", string.Concat(Enumerable.Range(0, 16).Select(index =>

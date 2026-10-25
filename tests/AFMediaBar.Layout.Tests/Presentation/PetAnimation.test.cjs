@@ -5,16 +5,16 @@ const vm = require("node:vm");
 const fs = require("node:fs");
 const path = require("node:path");
 const source = name => fs.readFileSync(path.join(__dirname, "../../../src/AFMediaBar/Web/Pet/", name), "utf8");
-const script = ["motion.js", "effects.js", "pet.js"].map(source).join("\n");
+const script = ["geometry.js", "motion.js", "effects.js", "pet.js"].map(source).join("\n");
 
 function page() {
   let time = 0, serial = 0, receiver;
   const frames = new Map(), timers = new Map(), nodes = new Map();
-  const make = () => ({ attributes: {}, style: {}, setAttribute(key, value) { this.attributes[key] = value; }, children: [] });
+  const make = () => ({ attributes: {}, style: {}, setAttribute(key, value) { this.attributes[key] = value; }, getAttribute(key) { return this.attributes[key]; }, children: [] });
   for (const match of source("index.html").matchAll(/id="([^"]+)"/g)) nodes.set(match[1], make());
   for (let n = 0; n < 16; n++) nodes.set("particle-" + n, make());
-  nodes.get("fx-dots").children = [make(), make(), make()];
-  nodes.get("fx-dictating").children = Array.from({ length: 5 }, make);
+  const contour = fs.readFileSync(path.join(__dirname, "../../../src/AFMediaBar/Components/MediaBar/PetVisualDefinition.cs"), "utf8").match(/BodyPath = "([^"]+)"/)[1];
+  nodes.get("body").setAttribute("d", contour);
   const classes = new Set();
   const document = {
     hidden: false,
@@ -33,9 +33,9 @@ function page() {
   };
   vm.runInNewContext(script, context);
   let state = { gazeX: 0, gazeY: 0, hovered: false, blinkSequence: 0, pressSequence: 0,
-    bodyColor: "#84282B", eyeColor: "#FFFFFF", highContrast: false, idleAnimationsEnabled: true, motion: 0, active: true, animation: "auto" };
+    bodyColor: "#FFFFFF", eyeColor: "#1C1C1C", highContrast: false, idleAnimationsEnabled: true, motion: 0, active: true, animation: "auto" };
   return {
-    nodes, classes, frames, timers, document, engine: context.window.PetMotion,
+    nodes, classes, frames, timers, document, contour, engine: context.window.PetMotion, geometry: context.window.PetGeometry,
     receive(change = {}, initial = false) { state = { ...state, ...change }; receiver({ data: { type: "state", id: ++serial, initial, state } }); },
     advance(milliseconds) {
       const end = time + milliseconds;
@@ -57,7 +57,7 @@ test("global blink does not squash the body; local press does", () => {
   assert.match(p.nodes.get("pose").attributes.transform, /scale\(1 1\)/);
   p.receive({ pressSequence: 1 });
   p.advance(80);
-  assert.doesNotMatch(p.nodes.get("pose").attributes.transform, /scale\(1 1\)/);
+  assert.doesNotMatch(p.nodes.get("breath").attributes.transform, /scale\(1 1\)/);
 });
 
 test("pause stops work and resumed initial state never replays old clicks", () => {
@@ -92,7 +92,8 @@ test("automatic cycling stays within lifecycle and reactions; morphs require sel
   p.receive({ animation: "radar" });
   p.advance(1000);
   assert.equal(p.document.documentElement.attributes["data-animation"], "radar");
-  assert.ok(Number(p.nodes.get("character").attributes.opacity) < 0.05);
+  assert.equal(Number(p.nodes.get("character").attributes.opacity), 1);
+  assert.notEqual(p.nodes.get("body").getAttribute("d"), p.contour);
   assert.equal(p.nodes.get("fx-radar").style.display, "inline");
 });
 
@@ -127,6 +128,29 @@ test("multi-turn targets keep moving forward when the spring lags and the cycle 
   assert.equal(p.engine.unwrapTurn(turn, 0, 1900, false), 2160);
   assert.equal(p.engine.unwrapTurn(turn, 90, 2000, false), 2250);
   assert.equal(p.engine.unwrapTurn(turn, 0, 2200, true), 2160);
+});
+
+test("spinning keeps body volume and hides each eye at its own horizon", () => {
+  const p = page();
+  for (const yaw of [0, 90, 180, 270]) {
+    const shape = p.geometry.update(0, "dot", yaw, 0.1, false);
+    assert.ok(shape.radius > 25, "the whole body must not collapse into a thin strip");
+    assert.doesNotMatch(shape.d, /NaN|Infinity/);
+  }
+  assert.ok(p.geometry.eye(24, 32, 90, 0).opacity > 0.5);
+  assert.equal(p.geometry.eye(40, 32, 90, 0).opacity, 0);
+});
+
+test("fixed moods vary their eyes and waking finishes without restarting", () => {
+  const p = page();
+  p.receive({ animation: "happy" }, true); p.advance(900);
+  const happy = p.nodes.get("eye-left").getAttribute("d");
+  p.advance(3100);
+  assert.notEqual(p.nodes.get("eye-left").getAttribute("d"), happy);
+  p.receive({ animation: "waking" }); p.advance(3500);
+  const awake = p.nodes.get("eye-left").getAttribute("d");
+  p.advance(5400);
+  assert.equal(p.nodes.get("eye-left").getAttribute("d"), awake);
 });
 
 test("reduced motion disables idle and body movement while preserving click feedback", () => {
