@@ -3251,7 +3251,7 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Widgets.Pet" xml:space="preserve">
     <value>Thú cưng</value>
   </data>
-  <data name="Widgets.Pet.Description" xml:space="preserve"><value>Thú cưng tròn có hai sừng nhỏ, mắt dõi chuột toàn màn hình, chớp mắt, biểu cảm, xoay, nhảy và biến hình.</value></data>
+  <data name="Widgets.Pet.Description" xml:space="preserve"><value>Thú cưng có hai tai nối mềm mại với thân, mắt dõi chuột toàn màn hình, chớp mắt, biểu cảm, xoay, nhảy và biến hình.</value></data>
   <data name="Widgets.Pet.Visible" xml:space="preserve">
     <value>Hiện thú cưng khi có phương tiện kết nối</value>
   </data>

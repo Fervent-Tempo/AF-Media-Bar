@@ -29,6 +29,8 @@ public sealed class PetComponentSettingsTests
             {
                 SettingsManager.Current = JsonSerializer.Deserialize<AppSettings>("{}")!.Normalize();
                 Assert.IsTrue(SettingsManager.Current.PetComponent.IdleAnimationsEnabled);
+                if (!SystemParameters.HighContrast)
+                    Assert.AreEqual("#1C1C1C", PetVisualDefinition.Colors(SettingsManager.Current.PetComponent).Eyes);
                 using var editor = new ComponentsSettingsViewModel(new LegacySettingsConfiguration(context), localization);
                 editor.PetFillColorHex = "#12";
                 Assert.AreEqual(PetComponentSettings.DefaultFillColorHex, SettingsManager.Current.PetComponent.FillColorHex);

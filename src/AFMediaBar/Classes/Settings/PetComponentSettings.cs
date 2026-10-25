@@ -6,7 +6,7 @@ namespace AFMediaBar.Classes.Settings;
 /// <summary>任务栏和悬浮媒体栏共用的宠物设置。</summary>
 public sealed record PetComponentSettings
 {
-    public const string DefaultFillColorHex = "#84282B";
+    public const string DefaultFillColorHex = "#FFFFFF";
     public const double DefaultSizeDip = 48;
     public string FillColorHex { get; init; } = DefaultFillColorHex;
     public bool IdleAnimationsEnabled { get; init; } = true;

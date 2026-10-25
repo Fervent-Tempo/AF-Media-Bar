@@ -3213,7 +3213,7 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Widgets.Pet" xml:space="preserve">
     <value>Pet</value>
   </data>
-  <data name="Widgets.Pet.Description" xml:space="preserve"><value>A round pet with two small horns, global gaze tracking, blinks, expressions, spins, hops and morph animations.</value></data>
+  <data name="Widgets.Pet.Description" xml:space="preserve"><value>A round pet with two softly joined ears, global gaze tracking, blinks, expressions, spins, hops and morph animations.</value></data>
   <data name="Widgets.Pet.Visible" xml:space="preserve">
     <value>Show pet while media is connected</value>
   </data>

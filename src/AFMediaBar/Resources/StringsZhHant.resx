@@ -3213,7 +3213,7 @@
   <data name="Widgets.Pet" xml:space="preserve">
     <value>小寵物</value>
   </data>
-  <data name="Widgets.Pet.Description" xml:space="preserve"><value>圓形雙角寵物，支援全域視線跟隨、眨眼、表情、旋轉跳躍及形變動畫。</value></data>
+  <data name="Widgets.Pet.Description" xml:space="preserve"><value>耳朵與身體圓滑連接的小寵物，支援全域視線跟隨、眨眼、表情、旋轉跳躍及形變動畫。</value></data>
   <data name="Widgets.Pet.Visible" xml:space="preserve">
     <value>有媒體時顯示小寵物</value>
   </data>

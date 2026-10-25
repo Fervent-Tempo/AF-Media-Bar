@@ -174,8 +174,8 @@
                             Icon="{ui:SymbolIcon Color24}">
                             <StackPanel>
                                 <WrapPanel Margin="0,0,0,8">
-                                    <Button Background="#84282B" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
-                                        ToolTip="#84282B" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#84282B" />
+                                    <Button Background="#FFFFFF" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
+                                        ToolTip="#FFFFFF" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#FFFFFF" />
                                     <Button Background="#1C1D21" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
                                         ToolTip="#1C1D21" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#1C1D21" />
                                     <Button Background="#0078D4" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
@@ -184,8 +184,8 @@
                                         ToolTip="#42CBA6" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#42CBA6" />
                                     <Button Background="#F7C948" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
                                         ToolTip="#F7C948" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#F7C948" />
-                                    <Button Background="#FFFFFF" Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                        ToolTip="#FFFFFF" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#FFFFFF" />
+                                    <Button Background="#84282B" Style="{StaticResource AfSettingsColorSwatchStyle}"
+                                        ToolTip="#84282B" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#84282B" />
                                 </WrapPanel>
                                 <StackPanel Orientation="Horizontal">
                                     <ui:TextBox Width="120" MaxLength="9" Text="{Binding ViewModel.Components.PetFillColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
