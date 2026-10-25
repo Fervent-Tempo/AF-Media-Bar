@@ -64,24 +64,44 @@ public sealed class MetricChart : FrameworkElement
         base.OnRender(context);
         if (ActualWidth < 2 || ActualHeight < 2 || VisualStyle == MetricVisualStyle.Numeric) return;
         var brush = TextElement.GetForeground(this);
-        var pen = new Pen(brush, 1.2);
+        var highContrast = SystemParameters.HighContrast;
+        // 图形各层分别控制浓淡，保留趋势线对比度，避免面积填充被二次淡化。
+        void WithOpacity(double opacity, Action draw)
+        {
+            context.PushOpacity(highContrast ? 1 : opacity);
+            draw();
+            context.Pop();
+        }
+        var pen = new Pen(brush, 1.2) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round };
         var rect = new Rect(1, 1, Math.Max(0, ActualWidth - 2), Math.Max(0, ActualHeight - 2));
         var maximum = _history.Samples.Count == 0 ? 100 : _history.GetMaximum(IsPercentage);
         var ratio = Math.Clamp((_value ?? 0) / maximum, 0, 1);
         if (VisualStyle == MetricVisualStyle.Bar)
         {
-            var rail = new Rect(rect.Left, rect.Top + rect.Height * 0.35, rect.Width, rect.Height * 0.3);
-            context.DrawRoundedRectangle(null, pen, rail, 2, 2);
-            if (_value.HasValue && ratio > 0) context.DrawRoundedRectangle(brush, null, new Rect(rail.TopLeft, new Size(rail.Width * ratio, rail.Height)), 2, 2);
+            if (highContrast) context.DrawRoundedRectangle(null, new Pen(brush, 1), rect, 3, 3);
+            else WithOpacity(0.06, () => context.DrawRoundedRectangle(brush, null, rect, 3, 3));
+            if (_value.HasValue && ratio > 0)
+            {
+                var fill = new Rect(rect.TopLeft, new Size(rect.Width * ratio, rect.Height));
+                WithOpacity(0.20, () => context.DrawRoundedRectangle(brush, null, fill, 3, 3));
+                WithOpacity(0.5, () => context.DrawLine(new Pen(brush, 1), new Point(fill.Right, rect.Top + 3), new Point(fill.Right, rect.Bottom - 3)));
+            }
             return;
         }
         if (VisualStyle == MetricVisualStyle.Ring)
         {
-            var radius = Math.Max(0, Math.Min(rect.Width, rect.Height) / 2 - 1);
+            const double RingThickness = 2;
+            var radius = Math.Max(0, Math.Min(rect.Width, rect.Height) / 2 - RingThickness / 2);
             var center = new Point(rect.Left + rect.Width / 2, rect.Top + rect.Height / 2);
-            context.DrawEllipse(null, new Pen(brush, 0.5), center, radius, radius);
+            WithOpacity(0.16, () => context.DrawEllipse(null, new Pen(brush, highContrast ? 0.5 : RingThickness), center, radius, radius));
             if (!_value.HasValue || ratio <= 0) return;
-            var angle = Math.Min(ratio, 0.9999) * Math.PI * 2;
+            var arcPen = new Pen(brush, RingThickness) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+            if (ratio >= 1)
+            {
+                WithOpacity(0.9, () => context.DrawEllipse(null, arcPen, center, radius, radius));
+                return;
+            }
+            var angle = ratio * Math.PI * 2;
             var geometry = new StreamGeometry();
             using (var writer = geometry.Open())
             {
@@ -89,10 +109,10 @@ public sealed class MetricChart : FrameworkElement
                 writer.ArcTo(new Point(center.X + Math.Sin(angle) * radius, center.Y - Math.Cos(angle) * radius),
                     new Size(radius, radius), 0, angle > Math.PI, SweepDirection.Clockwise, true, false);
             }
-            context.DrawGeometry(null, new Pen(brush, 2), geometry);
+            WithOpacity(0.9, () => context.DrawGeometry(null, arcPen, geometry));
             return;
         }
-        context.DrawRectangle(null, new Pen(brush, 0.4), rect);
+        WithOpacity(0.12, () => context.DrawLine(new Pen(brush, 0.6), new Point(rect.Left, rect.Bottom), new Point(rect.Right, rect.Bottom)));
         if (_history.Samples.Count == 0) return;
         var latest = _history.Samples[^1].Time;
         var segment = new List<Point>();
@@ -112,12 +132,10 @@ public sealed class MetricChart : FrameworkElement
             }
             if (VisualStyle == MetricVisualStyle.Area && !SystemParameters.HighContrast)
             {
-                context.PushOpacity(0.18);
-                context.DrawGeometry(brush, null, geometry);
-                context.Pop();
+                WithOpacity(0.14, () => context.DrawGeometry(brush, null, geometry));
             }
-            context.DrawGeometry(null, pen, geometry);
-            if (segment.Count == 1) context.DrawEllipse(brush, null, segment[0], 1, 1);
+            WithOpacity(0.65, () => context.DrawGeometry(null, pen, geometry));
+            if (segment.Count == 1) WithOpacity(0.65, () => context.DrawEllipse(brush, null, segment[0], 1, 1));
             segment.Clear();
         }
         double? previousTime = null;

@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
@@ -106,13 +107,16 @@ public sealed class MetricPresenter : Grid
             chart.IsPercentage = Metric is not (MetricKind.ProcessMemory or MetricKind.SystemNetwork);
             chart.VisualStyle = VisualStyle;
             chart.Width = double.NaN; chart.Height = double.NaN; chart.Margin = new Thickness(2);
-            chart.Opacity = VisualStyle == MetricVisualStyle.Ring || SystemParameters.HighContrast ? 1 : 0.32;
+            chart.Opacity = 1;
             name.FontSize = Compact ? 10 : 11; readout.FontSize = size;
+            name.Opacity = SystemParameters.HighContrast ? 1 : 0.78;
+            readout.SetValue(Typography.NumeralAlignmentProperty, FontNumeralAlignment.Tabular);
             name.Text = label; readout.Text = value;
             name.Margin = new Thickness(4, 0, 4, 0); readout.Margin = new Thickness(4, 0, 4, 0);
             name.HorizontalAlignment = HorizontalAlignment.Left; readout.HorizontalAlignment = HorizontalAlignment.Right;
             name.VerticalAlignment = readout.VerticalAlignment = VerticalAlignment.Center;
             name.Background = readout.Background = SystemParameters.HighContrast ? SystemColors.WindowBrush : Brushes.Transparent;
+            _measureText.TextWrapping = TextWrapping.NoWrap;
             _measureText.FontFamily = readout.FontFamily;
             _measureText.FontSize = size;
             _measureText.Text = value;
@@ -130,7 +134,18 @@ public sealed class MetricPresenter : Grid
             }
             if (VisualStyle == MetricVisualStyle.Ring)
             {
-                var diameter = Math.Min(plotHeight - 2, Compact ? 30 : 48);
+                // 竖向卡片为标签和单位预留行高，圆心读数不与折行后的标签重叠。
+                var header = 0d;
+                if (Vertical)
+                {
+                    _measureText.FontSize = name.FontSize;
+                    _measureText.Text = label + " " + (value.EndsWith('%') ? "%" : value.Contains(' ') ? value[(value.IndexOf(' ') + 1)..] : string.Empty);
+                    _measureText.TextWrapping = TextWrapping.Wrap;
+                    _measureText.Measure(new Size(Math.Max(1, laneWidth - 6), double.PositiveInfinity));
+                    header = _measureText.DesiredSize.Height + 4;
+                    _measureText.TextWrapping = TextWrapping.NoWrap;
+                }
+                var diameter = Math.Min(Math.Min(plotHeight - header - 2, laneWidth - 4), Compact ? 32 : 48);
                 chart.Width = chart.Height = Math.Max(8, diameter);
                 chart.HorizontalAlignment = HorizontalAlignment.Right; chart.VerticalAlignment = VerticalAlignment.Center;
                 var number = value.TrimEnd('%').Split(' ')[0];
@@ -146,9 +161,11 @@ public sealed class MetricPresenter : Grid
                     name.VerticalAlignment = Vertical ? VerticalAlignment.Top : VerticalAlignment.Center;
                     name.HorizontalAlignment = Vertical ? HorizontalAlignment.Center : HorizontalAlignment.Left;
                     chart.HorizontalAlignment = Vertical ? HorizontalAlignment.Center : HorizontalAlignment.Right;
+                    chart.Margin = Vertical ? new Thickness(2, header, 2, 2) : new Thickness(2);
                     readout.Text = number; readout.HorizontalAlignment = Vertical ? HorizontalAlignment.Center : HorizontalAlignment.Right;
                     readout.VerticalAlignment = VerticalAlignment.Center;
-                    readout.Width = Math.Max(1, diameter); readout.Margin = new Thickness(0, 0, 2, 0);
+                    readout.Width = Math.Max(1, diameter);
+                    readout.Margin = Vertical ? new Thickness(0, header, 0, 2) : new Thickness(0, 0, 2, 0);
                 }
                 else
                 {
