@@ -175,36 +175,11 @@
                     <Grid>
                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,8,8">
-                            <TextBlock Text="CPU" Style="{StaticResource PanelLabelStyle}"/>
-                            <TextBlock x:Name="CpuMetric" Text="—" Style="{StaticResource PanelMetricStyle}"/>
-                            <components:MetricChart x:Name="CpuChart" Height="22" Margin="0,3,0,0" IsPercentage="True"/>
-                        </StackPanel>
-                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,8,8">
-                            <TextBlock Text="{DynamicResource Loc.Panel.Performance.Memory}" Style="{StaticResource PanelLabelStyle}"/>
-                            <TextBlock x:Name="RamMetric" Text="—" Style="{StaticResource PanelMetricStyle}"/>
-                            <components:MetricChart x:Name="RamChart" Height="22" Margin="0,3,0,0" IsPercentage="True"/>
-                        </StackPanel>
-                        <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,8">
-                            <TextBlock Text="GPU" Style="{StaticResource PanelLabelStyle}"/>
-                            <TextBlock x:Name="GpuMetric" Text="—" Style="{StaticResource PanelMetricStyle}"/>
-                            <components:MetricChart x:Name="GpuChart" Height="22" Margin="0,3,0,0" IsPercentage="True"/>
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,8,0">
-                            <TextBlock Text="{DynamicResource Loc.Panel.Performance.ProcessMemory}" Style="{StaticResource PanelLabelStyle}"/>
-                            <TextBlock x:Name="ProcessMetric" Text="—" Style="{StaticResource PanelMetricStyle}"/>
-                            <components:MetricChart x:Name="ProcessChart" Height="22" Margin="0,3,0,0" IsPercentage="False"/>
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,8,0">
-                            <TextBlock Text="{DynamicResource Loc.Panel.Performance.Upload}" Style="{StaticResource PanelLabelStyle}"/>
-                            <TextBlock x:Name="UploadMetric" Text="—" Style="{StaticResource PanelMetricStyle}"/>
-                            <components:MetricChart x:Name="UploadChart" Height="22" Margin="0,3,0,0" IsPercentage="False"/>
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="2" Margin="0">
-                            <TextBlock Text="{DynamicResource Loc.Panel.Performance.Download}" Style="{StaticResource PanelLabelStyle}"/>
-                            <TextBlock x:Name="DownloadMetric" Text="—" Style="{StaticResource PanelMetricStyle}"/>
-                            <components:MetricChart x:Name="DownloadChart" Height="22" Margin="0,3,0,0" IsPercentage="False"/>
-                        </StackPanel>
+                        <components:MetricPresenter x:Name="CpuPresenter" Grid.Column="0" Metric="SystemCpu" Compact="False" Height="60" Margin="0,0,6,6" />
+                        <components:MetricPresenter x:Name="RamPresenter" Grid.Column="1" Metric="SystemMemory" Compact="False" Height="60" Margin="0,0,6,6" />
+                        <components:MetricPresenter x:Name="GpuPresenter" Grid.Column="2" Metric="SystemGpu" Compact="False" Height="60" Margin="0,0,0,6" />
+                        <components:MetricPresenter x:Name="ProcessPresenter" Grid.Row="1" Metric="ProcessMemory" Compact="False" Height="60" Margin="0,0,6,0" />
+                        <components:MetricPresenter x:Name="NetworkPresenter" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Metric="SystemNetwork" Compact="False" Height="60" />
                     </Grid>
                 </Border>
             </StackPanel>

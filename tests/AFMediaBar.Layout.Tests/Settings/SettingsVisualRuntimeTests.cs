@@ -127,7 +127,7 @@ public sealed class SettingsVisualRuntimeTests
     {
         var picker = new MetricStylePicker();
         var combo = picker.Children.OfType<ComboBox>().Single();
-        var preview = picker.Children.OfType<MetricChart>().Single();
+        var preview = picker.Children.OfType<MetricPresenter>().Single();
         double? previousLeft = null;
         double? previousWidth = null;
         foreach (var style in Enum.GetValues<MetricVisualStyle>())

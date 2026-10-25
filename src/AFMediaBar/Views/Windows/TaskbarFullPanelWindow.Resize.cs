@@ -30,25 +30,11 @@ public partial class TaskbarFullPanelWindow
     private string _resizeEdge = string.Empty;
     private FullPanelPlacementSide _resolvedSide;
 
-    private IEnumerable<MetricChart> PanelCharts() => [CpuChart, RamChart, GpuChart, ProcessChart, UploadChart, DownloadChart];
+    private IEnumerable<MetricPresenter> PanelPresenters() => [CpuPresenter, RamPresenter, GpuPresenter, ProcessPresenter, NetworkPresenter];
 
     private void ApplyChartStyles(MetricVisualSettings visuals)
     {
-        CpuChart.VisualStyle = visuals.SystemCpu;
-        RamChart.VisualStyle = visuals.SystemMemory;
-        GpuChart.VisualStyle = visuals.SystemGpu;
-        ProcessChart.VisualStyle = visuals.ProcessMemory;
-        UploadChart.VisualStyle = DownloadChart.VisualStyle = visuals.SystemNetwork;
-        foreach (var chart in PanelCharts())
-        {
-            if (chart.Parent is FrameworkElement parent)
-            {
-                var help = !chart.IsPercentage && chart.VisualStyle is MetricVisualStyle.Bar or MetricVisualStyle.Ring
-                    ? Translations.Get("Performance.Visual.Relative") : string.Empty;
-                parent.ToolTip = string.IsNullOrEmpty(help) ? null : help;
-                System.Windows.Automation.AutomationProperties.SetHelpText(parent, help);
-            }
-        }
+        foreach (var presenter in PanelPresenters()) presenter.VisualStyle = visuals.Get(presenter.Metric);
     }
 
     private void ApplyScaleGeometry(Size limit)

@@ -478,18 +478,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     {
         if (generation != _metricsSubscriptionGeneration || _isClosing || !_performanceVisible)
             return;
-        RamMetric.Text = metrics.SystemMemoryPercent is int memory ? $"{memory}%" : "—";
-        CpuMetric.Text = metrics.SystemCpuPercent is int cpu ? $"{cpu}%" : "—";
-        GpuMetric.Text = metrics.SystemGpuPercent is int gpu ? $"{gpu}%" : "—";
-        ProcessMetric.Text = metrics.ProcessMemoryMegabytes is long process ? $"{process} MB" : "—";
-        UploadMetric.Text = MetricPresentationPolicy.FormatRate(metrics.NetworkUploadBytesPerSecond);
-        DownloadMetric.Text = MetricPresentationPolicy.FormatRate(metrics.NetworkDownloadBytesPerSecond);
-        CpuChart.ApplySample(metrics.SystemCpuPercent);
-        RamChart.ApplySample(metrics.SystemMemoryPercent);
-        GpuChart.ApplySample(metrics.SystemGpuPercent);
-        ProcessChart.ApplySample(metrics.ProcessMemoryMegabytes);
-        UploadChart.ApplySample(metrics.NetworkUploadBytesPerSecond);
-        DownloadChart.ApplySample(metrics.NetworkDownloadBytesPerSecond);
+        foreach (var presenter in PanelPresenters()) presenter.ApplySnapshot(metrics);
     }
 
     private void DisposeMetricsSubscription()
@@ -497,7 +486,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         _metricsSubscriptionGeneration++;
         _metricsSubscription?.Dispose();
         _metricsSubscription = null;
-        foreach (var chart in PanelCharts()) chart.Reset();
+        foreach (var presenter in PanelPresenters()) presenter.Reset();
     }
 
     private void UpdateProgress()
