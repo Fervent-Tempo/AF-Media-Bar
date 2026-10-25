@@ -2,6 +2,7 @@
 (() => {
   "use strict";
   const count = 64, cx = 32, cy = 34, tau = Math.PI * 2;
+  const pencil = Object.freeze({ halfWidth: 3.5, halfHeight: 13.5, offsetY: -1, tipAnchorY: 13.5, tipEndY: 16.5 });
   const source = document.getElementById("body").getAttribute("d");
   const tokens = source.match(/[MCZ]|-?\d+(?:\.\d+)?/g);
   const samples = [];
@@ -48,12 +49,17 @@
     const yaw = yawDegrees * Math.PI / 180, front = Math.cos(yaw);
     const rate = animate ? 1 - Math.exp(-22 * dt) : 1;
     let moving = false, extent = 0;
-    const target = core === "pencil" ? [3.5, 13.5, -1] : core === "alert" ? [3.5, 10, -6] : core === "standby" ? [4, 4, 0] : core === "ball" ? [7, 7, 0] : [5.3, 5.3, 0];
+    const target = core === "pencil" ? [pencil.halfWidth, pencil.halfHeight, pencil.offsetY] : core === "alert" ? [3.5, 10, -6] : core === "standby" ? [4, 4, 0] : core === "ball" ? [7, 7, 0] : [5.3, 5.3, 0];
     for (let n = 0; n < count; n++) {
       const [dx, dy] = vectors[n];
       const bodyRadius = radii[front >= 0 ? n : (count - n) % count];
       const radius = 26.5 + (bodyRadius - 26.5) * Math.abs(front);
-      const smallRadius = 1 / Math.sqrt(dx * dx / (target[0] ** 2) + dy * dy / (target[1] ** 2));
+      let smallRadius = 1 / Math.sqrt(dx * dx / (target[0] ** 2) + dy * dy / (target[1] ** 2));
+      if (core === "pencil" || core === "alert") {
+        const capOffset = target[1] - target[0], side = target[0] / Math.max(0.00001, Math.abs(dx));
+        smallRadius = side * Math.abs(dy) <= capOffset ? side
+          : capOffset * Math.abs(dy) + Math.sqrt(Math.max(0, target[0] ** 2 - capOffset * capOffset * dx * dx));
+      }
       const r = radius + (smallRadius - radius) * mix;
       const goal = [cx + dx * r, cy + dy * r + target[2] * mix];
       for (let k = 0; k < 2; k++) {
@@ -77,5 +83,10 @@
     return { x: cx + turnedX * radius, y: cy + turnedY * radius,
       width: Math.max(0.025, Math.min(1.2, turnedZ / depth)), opacity: Math.max(0, Math.min(1, facing / 0.3)) };
   }
-  window.PetGeometry = Object.freeze({ update, eye });
+  function boundary(angle) {
+    const position = (((angle + Math.PI / 2) / tau * count) % count + count) % count;
+    const n = Math.floor(position), a = points[n], b = points[(n + 1) % count], mix = position - n;
+    return [a[0] + (b[0] - a[0]) * mix - cx, a[1] + (b[1] - a[1]) * mix - cy];
+  }
+  window.PetGeometry = Object.freeze({ update, eye, boundary, pencil });
 })();

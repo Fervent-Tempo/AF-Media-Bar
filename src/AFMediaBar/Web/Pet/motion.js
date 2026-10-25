@@ -38,7 +38,7 @@
   }
   function target(id, t) {
     const p = { x: 0, y: 0, turn: 0, sx: 1, sy: 1, lid: 1, face: "neutral", rightFace: null,
-      gazeX: 0, gazeY: 0, effect: "", morph: 0, core: "dot", particles: 0, ribbons: 0, spinY: 0, wink: -1, penUp: false };
+      gazeX: 0, gazeY: 0, effect: "", morph: 0, core: "dot", particles: 0, ribbons: 0, spinY: 0, wink: -1, winkLid: 1, penUp: false };
     const list = expressions[id];
     if (list) p.face = list[Math.floor(t / (id === "searching" || id === "excited" ? 1.7 : 2.8)) % list.length];
     switch (id) {
@@ -125,7 +125,12 @@
       case "particles": p.particles = (t % 3) < 1.8 ? (t % 3) / 1.8 : 0; break;
       default: break;
     }
-    if (["idle", "happy", "excited", "curious", "playful"].includes(id) && t % 7 > 4.5 && t % 7 < 4.85) p.wink = Math.floor(t / 7) % 2;
+    if (["idle", "happy", "excited", "curious", "playful"].includes(id) && t % 7 > 4.5 && t % 7 < 4.85) {
+      p.wink = Math.floor(t / 7) % 2;
+      const phase = (t % 7 - 4.5) / 0.35;
+      p.winkLid = phase < 0.42 ? 1 - smooth(phase / 0.42) * 0.94 : 0.06 + smooth((phase - 0.42) / 0.58) * 0.94;
+    }
+    p.effectTime = id === "progress" ? t % 4.1 : id === "spawning" ? t % 3.8 : t;
     const left = profiles[p.face] ?? profiles.neutral, right = profiles[p.rightFace] ?? left;
     return { ...p, left, right };
   }
@@ -139,7 +144,7 @@
     return `M${-x} ${-y + r} Q${-x} ${-y} ${-x + r} ${-y} L${x - r} ${-y} Q${x} ${-y} ${x} ${-y + r} L${x} ${y - r} Q${x} ${y} ${x - r} ${y} L${-x + r} ${y} Q${-x} ${y} ${-x} ${y - r}Z`;
   }
   function unwrapTurn(tracker, raw, current, reset) {
-    if (reset) tracker.offset = Math.round(current / 360) * 360;
+    if (reset) tracker.offset = Math.round((current - raw) / 360) * 360;
     else if (raw < tracker.raw - 180) tracker.offset += Math.round(tracker.raw / 360) * 360;
     tracker.raw = raw;
     return raw + tracker.offset;

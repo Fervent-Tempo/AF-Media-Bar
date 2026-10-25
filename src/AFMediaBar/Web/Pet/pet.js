@@ -14,10 +14,12 @@
   const values = { eyeX: axis(), eyeY: axis(), x: axis(), y: axis(), turn: axis(), yaw: axis(),
     sx: axis(1), sy: axis(1), lift: axis(), squash: axis(), morph: axis(), effect: axis(), lid: axis(1), fit: axis(1) };
   const eyes = [0, 1].map(() => [axis(6), axis(13), axis(), axis()]);
+  const winks = [axis(1), axis(1)];
   let state = null, active = false, frame = 0, last = 0, natural = 0, nextFrameAt = 0;
   let age = 0, autoIndex = 2, autoAge = 0, selected = "idle";
   let blinkAt = -Infinity, blinkFrom = 1, opening = 1, pressUntil = 0;
   let seenBlink = 0, seenPress = 0;
+  let wasLooping = false;
   const turn = { raw: 0, offset: 0 };
   const frameInterval = 1000 / 60;
   function spring(value, target, dt, stiffness = 100, damping = 10) {
@@ -76,7 +78,9 @@
       lift: full && state.hovered ? 0.6 : 0, squash: full && now < pressUntil ? 1 : 0,
       morph: p.morph, effect: p.effect ? (["humming", "notifying"].includes(p.effect) ? 1 : p.morph) : 0, lid: p.lid
     };
-    targets.yaw = motion.unwrapTurn(turn, targets.yaw, values.yaw.x, changed || !looping);
+    targets.yaw = looping ? motion.unwrapTurn(turn, targets.yaw, values.yaw.x, changed || !wasLooping)
+      : Math.round(values.yaw.x / 360) * 360;
+    wasLooping = looping;
     let moving = false;
     for (const key of Object.keys(values)) {
       if (key === "fit") continue;
@@ -94,7 +98,10 @@
       const [width, height, bend, angle] = eyes[n].map(value => value.x);
       eyeNodes[n].setAttribute("d", motion.eyePath(Math.max(1, width), Math.max(1, height), bend));
       const projected = geometry.eye(n === 0 ? 24 : 40, 32, values.yaw.x, full && state.hovered ? -2 : 0);
-      const wink = looping && p.wink === n ? 0.12 : 1;
+      const winkTarget = looping && p.wink === n ? p.winkLid : 1;
+      if (full) moving = spring(winks[n], winkTarget, dt, 400, 32) || moving;
+      else { winks[n].x = 1; winks[n].v = 0; }
+      const wink = winks[n].x;
       eyeNodes[n].setAttribute("transform", `translate(${projected.x} ${projected.y}) rotate(${n === 0 ? angle : -angle}) scale(${projected.width} ${wink})`);
       eyeNodes[n].setAttribute("opacity", projected.opacity);
     }
@@ -119,10 +126,11 @@
     if (full) moving = spring(values.fit, fit, dt, 180, 26) || moving;
     else values.fit.x = fit;
     stage.setAttribute("transform", `translate(32 32) scale(${v("fit")}) translate(-32 -32)`);
-    effects.render({ kind: p.effect, mix: clamp(v("effect"), 0, 1), time: looping ? age : 0,
+    effects.render({ kind: p.effect, mix: clamp(v("effect"), 0, 1), time: p.effectTime,
       burst: looping ? p.particles : 0, fill: state.bodyColor, eyeFill: state.eyeColor, highContrast: state.highContrast,
-      dt, animate: full && (looping || moving), pose: { x: v("x"), y: v("y"), turn: v("turn") }, penUp: p.penUp,
-      ribbons: looping ? p.ribbons : 0, yaw: v("yaw") });
+      dt, animate: full && (looping || moving), pose: { x: v("x"), y: v("y") - v("lift"), turn: v("turn"),
+        sx: v("sx") * (1 + amount * 0.025), sy: v("sy") * (1 - amount * 0.065), offsetY: 25 * amount * 0.065 * v("sy") }, penUp: p.penUp,
+      ribbons: looping ? p.ribbons : 0, yaw: v("yaw"), boundary: geometry.boundary, pencil: geometry.pencil });
     root.setAttribute("data-animation", selected);
     if (looping || moving || elapsed < 200 || now < pressUntil) frame = requestAnimationFrame(tick);
   }
@@ -135,10 +143,10 @@
     active = next;
     cancelAnimationFrame(frame); frame = 0;
     clearTimeout(natural); natural = 0;
-    blinkAt = -Infinity; pressUntil = 0; opening = 1; age = autoAge = 0;
-    turn.raw = 0; turn.offset = Math.round(values.yaw.x / 360) * 360;
+    // 短暂停冻结所有逻辑年龄与旋转累计，只清除输入事件和帧基准。
+    blinkAt = -Infinity; pressUntil = 0; opening = 1;
     lids.setAttribute("transform", "");
-    for (const value of [...Object.values(values), ...eyes.flat()]) value.v = 0;
+    for (const value of [...Object.values(values), ...eyes.flat(), ...winks]) value.v = 0;
     if (active) { wake(); scheduleNatural(); }
   }
   function receive(message) {

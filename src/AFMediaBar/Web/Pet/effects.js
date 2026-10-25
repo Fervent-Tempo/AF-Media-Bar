@@ -4,13 +4,14 @@
   const root = document.getElementById("effects"), particles = document.getElementById("particles");
   const ids = ["dots", "orbit", "radar", "progress", "spawning", "humming", "loading", "dictating", "writing",
     "sending", "receiving", "uploading", "notifying", "alerting", "bouncing", "powering-down"];
-  const layers = ids.map(id => ({ id, element: document.getElementById("fx-" + id), weight: 0, age: 0, ink: [] }));
+  const layers = ids.map(id => ({ id, element: document.getElementById("fx-" + id), weight: 0, age: 0, ink: [], pose: null }));
+  const burstOrigins = Array.from({ length: 16 }, () => ({ x: 0, y: 0, dx: 0, dy: 0 }));
   const cache = new Map(), get = id => { if (!cache.has(id)) cache.set(id, document.getElementById(id)); return cache.get(id); };
   const clamp = (n, a = 0, b = 1) => Math.max(a, Math.min(b, n));
   const circle = (id, x, y, radius, opacity = 1) => {
     const node = get(id); node.setAttribute("cx", x); node.setAttribute("cy", y); node.setAttribute("r", Math.max(0, radius)); node.setAttribute("opacity", clamp(opacity));
   };
-  let ribbons = 0, ribbonAge = 0;
+  let ribbons = 0, ribbonAge = 0, previousBurst = 0;
   function paint(layer, options) {
     const t = layer.age, phase = t % 1.6 / 1.6;
     switch (layer.id) {
@@ -60,14 +61,17 @@
             26 + (Math.cos(angle) * 6 - 26) * ease, 2.2 + ease * 0.8, clamp(entrance * 5));
         } break;
       case "writing": {
-        const pose = options.pose, angle = pose.turn * Math.PI / 180;
-        const x = pose.x - Math.sin(angle) * 15.5, y = pose.y + Math.cos(angle) * 15.5;
-        get("pencil-tip").setAttribute("transform", `translate(${x} ${y}) rotate(${pose.turn})`);
-        if (options.animate && !options.penUp && layer.weight > 0.6) {
+        if (options.kind === "writing") layer.pose = options.pose;
+        const pose = layer.pose ?? options.pose, angle = pose.turn * Math.PI / 180;
+        const anchor = options.pencil.tipAnchorY * pose.sy + pose.offsetY;
+        const end = options.pencil.tipEndY * pose.sy + pose.offsetY;
+        const x = pose.x - Math.sin(angle) * end, y = pose.y + Math.cos(angle) * end;
+        get("pencil-tip").setAttribute("transform", `translate(${pose.x - Math.sin(angle) * anchor} ${pose.y + Math.cos(angle) * anchor}) rotate(${pose.turn}) scale(${pose.sx} ${pose.sy})`);
+        if (options.kind === "writing" && options.animate && !options.penUp && layer.weight > 0.6) {
           const last = layer.ink[layer.ink.length - 1];
-          if (!last || Math.hypot(last[0] - x, last[1] - y) > 0.6) layer.ink.push([x, y + 2]);
+          if (!last || Math.hypot(last[0] - x, last[1] - y) > 0.6) layer.ink.push([x, y]);
           if (layer.ink.length > 48) layer.ink.shift();
-        } else if (options.penUp && layer.ink.length) layer.ink.splice(0, 2);
+        } else if (options.kind === "writing" && options.penUp && layer.ink.length) layer.ink.splice(0, 2);
         get("writing-ink").setAttribute("d", layer.ink.length > 1 ? "M" + layer.ink.map(point => point.map(n => n.toFixed(2)).join(" ")).join("L") : "");
         break;
       }
@@ -118,16 +122,26 @@
         continue;
       }
       layer.element.style.display = "inline"; layer.element.setAttribute("opacity", layer.weight);
-      if (options.animate) layer.age += options.dt;
+      if (options.kind === layer.id) layer.age = options.time;
+      else if (options.animate) layer.age += options.dt;
       paint(layer, options);
     }
     paintRibbons(options);
     const burst = options.animate ? options.burst : 0, amount = burst > 0 ? Math.sin(clamp(burst) * Math.PI) : 0;
     particles.setAttribute("opacity", amount);
+    if (burst > 0 && (previousBurst <= 0 || burst < previousBurst)) {
+      const turn = options.pose.turn * Math.PI / 180;
+      for (let n = 0; n < 16; n++) {
+        const angle = n * 2.399, edge = options.boundary(angle), radius = Math.max(18, Math.hypot(...edge) * 0.87);
+        const dx = Math.cos(angle + turn), dy = Math.sin(angle + turn);
+        Object.assign(burstOrigins[n], { x: 32 + options.pose.x + dx * radius, y: 34 + options.pose.y + dy * radius, dx, dy });
+      }
+    }
+    previousBurst = burst;
     if (amount > 0) for (let n = 0; n < 16; n++) {
-      const piece = get("particle-" + n), angle = n * 2.399, distance = burst * (14 + n % 5 * 3);
+      const piece = get("particle-" + n), origin = burstOrigins[n], distance = burst * (6 + n % 4 * 2);
       piece.setAttribute("fill", options.highContrast ? options.eyeFill : ["#EDBE68", "#6DC8AA", "#7BA9E6", "#D484BC"][n % 4]);
-      piece.setAttribute("transform", `translate(${32 + Math.cos(angle) * distance} ${27 + Math.sin(angle) * distance + burst * burst * 10}) rotate(${n * 31 + burst * 210})`);
+      piece.setAttribute("transform", `translate(${origin.x + origin.dx * distance} ${origin.y + origin.dy * distance + burst * burst * 4}) rotate(${n * 31 + burst * 210})`);
     }
   }
   window.PetEffects = Object.freeze({ render });

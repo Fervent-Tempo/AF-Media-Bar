@@ -72,6 +72,9 @@ public sealed class PetComponentSettingsTests
     [TestMethod]
     public void OverflowExtendsTowardScreenInteriorAndClampsToTheCorrectMonitor()
     {
+        Assert.IsTrue(PetOverflowHost.ContainsVisualPoint(new Point(32, 9)), "旋转后的球体顶端应能接收局部点击。");
+        Assert.IsTrue(PetOverflowHost.ContainsVisualPoint(new Point(23.3, 6.1)), "歪身后移出的耳尖应能接收局部点击。");
+        Assert.IsFalse(PetOverflowHost.ContainsVisualPoint(new Point(0, 0)), "空白角落不能扩大命中区域。");
         Assert.AreEqual(new Rect(90, 960, 120, 120), PetPlacementPolicy.Arrange(new Rect(100, 1040, 100, 40),
             new Rect(0, 0, 1920, 1080), 120, false, false));
         Assert.AreEqual(new Rect(90, 0, 120, 120), PetPlacementPolicy.Arrange(new Rect(100, 0, 100, 40),

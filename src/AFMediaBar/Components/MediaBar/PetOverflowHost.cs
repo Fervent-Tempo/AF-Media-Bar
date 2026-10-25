@@ -167,16 +167,19 @@ internal sealed class PetOverflowHost : IDisposable
         _window.Close();
     }
 
+    // 覆盖 stage 内旋转、歪身和抬升的姿态包络；透明像素仍由分层窗口放行。
+    internal static bool ContainsVisualPoint(Point point) =>
+        (point - new Point(32, 32)).LengthSquared <= 32 * 32;
+
     // 透明窗口的空白角落不参与 WPF 命中，避免扩大到整个方形视口的点击区域。
     private sealed class InputSurface : Border
     {
-        private static readonly Geometry _shape = Geometry.Parse(PetVisualDefinition.BodyPath);
         protected override HitTestResult? HitTestCore(PointHitTestParameters parameters)
         {
             var size = Math.Min(ActualWidth, ActualHeight);
             if (size <= 0) return null;
             var p = parameters.HitPoint;
-            return _shape.FillContains(new Point(p.X * 64 / size, p.Y * 64 / size)) ? new PointHitTestResult(this, p) : null;
+            return ContainsVisualPoint(new Point(p.X * 64 / size, p.Y * 64 / size)) ? new PointHitTestResult(this, p) : null;
         }
     }
 }

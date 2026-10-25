@@ -128,6 +128,25 @@ test("multi-turn targets keep moving forward when the spring lags and the cycle 
   assert.equal(p.engine.unwrapTurn(turn, 0, 1900, false), 2160);
   assert.equal(p.engine.unwrapTurn(turn, 90, 2000, false), 2250);
   assert.equal(p.engine.unwrapTurn(turn, 0, 2200, true), 2160);
+  assert.equal(p.engine.unwrapTurn(turn, 2160, 720, true), 720, "restoring motion must not add historical turns");
+});
+
+test("pause preserves effect phase and rapid reselection starts a coherent new cycle", () => {
+  const p = page();
+  p.receive({ animation: "progress" }, true); p.advance(1800);
+  p.receive({ active: false }); p.advance(4000);
+  p.receive({ active: true }, true); p.advance(1200);
+  assert.ok(Number(p.nodes.get("fx-progress").getAttribute("opacity")) < 0.6, "the body and effect must enter their rest phase together");
+  p.receive({ animation: "orbit" }); p.advance(100);
+  p.receive({ animation: "progress" }); p.advance(32);
+  assert.ok(Number(p.nodes.get("progress-arc").getAttribute("stroke-dasharray").split(" ")[0]) < 10);
+});
+
+test("wink has a continuous closing and opening envelope", () => {
+  const p = page();
+  assert.ok(p.engine.target("playful", 4.5001).winkLid > 0.99);
+  assert.ok(p.engine.target("playful", 4.65).winkLid < 0.2);
+  assert.ok(p.engine.target("playful", 4.8499).winkLid > 0.99);
 });
 
 test("spinning keeps body volume and hides each eye at its own horizon", () => {
