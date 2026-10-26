@@ -2007,7 +2007,6 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private void MediaControl_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton != MouseButton.Left ||
-            SettingsManager.Current.TaskbarBarPositionLocked ||
             e.OriginalSource is DependencyObject source && IsMediaAction(source))
         {
             return;
@@ -2025,6 +2024,9 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             _isTaskManagerClickPending = true;
             return;
         }
+
+        if (SettingsManager.Current.TaskbarBarPositionLocked)
+            return;
 
         var taskbarHandle = _lastTaskbarHandle;
         if (taskbarHandle == IntPtr.Zero ||
@@ -2149,10 +2151,12 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         if (_isTaskManagerClickPending)
         {
             _isTaskManagerClickPending = false;
+            var suppressed = _mouseInputMonitor.ConsumeSuppressedClick();
             // 指针可能已经移到别的元素上，因此抬起时重新判定命中，而不是相信按下时的结论。
             // The pointer may have moved onto another element, so the hit is re-evaluated on release instead of trusting the
             // verdict from the press.
-            if (e.OriginalSource is DependencyObject source && MediaControl.IsPerformanceComponentClick(source))
+            if (!suppressed && SettingsManager.Current.PerformanceComponent.OpenTaskManagerOnClick &&
+                e.OriginalSource is DependencyObject source && MediaControl.IsPerformanceComponentClick(source))
             {
                 MediaControl.RequestOpenTaskManager();
                 e.Handled = true;
