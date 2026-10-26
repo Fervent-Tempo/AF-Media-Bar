@@ -6,8 +6,10 @@ using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.ViewModels.Pages;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AFMediaBar.Layout.Tests;
@@ -101,28 +103,44 @@ public sealed class FloatingBarTests
     [TestMethod]
     public void PlacementResetUsesFloatingDefaultsAndLeavesTaskbarUntouched()
     {
-        var previous = SettingsManager.Current;
-        var previousDefaults = SettingsManager.UserDefaults;
-        using var context = new SettingsPageContext();
-        context.Initialize(SettingsContext.Initial with { Mode = SettingsMode.FloatingBar });
-        try
+        StaTest.Run(_ =>
         {
-            SettingsManager.Current = new AppSettings
+            var previous = SettingsManager.Current;
+            var previousDefaults = SettingsManager.UserDefaults;
+            using var context = new SettingsPageContext();
+            context.Initialize(SettingsContext.Initial with { Mode = SettingsMode.FloatingBar });
+            try
             {
-                Experiments = new() { FloatingBar = true },
-                TaskbarBarManualPadding = 50,
-                FloatingBar = new() { Positions = [new("one", 400, 500)], MonitorDeviceIds = ["one"] }
-            };
-            SettingsManager.SetUserDefaults(new AppSettings { FloatingBar = new() { EdgeCollapseEnabled = false, Positions = [new("two", 300, 200) { DockEdge = FloatingBarDockEdge.Left }], MonitorDeviceIds = ["two"] } });
-            var editor = new LegacySettingsConfiguration(context);
-            editor.Reset(SettingsResetScope.Layout);
-            Assert.AreEqual(50, SettingsManager.Current.TaskbarBarManualPadding);
-            Assert.AreEqual("two", SettingsManager.Current.FloatingBar.MonitorDeviceIds.Single());
-            Assert.AreEqual(300d, SettingsManager.Current.FloatingBar.Positions.Single().CenterXDip);
-            Assert.IsFalse(SettingsManager.Current.FloatingBar.EdgeCollapseEnabled);
-            Assert.AreEqual(FloatingBarDockEdge.Left, SettingsManager.Current.FloatingBar.Positions.Single().DockEdge);
-        }
-        finally { SettingsManager.Current = previous; SettingsManager.SetUserDefaults(previousDefaults); }
+                SettingsManager.Current = new AppSettings
+                {
+                    Experiments = new() { FloatingBar = true },
+                    TaskbarBarManualPadding = 50,
+                    FloatingBar = new() { OverlayTaskbar = true, Positions = [new("one", 400, 500)], MonitorDeviceIds = ["one"] }
+                };
+                SettingsManager.SetUserDefaults(new AppSettings { FloatingBar = new() { EdgeCollapseEnabled = false, Positions = [new("two", 300, 200) { DockEdge = FloatingBarDockEdge.Left }], MonitorDeviceIds = ["two"] } });
+                var editor = new LegacySettingsConfiguration(context);
+                using var localization = new LocalizationService();
+                using var viewModel = new DisplayModesViewModel(new DisplayMonitorService(), localization, editor);
+                var notifications = new List<string?>();
+                viewModel.PropertyChanged += (_, args) => notifications.Add(args.PropertyName);
+                editor.Reset(SettingsResetScope.Layout);
+                Assert.AreEqual(50, SettingsManager.Current.TaskbarBarManualPadding);
+                Assert.AreEqual("two", SettingsManager.Current.FloatingBar.MonitorDeviceIds.Single());
+                Assert.AreEqual(300d, SettingsManager.Current.FloatingBar.Positions.Single().CenterXDip);
+                Assert.IsFalse(SettingsManager.Current.FloatingBar.EdgeCollapseEnabled);
+                Assert.AreEqual(FloatingBarDockEdge.Left, SettingsManager.Current.FloatingBar.Positions.Single().DockEdge);
+                Assert.IsFalse(SettingsManager.Current.FloatingBar.OverlayTaskbar);
+                Assert.IsTrue(notifications.Contains(nameof(DisplayModesViewModel.FloatingOverlayTaskbar)),
+                    "重置必须通知页面刷新覆盖任务栏开关。");
+                SettingsManager.SetUserDefaults(new AppSettings { FloatingBar = new() { OverlayTaskbar = true } });
+                notifications.Clear();
+                editor.Reset(SettingsResetScope.Layout);
+                Assert.IsTrue(viewModel.FloatingOverlayTaskbar, "重置也必须恢复用户保存的开启值。");
+                Assert.IsTrue(notifications.Contains(nameof(DisplayModesViewModel.FloatingOverlayTaskbar)));
+            }
+            finally { SettingsManager.Current = previous; SettingsManager.SetUserDefaults(previousDefaults); }
+            return Task.CompletedTask;
+        });
     }
 
     [TestMethod]
@@ -142,7 +160,7 @@ public sealed class FloatingBarTests
             };
             window.Show();
             var handle = new WindowInteropHelper(window).Handle;
-            using var registration = zOrder.Attach(handle, FloatingBarLayer.Desktop, () => true);
+            using var registration = zOrder.Attach(handle, FloatingBarLayer.Desktop, () => true, false);
             try
             {
                 var foreground = NativeMethods.GetForegroundWindow();
@@ -159,5 +177,13 @@ public sealed class FloatingBarTests
             }
             finally { window.Close(); }
         });
+    }
+
+    [TestMethod]
+    public void OverlayTaskbarDefaultsOffAndSurvivesNormalization()
+    {
+        Assert.IsFalse(new FloatingBarSettings().OverlayTaskbar, "旧配置缺字段时默认关闭，不能改变既有悬浮条行为。");
+        var settings = new FloatingBarSettings { Layer = FloatingBarLayer.Desktop, OverlayTaskbar = true };
+        Assert.IsTrue(settings.Normalize().OverlayTaskbar, "覆盖任务栏与窗口层级相互独立，Normalize 不能丢掉这个选择。");
     }
 }

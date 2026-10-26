@@ -30,6 +30,7 @@
       "orientation": "v1.5.0",
       "layer": "v1.5.0",
       "edgeCollapseEnabled": "v1.6.0",
+      "overlayTaskbar": "unreleased",
       "monitorDeviceIds": "v1.5.0",
       "positions": {
         "$items": {

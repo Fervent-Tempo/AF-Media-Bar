@@ -101,51 +101,7 @@ public sealed class DisplayMonitorService : IDisplayMonitorService
     }
 
     /// <inheritdoc />
-    public bool IsForegroundWindowFullscreen()
-    {
-        try
-        {
-            var foreground = NativeMethods.GetForegroundWindow();
-            if (foreground == IntPtr.Zero || !NativeMethods.IsWindowVisible(foreground) || NativeMethods.IsIconic(foreground))
-                return false;
-
-            NativeMethods.GetWindowThreadProcessId(foreground, out var processId);
-            if (processId == Environment.ProcessId || processId == 0)
-                return false;
-
-            var className = new StringBuilder(128);
-            NativeMethods.GetClassName(foreground, className, className.Capacity);
-            if (className.ToString() is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd")
-                return false;
-
-            var monitor = MonitorUtil.GetMonitor(foreground);
-            if (!IsValid(monitor))
-                return false;
-
-            NativeMethods.RECT bounds;
-            if (NativeMethods.DwmGetWindowAttribute(
-                    foreground,
-                    NativeMethods.DWMWA_EXTENDED_FRAME_BOUNDS,
-                    out bounds,
-                    Marshal.SizeOf<NativeMethods.RECT>()) != NativeMethods.S_OK &&
-                !NativeMethods.GetWindowRect(foreground, out bounds))
-            {
-                return false;
-            }
-
-            var windowBounds = new Rect(
-                bounds.Left,
-                bounds.Top,
-                bounds.Right - bounds.Left,
-                bounds.Bottom - bounds.Top);
-            return ForegroundFullscreenPolicy.IsFullscreen(windowBounds, monitor.monitorArea);
-        }
-        catch (Exception exception)
-        {
-            Debug.WriteLine($"[DisplayMonitorService] Fullscreen detection failed: {exception}");
-            return false;
-        }
-    }
+    public bool IsForegroundWindowFullscreen() => ForegroundFullscreenPolicy.IsForegroundWindowFullscreen();
 
     private static bool IsValid(MonitorUtil.MonitorInfo monitor) =>
         !string.IsNullOrWhiteSpace(monitor.deviceId) &&

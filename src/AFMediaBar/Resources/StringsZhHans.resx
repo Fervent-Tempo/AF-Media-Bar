@@ -3213,6 +3213,8 @@
   <data name="Lyrics.Row.BracketSymbols.Title" xml:space="preserve"><value>净化译文格式</value></data>
   <data name="Lyrics.Row.BracketSymbols.Description" xml:space="preserve"><value>默认开启。清理部分翻译来源多余的行首斜杠与括号，使译文显示更加简洁。</value></data>
   <data name="Settings.Numeric.Minutes" xml:space="preserve"><value>分钟</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Title" xml:space="preserve"><value>覆盖任务栏</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Description" xml:space="preserve"><value>开启后悬浮媒体栏显示在任务栏上方，可以拖到任务栏区域使用。</value></data>
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>边缘自动折叠</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>默认开启。拖到工作区边缘后，移开鼠标收起，靠近时展开；支持四边。</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展开桌面媒体栏</value></data>

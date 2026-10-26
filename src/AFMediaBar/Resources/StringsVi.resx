@@ -3251,6 +3251,8 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Lyrics.Row.BracketSymbols.Title" xml:space="preserve"><value>Làm gọn định dạng bản dịch</value></data>
   <data name="Lyrics.Row.BracketSymbols.Description" xml:space="preserve"><value>Mặc định bật. Dọn bớt dấu gạch chéo đầu dòng và ngoặc thừa do một số nguồn bản dịch thêm vào, giúp bản dịch hiển thị gọn gàng hơn.</value></data>
   <data name="Settings.Numeric.Minutes" xml:space="preserve"><value>phút</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Title" xml:space="preserve"><value>Phủ lên thanh tác vụ</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Description" xml:space="preserve"><value>Khi bật, thanh phương tiện nổi hiển thị trên thanh tác vụ và có thể kéo vào khu vực đó.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>Tự thu gọn ở cạnh màn hình</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>Mặc định bật. Kéo đến một trong bốn cạnh vùng làm việc; di chuột ra để thu gọn và đến gần để mở.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>Mở thanh phương tiện trên màn hình</value></data>

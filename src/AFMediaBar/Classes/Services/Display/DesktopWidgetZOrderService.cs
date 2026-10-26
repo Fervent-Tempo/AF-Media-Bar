@@ -30,12 +30,16 @@ public sealed partial class DesktopWidgetZOrderService : IDisposable
         _timer.Tick += OnTick;
     }
 
-    public IDisposable Attach(nint handle, FloatingBarLayer layer, Func<bool> mayRestore)
+    /// <summary>
+    /// 把一个悬浮窗口交给本服务维护层级。overlayTaskbar 开启时窗口始终压在任务栏之上，
+    /// 任务栏刷新后重新置顶；关闭时按 layer 与桌面状态决定层级。
+    /// </summary>
+    public IDisposable Attach(nint handle, FloatingBarLayer layer, Func<bool> mayRestore, bool overlayTaskbar)
     {
         _dispatcher.VerifyAccess();
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (!IsWindow(handle)) throw new InvalidOperationException("Invalid floating window handle.");
-        var entry = new Entry(handle, layer, mayRestore);
+        var entry = new Entry(handle, layer, mayRestore, overlayTaskbar);
         _entries[handle] = entry;
         SetWindowLong(handle, GWL_EXSTYLE, (GetWindowLong(handle, GWL_EXSTYLE) | 0x80) & ~0x40000);
         if (_entries.Count == 1) StartObservation();
@@ -75,9 +79,12 @@ public sealed partial class DesktopWidgetZOrderService : IDisposable
         var desktopIsAboveApplications = false;
         var seenApplication = false;
         var inspected = 0;
+        var taskbarOrder = int.MaxValue;
+        var entryOrders = new Dictionary<nint, int>();
         for (var window = GetTopWindow(nint.Zero); window != nint.Zero && inspected++ < 512; window = GetWindow(window, 2))
         {
-            if (_entries.ContainsKey(window) || !IsWindowVisible(window) || IsIconic(window)) continue;
+            if (_entries.ContainsKey(window)) { entryOrders[window] = inspected; continue; }
+            if (!IsWindowVisible(window) || IsIconic(window)) continue;
             var name = new StringBuilder(256);
             GetClassName(window, name, name.Capacity);
             var className = name.ToString();
@@ -86,8 +93,13 @@ public sealed partial class DesktopWidgetZOrderService : IDisposable
                 desktopIsAboveApplications = !seenApplication;
                 break;
             }
-            if (className is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd" ||
-                (GetWindowLong(window, GWL_EXSTYLE) & 0x80) != 0) continue;
+            // 记下任务栏在 z 序里的位置，用来判断覆盖任务栏的悬浮条有没有被压到它后面。
+            if (className is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd")
+            {
+                taskbarOrder = inspected;
+                continue;
+            }
+            if ((GetWindowLong(window, GWL_EXSTYLE) & 0x80) != 0) continue;
             seenApplication = true;
             lowestApplication = window;
         }
@@ -96,12 +108,21 @@ public sealed partial class DesktopWidgetZOrderService : IDisposable
             if (!IsWindow(entry.Handle) || !entry.MayRestore()) continue;
             var restore = IsIconic(entry.Handle) || !IsWindowVisible(entry.Handle);
             if (restore) ShowWindow(entry.Handle, 4);
-            var after = entry.Layer == FloatingBarLayer.Topmost || desktopIsAboveApplications ? new nint(-1) :
+            var wantsTopmost = entry.OverlayTaskbar || entry.Layer == FloatingBarLayer.Topmost || desktopIsAboveApplications;
+            var after = wantsTopmost ? new nint(-1) :
                 lowestApplication == nint.Zero ? new nint(-2) : lowestApplication;
+            // 任务栏被点开或刷新后会把悬浮条压到后面，所以覆盖任务栏时每次观察都确认它还在前面。
+            var buried = entry.OverlayTaskbar && taskbarOrder != int.MaxValue &&
+                entryOrders.TryGetValue(entry.Handle, out var order) && order > taskbarOrder;
+            // 置顶样式不会因为把窗口插到别的窗口后面就消失：桌面层必须先摘掉它，否则仍浮在所有应用之上。
+            var needsTopmostReset = !wantsTopmost && (GetWindowLong(entry.Handle, GWL_EXSTYLE) & 0x8) != 0;
             var previous = GetWindow(entry.Handle, 3);
-            if (restore || entry.LastAfter != after ||
+            if (restore || needsTopmostReset || entry.LastAfter != after || buried ||
                 (entry.Layer == FloatingBarLayer.Desktop && desktopIsAboveApplications && previous != nint.Zero && !_entries.ContainsKey(previous) && (GetWindowLong(previous, GWL_EXSTYLE) & 8) == 0))
             {
+                if (needsTopmostReset)
+                    SetWidgetWindowPosition(entry.Handle, new nint(-2), 0, 0, 0, 0,
+                        SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
                 SetWidgetWindowPosition(entry.Handle, after, 0, 0, 0, 0,
                     SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
                 entry.LastAfter = after;
@@ -138,11 +159,12 @@ public sealed partial class DesktopWidgetZOrderService : IDisposable
         _timer.Tick -= OnTick;
     }
 
-    private sealed class Entry(nint handle, FloatingBarLayer layer, Func<bool> mayRestore)
+    private sealed class Entry(nint handle, FloatingBarLayer layer, Func<bool> mayRestore, bool overlayTaskbar)
     {
         public nint Handle { get; } = handle;
         public FloatingBarLayer Layer { get; } = layer;
         public Func<bool> MayRestore { get; } = mayRestore;
+        public bool OverlayTaskbar { get; } = overlayTaskbar;
         public nint? LastAfter { get; set; }
     }
 

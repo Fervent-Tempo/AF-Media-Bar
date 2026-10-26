@@ -70,6 +70,13 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         get => SettingsManager.Current.FloatingBar.Layer == FloatingBarLayer.Topmost ? 1 : 0;
         set { if (IsFloatingBarMode && !_isRefreshing) _configuration.SetFloatingBar(SettingsManager.Current.FloatingBar with { Layer = value == 1 ? FloatingBarLayer.Topmost : FloatingBarLayer.Desktop }); }
     }
+
+    /// <summary>覆盖任务栏与窗口层级相互独立；开启后即使选桌面层，悬浮条也按置顶处理。</summary>
+    public bool FloatingOverlayTaskbar
+    {
+        get => SettingsManager.Current.FloatingBar.OverlayTaskbar;
+        set { if (IsFloatingBarMode && !_isRefreshing) _configuration.SetFloatingBar(SettingsManager.Current.FloatingBar with { OverlayTaskbar = value }); }
+    }
     public bool FloatingEdgeCollapseEnabled
     {
         get => SettingsManager.Current.FloatingBar.EdgeCollapseEnabled;
@@ -701,6 +708,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(IsFloatingBarMode));
             OnPropertyChanged(nameof(CanChangeMode)); OnPropertyChanged(nameof(RuntimeModeSelection));
             OnPropertyChanged(nameof(FloatingOrientation)); OnPropertyChanged(nameof(FloatingLayer)); OnPropertyChanged(nameof(RuntimeStatus));
+            OnPropertyChanged(nameof(FloatingOverlayTaskbar));
             OnPropertyChanged(nameof(FloatingEdgeCollapseEnabled));
             OnPropertyChanged(nameof(TaskbarPosition));
             RaiseExperience(); OnPropertyChanged(nameof(Orientation)); OnPropertyChanged(nameof(IsTaskbarPositionLocked));
