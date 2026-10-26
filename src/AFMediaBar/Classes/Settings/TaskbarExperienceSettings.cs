@@ -297,7 +297,7 @@ public readonly record struct TaskbarExperienceSettings(
             FullPanel = FullPanel.Normalize(),
             LengthMode = Enum.IsDefined(LengthMode) ? LengthMode : defaults.LengthMode,
             FixedLengthDip = double.IsFinite(FixedLengthDip) && FixedLengthDip >= MinimumStoredFixedLengthDip
-                ? Math.Clamp(FixedLengthDip, MinimumStoredFixedLengthDip, MaximumStoredFixedLengthDip)
+                ? Math.Clamp(Math.Round(FixedLengthDip, MidpointRounding.AwayFromZero), MinimumStoredFixedLengthDip, MaximumStoredFixedLengthDip)
                 : defaults.FixedLengthDip,
             ComponentSpacingDip = double.IsFinite(ComponentSpacingDip)
                 ? Math.Clamp(ComponentSpacingDip, MinimumComponentSpacingDip, MaximumComponentSpacingDip)

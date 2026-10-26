@@ -339,7 +339,6 @@
                                 Minimum="{Binding ViewModel.Layout.FixedTaskbarLengthMinimum}"
                                 Maximum="{Binding ViewModel.Layout.FixedTaskbarLengthMaximum}"
                                 Step="1"
-                                IsSnapToTickEnabled="False"
                                 Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
                         </components:SettingsRow>
                         <TextBlock
