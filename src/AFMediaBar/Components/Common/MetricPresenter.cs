@@ -30,9 +30,15 @@ public sealed class MetricPresenter : Grid
     public bool Compact { get => _compact; set { _compact = value; Refresh(); } }
     public bool Vertical { get => _vertical; set { _vertical = value; Refresh(); } }
     public IReadOnlyList<MetricChart> Charts => _charts.Take(Metric == MetricKind.SystemNetwork ? 2 : 1).ToArray();
-    public double PreferredWidth => Metric == MetricKind.SystemNetwork ? VisualStyle == MetricVisualStyle.Ring ? 180 : 156
-        : Metric == MetricKind.ProcessMemory ? 160 : VisualStyle == MetricVisualStyle.Numeric ? 64 : 80;
-    public double PreferredVerticalLength => Metric == MetricKind.SystemNetwork ? 100 : 64;
+    // 按完整读数的常用位数留固定预算，采样更新不改变组件长度。
+    public double PreferredWidth => Metric switch
+    {
+        MetricKind.SystemNetwork => VisualStyle == MetricVisualStyle.Ring ? 156 : 104,
+        MetricKind.ProcessMemory => VisualStyle == MetricVisualStyle.Ring ? 96 : 112,
+        _ => VisualStyle == MetricVisualStyle.Ring ? 84 : 76
+    };
+    public double PreferredVerticalLength => Metric == MetricKind.SystemNetwork
+        ? VisualStyle == MetricVisualStyle.Ring ? 112 : 100 : 64;
 
     public MetricPresenter()
     {
@@ -102,13 +108,17 @@ public sealed class MetricPresenter : Grid
             var split = formatted.IndexOf(' ');
             var label = formatted[..Math.Max(0, split)];
             var value = split >= 0 ? formatted[(split + 1)..] : formatted;
-            var size = Compact ? network ? 10d : 12d : 15d;
             var plotHeight = Math.Max(1, ActualHeight / (network && !sideBySide ? 2 : 1));
+            var size = Compact ? network ? 12d : 13d : 16d;
+            // 极薄任务栏仍以真实行高为限，普通高度的双向网速使用更清楚的12 DIP读数。
+            if (Compact && network && ActualHeight > 0) size = Math.Clamp(plotHeight / 1.2, 10, 12);
             chart.IsPercentage = Metric is not (MetricKind.ProcessMemory or MetricKind.SystemNetwork);
             chart.VisualStyle = VisualStyle;
             chart.Width = double.NaN; chart.Height = double.NaN; chart.Margin = new Thickness(2);
             chart.Opacity = 1;
-            name.FontSize = Compact ? 10 : 11; readout.FontSize = size;
+            name.FontSize = Compact ? 11 : 12; readout.FontSize = size;
+            if (Compact && network && ActualHeight > 0) name.FontSize = Math.Clamp(plotHeight / 1.2, 10, 11);
+            name.TextAlignment = readout.TextAlignment = TextAlignment.Center;
             name.Opacity = SystemParameters.HighContrast ? 1 : 0.78;
             readout.SetValue(Typography.NumeralAlignmentProperty, FontNumeralAlignment.Tabular);
             name.Text = label; readout.Text = value;
@@ -119,45 +129,63 @@ public sealed class MetricPresenter : Grid
             _measureText.TextWrapping = TextWrapping.NoWrap;
             _measureText.FontFamily = readout.FontFamily;
             _measureText.FontSize = size;
+            _measureText.FontWeight = readout.FontWeight;
+            _measureText.SetValue(Typography.NumeralAlignmentProperty, FontNumeralAlignment.Tabular);
             _measureText.Text = value;
             _measureText.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             var readoutWidth = _measureText.DesiredSize.Width;
-            _measureText.FontSize = name.FontSize; _measureText.Text = label;
+            _measureText.FontSize = name.FontSize; _measureText.FontWeight = name.FontWeight; _measureText.Text = label;
             _measureText.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             var laneWidth = ActualWidth / (sideBySide ? 2 : 1);
-            if (!Compact || Vertical || readoutWidth + _measureText.DesiredSize.Width + 12 > laneWidth)
+            var labelWidth = _measureText.DesiredSize.Width;
+            var stackText = Vertical || !Compact && !network || readoutWidth + labelWidth + 12 > laneWidth;
+            if (stackText)
             {
                 name.HorizontalAlignment = readout.HorizontalAlignment = HorizontalAlignment.Center;
                 name.VerticalAlignment = VerticalAlignment.Top;
                 readout.VerticalAlignment = VerticalAlignment.Bottom;
-                name.Margin = new Thickness(3, 2, 3, 0); readout.Margin = new Thickness(3, 0, 3, 2);
+                name.Margin = new Thickness(2, 2, 2, 0); readout.Margin = new Thickness(2, 0, 2, 2);
+                if (Compact && !Vertical && plotHeight < 33)
+                {
+                    // 异常长读数回退两行时保留原字号，避免在较矮卡片内互相覆盖。
+                    name.FontSize = 10; readout.FontSize = 12;
+                    name.Margin = readout.Margin = new Thickness(2, 0, 2, 0);
+                }
+            }
+            if (VisualStyle is MetricVisualStyle.Line or MetricVisualStyle.Area || network && VisualStyle != MetricVisualStyle.Ring)
+            {
+                name.HorizontalAlignment = readout.HorizontalAlignment = HorizontalAlignment.Left;
+                name.TextAlignment = readout.TextAlignment = TextAlignment.Left;
+                if (!stackText) readout.Margin = new Thickness(4 + labelWidth + 5, 0, 4, 0);
             }
             if (VisualStyle == MetricVisualStyle.Ring)
             {
-                // 竖向卡片为标签和单位预留行高，圆心读数不与折行后的标签重叠。
+                var number = value.TrimEnd('%').Split(' ')[0];
+                var unit = value.EndsWith('%') ? "%" : value.Contains(' ') ? value[(value.IndexOf(' ') + 1)..] : string.Empty;
+                var ringLabel = label + (unit.Length == 0 ? "" : (Vertical && network ? "" : " ") + unit);
+                // 竖向卡片为标签和单位预留行高，测量宽度与实际左右留白保持一致。
                 var header = 0d;
                 if (Vertical)
                 {
                     _measureText.FontSize = name.FontSize;
-                    _measureText.Text = label + " " + (value.EndsWith('%') ? "%" : value.Contains(' ') ? value[(value.IndexOf(' ') + 1)..] : string.Empty);
+                    _measureText.Text = ringLabel;
                     _measureText.TextWrapping = TextWrapping.Wrap;
-                    _measureText.Measure(new Size(Math.Max(1, laneWidth - 6), double.PositiveInfinity));
+                    _measureText.Measure(new Size(Math.Max(1, laneWidth - 4), double.PositiveInfinity));
                     header = _measureText.DesiredSize.Height + 4;
                     _measureText.TextWrapping = TextWrapping.NoWrap;
                 }
                 var diameter = Math.Min(Math.Min(plotHeight - header - 2, laneWidth - 4), Compact ? 32 : 48);
                 chart.Width = chart.Height = Math.Max(8, diameter);
                 chart.HorizontalAlignment = HorizontalAlignment.Right; chart.VerticalAlignment = VerticalAlignment.Center;
-                var number = value.TrimEnd('%').Split(' ')[0];
-                var unit = value.EndsWith('%') ? "%" : value.Contains(' ') ? value[(value.IndexOf(' ') + 1)..] : string.Empty;
-                _measureText.Text = number; _measureText.FontSize = size; _measureText.FontFamily = readout.FontFamily;
+                _measureText.Text = number; _measureText.FontSize = readout.FontSize;
+                _measureText.FontWeight = readout.FontWeight; _measureText.FontFamily = readout.FontFamily;
                 _measureText.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 var numberFits = _measureText.DesiredSize.Width <= diameter - 6;
-                _measureText.Text = label + " " + unit; _measureText.FontSize = name.FontSize;
+                _measureText.Text = ringLabel; _measureText.FontSize = name.FontSize; _measureText.FontWeight = name.FontWeight;
                 _measureText.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 if (numberFits && plotHeight >= 22 && (Vertical || _measureText.DesiredSize.Width + diameter + 8 <= laneWidth))
                 {
-                    name.Text = label + (unit.Length == 0 ? "" : " " + unit);
+                    name.Text = ringLabel;
                     name.VerticalAlignment = Vertical ? VerticalAlignment.Top : VerticalAlignment.Center;
                     name.HorizontalAlignment = Vertical ? HorizontalAlignment.Center : HorizontalAlignment.Left;
                     chart.HorizontalAlignment = Vertical ? HorizontalAlignment.Center : HorizontalAlignment.Right;
