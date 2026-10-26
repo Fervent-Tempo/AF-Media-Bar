@@ -30,13 +30,8 @@ public sealed class MetricPresenter : Grid
     public bool Compact { get => _compact; set { _compact = value; Refresh(); } }
     public bool Vertical { get => _vertical; set { _vertical = value; Refresh(); } }
     public IReadOnlyList<MetricChart> Charts => _charts.Take(Metric == MetricKind.SystemNetwork ? 2 : 1).ToArray();
-    // 按完整读数的常用位数留固定预算，采样更新不改变组件长度。
-    public double PreferredWidth => Metric switch
-    {
-        MetricKind.SystemNetwork => 104,
-        MetricKind.ProcessMemory => 112,
-        _ => VisualStyle == MetricVisualStyle.Ring ? 84 : 76
-    };
+    // 横向指标共用固定长度；长读数在卡片内换行，采样或样式切换不改变组件长度。
+    public double PreferredWidth => Metric == MetricKind.SystemNetwork ? 104 : 84;
     public double PreferredVerticalLength => Metric == MetricKind.SystemNetwork
         ? 100 : 64;
 
@@ -128,6 +123,7 @@ public sealed class MetricPresenter : Grid
             name.Opacity = SystemParameters.HighContrast ? 1 : 0.78;
             readout.SetValue(Typography.NumeralAlignmentProperty, FontNumeralAlignment.Tabular);
             name.Text = label; readout.Text = value;
+            name.Width = readout.Width = double.NaN;
             name.Margin = new Thickness(4, 0, 4, 0); readout.Margin = new Thickness(4, 0, 4, 0);
             name.HorizontalAlignment = HorizontalAlignment.Left; readout.HorizontalAlignment = HorizontalAlignment.Right;
             name.VerticalAlignment = readout.VerticalAlignment = VerticalAlignment.Center;
@@ -164,6 +160,16 @@ public sealed class MetricPresenter : Grid
                 name.TextAlignment = readout.TextAlignment = TextAlignment.Left;
                 if (!stackText) readout.Margin = new Thickness(4 + labelWidth + 5, 0, 4, 0);
             }
+            if (VisualStyle == MetricVisualStyle.Numeric && !network && !Vertical && readoutWidth + labelWidth + 13 <= laneWidth)
+            {
+                // 标签和读数组合居中，避免短标签与数值分居卡片两端。
+                var groupLeft = (laneWidth - labelWidth - 5 - readoutWidth) / 2;
+                name.HorizontalAlignment = readout.HorizontalAlignment = HorizontalAlignment.Left;
+                name.VerticalAlignment = readout.VerticalAlignment = VerticalAlignment.Center;
+                name.Width = labelWidth; readout.Width = readoutWidth;
+                name.Margin = new Thickness(groupLeft, 0, 0, 0);
+                readout.Margin = new Thickness(groupLeft + labelWidth + 5, 0, 0, 0);
+            }
             if (VisualStyle == MetricVisualStyle.Ring)
             {
                 // 单位跟随读数；圆心放不下完整读数时，在同一卡片内保留完整文本。
@@ -199,6 +205,16 @@ public sealed class MetricPresenter : Grid
                     readout.VerticalAlignment = VerticalAlignment.Center;
                     readout.Width = Math.Max(1, diameter);
                     readout.Margin = Vertical ? new Thickness(0, header, 0, 2) : new Thickness(0, 0, 2, 0);
+                    if (!Vertical)
+                    {
+                        // 标签和圆环作为一个紧凑组合居中，圆心读数与圆环共用位置。
+                        var groupLeft = (laneWidth - labelWidth - 5 - diameter) / 2;
+                        var ringLeft = groupLeft + labelWidth + 5;
+                        name.Width = labelWidth;
+                        name.Margin = new Thickness(groupLeft, 0, 0, 0);
+                        chart.HorizontalAlignment = readout.HorizontalAlignment = HorizontalAlignment.Left;
+                        chart.Margin = readout.Margin = new Thickness(ringLeft, 0, 0, 0);
+                    }
                 }
                 else
                 {
