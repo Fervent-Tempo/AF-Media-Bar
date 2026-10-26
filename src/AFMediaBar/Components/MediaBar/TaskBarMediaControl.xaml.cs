@@ -2174,7 +2174,6 @@ namespace AFMediaBar.Components
             if (IsBarPresentation && orientation == LayoutOrientation.Horizontal)
             {
                 var experience = PresentationSettings.TaskbarExperience.Normalize();
-                var progressVisible = _snapshot.Duration > 0;
                 var restVisibility = ResolveRestVisibility(experience);
                 var visibleComponents = TaskbarRestLayoutPolicy
                     .ResolveOrder(experience.RestComponentOrder)
@@ -2186,11 +2185,7 @@ namespace AFMediaBar.Components
                 // The hover-layer minimum belongs to the media text component: it only widens the text region enough for the hover controls
                 // instead of adding a separate span of width.
                 var hoverMinimum = experience.HoverLayerEnabled
-                    ? TaskbarExperiencePolicy.CalculateHoverLayerWidth(
-                        experience.HoverControls,
-                        progressVisible,
-                        experience.Density,
-                        experience.HoverButtonSpacingDip)
+                    ? MeasureTaskbarHoverActionsWidth() + TaskbarHoverContent.Margin.Left + TaskbarHoverContent.Margin.Right
                     : 0;
                 double ContentWidth(double availableTextWidth) => TaskbarExperiencePolicy.CalculateRestWidth(
                     visibleComponents,

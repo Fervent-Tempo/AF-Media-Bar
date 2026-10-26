@@ -199,6 +199,7 @@ public sealed class TaskbarArrangementPresentationTests
                 VerticalTaskbarPresentationChecks.Verify(control);
                 SmallTaskbarPresentationChecks.Verify(control);
                 AssertFontSizeKeepsArtworkInset();
+                AssertHoverControlsFitAtMinimumLength();
                 AssertMetadataSurvivesOrientationChanges();
                 AssertLyricsSurviveOrientationChanges();
                 AssertLyricsTimelineChangesResizeRepeatedText();
@@ -293,6 +294,61 @@ public sealed class TaskbarArrangementPresentationTests
                     inset = left;
                 }
             }
+        }
+        finally { control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
+    }
+
+    private static void AssertHoverControlsFitAtMinimumLength()
+    {
+        var settings = new AppSettings();
+        var control = new TaskBarMediaControl { AllowRestConnectionTransition = false };
+        control.DesiredSizeChanged += (_, _) => { };
+        try
+        {
+            control.ApplyPresentationSettings(settings);
+            control.UpdateSongInfo(MediaSnapshot.Disconnected with { IsConnected = true, Title = "Title", Artist = "Artist" });
+            foreach (var position in Enum.GetValues<TaskbarBarPosition>())
+                foreach (var arrangement in Enum.GetValues<TaskbarContentArrangement>())
+                    foreach (var density in Enum.GetValues<TaskbarInformationDensity>())
+                        foreach (var transport in new[] { false, true })
+                            foreach (var dpi in new[] { 1d, 1.25, 1.5, 2 })
+                                foreach (var anchorDelta in new[] { -16, 0, 16 })
+                                {
+                                    settings.Position = position;
+                                    settings.TaskbarExperience = TaskbarExperienceSettings.Default with
+                                    {
+                                        Arrangement = arrangement,
+                                        Density = density,
+                                        SpectrumVisible = false,
+                                        PerformanceVisible = false,
+                                        HoverControls = TaskbarHoverControlsSettings.Default with { PlayPauseVisible = transport, PreviousNextVisible = transport }
+                                    };
+                                    control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal, 100, 100, 44);
+                                    control.RefreshDesiredSize();
+                                    var widthPx = (int)Math.Ceiling(control.GetMinimumPrimaryLength(dpi) * dpi);
+                                    var anchor = position == TaskbarBarPosition.Center ? widthPx : position == TaskbarBarPosition.End ? 2L * widthPx : 0;
+                                    // 几何刷新时保留上一帧锚点，按钮仍须位于当前文字区。
+                                    control.ApplyPlacementAnchor(0, anchor + anchorDelta, dpi);
+                                    control.ApplyPrimaryLength(widthPx / dpi);
+                                    var reveal = (Grid)control.FindName("HoverRevealHost");
+                                    var layer = (Border)control.FindName("TaskbarHoverLayer");
+                                    reveal.Visibility = Visibility.Visible;
+                                    layer.Visibility = Visibility.Visible;
+                                    reveal.Width = layer.Width;
+                                    control.Width = widthPx / dpi;
+                                    control.Height = 44;
+                                    control.Measure(new Size(control.Width, 44));
+                                    control.Arrange(new Rect(0, 0, control.Width, 44));
+                                    control.UpdateLayout();
+                                    foreach (var name in new[] { "TaskbarPreviousButton", "TaskbarPlayPauseButton", "TaskbarNextButton", "TaskbarDeviceButton", "TaskbarVolumeButton" })
+                                    {
+                                        var button = (Button)control.FindName(name);
+                                        if (button.Visibility != Visibility.Visible) continue;
+                                        var left = button.TranslatePoint(new Point(), layer).X;
+                                        Assert.IsTrue(left >= -.01 && left + button.ActualWidth <= layer.ActualWidth + .01,
+                                            $"{position}/{arrangement}/{density}/{transport}/DPI {dpi}: {name} outside hover layer ({left} + {button.ActualWidth} > {layer.ActualWidth}).");
+                                    }
+                                }
         }
         finally { control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
     }
