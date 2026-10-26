@@ -46,15 +46,48 @@ public static class LayoutPresets
     /// </summary>
     /// <param name="mode">窗口模式 / Window mode</param>
     /// <param name="orientation">布局方向 / Layout orientation</param>
+    /// <param name="smallArtwork">是否把封面缩到原槽位的八成并居中 / Whether to shrink the artwork to 80% of its slot and center it</param>
     /// <returns>对应的布局配置 / Corresponding layout configuration</returns>
-    public static LayoutSchema GetLayout(WindowMode mode, LayoutOrientation orientation)
+    public static LayoutSchema GetLayout(WindowMode mode, LayoutOrientation orientation, bool smallArtwork = false)
     {
-        return (mode, orientation) switch
+        var layout = (mode, orientation) switch
         {
             (WindowMode.Taskbar, LayoutOrientation.Horizontal) => TaskbarHorizontal,
             (WindowMode.Taskbar, LayoutOrientation.Vertical) => TaskbarVertical,
             (_, LayoutOrientation.Vertical) => TaskbarVertical,
             _ => TaskbarHorizontal
+        };
+        return smallArtwork ? CompactArtwork(layout) : layout;
+    }
+
+    /// <summary>
+    /// 封面缩到原槽位的八成并在槽位内居中，其余组件位置不变；圆角与占位图标按同一比例缩小，
+    /// 否则小封面里的图标会显得过大。
+    /// </summary>
+    private static LayoutSchema CompactArtwork(LayoutSchema layout)
+    {
+        const double scale = 0.8;
+        return layout with
+        {
+            Components = layout.Components.Select(component =>
+            {
+                if (!string.Equals(component.Id, LayoutComponentIds.Artwork, StringComparison.Ordinal)) return component;
+                var bounds = component.Bounds;
+                var size = Math.Max(1, Math.Round(bounds.Width * scale));
+                var properties = new Dictionary<string, object>(component.Properties);
+                if (properties.TryGetValue("cornerRadius", out var radius) && radius is double cornerRadius)
+                    properties["cornerRadius"] = Math.Round(cornerRadius * scale, 2);
+                if (properties.TryGetValue("placeholderIconSize", out var iconSize) && iconSize is double placeholderSize)
+                    properties["placeholderIconSize"] = Math.Round(placeholderSize * scale, 2);
+                return component with
+                {
+                    Bounds = new ComponentBounds(
+                        bounds.X + (bounds.Width - size) / 2,
+                        bounds.Y + (bounds.Height - size) / 2,
+                        size, size),
+                    Properties = properties
+                };
+            }).ToList()
         };
     }
 }

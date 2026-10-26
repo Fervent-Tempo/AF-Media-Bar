@@ -33,6 +33,19 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        <Style
+            x:Key="SmallArtworkRowStyle"
+            BasedOn="{StaticResource {x:Type components:SettingsRow}}"
+            TargetType="{x:Type components:SettingsRow}">
+            <Setter Property="Badge" Value="" />
+            <Setter Property="IsEnabled" Value="{Binding ViewModel.Layers.RestArtworkVisible}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.Layers.RestArtworkVisible}" Value="False">
+                    <Setter Property="Badge" Value="{DynamicResource Loc.DisplayModes.Rest.Row.SmallArtwork.Badge}" />
+                    <Setter Property="BadgeTone" Value="Attention" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
         <Style x:Key="HoverDependencyHintStyle" BasedOn="{StaticResource AfSettingsHintTextStyle}" TargetType="TextBlock">
             <Setter Property="Visibility" Value="Collapsed" />
             <Style.Triggers>
@@ -76,6 +89,13 @@
                             Icon="{ui:SymbolIcon Image24}"
                             Title="{DynamicResource Loc.DisplayModes.Rest.Row.Artwork.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestArtworkVisible, Mode=TwoWay}" />
+                        </components:SettingsRow>
+                        <components:SettingsRow
+                            Style="{StaticResource SmallArtworkRowStyle}"
+                            Description="{DynamicResource Loc.DisplayModes.Rest.Row.SmallArtwork.Description}"
+                            Icon="{ui:SymbolIcon ArrowMinimize24}"
+                            Title="{DynamicResource Loc.DisplayModes.Rest.Row.SmallArtwork.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.SmallArtwork, Mode=TwoWay}" />
                         </components:SettingsRow>
                         <components:SettingsRow
                             Description="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkProgress.Description}"

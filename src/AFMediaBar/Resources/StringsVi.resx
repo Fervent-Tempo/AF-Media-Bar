@@ -1057,6 +1057,15 @@
   <data name="DisplayModes.Rest.Row.Artwork.Title" xml:space="preserve">
     <value>Hiển thị ảnh bìa</value>
   </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Title" xml:space="preserve">
+    <value>Ảnh bìa nhỏ</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Description" xml:space="preserve">
+    <value>Thu nhỏ ảnh bìa còn khoảng 80% và căn giữa cho gọn hơn.</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Badge" xml:space="preserve">
+    <value>Hãy bật "Hiển thị ảnh bìa" trước</value>
+  </data>
   <data name="DisplayModes.Rest.Row.DeviceButton.Description" xml:space="preserve">
     <value>Giữ nút thiết bị hiển thị, dùng khoảng trống của chữ; nhấp để chọn hoặc cuộn để chuyển thiết bị.</value>
   </data>

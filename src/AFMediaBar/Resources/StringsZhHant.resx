@@ -1126,6 +1126,15 @@
   <data name="DisplayModes.Rest.Row.Artwork.Title" xml:space="preserve">
     <value>顯示封面</value>
   </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Title" xml:space="preserve">
+    <value>小封面</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Description" xml:space="preserve">
+    <value>把封面縮到原來的八成左右並置中，媒體欄看起來更清爽。</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Badge" xml:space="preserve">
+    <value>需先開啟顯示封面</value>
+  </data>
   <data name="DisplayModes.Rest.Row.Progress.Title" xml:space="preserve">
     <value>顯示播放進度</value>
   </data>
