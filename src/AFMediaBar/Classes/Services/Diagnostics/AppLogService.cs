@@ -25,6 +25,9 @@ public sealed class AppLogService : IDisposable
     private readonly long _started = Stopwatch.GetTimestamp();
     private long _dropped;
     private long _reportedDropped;
+    private long _writeFailures;
+    private long _reportedWriteFailures;
+    private string? _lastWriteError;
     private volatile bool _disposed;
 
     public AppLogService(string? directoryPath = null)
@@ -132,7 +135,7 @@ public sealed class AppLogService : IDisposable
             {
                 if (_pending.TryTake(out var removed))
                 {
-                    removed.Completion?.TrySetResult();
+                    removed.Completion?.TrySetCanceled();
                     Interlocked.Increment(ref _dropped);
                 }
                 _pending.TryAdd(entry);
@@ -153,6 +156,7 @@ public sealed class AppLogService : IDisposable
     {
         using var file = new RollingLogFile(FilePath, MaximumFileBytes, MaximumFiles);
         var sinceFlush = Stopwatch.StartNew();
+        long? retryTimestamp = null;
         try
         {
             while (!_pending.IsCompleted)
@@ -163,7 +167,15 @@ public sealed class AppLogService : IDisposable
                 {
                     try
                     {
+                        if (retryTimestamp is long retry && Stopwatch.GetElapsedTime(retry).TotalSeconds < 30)
+                        {
+                            Interlocked.Increment(ref _writeFailures);
+                            entry.Completion?.TrySetCanceled();
+                            if (sinceFlush.Elapsed >= FlushInterval) sinceFlush.Restart();
+                            continue;
+                        }
                         if (!string.IsNullOrEmpty(entry.Line)) file.Append(entry.Line);
+                        retryTimestamp = null;
                         if (entry.ForceFlush || sinceFlush.Elapsed >= FlushInterval || _pending.IsCompleted)
                         {
                             var dropped = DroppedEntries;
@@ -172,13 +184,21 @@ public sealed class AppLogService : IDisposable
                                 file.Append(Format(AppLogLevel.Warning, "Log", $"queueDropped={dropped} delta={dropped - _reportedDropped}"));
                                 _reportedDropped = dropped;
                             }
+                            if (_writeFailures != _reportedWriteFailures)
+                            {
+                                file.Append(Format(AppLogLevel.Warning, "Log", $"writeFailures={_writeFailures} lastWriteError={_lastWriteError}"));
+                                _reportedWriteFailures = _writeFailures;
+                            }
                             file.Flush();
                             sinceFlush.Restart();
                         }
                     }
                     catch (Exception exception)
                     {
-                        Interlocked.Increment(ref _dropped);
+                        Interlocked.Increment(ref _writeFailures);
+                        _lastWriteError = exception.GetType().Name;
+                        retryTimestamp = Stopwatch.GetTimestamp();
+                        entry.Completion?.TrySetCanceled();
                         Debug.WriteLine($"[Log] 写入失败: {exception.Message}");
                         file.Dispose();
                     }

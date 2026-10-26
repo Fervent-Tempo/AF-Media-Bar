@@ -3248,4 +3248,23 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>Tự thu gọn ở cạnh màn hình</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>Mặc định bật. Kéo đến một trong bốn cạnh vùng làm việc; di chuột ra để thu gọn và đến gần để mở.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>Mở thanh phương tiện trên màn hình</value></data>
+  <data name="Developer.Action.PerformanceStatus" xml:space="preserve"><value>Trạng thái ghi hiệu năng</value></data>
+  <data name="Developer.Description.PerformanceStatus" xml:space="preserve"><value>Hiện trạng thái ghi Debug, thư mục, mẫu gần nhất và số bản ghi bị loại.</value></data>
+  <data name="Developer.Action.PerformanceStart" xml:space="preserve"><value>Bắt đầu ghi hiệu năng</value></data>
+  <data name="Developer.Description.PerformanceStart" xml:space="preserve"><value>Bắt đầu ghi cho tiến trình này. Tự động bật trong bản Debug.</value></data>
+  <data name="Developer.Action.PerformanceStop" xml:space="preserve"><value>Dừng ghi hiệu năng</value></data>
+  <data name="Developer.Description.PerformanceStop" xml:space="preserve"><value>Dừng lấy mẫu và lưu các bản ghi còn lại trong nền. Tự bật lại ở lần khởi động sau.</value></data>
+  <data name="Developer.Action.PerformanceMark" xml:space="preserve"><value>Đánh dấu sự cố vừa xảy ra</value></data>
+  <data name="Developer.Description.PerformanceMark" xml:space="preserve"><value>Thêm dấu thời gian và yêu cầu ghi dữ liệu ra tệp.</value></data>
+  <data name="Developer.Action.PerformanceOpen" xml:space="preserve"><value>Mở bản ghi hiệu năng</value></data>
+  <data name="Developer.Description.PerformanceOpen" xml:space="preserve"><value>Mở thư mục riêng chứa bản ghi hiệu năng.</value></data>
+  <data name="Developer.Performance.State.Running" xml:space="preserve"><value>Đang ghi</value></data>
+  <data name="Developer.Performance.State.Stopping" xml:space="preserve"><value>Đang dừng</value></data>
+  <data name="Developer.Performance.State.Stopped" xml:space="preserve"><value>Đã dừng</value></data>
+  <data name="Developer.Performance.State.Failed" xml:space="preserve"><value>Thất bại</value></data>
+  <data name="Developer.Performance.Status" xml:space="preserve"><value>Trạng thái: {0}
+Lấy mẫu: 1 giây khi hoạt động, 4 giây khi nhàn rỗi; tạm dừng khi tắt màn hình, khóa hoặc ngủ.
+Thư mục: {1}
+Mẫu gần nhất: {2}
+Mẫu bị loại: {3}; sự kiện: {4}</value></data>
 </root>

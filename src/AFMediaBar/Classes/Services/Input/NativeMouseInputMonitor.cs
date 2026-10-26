@@ -36,6 +36,52 @@ public sealed class NativeMouseInputMonitor : IDisposable
     // order dispatcher posts are delivered in.
     private bool _chordWheelDuringPress;
     private long _suppressNextClickUntilTicks;
+#if DEBUG
+    private const uint DiagnosticHeartbeatMessage = NativeMethods.WM_APP + 72;
+    private int _diagnosticEnabled;
+    private long _diagnosticPending;
+    private long _diagnosticHeartbeatMax;
+    private long _diagnosticCallbackMax;
+    private long _diagnosticForwardMax;
+
+    internal void SetDiagnosticEnabled(bool enabled)
+    {
+        Volatile.Write(ref _diagnosticEnabled, enabled ? 1 : 0);
+        Interlocked.Exchange(ref _diagnosticPending, 0);
+        Interlocked.Exchange(ref _diagnosticHeartbeatMax, 0);
+        Interlocked.Exchange(ref _diagnosticCallbackMax, 0);
+        Interlocked.Exchange(ref _diagnosticForwardMax, 0);
+    }
+
+    internal void RequestDiagnosticHeartbeat()
+    {
+        if (Volatile.Read(ref _diagnosticEnabled) == 0 || _disposed || _hookThreadId == 0 || _hook == IntPtr.Zero) return;
+        var now = Stopwatch.GetTimestamp();
+        if (Interlocked.CompareExchange(ref _diagnosticPending, now, 0) != 0) return;
+        if (!NativeMethods.PostThreadMessage(_hookThreadId, DiagnosticHeartbeatMessage, new UIntPtr(unchecked((ulong)now)), IntPtr.Zero))
+            Interlocked.CompareExchange(ref _diagnosticPending, 0, now);
+    }
+
+    internal (bool Installed, double PendingMs, double HeartbeatMaxMs, double CallbackMaxMs, double ForwardMaxMs) ReadDiagnosticState()
+    {
+        var pending = Interlocked.Read(ref _diagnosticPending);
+        return (_hook != IntPtr.Zero && !_disposed, pending == 0 ? 0 : Stopwatch.GetElapsedTime(pending).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref _diagnosticHeartbeatMax, 0)).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref _diagnosticCallbackMax, 0)).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref _diagnosticForwardMax, 0)).TotalMilliseconds);
+    }
+
+    private static void UpdateDiagnosticMaximum(ref long target, long value)
+    {
+        var previous = Interlocked.Read(ref target);
+        while (value > previous)
+        {
+            var observed = Interlocked.CompareExchange(ref target, value, previous);
+            if (observed == previous) break;
+            previous = observed;
+        }
+    }
+#endif
 
     /// <summary>
     /// 组合滚轮在本次按压中是否已经用过；用于判断"松开后合成的那次点击"是否需要抑制。
@@ -168,6 +214,15 @@ public sealed class NativeMouseInputMonitor : IDisposable
 
             while (NativeMethods.GetMessage(out var message, IntPtr.Zero, 0, 0) > 0)
             {
+#if DEBUG
+                if (message.Message == DiagnosticHeartbeatMessage)
+                {
+                    var sent = unchecked((long)message.WParam.ToUInt64());
+                    if (Interlocked.CompareExchange(ref _diagnosticPending, 0, sent) == sent)
+                        UpdateDiagnosticMaximum(ref _diagnosticHeartbeatMax, Stopwatch.GetTimestamp() - sent);
+                    continue;
+                }
+#endif
                 NativeMethods.TranslateMessage(ref message);
                 NativeMethods.DispatchMessage(ref message);
             }
@@ -185,7 +240,11 @@ public sealed class NativeMouseInputMonitor : IDisposable
     }
 
     private IntPtr OnMouseEvent(int code, IntPtr wParam, IntPtr lParam)
-    {        try
+    {
+#if DEBUG
+        var diagnosticStart = Volatile.Read(ref _diagnosticEnabled) != 0 ? Stopwatch.GetTimestamp() : 0;
+#endif
+        try
         {
             if (code >= 0)
             {
@@ -253,7 +312,15 @@ public sealed class NativeMouseInputMonitor : IDisposable
             // The hook only observes tray hits; every path must forward the input.
         }
 
-        return NativeMethods.CallNextHookEx(_hook, code, wParam, lParam);
+#if DEBUG
+        var forwardStart = diagnosticStart != 0 ? Stopwatch.GetTimestamp() : 0;
+        if (diagnosticStart != 0) UpdateDiagnosticMaximum(ref _diagnosticCallbackMax, forwardStart - diagnosticStart);
+#endif
+        var result = NativeMethods.CallNextHookEx(_hook, code, wParam, lParam);
+#if DEBUG
+        if (forwardStart != 0) UpdateDiagnosticMaximum(ref _diagnosticForwardMax, Stopwatch.GetTimestamp() - forwardStart);
+#endif
+        return result;
     }
 
     /// <summary>

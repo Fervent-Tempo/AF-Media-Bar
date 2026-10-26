@@ -87,6 +87,9 @@ namespace AFMediaBar
                 services.AddNavigationViewPageProvider();
 
                 // === 应用生命周期宿主服务 Application Lifecycle Host Service ===
+#if DEBUG
+                services.AddHostedService(sp => sp.GetRequiredService<DebugPerformanceRecorder>());
+#endif
                 services.AddHostedService(sp => new ApplicationHostService(() =>
                     sp.GetRequiredService<MainWindow>().Show()));
                 // 由 App 拥有；容器释放时不能撤掉仍在保护进程退出的看门狗。
@@ -202,6 +205,9 @@ namespace AFMediaBar
                 services.AddSingleton<SystemMetricsMonitorService>();
                 services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<SystemMetricsMonitorService>());
                 services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<SystemMetricsMonitorService>());
+#if DEBUG
+                services.AddSingleton<DebugPerformanceRecorder>();
+#endif
                 services.AddSingleton<SpatialAudioService>();
                 // 自有 Shell 托盘图标与统一鼠标输入监听
                 // App-owned Shell tray icon and unified mouse input monitor

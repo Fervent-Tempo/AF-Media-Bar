@@ -3210,4 +3210,23 @@
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>邊緣自動收合</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>預設開啟。拖到工作區邊緣後，移開滑鼠收合，靠近時展開；支援四邊。</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展開桌面媒體列</value></data>
+  <data name="Developer.Action.PerformanceStatus" xml:space="preserve"><value>效能記錄狀態</value></data>
+  <data name="Developer.Description.PerformanceStatus" xml:space="preserve"><value>顯示 Debug 持續記錄狀態、目錄、最近取樣與捨棄數量。</value></data>
+  <data name="Developer.Action.PerformanceStart" xml:space="preserve"><value>開啟效能記錄</value></data>
+  <data name="Developer.Description.PerformanceStart" xml:space="preserve"><value>開啟本次程序的背景記錄；Debug 啟動時預設開啟。</value></data>
+  <data name="Developer.Action.PerformanceStop" xml:space="preserve"><value>停止效能記錄</value></data>
+  <data name="Developer.Description.PerformanceStop" xml:space="preserve"><value>停止取樣並於背景儲存剩餘記錄；下次啟動時預設恢復。</value></data>
+  <data name="Developer.Action.PerformanceMark" xml:space="preserve"><value>標記剛才的異常</value></data>
+  <data name="Developer.Description.PerformanceMark" xml:space="preserve"><value>加入時間標記並要求寫入檔案。</value></data>
+  <data name="Developer.Action.PerformanceOpen" xml:space="preserve"><value>開啟效能記錄目錄</value></data>
+  <data name="Developer.Description.PerformanceOpen" xml:space="preserve"><value>開啟獨立的效能記錄目錄。</value></data>
+  <data name="Developer.Performance.State.Running" xml:space="preserve"><value>記錄中</value></data>
+  <data name="Developer.Performance.State.Stopping" xml:space="preserve"><value>停止中</value></data>
+  <data name="Developer.Performance.State.Stopped" xml:space="preserve"><value>已停止</value></data>
+  <data name="Developer.Performance.State.Failed" xml:space="preserve"><value>記錄失敗</value></data>
+  <data name="Developer.Performance.Status" xml:space="preserve"><value>狀態：{0}
+取樣：活動時 1 秒，閒置時 4 秒；螢幕關閉、鎖定或睡眠時暫停。
+目錄：{1}
+最近取樣：{2}
+已捨棄取樣：{3}；事件：{4}</value></data>
 </root>

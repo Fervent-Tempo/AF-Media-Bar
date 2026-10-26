@@ -38,21 +38,34 @@ internal sealed class RollingLogFile(string path, long maximumBytes, int maximum
         _length += bytes.Length;
     }
 
-    internal void Flush() => _stream?.Flush();
+    // 刷新后释放写句柄，普通只读共享的查看器和诊断导出才能读取文件。
+    internal void Flush() => Dispose();
 
     private string Archive(int index) => Path.Combine(Path.GetDirectoryName(path)!,
         Path.GetFileNameWithoutExtension(path) + "." + index + Path.GetExtension(path));
 
     private FileStream Open()
     {
-        var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read, 16 * 1024);
-        _length = stream.Length;
-        return stream;
+        var stream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read, 16 * 1024);
+        try
+        {
+            var length = stream.Length;
+            if (length > 0)
+            {
+                stream.Position = length - 1;
+                if (stream.ReadByte() != '\n') stream.Write("\r\n"u8);
+            }
+            stream.Position = stream.Length;
+            _length = stream.Length;
+            return stream;
+        }
+        catch { stream.Dispose(); throw; }
     }
 
     public void Dispose()
     {
-        _stream?.Dispose();
+        var stream = _stream;
         _stream = null;
+        stream?.Dispose();
     }
 }

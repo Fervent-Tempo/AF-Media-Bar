@@ -36,4 +36,24 @@ public sealed class RollingLogFileTests
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }
+
+    [TestMethod]
+    public void FlushAllowsReadingAndSeparatesAnIncompletePreviousRecord()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "AFMediaBar-rotation-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var path = Path.Combine(directory, "performance.jsonl");
+            File.WriteAllText(path, "incomplete");
+            using var file = new RollingLogFile(path, 256, 3);
+            file.Append("new-record");
+            file.Flush();
+            CollectionAssert.AreEqual(new[] { "incomplete", "new-record" }, File.ReadAllLines(path));
+            file.Append("after-flush");
+            file.Flush();
+            StringAssert.Contains(File.ReadAllText(path), "after-flush");
+        }
+        finally { Directory.Delete(directory, true); }
+    }
 }
