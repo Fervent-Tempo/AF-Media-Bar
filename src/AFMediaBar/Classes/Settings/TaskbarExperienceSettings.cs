@@ -137,7 +137,10 @@ public enum ArtworkHoverMode
     Zoom = 1,
 
     /// <summary>大图预览：独立卡片突出任务栏上方。/ Large preview: a separate card popping above the taskbar.</summary>
-    Preview = 2
+    Preview = 2,
+
+    /// <summary>悬停不放大，封面保持原样。/ No zoom on hover; the artwork stays as it is.</summary>
+    None = 3
 }
 
 /// <summary>任务栏三层体验设置。 / Settings for the three-layer taskbar experience.</summary>

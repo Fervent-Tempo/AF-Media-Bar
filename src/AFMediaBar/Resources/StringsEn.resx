@@ -1184,13 +1184,16 @@
     <value>Artwork click</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Description" xml:space="preserve">
-    <value>What happens when you rest the mouse on the cover. In-place zoom grows it above the taskbar, large preview pops out a standalone card, and off keeps a small zoom inside the bar.</value>
+    <value>What happens when you rest the mouse on the cover. Slight zoom grows it about 1.1× inside the bar, in-place zoom lifts it above the taskbar, large preview pops out a standalone card, and no zoom leaves it as is.</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Title" xml:space="preserve">
     <value>Artwork hover zoom</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Mode.Off" xml:space="preserve">
-    <value>Off (1.1×)</value>
+    <value>Slight zoom (1.1×)</value>
+  </data>
+  <data name="Interaction.Row.ArtworkHover.Mode.None" xml:space="preserve">
+    <value>No zoom</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Mode.Zoom" xml:space="preserve">
     <value>In-place zoom (2×)</value>

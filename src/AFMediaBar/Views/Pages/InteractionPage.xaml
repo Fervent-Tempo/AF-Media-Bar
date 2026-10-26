@@ -77,6 +77,9 @@
                             Title="{DynamicResource Loc.Interaction.Row.ArtworkHover.Title}">
                             <ComboBox Style="{StaticResource AfSettingsActionSelectStyle}" SelectedValue="{Binding ViewModel.ArtworkHoverMode, Mode=TwoWay}" SelectedValuePath="Tag">
                                 <ComboBoxItem
+                                    Content="{DynamicResource Loc.Interaction.Row.ArtworkHover.Mode.None}"
+                                    Tag="{x:Static settings:ArtworkHoverMode.None}" />
+                                <ComboBoxItem
                                     Content="{DynamicResource Loc.Interaction.Row.ArtworkHover.Mode.Off}"
                                     Tag="{x:Static settings:ArtworkHoverMode.Off}" />
                                 <ComboBoxItem
