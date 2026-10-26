@@ -7,6 +7,10 @@ internal sealed record GpuEngineTotal(string Adapter, string Engine, double Perc
 /// <summary>同一引擎的 AF 及 WebView2 负载；身份无法确认时保留为空。</summary>
 internal sealed record OwnedGpuEngineUsage(string Adapter, string Engine, double? AfPercent, double? WebViewPercent);
 
+/// <summary>采样时刻可确认的 GPU 进程身份；无法确认时仅保留 PID。</summary>
+internal sealed record GpuProcessIdentityUsage(int Pid, string? Name, DateTimeOffset? StartedAt,
+    string Adapter, string Engine, double Percent);
+
 /// <summary>保留 PDH 的适配器与引擎身份；不同引擎的百分比不能相加。</summary>
 internal sealed record GpuProcessEngineUsage(int Pid, string Adapter, string Engine, double Percent)
 {
@@ -17,10 +21,12 @@ internal sealed record GpuProcessEngineUsage(int Pid, string Adapter, string Eng
     {
         var known = resources.Where(item => CanAssociateProcess(item.StartedAt, capturedAt)).Select(item => item.Pid).ToHashSet();
         var reused = resources.Where(item => !CanAssociateProcess(item.StartedAt, capturedAt)).Select(item => item.Pid).ToHashSet();
-        return entries.GroupBy(item => (item.Adapter, item.Engine)).Select(group => new OwnedGpuEngineUsage(group.Key.Adapter, group.Key.Engine,
+        return entries.GroupBy(item => (item.Adapter, item.Engine))
+            .Where(group => group.Any(item => item.Pid == mainPid || known.Contains(item.Pid) || reused.Contains(item.Pid)))
+            .Select(group => new OwnedGpuEngineUsage(group.Key.Adapter, group.Key.Engine,
             known.Contains(mainPid) ? group.Where(item => item.Pid == mainPid).Sum(item => item.Percent) : null,
             group.Any(item => reused.Contains(item.Pid)) ? null : group.Where(item => item.Pid != mainPid && known.Contains(item.Pid)).Sum(item => item.Percent)))
-            .ToArray();
+            .Where(item => item.AfPercent != 0 || item.WebViewPercent != 0).ToArray();
     }
 
     internal static bool TryParse(string? instance, double percent, out GpuProcessEngineUsage? usage)

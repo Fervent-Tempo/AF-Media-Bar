@@ -10,19 +10,17 @@ internal sealed class RollingLogFile(string path, long maximumBytes, int maximum
     private FileStream? _stream;
     private long _length;
 
-    internal void Append(string line)
+    internal void Append(string line) => AppendBatch([line]);
+
+    /// <summary>整批记录留在同一文件；新文件的前缀用于保存可独立解析的格式及身份表。</summary>
+    internal void AppendBatch(IReadOnlyList<string> lines, Func<IReadOnlyList<string>>? filePrefix = null)
     {
+        var records = lines.Select(EncodeLine).ToArray();
+        var bytesRequired = records.Sum(item => (long)item.Length);
+        if (bytesRequired > maximumBytes) throw new InvalidOperationException("Log batch exceeds the file size limit.");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         _stream ??= Open();
-        // 一条异常也必须有界；截断发生在字符边界，不产生损坏的 UTF-8。
-        var limit = (int)Math.Min(maximumBytes, 256 * 1024);
-        if (Encoding.UTF8.GetByteCount(line) + 2 > limit)
-        {
-            var characters = Math.Max(0, (limit - 48) / 4);
-            line = line[..Math.Min(line.Length, characters)] + " [entry truncated]";
-        }
-        var bytes = Encoding.UTF8.GetBytes(line + "\r\n");
-        if (_length > 0 && _length + bytes.Length > maximumBytes)
+        if (_length > 0 && _length + bytesRequired > maximumBytes)
         {
             _stream.Dispose();
             _stream = null;
@@ -34,7 +32,31 @@ internal sealed class RollingLogFile(string path, long maximumBytes, int maximum
             }
             _stream = Open();
         }
-        _stream.Write(bytes);
+        if (_length == 0 && filePrefix is not null)
+        {
+            var prefix = filePrefix().Select(EncodeLine).ToArray();
+            if (prefix.Sum(item => (long)item.Length) + bytesRequired > maximumBytes)
+                throw new InvalidOperationException("Log context and batch exceed the file size limit.");
+            foreach (var record in prefix) Write(record);
+        }
+        foreach (var record in records) Write(record);
+    }
+
+    private byte[] EncodeLine(string line)
+    {
+        // 一条异常也必须有界；截断发生在字符边界，不产生损坏的 UTF-8。
+        var limit = (int)Math.Min(maximumBytes, 256 * 1024);
+        if (Encoding.UTF8.GetByteCount(line) + 2 > limit)
+        {
+            var characters = Math.Max(0, (limit - 48) / 4);
+            line = line[..Math.Min(line.Length, characters)] + " [entry truncated]";
+        }
+        return Encoding.UTF8.GetBytes(line + "\r\n");
+    }
+
+    private void Write(byte[] bytes)
+    {
+        _stream!.Write(bytes);
         _length += bytes.Length;
     }
 

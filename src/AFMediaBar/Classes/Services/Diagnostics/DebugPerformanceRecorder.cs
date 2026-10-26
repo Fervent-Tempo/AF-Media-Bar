@@ -4,7 +4,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Text.Json;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
 using Microsoft.Extensions.Hosting;
@@ -16,7 +15,6 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
     NativeMouseInputMonitor mouse, PowerStateMonitor power, AppLogService log) : IHostedService, IDisposable
 {
     private const long MaximumFileBytes = 10 * 1024 * 1024;
-    private static readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web);
     private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
     private readonly object _gate = new();
     private Run? _run;
@@ -196,20 +194,21 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
 
     private async Task WriteAsync(Run run)
     {
-        using var file = new RollingLogFile(Path.Combine(DirectoryPath, "performance.jsonl"), MaximumFileBytes, 5);
+        var environment = new
+        {
+            build = typeof(DebugPerformanceRecorder).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+            pid = Environment.ProcessId, os = Environment.OSVersion.VersionString, dotnet = Environment.Version.ToString(),
+            sampleIntervalMs = 1000, maximumFileBytes = MaximumFileBytes, maximumFiles = 5, debuggerAttached = Debugger.IsAttached
+        };
+        using var file = new PerformanceLogWriter(Path.Combine(DirectoryPath, "performance.jsonl"), MaximumFileBytes, 5,
+            log.SessionId, run.Id, run.Started, environment);
         using var processes = new DebugProcessResourceSampler();
-        long sequence = 0;
         long? previousSample = null;
         double previousGcPause = 0;
         var flush = Stopwatch.StartNew();
         var markers = new Dictionary<string, (long Timestamp, int Suppressed)>();
         var gpuHighCount = 0;
-        void Write(string kind, object payload, DateTimeOffset time, long timestamp) => file.Append(JsonSerializer.Serialize(new
-        {
-            schemaVersion = 1, sessionId = log.SessionId, recordingId = run.Id, sequence = ++sequence,
-            time, timestamp, elapsedMs = Stopwatch.GetElapsedTime(run.Started, timestamp).TotalMilliseconds,
-            kind, payload
-        }, _json));
+        void Write(string kind, object payload, DateTimeOffset time, long timestamp) => file.Write(kind, payload, time, timestamp);
         void Mark(string reason, DateTimeOffset time, long timestamp, object detail)
         {
             markers.TryGetValue(reason, out var previous);
@@ -224,12 +223,7 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
         }
         try
         {
-            Write("start", new
-            {
-                build = typeof(DebugPerformanceRecorder).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
-                pid = Environment.ProcessId, os = Environment.OSVersion.VersionString, dotnet = Environment.Version.ToString(),
-                sampleIntervalMs = 1000, maximumFileBytes = MaximumFileBytes, maximumFiles = 5, debuggerAttached = Debugger.IsAttached
-            }, DateTimeOffset.Now, Stopwatch.GetTimestamp());
+            Write("start", new { }, DateTimeOffset.Now, Stopwatch.GetTimestamp());
             while (run.Accepting || run.Events.Count > 0 || run.Samples.Count > 0)
             {
                 for (var count = 0; count < 128 && run.Events.TryTake(out var diagnostic); count++)
@@ -249,17 +243,16 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
                     var uiPendingMs = sample.UiPendingMs;
                     var uiMaximumMs = sample.UiMaximumMs;
                     var engines = GpuProcessEngineUsage.SummarizeOwned(sample.Gpu, resources, sample.Time, Environment.ProcessId);
-                    Write("sample", new
+                    file.WriteSample(new
                     {
                         sample.Metrics, sample.ExpectedIntervalMs, actualIntervalMs = interval, resourcesCapturedAt = DateTimeOffset.Now,
-                        processes = resources, globalBusiestGpuEngine = sample.GlobalGpuEngine, ownedGpuEngines = engines, topGpuProcesses = DescribeTopGpu(sample.Gpu, sample.Time),
                         baselineReset = reset, gcPauseDeltaMs = sample.ResetBaseline ? (double?)null : sample.GcPauseTotalMs - previousGcPause,
                         sample.ManagedBytes, sample.Gen0, sample.Gen1, sample.Gen2,
                         ui = new { pendingMs = uiPendingMs, maximumMs = uiMaximumMs },
                         mouse = new { hook.Installed, hook.PendingMs, hook.HeartbeatMaxMs, hook.CallbackMaxMs, hook.ForwardMaxMs },
                         debuggerAttached = Debugger.IsAttached, run.DroppedSamples, run.DroppedEvents,
                         sampleAgeMs = Stopwatch.GetElapsedTime(sample.Timestamp).TotalMilliseconds
-                    }, sample.Time, sample.Timestamp);
+                    }, resources, sample.GlobalGpuEngine, engines, DescribeTopGpu(sample.Gpu, sample.Time), sample.Time, sample.Timestamp);
                     if (!sample.ResetBaseline && interval > Math.Max(2000, sample.ExpectedIntervalMs * 2)) Mark("sample-gap", sample.Time, sample.Timestamp, new { actualIntervalMs = interval, sample.ExpectedIntervalMs });
                     if (Math.Max(uiPendingMs, uiMaximumMs) > 500) Mark("ui-delay", sample.Time, sample.Timestamp, new { uiPendingMs, uiMaximumMs });
                     if (Math.Max(hook.PendingMs, hook.HeartbeatMaxMs) > 500) Mark("hook-thread-delay", sample.Time, sample.Timestamp, new { hook.PendingMs, hook.HeartbeatMaxMs });
@@ -301,7 +294,8 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
         }
     }
 
-    private static object[] DescribeTopGpu(GpuProcessEngineUsage[] entries, DateTimeOffset capturedAt) => entries.OrderByDescending(item => item.Percent).Take(5).Select(item =>
+    private static GpuProcessIdentityUsage[] DescribeTopGpu(GpuProcessEngineUsage[] entries, DateTimeOffset capturedAt) =>
+        entries.Where(item => item.Percent > 0).OrderByDescending(item => item.Percent).Take(5).Select(item =>
     {
         string? name = null;
         DateTimeOffset? startedAt = null;
@@ -316,7 +310,7 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
             }
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
-        return (object)new { item.Pid, name, startedAt, identityConfirmed = startedAt is not null, item.Adapter, item.Engine, item.Percent };
+        return new GpuProcessIdentityUsage(item.Pid, name, startedAt, item.Adapter, item.Engine, item.Percent);
     }).ToArray();
 
     private void RequestStop(Run run)

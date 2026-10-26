@@ -22,6 +22,20 @@ public sealed class PerformanceDiagnosticsTests
 
 #if DEBUG
     [TestMethod]
+    public void OwnedGpuDropsUnrelatedAndZeroEnginesButKeepsUnknownValues()
+    {
+        var captured = DateTimeOffset.UtcNow;
+        DebugProcessResources[] resources = [new(1, captured.AddMinutes(-1), "AF", 0, 0, null, null, null)];
+        GpuProcessEngineUsage[] samples = [new(1, "gpu", "idle", 0), new(1, "gpu", "active", 0.1), new(99, "other-gpu", "3D", 95)];
+        var owned = GpuProcessEngineUsage.SummarizeOwned(samples, resources, captured, 1);
+        Assert.AreEqual(1, owned.Length);
+        Assert.AreEqual("active", owned[0].Engine);
+        var unknown = GpuProcessEngineUsage.SummarizeOwned([new(1, "gpu", "3D", 10)], [], captured, 1);
+        Assert.AreEqual(1, unknown.Length);
+        Assert.IsNull(unknown[0].AfPercent);
+    }
+
+    [TestMethod]
     public void ReusedPidCannotInheritAnOlderGpuSampleAndEnginesAreNotCombined()
     {
         var captured = DateTimeOffset.UtcNow;
