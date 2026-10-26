@@ -199,7 +199,7 @@ public sealed class BluetoothBatteryService(BluetoothBatteryReader reader, Bluet
                     Changed?.Invoke(this, EventArgs.Empty);
                     if (alerts.Evaluate(session.DeviceId, reading, configuration.Notifications, configuration.LowThreshold))
                     {
-                        try { notifications.TryShowNotification(Translations.Get("Battery.LowTitle"), Translations.Format("Battery.LowBody", reading.DeviceName, reading.Percent)); }
+                        try { notifications.TryShowNotification(Translations.Get("Battery.LowTitle"), Translations.Format("Battery.LowBody", reading.DeviceName, reading.Percent), AFMediaBar.Classes.Models.ShellNotificationTarget.None, "Battery.Low"); }
                         catch (Exception error) { log.Warn("Bluetooth", "低电量通知失败", error); }
                     }
                 });

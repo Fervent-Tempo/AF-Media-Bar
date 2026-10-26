@@ -40,7 +40,7 @@ public sealed class AppLogQueueTests
     }
 
     [TestMethod]
-    public async Task ContinuousTrafficStillRewritesBeforeProducerStops()
+    public async Task ContinuousTrafficStillFlushesBeforeProducerStops()
     {
         var directory = TempDirectory();
         try

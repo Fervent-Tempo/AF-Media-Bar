@@ -148,7 +148,7 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
             _ => (string.Empty, string.Empty, ShellNotificationTarget.None)
         };
         if (title.Length == 0) return new(DeveloperActionStatus.Unavailable);
-        var accepted = _notifications.TryShowNotification(Translations.Get("Developer.Notification.Prefix") + " " + Translations.Get(title), Translations.Get(body), target);
+        var accepted = _notifications.TryShowNotification(Translations.Get("Developer.Notification.Prefix") + " " + Translations.Get(title), Translations.Get(body), target, "Developer." + title);
         if (accepted && target == ShellNotificationTarget.DeveloperLyricsPreview)
         {
             _previewLifetime?.Cancel(); _previewLifetime?.Dispose();

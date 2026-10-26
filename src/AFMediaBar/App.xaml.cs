@@ -567,7 +567,7 @@ namespace AFMediaBar
                     Services.GetRequiredService<ISystemNotificationService>().TryShowNotification(
                         Translations.Get("Startup.TranslucentTb.Title"),
                         Translations.Get("Startup.TranslucentTb.Content"),
-                        ShellNotificationTarget.TaskbarBackground);
+                        ShellNotificationTarget.TaskbarBackground, "Startup.TranslucentTb");
                 }, DispatcherPriority.ApplicationIdle);
             }
 

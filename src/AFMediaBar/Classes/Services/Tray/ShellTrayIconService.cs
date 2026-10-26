@@ -23,6 +23,8 @@ public sealed class ShellTrayIconService : ISystemNotificationService, IDisposab
     private const uint MemoryResultNotificationId = 8;
     private readonly HashSet<uint> _notificationIcons = [];
     private readonly NotifyIconCall _notifyIcon;
+    private readonly AppLogService? _log;
+    private readonly Dictionary<uint, string> _notificationCategories = [];
 
     internal delegate bool NotifyIconCall(uint message, ref NativeMethods.NOTIFYICONDATA data);
     private const int CallbackMessage = NativeMethods.WM_APP + 17;
@@ -41,10 +43,11 @@ public sealed class ShellTrayIconService : ISystemNotificationService, IDisposab
     /// Creates the hidden message window, registers for Explorer recreation, and installs the notification icon immediately.
     /// </summary>
     /// <param name="appIconService">按主题提供托盘图标的服务。/ Service that supplies the tray icon for the active theme.</param>
-    public ShellTrayIconService(AppIconService appIconService) : this(appIconService, NativeMethods.ShellNotifyIcon) { }
+    public ShellTrayIconService(AppIconService appIconService, AppLogService? log = null) : this(appIconService, NativeMethods.ShellNotifyIcon, log) { }
 
-    internal ShellTrayIconService(AppIconService appIconService, NotifyIconCall notifyIcon)
+    internal ShellTrayIconService(AppIconService appIconService, NotifyIconCall notifyIcon, AppLogService? log = null)
     {
+        _log = log;
         _notifyIcon = notifyIcon;
         _appIconService = appIconService;
         _messageWindow = new HwndSource(new HwndSourceParameters("AFMediaBar.ShellTrayWindow")
@@ -96,8 +99,16 @@ public sealed class ShellTrayIconService : ISystemNotificationService, IDisposab
     /// <param name="target">点击目标。隐藏的通知标识隔离不同意图，不增加可见托盘图标。</param>
     /// <returns>Shell 是否接受了这次通知。/ Whether the Shell accepted the notification.</returns>
     public bool TryShowNotification(string title, string message, ShellNotificationTarget target = ShellNotificationTarget.None)
+        => TryShowNotification(title, message, target, "Unspecified");
+
+    public bool TryShowNotification(string title, string message, ShellNotificationTarget target, string category)
     {
-        if (_disposed || !_isAdded) return false;
+        var started = Stopwatch.GetTimestamp();
+        if (_disposed || !_isAdded)
+        {
+            _log?.Info("Notification", $"category={category} target={target} submitted=false reason=unavailable");
+            return false;
+        }
         var iconId = target switch
         {
             ShellNotificationTarget.Application => IconId,
@@ -110,7 +121,11 @@ public sealed class ShellTrayIconService : ISystemNotificationService, IDisposab
             ShellNotificationTarget.MemoryResult => MemoryResultNotificationId,
             _ => throw new ArgumentOutOfRangeException(nameof(target))
         };
-        if (iconId != IconId && !EnsureNotificationIcon(iconId)) return false;
+        if (iconId != IconId && !EnsureNotificationIcon(iconId))
+        {
+            _log?.Info("Notification", $"category={category} target={target} submitted=false reason=icon-unavailable");
+            return false;
+        }
 
         var data = CreateData();
         data.uID = iconId;
@@ -123,7 +138,11 @@ public sealed class ShellTrayIconService : ISystemNotificationService, IDisposab
         // Since NOTIFYICON_VERSION_4 the Shell decides how long the balloon stays, so this value is unused while
         // still carrying a meaningful default.
         data.uTimeoutOrVersion = 10000;
-        return _notifyIcon(NativeMethods.NIM_MODIFY, ref data);
+        var submitted = _notifyIcon(NativeMethods.NIM_MODIFY, ref data);
+        if (submitted) _notificationCategories[iconId] = category;
+        _log?.Info("Notification", $"category={category} target={target} submitted={submitted} durationMs={Stopwatch.GetElapsedTime(started).TotalMilliseconds:F1}");
+        _log?.Diagnostic("Notification", submitted ? "submitted" : "rejected", instance: category);
+        return submitted;
     }
 
     private bool EnsureNotificationIcon(uint iconId)
@@ -237,6 +256,8 @@ public sealed class ShellTrayIconService : ISystemNotificationService, IDisposab
                 MemoryResultNotificationId when _notificationIcons.Contains(sourceIconId) => ShellNotificationTarget.MemoryResult,
                 _ => ShellNotificationTarget.None
             };
+            _notificationCategories.TryGetValue(sourceIconId, out var category);
+            _log?.Info("Notification", $"phase=clicked category={category ?? "unknown"} target={target}");
             if (target != ShellNotificationTarget.None) NotificationClicked?.Invoke(target);
             handled = true;
             return IntPtr.Zero;
