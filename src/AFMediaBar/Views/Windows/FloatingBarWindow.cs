@@ -675,7 +675,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _zRegistration = null;
         if (_handle != nint.Zero && !_suspended && !_isClosing)
             _zRegistration = _zOrder.Attach(_handle, _layer, () => !_isClosing && !_suspended &&
-                !_mediaControl.ShouldHideTaskbarWindow && SettingsManager.Current.TaskbarBarEnabled, _overlayTaskbar);
+                !_foregroundFullscreen && !_mediaControl.ShouldHideTaskbarWindow && SettingsManager.Current.TaskbarBarEnabled, _overlayTaskbar);
     }
 
     /// <summary>
