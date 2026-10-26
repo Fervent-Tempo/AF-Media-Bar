@@ -38,37 +38,33 @@ public sealed class NativeMouseInputMonitor : IDisposable
     private long _suppressNextClickUntilTicks;
 #if DEBUG
     private const uint DiagnosticHeartbeatMessage = NativeMethods.WM_APP + 72;
-    private int _diagnosticEnabled;
-    private long _diagnosticPending;
-    private long _diagnosticHeartbeatMax;
-    private long _diagnosticCallbackMax;
-    private long _diagnosticForwardMax;
+    private DiagnosticState? _diagnosticState;
 
     internal void SetDiagnosticEnabled(bool enabled)
     {
-        Volatile.Write(ref _diagnosticEnabled, enabled ? 1 : 0);
-        Interlocked.Exchange(ref _diagnosticPending, 0);
-        Interlocked.Exchange(ref _diagnosticHeartbeatMax, 0);
-        Interlocked.Exchange(ref _diagnosticCallbackMax, 0);
-        Interlocked.Exchange(ref _diagnosticForwardMax, 0);
+        // 回调只写捕获的这一代；交换引用后，旧回调无需锁也不会污染新记录。
+        Interlocked.Exchange(ref _diagnosticState, enabled ? new DiagnosticState() : null);
     }
 
     internal void RequestDiagnosticHeartbeat()
     {
-        if (Volatile.Read(ref _diagnosticEnabled) == 0 || _disposed || _hookThreadId == 0 || _hook == IntPtr.Zero) return;
+        var state = Volatile.Read(ref _diagnosticState);
+        if (state is null || _disposed || _hookThreadId == 0 || _hook == IntPtr.Zero) return;
         var now = Stopwatch.GetTimestamp();
-        if (Interlocked.CompareExchange(ref _diagnosticPending, now, 0) != 0) return;
+        if (Interlocked.CompareExchange(ref state.Pending, now, 0) != 0) return;
         if (!NativeMethods.PostThreadMessage(_hookThreadId, DiagnosticHeartbeatMessage, new UIntPtr(unchecked((ulong)now)), IntPtr.Zero))
-            Interlocked.CompareExchange(ref _diagnosticPending, 0, now);
+            Interlocked.CompareExchange(ref state.Pending, 0, now);
     }
 
     internal (bool Installed, double PendingMs, double HeartbeatMaxMs, double CallbackMaxMs, double ForwardMaxMs) ReadDiagnosticState()
     {
-        var pending = Interlocked.Read(ref _diagnosticPending);
+        var state = Volatile.Read(ref _diagnosticState);
+        if (state is null) return (_hook != IntPtr.Zero && !_disposed, 0, 0, 0, 0);
+        var pending = Interlocked.Read(ref state.Pending);
         return (_hook != IntPtr.Zero && !_disposed, pending == 0 ? 0 : Stopwatch.GetElapsedTime(pending).TotalMilliseconds,
-            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref _diagnosticHeartbeatMax, 0)).TotalMilliseconds,
-            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref _diagnosticCallbackMax, 0)).TotalMilliseconds,
-            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref _diagnosticForwardMax, 0)).TotalMilliseconds);
+            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref state.HeartbeatMax, 0)).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref state.CallbackMax, 0)).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref state.ForwardMax, 0)).TotalMilliseconds);
     }
 
     private static void UpdateDiagnosticMaximum(ref long target, long value)
@@ -80,6 +76,14 @@ public sealed class NativeMouseInputMonitor : IDisposable
             if (observed == previous) break;
             previous = observed;
         }
+    }
+
+    private sealed class DiagnosticState
+    {
+        internal long Pending;
+        internal long HeartbeatMax;
+        internal long CallbackMax;
+        internal long ForwardMax;
     }
 #endif
 
@@ -218,8 +222,9 @@ public sealed class NativeMouseInputMonitor : IDisposable
                 if (message.Message == DiagnosticHeartbeatMessage)
                 {
                     var sent = unchecked((long)message.WParam.ToUInt64());
-                    if (Interlocked.CompareExchange(ref _diagnosticPending, 0, sent) == sent)
-                        UpdateDiagnosticMaximum(ref _diagnosticHeartbeatMax, Stopwatch.GetTimestamp() - sent);
+                    var state = Volatile.Read(ref _diagnosticState);
+                    if (state is not null && Interlocked.CompareExchange(ref state.Pending, 0, sent) == sent)
+                        UpdateDiagnosticMaximum(ref state.HeartbeatMax, Stopwatch.GetTimestamp() - sent);
                     continue;
                 }
 #endif
@@ -242,7 +247,8 @@ public sealed class NativeMouseInputMonitor : IDisposable
     private IntPtr OnMouseEvent(int code, IntPtr wParam, IntPtr lParam)
     {
 #if DEBUG
-        var diagnosticStart = Volatile.Read(ref _diagnosticEnabled) != 0 ? Stopwatch.GetTimestamp() : 0;
+        var diagnostic = Volatile.Read(ref _diagnosticState);
+        var diagnosticStart = diagnostic is not null ? Stopwatch.GetTimestamp() : 0;
 #endif
         try
         {
@@ -314,11 +320,11 @@ public sealed class NativeMouseInputMonitor : IDisposable
 
 #if DEBUG
         var forwardStart = diagnosticStart != 0 ? Stopwatch.GetTimestamp() : 0;
-        if (diagnosticStart != 0) UpdateDiagnosticMaximum(ref _diagnosticCallbackMax, forwardStart - diagnosticStart);
+        if (diagnostic is not null) UpdateDiagnosticMaximum(ref diagnostic.CallbackMax, forwardStart - diagnosticStart);
 #endif
         var result = NativeMethods.CallNextHookEx(_hook, code, wParam, lParam);
 #if DEBUG
-        if (forwardStart != 0) UpdateDiagnosticMaximum(ref _diagnosticForwardMax, Stopwatch.GetTimestamp() - forwardStart);
+        if (diagnostic is not null) UpdateDiagnosticMaximum(ref diagnostic.ForwardMax, Stopwatch.GetTimestamp() - forwardStart);
 #endif
         return result;
     }

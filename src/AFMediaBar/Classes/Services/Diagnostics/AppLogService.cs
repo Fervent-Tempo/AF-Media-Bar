@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using AFMediaBar.Classes.Services.Diagnostics;
+using AFMediaBar.Classes.Interop;
 
 namespace AFMediaBar.Classes.Services;
 
@@ -21,6 +22,7 @@ public sealed class AppLogService : IDisposable
     private readonly BlockingCollection<LogEntry> _pending = new(new ConcurrentQueue<LogEntry>(), 4096);
     private readonly object _lifecycleGate = new();
     private readonly object _ringGate = new();
+    private readonly AutoResetEvent _retryWake = new(false);
     private readonly Task _writer;
     private readonly long _started = Stopwatch.GetTimestamp();
     private long _dropped;
@@ -42,6 +44,7 @@ public sealed class AppLogService : IDisposable
     public string FilePath { get; }
     public string SessionId { get; } = Guid.NewGuid().ToString("N");
     public long DroppedEntries => Interlocked.Read(ref _dropped);
+    public long WriteFailures => Interlocked.Read(ref _writeFailures);
     internal bool IsDisposed => _disposed;
 #if DEBUG
     internal event Action<PerformanceDiagnosticEvent>? DiagnosticRecorded;
@@ -105,6 +108,7 @@ public sealed class AppLogService : IDisposable
             _disposed = true;
             if (ReferenceEquals(Current, this)) Current = null;
             _pending.CompleteAdding();
+            _retryWake.Set();
         }
         try { _writer.Wait(TimeSpan.FromSeconds(2)); }
         catch (AggregateException exception) { Debug.WriteLine(exception); }
@@ -140,12 +144,13 @@ public sealed class AppLogService : IDisposable
                 }
                 _pending.TryAdd(entry);
             }
+            if (entry.ForceFlush) _retryWake.Set();
             return true;
         }
     }
 
     private string Format(AppLogLevel level, string category, string message) =>
-        $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level(level)}] [{category}] session={SessionId} pid={Environment.ProcessId} tid={Environment.CurrentManagedThreadId} elapsedMs={Stopwatch.GetElapsedTime(_started).TotalMilliseconds:F1} {message}";
+        $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level(level)}] [{category}] session={SessionId} pid={Environment.ProcessId} tid={NativeMethods.GetCurrentThreadId()} managedTid={Environment.CurrentManagedThreadId} elapsedMs={Stopwatch.GetElapsedTime(_started).TotalMilliseconds:F1} {message}";
 
     private static string Level(AppLogLevel level) => level switch
     {
@@ -156,53 +161,59 @@ public sealed class AppLogService : IDisposable
     {
         using var file = new RollingLogFile(FilePath, MaximumFileBytes, MaximumFiles);
         var sinceFlush = Stopwatch.StartNew();
-        long? retryTimestamp = null;
+        LogEntry? retryEntry = null;
         try
         {
-            while (!_pending.IsCompleted)
+            while (retryEntry.HasValue || !_pending.IsCompleted)
             {
-                var remaining = FlushInterval - sinceFlush.Elapsed;
-                _pending.TryTake(out var entry, remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero);
+                LogEntry entry;
+                if (retryEntry is { } retained)
+                {
+                    // 失败项留在消费者手中，其余项继续受原队列上限约束；Error/Flush 可提前唤醒重试。
+                    if (!_disposed) _retryWake.WaitOne(TimeSpan.FromMilliseconds(250));
+                    entry = retained;
+                }
+                else
+                {
+                    var remaining = FlushInterval - sinceFlush.Elapsed;
+                    _pending.TryTake(out entry, remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero);
+                }
+                var completed = false;
                 lock (_ringGate)
                 {
                     try
                     {
-                        if (retryTimestamp is long retry && Stopwatch.GetElapsedTime(retry).TotalSeconds < 30)
-                        {
-                            Interlocked.Increment(ref _writeFailures);
-                            entry.Completion?.TrySetCanceled();
-                            if (sinceFlush.Elapsed >= FlushInterval) sinceFlush.Restart();
-                            continue;
-                        }
                         if (!string.IsNullOrEmpty(entry.Line)) file.Append(entry.Line);
-                        retryTimestamp = null;
                         if (entry.ForceFlush || sinceFlush.Elapsed >= FlushInterval || _pending.IsCompleted)
                         {
                             var dropped = DroppedEntries;
                             if (dropped != _reportedDropped)
                             {
                                 file.Append(Format(AppLogLevel.Warning, "Log", $"queueDropped={dropped} delta={dropped - _reportedDropped}"));
-                                _reportedDropped = dropped;
                             }
                             if (_writeFailures != _reportedWriteFailures)
                             {
                                 file.Append(Format(AppLogLevel.Warning, "Log", $"writeFailures={_writeFailures} lastWriteError={_lastWriteError}"));
-                                _reportedWriteFailures = _writeFailures;
                             }
                             file.Flush();
+                            _reportedDropped = dropped;
+                            _reportedWriteFailures = _writeFailures;
                             sinceFlush.Restart();
                         }
+                        retryEntry = null;
+                        completed = true;
                     }
                     catch (Exception exception)
                     {
                         Interlocked.Increment(ref _writeFailures);
                         _lastWriteError = exception.GetType().Name;
-                        retryTimestamp = Stopwatch.GetTimestamp();
-                        entry.Completion?.TrySetCanceled();
+                        retryEntry = entry;
                         Debug.WriteLine($"[Log] 写入失败: {exception.Message}");
-                        file.Dispose();
+                        try { file.Dispose(); }
+                        catch (Exception closeException) { Debug.WriteLine($"[Log] 关闭失败: {closeException.Message}"); }
+                        if (_disposed) break;
                     }
-                    finally { entry.Completion?.TrySetResult(); }
+                    finally { if (completed) entry.Completion?.TrySetResult(); }
                 }
             }
         }
@@ -215,7 +226,10 @@ public sealed class AppLogService : IDisposable
             {
                 _disposed = true;
                 if (ReferenceEquals(Current, this)) Current = null;
+                retryEntry?.Completion?.TrySetCanceled();
+                while (_pending.TryTake(out var abandoned)) abandoned.Completion?.TrySetCanceled();
                 _pending.Dispose();
+                _retryWake.Dispose();
             }
         }
     }

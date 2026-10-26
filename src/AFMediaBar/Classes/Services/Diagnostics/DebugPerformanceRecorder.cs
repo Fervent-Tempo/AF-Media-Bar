@@ -61,8 +61,15 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
             mouse.SetDiagnosticEnabled(!IsPaused);
             run.Writer = Task.Run(() => WriteAsync(run));
             run.Heartbeat = Task.Run(() => HeartbeatAsync(run));
-            run.Lease = metrics.SubscribeDiagnostics(TimeSpan.FromSeconds(1), snapshot => Capture(run, snapshot));
             run.Completion = CompleteAsync(run);
+            try { run.Lease = metrics.SubscribeDiagnostics(TimeSpan.FromSeconds(1), snapshot => Capture(run, snapshot)); }
+            catch (Exception exception)
+            {
+                run.Failed = true;
+                RequestStop(run);
+                log.Warn("Performance", "无法订阅性能采样，已停止记录", exception);
+                return false;
+            }
         }
         log.Info("Performance", "Debug 持续性能记录已开启；每秒采样，空闲降频，熄屏或睡眠暂停。");
         return true;
@@ -236,21 +243,16 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
                     var interval = previousSample is long last ? Stopwatch.GetElapsedTime(last, sample.Timestamp).TotalMilliseconds : (double?)null;
                     var reset = sample.ResetBaseline || interval > Math.Max(2000, sample.ExpectedIntervalMs * 2);
                     var resources = processes.Sample(reset);
-                    var owned = resources.Select(item => item.Pid).ToHashSet();
-                    sampler.SetDiagnosticProcessIds(owned);
+                    // 资源是在后台读取的；新进程不能承接早于自身启动时刻的 GPU 负载。
+                    sampler.SetDiagnosticProcessIds(resources.Select(item => item.Pid).ToHashSet());
                     var hook = sample.Mouse;
                     var uiPendingMs = sample.UiPendingMs;
                     var uiMaximumMs = sample.UiMaximumMs;
-                    var engines = sample.Gpu.GroupBy(item => (item.Adapter, item.Engine)).Select(group => new
-                    {
-                        group.Key.Adapter, group.Key.Engine,
-                        afPercent = group.Where(item => item.Pid == Environment.ProcessId).Sum(item => item.Percent),
-                        webViewPercent = group.Where(item => item.Pid != Environment.ProcessId && owned.Contains(item.Pid)).Sum(item => item.Percent)
-                    }).ToArray();
+                    var engines = GpuProcessEngineUsage.SummarizeOwned(sample.Gpu, resources, sample.Time, Environment.ProcessId);
                     Write("sample", new
                     {
                         sample.Metrics, sample.ExpectedIntervalMs, actualIntervalMs = interval, resourcesCapturedAt = DateTimeOffset.Now,
-                        processes = resources, globalBusiestGpuEngine = sample.GlobalGpuEngine, ownedGpuEngines = engines, topGpuProcesses = DescribeTopGpu(sample.Gpu),
+                        processes = resources, globalBusiestGpuEngine = sample.GlobalGpuEngine, ownedGpuEngines = engines, topGpuProcesses = DescribeTopGpu(sample.Gpu, sample.Time),
                         baselineReset = reset, gcPauseDeltaMs = sample.ResetBaseline ? (double?)null : sample.GcPauseTotalMs - previousGcPause,
                         sample.ManagedBytes, sample.Gen0, sample.Gen1, sample.Gen2,
                         ui = new { pendingMs = uiPendingMs, maximumMs = uiMaximumMs },
@@ -272,7 +274,7 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
                 if (run.Accepting && run.Events.Count == 0 && run.Samples.Count == 0)
                     await run.Signal.WaitAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
             }
-            Write("stop", new { run.DroppedSamples, run.DroppedEvents, suppressedMarkers = markers }, DateTimeOffset.Now, Stopwatch.GetTimestamp());
+            Write("stop", new { run.DroppedSamples, run.DroppedEvents, suppressedMarkers = markers.Select(item => new { reason = item.Key, item.Value.Timestamp, item.Value.Suppressed }).ToArray() }, DateTimeOffset.Now, Stopwatch.GetTimestamp());
             file.Flush();
         }
         catch (Exception exception)
@@ -299,18 +301,22 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
         }
     }
 
-    private static object[] DescribeTopGpu(GpuProcessEngineUsage[] entries) => entries.OrderByDescending(item => item.Percent).Take(5).Select(item =>
+    private static object[] DescribeTopGpu(GpuProcessEngineUsage[] entries, DateTimeOffset capturedAt) => entries.OrderByDescending(item => item.Percent).Take(5).Select(item =>
     {
         string? name = null;
         DateTimeOffset? startedAt = null;
         try
         {
             using var process = Process.GetProcessById(item.Pid);
-            name = process.ProcessName;
-            startedAt = new DateTimeOffset(process.StartTime);
+            var candidateStart = new DateTimeOffset(process.StartTime);
+            if (GpuProcessEngineUsage.CanAssociateProcess(candidateStart, capturedAt))
+            {
+                name = process.ProcessName;
+                startedAt = candidateStart;
+            }
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
-        return (object)new { item.Pid, name, startedAt, item.Adapter, item.Engine, item.Percent };
+        return (object)new { item.Pid, name, startedAt, identityConfirmed = startedAt is not null, item.Adapter, item.Engine, item.Percent };
     }).ToArray();
 
     private void RequestStop(Run run)

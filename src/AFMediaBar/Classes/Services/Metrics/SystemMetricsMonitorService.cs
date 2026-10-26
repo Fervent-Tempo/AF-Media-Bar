@@ -134,14 +134,14 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable, 
                     if (_disposed)
                         return;
                     generation = _generation;
-#if DEBUG
-                    diagnosticDemand = !_paused && _subscriptions.Any(item => item.Background);
-#endif
                     reset = _resetRequired;
                     _resetRequired = false;
                     demand = _paused ? [] : _subscriptions.SelectMany(item => item.Metrics).Distinct().ToArray();
                     var now = Stopwatch.GetTimestamp();
                     due = _paused ? [] : _subscriptions.Where(item => Remaining(item, now) <= TimeSpan.Zero).ToArray();
+#if DEBUG
+                    diagnosticDemand = due.Any(item => item.Background);
+#endif
                     delay = _paused || _subscriptions.Count == 0 ? Timeout.InfiniteTimeSpan :
                         _subscriptions.Min(item => Remaining(item, now));
                 }

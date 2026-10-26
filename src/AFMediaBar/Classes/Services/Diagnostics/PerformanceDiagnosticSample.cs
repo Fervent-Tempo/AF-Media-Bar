@@ -4,9 +4,25 @@ namespace AFMediaBar.Classes.Services.Diagnostics;
 /// <summary>对同一物理适配器引擎的所有进程求和。</summary>
 internal sealed record GpuEngineTotal(string Adapter, string Engine, double Percent);
 
+/// <summary>同一引擎的 AF 及 WebView2 负载；身份无法确认时保留为空。</summary>
+internal sealed record OwnedGpuEngineUsage(string Adapter, string Engine, double? AfPercent, double? WebViewPercent);
+
 /// <summary>保留 PDH 的适配器与引擎身份；不同引擎的百分比不能相加。</summary>
 internal sealed record GpuProcessEngineUsage(int Pid, string Adapter, string Engine, double Percent)
 {
+    internal static bool CanAssociateProcess(DateTimeOffset startedAt, DateTimeOffset capturedAt) => startedAt <= capturedAt;
+
+    internal static OwnedGpuEngineUsage[] SummarizeOwned(GpuProcessEngineUsage[] entries, DebugProcessResources[] resources,
+        DateTimeOffset capturedAt, int mainPid)
+    {
+        var known = resources.Where(item => CanAssociateProcess(item.StartedAt, capturedAt)).Select(item => item.Pid).ToHashSet();
+        var reused = resources.Where(item => !CanAssociateProcess(item.StartedAt, capturedAt)).Select(item => item.Pid).ToHashSet();
+        return entries.GroupBy(item => (item.Adapter, item.Engine)).Select(group => new OwnedGpuEngineUsage(group.Key.Adapter, group.Key.Engine,
+            known.Contains(mainPid) ? group.Where(item => item.Pid == mainPid).Sum(item => item.Percent) : null,
+            group.Any(item => reused.Contains(item.Pid)) ? null : group.Where(item => item.Pid != mainPid && known.Contains(item.Pid)).Sum(item => item.Percent)))
+            .ToArray();
+    }
+
     internal static bool TryParse(string? instance, double percent, out GpuProcessEngineUsage? usage)
     {
         usage = null;

@@ -22,6 +22,25 @@ public sealed class PerformanceDiagnosticsTests
 
 #if DEBUG
     [TestMethod]
+    public void ReusedPidCannotInheritAnOlderGpuSampleAndEnginesAreNotCombined()
+    {
+        var captured = DateTimeOffset.UtcNow;
+        DebugProcessResources[] resources =
+        [
+            new(1, captured.AddMinutes(-1), "AF", 0, 0, null, null, null),
+            new(2, captured.AddSeconds(1), "WebView2", 0, 0, null, null, null),
+            new(3, captured.AddSeconds(-1), "WebView2", 0, 0, null, null, null)
+        ];
+        GpuProcessEngineUsage[] samples = [new(1, "gpu-a", "3D", 10), new(2, "gpu-a", "3D", 80), new(3, "gpu-a", "Copy", 20)];
+        var totals = GpuProcessEngineUsage.SummarizeOwned(samples, resources, captured, 1);
+        Assert.AreEqual(2, totals.Length);
+        Assert.AreEqual(10d, totals.Single(item => item.Engine == "3D").AfPercent);
+        Assert.IsNull(totals.Single(item => item.Engine == "3D").WebViewPercent);
+        Assert.AreEqual(20d, totals.Single(item => item.Engine == "Copy").WebViewPercent);
+        Assert.IsFalse(GpuProcessEngineUsage.CanAssociateProcess(resources[1].StartedAt, captured));
+    }
+
+    [TestMethod]
     public void GpuIdentityKeepsPhysicalAdapterAndEngineSeparate()
     {
         Assert.IsTrue(GpuProcessEngineUsage.TryParse("pid_42_luid_0x00000000_0x00000001_phys_0_eng_2_engtype_3D", 65.5, out var first));

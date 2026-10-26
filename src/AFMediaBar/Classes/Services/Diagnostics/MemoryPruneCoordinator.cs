@@ -329,7 +329,25 @@ public sealed class MemoryPruneCoordinator : IDisposable
         MemoryReclaimResult? reclaim = null;
         if (level >= MemoryPruneLevel.DisplayOff)
         {
-            reclaim = _trimmer.Reclaim(level);
+            var operation = Guid.NewGuid().ToString("N");
+            var started = Stopwatch.GetTimestamp();
+            var gcPause = GC.GetTotalPauseDuration();
+            _log?.Info("Prune", $"operation={operation} phase=start trigger=LevelChanged level={level}");
+            _log?.Diagnostic("Prune", "start", instance: operation);
+            try
+            {
+                reclaim = _trimmer.Reclaim(level);
+                var durationMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+                _log?.Info("Prune", $"operation={operation} phase=completed trigger=LevelChanged level={level} durationMs={durationMs:F1} gcPauseMs={(GC.GetTotalPauseDuration() - gcPause).TotalMilliseconds:F1} before=({reclaim.Value.Before.Describe()}) after=({reclaim.Value.After.Describe()})");
+                _log?.Diagnostic("Prune", "completed", durationMs, instance: operation);
+            }
+            catch (Exception exception)
+            {
+                var durationMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+                _log?.Warn("Prune", $"operation={operation} phase=failed trigger=LevelChanged level={level} durationMs={durationMs:F1} gcPauseMs={(GC.GetTotalPauseDuration() - gcPause).TotalMilliseconds:F1}", exception);
+                _log?.Diagnostic("Prune", "failed", durationMs, instance: operation);
+                throw;
+            }
             _sinceLastDeepAction.Restart();
 
             // 档位路径刚做过一次深度回收，按需路径的节流也要跟着走：否则紧接着关掉一个浮层就会再收一遍。
