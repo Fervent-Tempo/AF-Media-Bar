@@ -1482,7 +1482,9 @@ namespace AFMediaBar.Components
             var layout = LayoutPresets.GetLayout(_currentMode, LayoutOrientation.Horizontal);
             var artwork = layout.Components.FirstOrDefault(component =>
                 string.Equals(component.Id, LayoutComponentIds.Artwork, StringComparison.Ordinal));
-            var inset = _isSmallTaskbar && UsesAdaptiveTaskbarText ? 2 : artwork?.Bounds.X ?? 0;
+            // 留白取决于任务栏实际高度，不能随文字是否收起而变化。
+            var inset = UsesAdaptiveTaskbarText && MainBorder.Height < SmallTaskbarPresentationPolicy.CompactCrossAxisThresholdDip
+                ? 2 : artwork?.Bounds.X ?? 0;
             return double.IsFinite(inset) && inset > 0 ? inset : 0;
         }
 
@@ -2172,7 +2174,6 @@ namespace AFMediaBar.Components
             if (IsBarPresentation && orientation == LayoutOrientation.Horizontal)
             {
                 var experience = PresentationSettings.TaskbarExperience.Normalize();
-                var progressVisible = _snapshot.Duration > 0;
                 var restVisibility = ResolveRestVisibility(experience);
                 var visibleComponents = TaskbarRestLayoutPolicy
                     .ResolveOrder(experience.RestComponentOrder)
@@ -2184,11 +2185,7 @@ namespace AFMediaBar.Components
                 // The hover-layer minimum belongs to the media text component: it only widens the text region enough for the hover controls
                 // instead of adding a separate span of width.
                 var hoverMinimum = experience.HoverLayerEnabled
-                    ? TaskbarExperiencePolicy.CalculateHoverLayerWidth(
-                        experience.HoverControls,
-                        progressVisible,
-                        experience.Density,
-                        experience.HoverButtonSpacingDip)
+                    ? MeasureTaskbarHoverActionsWidth() + TaskbarHoverContent.Margin.Left + TaskbarHoverContent.Margin.Right
                     : 0;
                 double ContentWidth(double availableTextWidth) => TaskbarExperiencePolicy.CalculateRestWidth(
                     visibleComponents,

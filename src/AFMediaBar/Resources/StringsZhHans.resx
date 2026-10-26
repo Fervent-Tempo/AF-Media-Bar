@@ -2961,7 +2961,13 @@
     <value>点击打开</value>
   </data>
   <data name="DisplayModes.Full.Entry.Hover" xml:space="preserve">
-    <value>悬停 0.5 秒</value>
+    <value>悬停打开</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Title" xml:space="preserve">
+    <value>悬停等待时间</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Description" xml:space="preserve">
+    <value>指针在入口连续停留达到此时间后打开完整面板。</value>
   </data>
   <data name="Memory.Title" xml:space="preserve"><value>内存工具</value></data>
   <data name="Memory.Open" xml:space="preserve"><value>打开内存工具</value></data>
@@ -3212,4 +3218,23 @@
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>边缘自动折叠</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>默认开启。拖到工作区边缘后，移开鼠标收起，靠近时展开；支持四边。</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展开桌面媒体栏</value></data>
+  <data name="Developer.Action.PerformanceStatus" xml:space="preserve"><value>性能记录状态</value></data>
+  <data name="Developer.Description.PerformanceStatus" xml:space="preserve"><value>显示 Debug 持续记录状态、目录、最近采样和丢弃数量。</value></data>
+  <data name="Developer.Action.PerformanceStart" xml:space="preserve"><value>开启性能记录</value></data>
+  <data name="Developer.Description.PerformanceStart" xml:space="preserve"><value>开启本次进程的后台记录；Debug 启动时默认开启。</value></data>
+  <data name="Developer.Action.PerformanceStop" xml:space="preserve"><value>停止性能记录</value></data>
+  <data name="Developer.Description.PerformanceStop" xml:space="preserve"><value>停止采样并在后台保存剩余记录；下次启动默认恢复。</value></data>
+  <data name="Developer.Action.PerformanceMark" xml:space="preserve"><value>标记刚才的异常</value></data>
+  <data name="Developer.Description.PerformanceMark" xml:space="preserve"><value>添加时间标记并请求刷新文件。</value></data>
+  <data name="Developer.Action.PerformanceOpen" xml:space="preserve"><value>打开性能记录目录</value></data>
+  <data name="Developer.Description.PerformanceOpen" xml:space="preserve"><value>打开独立的性能记录目录。</value></data>
+  <data name="Developer.Performance.State.Running" xml:space="preserve"><value>记录中</value></data>
+  <data name="Developer.Performance.State.Stopping" xml:space="preserve"><value>停止中</value></data>
+  <data name="Developer.Performance.State.Stopped" xml:space="preserve"><value>已停止</value></data>
+  <data name="Developer.Performance.State.Failed" xml:space="preserve"><value>记录失败</value></data>
+  <data name="Developer.Performance.Status" xml:space="preserve"><value>状态：{0}
+采样：活动时 1 秒，空闲时 4 秒；熄屏、锁屏或睡眠暂停。
+目录：{1}
+最近采样：{2}
+已丢弃采样：{3}；事件：{4}</value></data>
 </root>

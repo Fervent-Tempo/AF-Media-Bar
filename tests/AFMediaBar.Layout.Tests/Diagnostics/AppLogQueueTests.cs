@@ -12,6 +12,28 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class AppLogQueueTests
 {
     [TestMethod]
+    public void TemporarySharingFailureRetainsErrorsAndFlushRetriesAfterUnlock()
+    {
+        var directory = TempDirectory();
+        try
+        {
+            using var log = new AppLogService(directory);
+            using (var occupied = new FileStream(log.FilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            {
+                log.Error("Test", "error-during-conflict");
+                Assert.IsTrue(SpinWait.SpinUntil(() => log.WriteFailures > 0, 5000));
+                log.Error("Test", "error-after-first-failure");
+            }
+            log.Flush(TimeSpan.FromSeconds(5));
+            var text = File.ReadAllText(log.FilePath);
+            StringAssert.Contains(text, "error-during-conflict");
+            StringAssert.Contains(text, "error-after-first-failure");
+            StringAssert.Contains(text, "writeFailures=");
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
+    [TestMethod]
     public void FullQueueDropsOldestAndRetainsLatestErrorWithoutWaitingForWriter()
     {
         var directory = TempDirectory();
@@ -40,7 +62,7 @@ public sealed class AppLogQueueTests
     }
 
     [TestMethod]
-    public async Task ContinuousTrafficStillRewritesBeforeProducerStops()
+    public async Task ContinuousTrafficStillFlushesBeforeProducerStops()
     {
         var directory = TempDirectory();
         try

@@ -68,12 +68,26 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable, 
     }
 
     public IDisposable Subscribe(IReadOnlyCollection<MetricKind> metrics, TimeSpan interval, Action<SystemMetricsSnapshot> callback)
+        => SubscribeCore(metrics, interval, callback, false);
+
+#if DEBUG
+    internal TimeSpan DiagnosticInterval
+    {
+        get { lock (_gate) return TimeSpan.FromSeconds(_intervalScale); }
+    }
+
+    /// <summary>后台回调只允许快速入队，不依赖 Dispatcher；释放租约后丢弃迟到结果。</summary>
+    internal IDisposable SubscribeDiagnostics(TimeSpan interval, Action<SystemMetricsSnapshot> callback) =>
+        SubscribeCore([MetricKind.SystemCpu, MetricKind.SystemMemory, MetricKind.SystemGpu, MetricKind.ProcessMemory], interval, callback, true);
+#endif
+
+    private IDisposable SubscribeCore(IReadOnlyCollection<MetricKind> metrics, TimeSpan interval, Action<SystemMetricsSnapshot> callback, bool background)
     {
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             var subscription = new Subscription(this, metrics.Where(Enum.IsDefined).Distinct().ToArray(),
-                TimeSpan.FromMilliseconds(Math.Clamp(interval.TotalMilliseconds, 250, 60000)), callback);
+                TimeSpan.FromMilliseconds(Math.Clamp(interval.TotalMilliseconds, 250, 60000)), callback, background);
             _subscriptions.Add(subscription);
             _worker ??= Task.Run(WorkerAsync);
             Changed();
@@ -112,6 +126,9 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable, 
                 int generation;
                 bool reset;
                 TimeSpan delay;
+#if DEBUG
+                bool diagnosticDemand;
+#endif
                 lock (_gate)
                 {
                     if (_disposed)
@@ -122,6 +139,9 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable, 
                     demand = _paused ? [] : _subscriptions.SelectMany(item => item.Metrics).Distinct().ToArray();
                     var now = Stopwatch.GetTimestamp();
                     due = _paused ? [] : _subscriptions.Where(item => Remaining(item, now) <= TimeSpan.Zero).ToArray();
+#if DEBUG
+                    diagnosticDemand = due.Any(item => item.Background);
+#endif
                     delay = _paused || _subscriptions.Count == 0 ? Timeout.InfiniteTimeSpan :
                         _subscriptions.Min(item => Remaining(item, now));
                 }
@@ -129,6 +149,9 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable, 
                 if (reset)
                     _sampler.Reset();
                 _sampler.SetDemand(demand);
+#if DEBUG
+                if (_sampler is SystemMetricsService platform) platform.SetDiagnosticDemand(diagnosticDemand);
+#endif
                 if (due.Length > 0)
                 {
                     SystemMetricsSnapshot? snapshot = null;
@@ -151,7 +174,20 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable, 
                             item.LastSampleTimestamp = timestamp;
                     }
                     if (snapshot is { } value)
-                        QueuePublication(generation, due, value);
+                    {
+#if DEBUG
+                        foreach (var item in due.Where(item => item.Background))
+                        {
+                            lock (_gate)
+                            {
+                                if (_disposed || _paused || generation != _generation || item.IsDisposed) continue;
+                            }
+                            try { item.Callback(value); }
+                            catch (Exception exception) { _log?.Warn("Metrics", "后台诊断回调失败", exception); }
+                        }
+#endif
+                        QueuePublication(generation, due.Where(item => !item.Background).ToArray(), value);
+                    }
                     continue;
                 }
 
@@ -184,6 +220,7 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable, 
 
     private void QueuePublication(int generation, Subscription[] due, SystemMetricsSnapshot snapshot)
     {
+        if (due.Length == 0) return;
         lock (_gate)
         {
             if (_disposed || _paused || generation != _generation || _dispatcher.HasShutdownStarted)
@@ -242,8 +279,9 @@ public sealed class SystemMetricsMonitorService : IDisposable, IMemoryPrunable, 
     }
 
     private sealed class Subscription(SystemMetricsMonitorService owner, MetricKind[] metrics,
-        TimeSpan interval, Action<SystemMetricsSnapshot> callback) : IDisposable
+        TimeSpan interval, Action<SystemMetricsSnapshot> callback, bool background) : IDisposable
     {
+        public bool Background { get; } = background;
         public MetricKind[] Metrics { get; } = metrics;
         public TimeSpan Interval { get; } = interval;
         public Action<SystemMetricsSnapshot> Callback { get; } = callback;

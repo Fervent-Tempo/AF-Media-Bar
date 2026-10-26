@@ -192,6 +192,19 @@ public readonly record struct TaskbarExperienceSettings(
     /// <summary>外侧横杆的打开方式，默认点击。</summary>
     public FullPanelHandleTrigger FullPanelEntryTrigger { get; init; } = FullPanelHandleTrigger.Click;
 
+    /// <summary>外侧入口持续悬停后打开的等待时间，单位为毫秒。</summary>
+    public int FullPanelEntryHoverDelayMilliseconds { get; init; } = DefaultFullPanelEntryHoverDelayMilliseconds;
+
+    public const int DefaultFullPanelEntryHoverDelayMilliseconds = 500;
+    public const int MinimumFullPanelEntryHoverDelayMilliseconds = 100;
+    public const int MaximumFullPanelEntryHoverDelayMilliseconds = 1000;
+    public const int FullPanelEntryHoverDelayStepMilliseconds = 100;
+
+    /// <summary>设置编辑器使用秒显示，范围和步长从毫秒契约派生。</summary>
+    public static double MinimumFullPanelEntryHoverDelaySeconds => MinimumFullPanelEntryHoverDelayMilliseconds / 1000d;
+    public static double MaximumFullPanelEntryHoverDelaySeconds => MaximumFullPanelEntryHoverDelayMilliseconds / 1000d;
+    public static double FullPanelEntryHoverDelayStepSeconds => FullPanelEntryHoverDelayStepMilliseconds / 1000d;
+
     /// <summary>悬停层中各项控制的显隐设置。 / Visibility settings for individual hover-layer controls.</summary>
     public TaskbarHoverControlsSettings HoverControls { get; init; } = TaskbarHoverControlsSettings.Default;
 
@@ -290,6 +303,7 @@ public readonly record struct TaskbarExperienceSettings(
             FullPanelEntryVisible = FullLayerEnabled && FullPanelEntryVisible,
             FullLayerEnabled = true,
             FullPanelEntryTrigger = Enum.IsDefined(FullPanelEntryTrigger) ? FullPanelEntryTrigger : FullPanelHandleTrigger.Click,
+            FullPanelEntryHoverDelayMilliseconds = NormalizeFullPanelEntryHoverDelay(FullPanelEntryHoverDelayMilliseconds),
             Density = Enum.IsDefined(Density) ? Density : defaults.Density,
             ContentLayout = Enum.IsDefined(ContentLayout) ? ContentLayout : defaults.ContentLayout,
             MediaTextAlignment = Enum.IsDefined(MediaTextAlignment) ? MediaTextAlignment : defaults.MediaTextAlignment,
@@ -297,7 +311,7 @@ public readonly record struct TaskbarExperienceSettings(
             FullPanel = FullPanel.Normalize(),
             LengthMode = Enum.IsDefined(LengthMode) ? LengthMode : defaults.LengthMode,
             FixedLengthDip = double.IsFinite(FixedLengthDip) && FixedLengthDip >= MinimumStoredFixedLengthDip
-                ? Math.Clamp(FixedLengthDip, MinimumStoredFixedLengthDip, MaximumStoredFixedLengthDip)
+                ? Math.Clamp(Math.Round(FixedLengthDip, MidpointRounding.AwayFromZero), MinimumStoredFixedLengthDip, MaximumStoredFixedLengthDip)
                 : defaults.FixedLengthDip,
             ComponentSpacingDip = double.IsFinite(ComponentSpacingDip)
                 ? Math.Clamp(ComponentSpacingDip, MinimumComponentSpacingDip, MaximumComponentSpacingDip)
@@ -344,6 +358,14 @@ public readonly record struct TaskbarExperienceSettings(
         }
 
         return result;
+    }
+
+    private static int NormalizeFullPanelEntryHoverDelay(int milliseconds)
+    {
+        // 旧 JSON 的结构体反序列化可能跳过属性初始值，以 0 表示缺字段。
+        if (milliseconds == 0) return DefaultFullPanelEntryHoverDelayMilliseconds;
+        return (int)Math.Round(Math.Clamp(milliseconds, MinimumFullPanelEntryHoverDelayMilliseconds, MaximumFullPanelEntryHoverDelayMilliseconds) /
+            (double)FullPanelEntryHoverDelayStepMilliseconds, MidpointRounding.AwayFromZero) * FullPanelEntryHoverDelayStepMilliseconds;
     }
 }
 

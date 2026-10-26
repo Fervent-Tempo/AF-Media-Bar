@@ -936,7 +936,7 @@ namespace AFMediaBar.Views.Windows
             _systemNotifications.TryShowNotification(
                 Translations.Get("Update.Notification.Title"),
                 Translations.Format("Update.Notification.Body", version, state.CurrentVersion),
-                ShellNotificationTarget.Application);
+                ShellNotificationTarget.Application, "Update.Available");
         }
 
         private void OnNotificationShellRestored(object? sender, EventArgs e)
@@ -1002,7 +1002,7 @@ namespace AFMediaBar.Views.Windows
             _systemNotifications.TryShowNotification(
                 Translations.Get("Taskbar.Placement.Notification.Title"),
                 Translations.Get(pressure == TaskbarSpacePressure.Hidden ? "Taskbar.Placement.Notification.Hidden" : "Taskbar.Placement.Notification.Constrained"),
-                ShellNotificationTarget.None);
+                ShellNotificationTarget.None, pressure == TaskbarSpacePressure.Hidden ? "Taskbar.Hidden" : "Taskbar.Constrained");
         }
 
         private void SettingsWindow_Closed(object? sender, EventArgs e)
@@ -1062,7 +1062,7 @@ namespace AFMediaBar.Views.Windows
                 Translations.Get("Panel.QuickLaunch.Title"),
                 Translations.Get(result == QuickLaunchResult.InvalidTarget
                     ? "Shell.QuickLaunch.Status.InvalidTarget"
-                    : "Shell.QuickLaunch.Status.Failed"));
+                    : "Shell.QuickLaunch.Status.Failed"), ShellNotificationTarget.None, "QuickLaunch.Failed");
         }
 
         private void MouseInputMonitor_OnLeftButtonPressed(object? sender, NativeMouseButtonEventArgs e)

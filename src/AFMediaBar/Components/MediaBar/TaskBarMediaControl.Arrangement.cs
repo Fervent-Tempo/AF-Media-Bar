@@ -31,10 +31,9 @@ public partial class TaskBarMediaControl
             return Math.Ceiling(_minimumPrimaryLength * scale) / scale;
         var baseLength = Math.Max(_minimumPrimaryLength, ResolveRestLayout(experience, _minimumPrimaryLength).ContentWidth);
         var layout = ResolveRestLayout(experience, baseLength);
-        TaskbarHoverActions.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        var actions = Math.Ceiling(TaskbarHoverActions.DesiredSize.Width * scale);
-        var left = Math.Ceiling(layout.TextLeft * scale) + Math.Ceiling(5 * scale);
-        var right = Math.Ceiling((baseLength - layout.TextLeft - layout.TextWidth) * scale) + Math.Ceiling(6 * scale);
+        var actions = Math.Ceiling(MeasureTaskbarHoverActionsWidth() * scale);
+        var left = Math.Ceiling(layout.TextLeft * scale) + Math.Ceiling(TaskbarHoverContent.Margin.Left * scale);
+        var right = Math.Ceiling((baseLength - layout.TextLeft - layout.TextWidth) * scale) + Math.Ceiling(TaskbarHoverContent.Margin.Right * scale);
         var minimum = TaskbarArrangementPolicy.MinimumLength(left, right, actions, PresentationSettings.Position);
         return Math.Max(Math.Ceiling(_minimumPrimaryLength * scale), minimum) / scale;
     }
@@ -53,13 +52,20 @@ public partial class TaskBarMediaControl
 
     private TaskbarBarPosition ResolvedTaskbarHoverAlignment => PresentationSettings.Position;
 
-    private void ApplyTaskbarActionsGeometry(double barWidth, double textLeft, double textWidth)
+    private double MeasureTaskbarHoverActionsWidth()
     {
         TaskbarHoverActions.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        return TaskbarHoverActions.DesiredSize.Width;
+    }
+
+    private void ApplyTaskbarActionsGeometry(double barWidth, double textLeft, double textWidth)
+    {
         // Position must not contribute to the next measure. Margin plus layout rounding fed a
         // one-pixel error back into DesiredSize at fractional widths and alternated every refresh.
         var dpiScale = _taskbarAnchorTwicePx.HasValue ? _taskbarPlacementDpiScale : VisualTreeHelper.GetDpi(TaskbarHoverActions).DpiScaleX;
-        var actionsPx = (int)Math.Ceiling(TaskbarHoverActions.DesiredSize.Width * dpiScale);
+        var actionsPx = (int)Math.Ceiling(MeasureTaskbarHoverActionsWidth() * dpiScale);
+        var leadingPx = Math.Ceiling(TaskbarHoverContent.Margin.Left * dpiScale);
+        var trailingPx = Math.Ceiling(TaskbarHoverContent.Margin.Right * dpiScale);
         var textLeftPx = (int)Math.Round(textLeft * dpiScale);
         var origin = _taskbarAnchorTwicePx.HasValue ? _taskbarPrimaryPositionPx : 0;
         var alignment = ResolvedTaskbarHoverAlignment;
@@ -79,11 +85,15 @@ public partial class TaskBarMediaControl
             var anchor = _taskbarAnchorTwicePx.HasValue ? _taskbarAnchorTwicePx.Value / 2.0
                 : alignment == TaskbarBarPosition.End ? Math.Round(barWidth * dpiScale) : 0;
             absolute = alignment == TaskbarBarPosition.End
-                ? anchor - Math.Ceiling(Math.Round((baseWidth - fixedLayout.TextLeft - fixedLayout.TextWidth + 6) * dpiScale, 6)) - actionsPx
-                : anchor + Math.Ceiling(Math.Round((fixedLayout.TextLeft + 5) * dpiScale, 6));
+                ? anchor - Math.Ceiling(Math.Round((baseWidth - fixedLayout.TextLeft - fixedLayout.TextWidth) * dpiScale, 6)) - trailingPx - actionsPx
+                : anchor + Math.Ceiling(Math.Round(fixedLayout.TextLeft * dpiScale, 6)) + leadingPx;
         }
         var local = absolute - origin - textLeftPx;
-        TaskbarHoverActionsOffset.X = (Math.Round(local) - Math.Round(5 * dpiScale)) / dpiScale;
+        // 设置刷新或尺寸过渡中锚点可能仍属于上一帧，先保证按钮落在当前文字区。
+        // 留一个物理像素，容纳边界和内边距各自的布局舍入误差。
+        var maximum = Math.Max(1, Math.Floor(textWidth * dpiScale) - actionsPx - 1);
+        local = Math.Clamp(Math.Round(local), 1, maximum);
+        TaskbarHoverActionsOffset.X = (local - Math.Round(TaskbarHoverContent.Margin.Left * dpiScale)) / dpiScale;
     }
 
     private Rect TaskbarRevealRect(double revealedWidth) => new(

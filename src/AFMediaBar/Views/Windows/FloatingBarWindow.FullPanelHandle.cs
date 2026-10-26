@@ -47,6 +47,7 @@ public sealed partial class FloatingBarWindow
                 new FullPanelOpenRequestEventArgs(GetMediaBarScreenBounds(), IsVerticalPresentation, ensureOpen: true, side),
                 IsVerticalPresentation, side is FullPanelPlacementSide.Below or FullPanelPlacementSide.Right,
                 PresentationSettings.TaskbarExperience.FullPanelEntryTrigger,
+                PresentationSettings.TaskbarExperience.FullPanelEntryHoverDelayMilliseconds,
                 () => CanKeepExternalFullPanelHandle() && _nativeBoundsPx == placement,
                 () => _mediaControl.IsMouseOver);
         }

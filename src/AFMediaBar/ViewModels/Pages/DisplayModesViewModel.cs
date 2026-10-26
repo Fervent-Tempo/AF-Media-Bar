@@ -115,6 +115,24 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         });
     }
 
+    public bool UsesFullPanelEntryHover => _configuration.Current.TaskbarExperience.FullPanelEntryTrigger == FullPanelHandleTrigger.Hover;
+
+    /// <summary>界面使用秒，持久化与入口计时使用整数毫秒。</summary>
+    public double FullPanelEntryHoverDelaySeconds
+    {
+        get => _configuration.Current.TaskbarExperience.FullPanelEntryHoverDelayMilliseconds / 1000d;
+        set
+        {
+            if (!double.IsFinite(value)) return;
+            var seconds = Math.Clamp(value, TaskbarExperienceSettings.MinimumFullPanelEntryHoverDelaySeconds,
+                TaskbarExperienceSettings.MaximumFullPanelEntryHoverDelaySeconds);
+            UpdateExperience(_configuration.Current.TaskbarExperience with
+            {
+                FullPanelEntryHoverDelayMilliseconds = (int)Math.Round(seconds * 1000, MidpointRounding.AwayFromZero)
+            });
+        }
+    }
+
     /// <summary>只控制外侧横杆，不限制其它交互打开完整面板。</summary>
     public bool FullPanelEntryVisible
     {
@@ -710,6 +728,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(HoverLayerEnabled));
         OnPropertyChanged(nameof(FullPanelEntryVisible));
         OnPropertyChanged(nameof(FullPanelEntryTriggerIndex));
+        OnPropertyChanged(nameof(UsesFullPanelEntryHover));
+        OnPropertyChanged(nameof(FullPanelEntryHoverDelaySeconds));
         OnPropertyChanged(nameof(RestProgressVisible));
         OnPropertyChanged(nameof(ArtworkProgressVisible));
         OnPropertyChanged(nameof(RestArtworkVisible));

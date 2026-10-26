@@ -21,6 +21,9 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
     private readonly PowerStateMonitor _power;
     private readonly MemoryPruneCoordinator _prune;
     private readonly AppLogService? _log;
+#if DEBUG
+    private readonly DebugPerformanceRecorder? _performance;
+#endif
     private readonly CancellationTokenSource _lifetime = new();
     private CancellationTokenSource? _previewLifetime;
     private DeveloperResourceSnapshot? _resourceBaseline;
@@ -30,8 +33,15 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
     public DeveloperScenarioService(IDeveloperModeService mode, Func<IDeveloperHostActions> host,
         ISystemNotificationService notifications, IDeveloperConfirmationService developerConfirmation,
         IRestartConfirmationService confirmation, IApplicationRestartService restart,
-        PowerStateMonitor power, MemoryPruneCoordinator prune, AppLogService? log)
+        PowerStateMonitor power, MemoryPruneCoordinator prune, AppLogService? log
+#if DEBUG
+        , DebugPerformanceRecorder? performance = null
+#endif
+        )
     {
+#if DEBUG
+        _performance = performance;
+#endif
         _mode = mode; _host = host; _notifications = notifications;
         _developerConfirmation = developerConfirmation; _confirmation = confirmation; _restart = restart;
         _power = power; _prune = prune; _log = log;
@@ -80,6 +90,24 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
             return new(DeveloperActionStatus.Unavailable, Translations.Get("Developer.NoRenderer"));
         switch (action.Command)
         {
+#if DEBUG
+            case "performance status": return PerformanceStatus();
+            case "performance start":
+                if (_performance is null) return new(DeveloperActionStatus.Unavailable);
+                return _performance.StartRecording() ? PerformanceStatus() : new(DeveloperActionStatus.Busy);
+            case "performance stop":
+                if (_performance is null) return new(DeveloperActionStatus.Unavailable);
+                return await _performance.StopRecordingAsync(token)
+                    ? PerformanceStatus() : new(DeveloperActionStatus.Accepted, PerformanceStatus().Detail);
+            case "performance mark":
+                if (_performance is null || _performance.GetStatus().State != "Running") return new(DeveloperActionStatus.Unavailable);
+                _performance.Mark();
+                return new(DeveloperActionStatus.Accepted);
+            case "performance open":
+                if (_performance is null) return new(DeveloperActionStatus.Unavailable);
+                _performance.OpenFolder();
+                return new(DeveloperActionStatus.Accepted);
+#endif
             case "help":
                 return new(DeveloperActionStatus.Completed, string.Join(Environment.NewLine,
                     DeveloperActionCatalog.Actions.Select(item => $"{item.Command} — {item.Title} / {item.ImpactText}: {item.Description}")));
@@ -148,7 +176,7 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
             _ => (string.Empty, string.Empty, ShellNotificationTarget.None)
         };
         if (title.Length == 0) return new(DeveloperActionStatus.Unavailable);
-        var accepted = _notifications.TryShowNotification(Translations.Get("Developer.Notification.Prefix") + " " + Translations.Get(title), Translations.Get(body), target);
+        var accepted = _notifications.TryShowNotification(Translations.Get("Developer.Notification.Prefix") + " " + Translations.Get(title), Translations.Get(body), target, "Developer." + title);
         if (accepted && target == ShellNotificationTarget.DeveloperLyricsPreview)
         {
             _previewLifetime?.Cancel(); _previewLifetime?.Dispose();
@@ -156,6 +184,17 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
         }
         return new(accepted ? DeveloperActionStatus.Accepted : DeveloperActionStatus.Failed, Translations.Get("Developer.Notification.Submitted"));
     }
+
+#if DEBUG
+    private DeveloperActionResult PerformanceStatus()
+    {
+        if (_performance is null) return new(DeveloperActionStatus.Unavailable);
+        var status = _performance.GetStatus();
+        return new(DeveloperActionStatus.Completed, Translations.Format("Developer.Performance.Status",
+            Translations.Get("Developer.Performance.State." + status.State), _performance.DirectoryPath,
+            status.LastSample?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") ?? "—", status.DroppedSamples, status.DroppedEvents));
+    }
+#endif
 
     private static DeveloperActionResult ConfirmationResult(DeveloperConfirmationResult result, bool preview) => result switch
     {

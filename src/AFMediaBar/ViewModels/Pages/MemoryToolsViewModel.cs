@@ -134,7 +134,7 @@ public sealed partial class MemoryToolsViewModel : ObservableObject, IDisposable
         try
         {
             _notifications.TryShowNotification(Translations.Format("Memory.Notification.Title", title, status),
-                string.Join("\n", summary), ShellNotificationTarget.MemoryResult);
+                string.Join("\n", summary), ShellNotificationTarget.MemoryResult, "Memory.Result");
         }
         catch (Exception error) { _log.Warn("Memory", "内存操作通知发送失败，仍可从菜单或设置查看结果", error); }
     }

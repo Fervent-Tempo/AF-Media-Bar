@@ -19,6 +19,7 @@ public partial class TaskBarMediaControl
 
 
         private bool _disposed;
+        private readonly string _diagnosticHostId = Guid.NewGuid().ToString("N");
         public void Dispose()
         {
             if (_disposed) return;
@@ -193,7 +194,7 @@ public partial class TaskBarMediaControl
                     VerticalAlignment = VerticalAlignment.Stretch,
                     IsHitTestVisible = false
                 };
-                renderer = new LyricsWebViewRenderer(webView);
+                renderer = new LyricsWebViewRenderer(webView, AppLogService.Current, _diagnosticHostId, generation);
                 _lyricsWebRenderer = renderer;
                 renderer.Ready += OnWebLyricsReady;
                 renderer.Failed += OnWebLyricsFailed;

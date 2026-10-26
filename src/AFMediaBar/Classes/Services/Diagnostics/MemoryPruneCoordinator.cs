@@ -206,22 +206,28 @@ public sealed class MemoryPruneCoordinator : IDisposable
     private Task<MemoryTrimOutcome> ExecuteTrimAsync(MemoryTrimTrigger trigger, MemoryTrimStrength strength) => Task.Run(() =>
     {
         var elapsed = Stopwatch.StartNew();
+        var operation = Guid.NewGuid().ToString("N");
+        var gcPause = GC.GetTotalPauseDuration();
         try
         {
             if (_disposed) return new MemoryTrimOutcome(MemoryTrimStatus.Unavailable, strength);
+            _log?.Info("Prune", $"operation={operation} phase=start trigger={trigger} strength={strength}");
+            _log?.Diagnostic("Prune", "start", instance: operation);
             var result = _trimmer.TrimWorkingSet(strength);
-            WriteTrimLog(trigger, result);
+            WriteTrimLog(trigger, result, operation, elapsed.Elapsed, GC.GetTotalPauseDuration() - gcPause);
+            _log?.Diagnostic("Prune", "completed", elapsed.Elapsed.TotalMilliseconds, instance: operation);
             return new MemoryTrimOutcome(MemoryTrimStatus.Completed, strength, result, elapsed.Elapsed);
         }
         catch (Exception exception)
         {
-            if (!_disposed) _log?.Warn("Prune", $"按需回收失败({trigger}): {exception.Message}");
+            _log?.Diagnostic("Prune", "failed", elapsed.Elapsed.TotalMilliseconds, instance: operation);
+            if (!_disposed) _log?.Warn("Prune", $"operation={operation} phase=failed trigger={trigger} strength={strength} durationMs={elapsed.Elapsed.TotalMilliseconds:F1} gcPauseMs={(GC.GetTotalPauseDuration() - gcPause).TotalMilliseconds:F1}", exception);
             return new MemoryTrimOutcome(MemoryTrimStatus.Failed, strength, Elapsed: elapsed.Elapsed, Error: exception.Message);
         }
         finally { lock (_trimGate) _trimInProgress = 0; }
     });
 
-    private void WriteTrimLog(MemoryTrimTrigger trigger, WorkingSetTrimResult result)
+    private void WriteTrimLog(MemoryTrimTrigger trigger, WorkingSetTrimResult result, string operation, TimeSpan elapsed, TimeSpan gcPause)
     {
         if (_disposed || _log is null)
         {
@@ -239,12 +245,9 @@ public sealed class MemoryPruneCoordinator : IDisposable
         };
         var strength = result.Strength == MemoryTrimStrength.Deep ? "深度 deep" : "温和 gentle";
 
-        var message = $"按需回收: trigger={reason} strength={strength} before=({result.Before.Describe()}) " +
+        var message = $"operation={operation} phase=completed durationMs={elapsed.TotalMilliseconds:F1} gcPauseMs={gcPause.TotalMilliseconds:F1} trigger={reason} strength={strength} before=({result.Before.Describe()}) " +
             $"after=({result.After.Describe()}) returnedWorkingSet={result.ReturnedWorkingSet}";
-        if (trigger is MemoryTrimTrigger.ManualRequest or MemoryTrimTrigger.StartupSettled)
-            _log.Info("Prune", message);
-        else
-            _log.Verbose("Prune", message);
+        _log.Info("Prune", message);
     }
 
     /// <summary>
@@ -326,7 +329,25 @@ public sealed class MemoryPruneCoordinator : IDisposable
         MemoryReclaimResult? reclaim = null;
         if (level >= MemoryPruneLevel.DisplayOff)
         {
-            reclaim = _trimmer.Reclaim(level);
+            var operation = Guid.NewGuid().ToString("N");
+            var started = Stopwatch.GetTimestamp();
+            var gcPause = GC.GetTotalPauseDuration();
+            _log?.Info("Prune", $"operation={operation} phase=start trigger=LevelChanged level={level}");
+            _log?.Diagnostic("Prune", "start", instance: operation);
+            try
+            {
+                reclaim = _trimmer.Reclaim(level);
+                var durationMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+                _log?.Info("Prune", $"operation={operation} phase=completed trigger=LevelChanged level={level} durationMs={durationMs:F1} gcPauseMs={(GC.GetTotalPauseDuration() - gcPause).TotalMilliseconds:F1} before=({reclaim.Value.Before.Describe()}) after=({reclaim.Value.After.Describe()})");
+                _log?.Diagnostic("Prune", "completed", durationMs, instance: operation);
+            }
+            catch (Exception exception)
+            {
+                var durationMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+                _log?.Warn("Prune", $"operation={operation} phase=failed trigger=LevelChanged level={level} durationMs={durationMs:F1} gcPauseMs={(GC.GetTotalPauseDuration() - gcPause).TotalMilliseconds:F1}", exception);
+                _log?.Diagnostic("Prune", "failed", durationMs, instance: operation);
+                throw;
+            }
             _sinceLastDeepAction.Restart();
 
             // 档位路径刚做过一次深度回收，按需路径的节流也要跟着走：否则紧接着关掉一个浮层就会再收一遍。

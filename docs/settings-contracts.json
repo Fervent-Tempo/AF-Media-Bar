@@ -188,6 +188,7 @@
       "contentLayout": "v1.2.0",
       "density": "v1.2.0",
       "fixedLengthDip": "v1.2.0",
+      "fullPanelEntryHoverDelayMilliseconds": "unreleased",
       "fullLayerEnabled": "v1.2.0",
       "fullPanel": {
         "$release": "v1.2.0",
