@@ -1,8 +1,10 @@
 // 组件手势只预览视图，松手时由命令提交；整栏移动仍由宿主管理。
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
@@ -15,6 +17,7 @@ public partial class TaskBarMediaControl
     private Border? _barMoveHandle;
     private Border? _componentInsertionMarker;
     private bool _barDragActive;
+    private double _barHandleOpacityTarget;
     private bool _componentGestureActive;
     private bool _suppressComponentRelease;
     private bool _finishingComponentGesture;
@@ -70,6 +73,9 @@ public partial class TaskBarMediaControl
                 IsHitTestVisible = false
             }
         };
+        // 与标题共享同一支前景画刷，包含自动背景判断、强制深浅色和高对比度。
+        ((TextBlock)_barMoveHandle.Child).SetBinding(TextBlock.ForegroundProperty,
+            new Binding(nameof(TextBlock.Foreground)) { Source = SongTitle, Mode = BindingMode.OneWay });
         Panel.SetZIndex(_barMoveHandle, 10);
         InteractionSurface.Children.Add(_barMoveHandle);
         _componentInsertionMarker = new Border
@@ -100,7 +106,7 @@ public partial class TaskBarMediaControl
         CancelComponentGesture();
         SettingsManager.SettingsChanged -= ComponentSettingsChanged;
         ComponentReorderCommand = null;
-        SetBarDragActive(false);
+        ResetBarMoveHandle();
     }
 
     private void ComponentSettingsChanged(object? sender, SettingsChangedEventArgs args)
@@ -114,11 +120,15 @@ public partial class TaskBarMediaControl
     private void ComponentBarLeft(object sender, MouseEventArgs args)
     {
         RefreshBarMoveHandle();
-        if (HasComponentGesture) CancelComponentGesture();
+        if (HasComponentGesture && !IsValidComponentDrop(args.GetPosition(this))) CancelComponentGesture();
     }
-    private void ComponentVisibilityChanged(object sender, DependencyPropertyChangedEventArgs args) { if (!IsVisible) CancelComponentGesture(); }
+    private void ComponentVisibilityChanged(object sender, DependencyPropertyChangedEventArgs args)
+    {
+        if (!IsVisible) { CancelComponentGesture(); ResetBarMoveHandle(); }
+        else RefreshBarMoveHandle();
+    }
     private void ComponentSizeChanged(object sender, SizeChangedEventArgs args) { if (HasComponentGesture) CancelComponentGesture(); }
-    private void ComponentUnloaded(object sender, RoutedEventArgs args) { CancelComponentGesture(); SetBarDragActive(false); }
+    private void ComponentUnloaded(object sender, RoutedEventArgs args) { CancelComponentGesture(); ResetBarMoveHandle(); }
     private void ComponentKeyDown(object sender, KeyEventArgs args)
     {
         if (args.Key == Key.Escape && HasComponentGesture) { CancelComponentGesture(); args.Handled = true; }
@@ -143,11 +153,35 @@ public partial class TaskBarMediaControl
     private void RefreshBarMoveHandle()
     {
         if (_barMoveHandle is null) return;
-        _barMoveHandle.Opacity = IsMouseOver || _barDragActive ? 1 : 0;
+        var targetOpacity = IsMouseOver || _barDragActive ? 1d : 0d;
+        var motion = CurrentMotion;
+        var immediate = !IsLoaded || !motion.UseTransitions || SystemParameters.HighContrast;
+        if (immediate || _barHandleOpacityTarget != targetOpacity)
+        {
+            // 从正在显示的值接续，终态使用基础值，不依赖动画完成回调。
+            var currentOpacity = _barMoveHandle.Opacity;
+            _barHandleOpacityTarget = targetOpacity;
+            _barMoveHandle.BeginAnimation(OpacityProperty, null);
+            _barMoveHandle.Opacity = targetOpacity;
+            if (!immediate && Math.Abs(currentOpacity - targetOpacity) > 0.001)
+                _barMoveHandle.BeginAnimation(OpacityProperty, new DoubleAnimation
+                {
+                    From = currentOpacity, To = targetOpacity, Duration = motion.FastDuration,
+                    EasingFunction = CreateEaseOut(), FillBehavior = FillBehavior.Stop
+                }, HandoffBehavior.SnapshotAndReplace);
+        }
         var locked = PresentationSettings.TaskbarBarPositionLocked;
         _barMoveHandle.Cursor = locked ? Cursors.No : Cursors.SizeAll;
         _barMoveHandle.ToolTip = Translations.Get(locked ? "ComponentLayout.Locked" : "ComponentLayout.Move");
         System.Windows.Automation.AutomationProperties.SetName(_barMoveHandle, _barMoveHandle.ToolTip.ToString());
+    }
+    private void ResetBarMoveHandle()
+    {
+        _barDragActive = false;
+        _barHandleOpacityTarget = 0;
+        if (_barMoveHandle is null) return;
+        _barMoveHandle.BeginAnimation(OpacityProperty, null);
+        _barMoveHandle.Opacity = 0;
     }
     private void PlaceBarMoveHandle(TaskbarRestLayout layout, double crossSize)
     {
@@ -240,8 +274,15 @@ public partial class TaskBarMediaControl
             _suppressComponentRelease = true;
             _hoverOpenTimer.Stop(); _hoverCloseTimer.Stop(); _hoverHideFallbackTimer.Stop();
             _componentPreviousFocus = Keyboard.FocusedElement;
-            Focusable = true; Focus();
-            if (!Mouse.Capture(this, CaptureMode.Element)) { CancelComponentGesture(); return; }
+            // 先接管按钮捕获再转移焦点，避免 ButtonBase 失焦释放捕获时取消排序。
+            // 保留内部容器的真实命中；Element 捕获会让其误收 MouseLeave 并清理当前排序。
+            if (!Mouse.Capture(this, CaptureMode.SubTree)) { CancelComponentGesture(); return; }
+            if (_componentGesture is not null) { Focusable = true; Focus(); }
+            if (_componentGesture is null)
+            {
+                if (IsMouseCaptured) ReleaseMouseCapture();
+                return;
+            }
         }
         if (!IsValidComponentDrop(position)) { CancelComponentGesture(); args.Handled = true; return; }
         var primary = _isVertical ? position.Y : position.X;
