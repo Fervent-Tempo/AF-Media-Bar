@@ -45,6 +45,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private readonly DispatcherTimer _dragTimer = new(DispatcherPriority.Input);
     private readonly DispatcherTimer _sizeTimer = new();
     private readonly DispatcherTimer _backgroundTimer = new();
+    private readonly DispatcherTimer _fullscreenTimer = new();
+    private bool _foregroundFullscreen;
     private IDisposable? _zRegistration;
     private IDisposable? _metricsSubscription;
     private int _metricsSubscriptionGeneration;
@@ -69,6 +71,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private FloatingBarPosition? _savedPosition;
     private LayoutOrientation _orientation;
     private FloatingBarLayer _layer;
+    private bool _overlayTaskbar;
     private double _primary = 240;
     private double _targetPrimary = 240;
     private double _animationStart;
@@ -157,6 +160,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             exception => _log.Warn("FloatingBar", $"频谱采样失败: {exception.Message}"));
         _backgroundTimer.Interval = TimeSpan.FromSeconds(2);
         _backgroundTimer.Tick += (_, _) => _foregroundSamplingSession.RequestRefresh();
+        _fullscreenTimer.Interval = TimeSpan.FromMilliseconds(500);
+        _fullscreenTimer.Tick += (_, _) => RefreshForegroundFullscreen();
         _sizeTimer.Interval = TimeSpan.FromMilliseconds(16);
         _sizeTimer.Tick += (_, _) => AdvanceSize();
         _dragTimer.Interval = TimeSpan.FromMilliseconds(16);
@@ -361,10 +366,11 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
                 _centerPx = new Point(Monitor.WorkArea.Left + Monitor.WorkArea.Width / 2, Monitor.WorkArea.Top + Monitor.WorkArea.Height / 2);
             }
             _savedPosition = saved;
-            var environmentChanged = settings.Orientation != _orientation || settings.Layer != _layer;
+            var environmentChanged = settings.Orientation != _orientation || settings.Layer != _layer || settings.OverlayTaskbar != _overlayTaskbar;
             if (environmentChanged) ClearInteraction();
             _orientation = settings.Orientation;
             _layer = settings.Layer;
+            _overlayTaskbar = settings.OverlayTaskbar;
             PresentationSettings = ProjectSettings();
             _mediaControl.ApplyPresentationSettings(PresentationSettings);
             _cross = (_orientation == LayoutOrientation.Vertical ? 48 : 44) * PresentationSettings.LayoutThicknessScalePercent / 100;
@@ -375,7 +381,12 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             _mediaControl.ApplyQuickLaunchEntries(PresentationSettings.QuickLaunch.Entries ?? []);
             _mediaControl.UpdateSongInfo(_lastSnapshot);
             _mediaControl.RefreshDesiredSize();
-            if (environmentChanged) RegisterZOrder();
+            if (environmentChanged)
+            {
+                RegisterZOrder();
+                // 层级或覆盖开关变了，全屏隐藏的适用条件也跟着变，立即重算而不是等下一次轮询。
+                RefreshForegroundFullscreen();
+            }
             if (PresentationSettings.TaskbarBarPositionLocked) EndDrag();
             SynchronizeResources();
             ApplyBounds(refreshLayout: true);
@@ -405,7 +416,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private void ResizeContent(MediaBarSizeRequest request)
     {
         if (_isClosing || request.Orientation != _orientation) return;
-        var max = (_orientation == LayoutOrientation.Vertical ? Monitor.WorkArea.Height : Monitor.WorkArea.Width) / Dpi;
+        var max = (_orientation == LayoutOrientation.Vertical ? PlacementArea.Height : PlacementArea.Width) / Dpi;
         var next = Math.Clamp(request.PrimaryLength, 1, Math.Max(1, max));
         if (Math.Abs(next - _targetPrimary) < .1) return;
         _targetPrimary = next;
@@ -441,6 +452,9 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         }
     }
 
+    /// <summary>悬浮条的可用区域：覆盖任务栏时用整块屏幕，允许压在任务栏上；否则仍限制在工作区内。</summary>
+    private Rect PlacementArea => _overlayTaskbar ? Monitor.MonitorArea : Monitor.WorkArea;
+
     private void ApplyBounds(bool refreshLayout = false)
     {
         if (_isClosing) return;
@@ -449,8 +463,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         var preserveFullPanel = _nativeBoundsPx is not null && _placementContext == context &&
             !_dragging && !IsEdgeConcealed;
         var requested = _orientation == LayoutOrientation.Vertical ? new Size(_cross, _primary) : new Size(_primary, _cross);
-        var bounds = FloatingBarGeometryPolicy.Resolve(new Size(Monitor.WorkArea.Width / Dpi, Monitor.WorkArea.Height / Dpi),
-            requested, new Point((_centerPx.X - Monitor.WorkArea.Left) / Dpi, (_centerPx.Y - Monitor.WorkArea.Top) / Dpi));
+        var bounds = FloatingBarGeometryPolicy.Resolve(new Size(PlacementArea.Width / Dpi, PlacementArea.Height / Dpi),
+            requested, new Point((_centerPx.X - PlacementArea.Left) / Dpi, (_centerPx.Y - PlacementArea.Top) / Dpi));
         bounds = ResolveEdgeBounds(bounds);
         UpdateEdgePresentation();
         // 纯平移不重排内容或发布长度预算；实际尺寸、DPI 或配置变化才更新布局。
@@ -463,12 +477,12 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             Height = bounds.Height;
             _mediaControl.ApplyPrimaryLength(_orientation == LayoutOrientation.Vertical ? bounds.Height : bounds.Width);
             if (!_suspended) _lengthConstraints.Range.Update(this, _mediaControl.GetMinimumPrimaryLength(Dpi),
-                (_orientation == LayoutOrientation.Vertical ? Monitor.WorkArea.Height : Monitor.WorkArea.Width) / Dpi);
+                (_orientation == LayoutOrientation.Vertical ? PlacementArea.Height : PlacementArea.Width) / Dpi);
         }
         if (_orientation == LayoutOrientation.Vertical)
-            _mediaControl.ApplyVerticalTaskbarSide(_centerPx.X < Monitor.WorkArea.Left + Monitor.WorkArea.Width / 2);
-        var physical = new Int32Rect((int)Math.Round(Monitor.WorkArea.Left + bounds.Left * Dpi),
-            (int)Math.Round(Monitor.WorkArea.Top + bounds.Top * Dpi), (int)Math.Ceiling(bounds.Width * Dpi), (int)Math.Ceiling(bounds.Height * Dpi));
+            _mediaControl.ApplyVerticalTaskbarSide(_centerPx.X < PlacementArea.Left + PlacementArea.Width / 2);
+        var physical = new Int32Rect((int)Math.Round(PlacementArea.Left + bounds.Left * Dpi),
+            (int)Math.Round(PlacementArea.Top + bounds.Top * Dpi), (int)Math.Ceiling(bounds.Width * Dpi), (int)Math.Ceiling(bounds.Height * Dpi));
         if (_handle != nint.Zero && _nativeBoundsPx != physical)
         {
             if (IsEdgeFullyCollapsed)
@@ -661,13 +675,27 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _zRegistration = null;
         if (_handle != nint.Zero && !_suspended && !_isClosing)
             _zRegistration = _zOrder.Attach(_handle, _layer, () => !_isClosing && !_suspended &&
-                !_mediaControl.ShouldHideTaskbarWindow && SettingsManager.Current.TaskbarBarEnabled);
+                !_mediaControl.ShouldHideTaskbarWindow && SettingsManager.Current.TaskbarBarEnabled, _overlayTaskbar);
+    }
+
+    /// <summary>
+    /// 开启覆盖任务栏后窗口在置顶层，会盖住无边框全屏的应用；检测到前台全屏就先藏起来，退出全屏再恢复。
+    /// 显式选「始终置顶」时按字面执行、全屏也留在最上层，隐藏只补偿「覆盖任务栏」把桌面层隐式提成置顶的情况。
+    /// </summary>
+    private void RefreshForegroundFullscreen()
+    {
+        if (_isClosing || _suspended) return;
+        var fullscreen = _overlayTaskbar && _layer != FloatingBarLayer.Topmost &&
+            ForegroundFullscreenPolicy.IsForegroundWindowFullscreen();
+        if (fullscreen == _foregroundFullscreen) return;
+        _foregroundFullscreen = fullscreen;
+        ApplyVisibility();
     }
 
     private void ApplyVisibility()
     {
         if (_suspended || _isClosing) return;
-        var visible = SettingsManager.Current.TaskbarBarEnabled && !_mediaControl.ShouldHideTaskbarWindow;
+        var visible = SettingsManager.Current.TaskbarBarEnabled && !_mediaControl.ShouldHideTaskbarWindow && !_foregroundFullscreen;
         _mediaControl.ApplyHostVisibilitySuspension(!visible || IsBackgroundPruned || IsEdgeFullyCollapsed);
         if (visible) { if (!IsVisible) Show(); } else { Hide(); StopEdgeCollapse(); ClearInteraction(); }
         UpdateEdgeObservation();
@@ -687,6 +715,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         ApplySnapshot(_lastSnapshot);
         RegisterZOrder();
         _backgroundTimer.Start();
+        _fullscreenTimer.Start();
     }
 
     public void Suspend()
@@ -702,6 +731,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         ClearInteraction();
         _sizeTimer.Stop();
         _backgroundTimer.Stop();
+        _fullscreenTimer.Stop();
+        _foregroundFullscreen = false;
         SynchronizeResources();
     }
 
@@ -713,6 +744,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         ApplySnapshot(_lastSnapshot);
         RegisterZOrder();
         _backgroundTimer.Start();
+        _fullscreenTimer.Start();
     }
 
     public void Dispose()

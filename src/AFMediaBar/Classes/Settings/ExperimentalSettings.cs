@@ -38,6 +38,9 @@ public sealed record FloatingBarSettings
     public LayoutOrientation Orientation { get; init; }
     public FloatingBarLayer Layer { get; init; }
     public bool EdgeCollapseEnabled { get; init; } = true;
+
+    /// <summary>悬浮条压在任务栏上方；开启后不再受窗口层级限制，任务栏抢回前面时也会重新压住。</summary>
+    public bool OverlayTaskbar { get; init; }
     public IReadOnlyList<string> MonitorDeviceIds { get; init; } = [];
     public IReadOnlyList<FloatingBarPosition> Positions { get; init; } = [];
 

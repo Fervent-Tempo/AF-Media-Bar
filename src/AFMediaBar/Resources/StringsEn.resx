@@ -3207,6 +3207,8 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Lyrics.Row.BracketSymbols.Title" xml:space="preserve"><value>Clean up translation formatting</value></data>
   <data name="Lyrics.Row.BracketSymbols.Description" xml:space="preserve"><value>On by default. Cleans up leftover leading slashes and brackets some translation sources include, so the translation reads more cleanly.</value></data>
   <data name="Settings.Numeric.Minutes" xml:space="preserve"><value>minutes</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Title" xml:space="preserve"><value>Overlay the taskbar</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Description" xml:space="preserve"><value>When on, the floating bar stays above the taskbar and can be dragged over that area.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>Auto-hide at desktop edges</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>On by default. Drag to any work-area edge; move away to hide and approach to reveal.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>Reveal desktop media bar</value></data>

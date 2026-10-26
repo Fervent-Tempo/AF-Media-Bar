@@ -142,7 +142,7 @@ public sealed class FloatingBarTests
             };
             window.Show();
             var handle = new WindowInteropHelper(window).Handle;
-            using var registration = zOrder.Attach(handle, FloatingBarLayer.Desktop, () => true);
+            using var registration = zOrder.Attach(handle, FloatingBarLayer.Desktop, () => true, false);
             try
             {
                 var foreground = NativeMethods.GetForegroundWindow();
@@ -159,5 +159,13 @@ public sealed class FloatingBarTests
             }
             finally { window.Close(); }
         });
+    }
+
+    [TestMethod]
+    public void OverlayTaskbarDefaultsOffAndSurvivesNormalization()
+    {
+        Assert.IsFalse(new FloatingBarSettings().OverlayTaskbar, "旧配置缺字段时默认关闭，不能改变既有悬浮条行为。");
+        var settings = new FloatingBarSettings { Layer = FloatingBarLayer.Desktop, OverlayTaskbar = true };
+        Assert.IsTrue(settings.Normalize().OverlayTaskbar, "覆盖任务栏与窗口层级相互独立，Normalize 不能丢掉这个选择。");
     }
 }
