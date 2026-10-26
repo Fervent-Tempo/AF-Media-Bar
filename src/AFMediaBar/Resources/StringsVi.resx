@@ -3270,7 +3270,7 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
     <value>Kiểu bảng đầy đủ</value>
   </data>
   <data name="Performance.Visual.Description" xml:space="preserve">
-    <value>Chọn kiểu riêng cho từng chỉ số. Biểu đồ giữ số liệu trực tiếp; tải lên và tải xuống dùng chung kiểu. Xem trước dùng dữ liệu mẫu. Thanh và vòng của bộ nhớ ứng dụng và mạng thể hiện mức tương đối gần đây.</value>
+    <value>Chọn kiểu riêng cho từng chỉ số. Biểu đồ giữ số liệu trực tiếp; tải lên và tải xuống dùng chung kiểu. Xem trước dùng dữ liệu mẫu. Bộ nhớ ứng dụng và mạng chỉ hỗ trợ số, đường và vùng; biểu đồ dùng đỉnh trong phút gần nhất làm thang đo tương đối.</value>
   </data>
   <data name="Performance.Visual.Relative" xml:space="preserve">
     <value>So với đỉnh trong phút gần nhất; không phải tỷ lệ sử dụng dung lượng hoặc băng thông.</value>

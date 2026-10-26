@@ -331,14 +331,26 @@ public partial class TaskBarMediaControl
         var active = _componentGestureActive;
         var valid = GestureStillValid() && IsValidComponentDrop(args.GetPosition(this));
         var hit = HitComponent(args.OriginalSource as DependencyObject);
-        CancelComponentGesture();
-        _suppressComponentRelease = false;
         if (active)
         {
             args.Handled = true;
-            if (valid && ComponentReorderCommand?.CanExecute(gesture) == true) ComponentReorderCommand.Execute(gesture);
+            // 先提交再撤去预览；设置通知可能同步重入，不能在提交中途恢复旧布局。
+            _finishingComponentGesture = true;
+            try
+            {
+                if (valid && ComponentReorderCommand?.CanExecute(gesture) == true) ComponentReorderCommand.Execute(gesture);
+            }
+            finally
+            {
+                _finishingComponentGesture = false;
+                CancelComponentGesture();
+                _suppressComponentRelease = false;
+            }
+            return;
         }
-        else if (valid && hit?.Component == gesture.Component && (ComponentLayoutPolicy.IsMetric(gesture.Component) || gesture.Component == TaskbarRestComponent.Performance) &&
+        CancelComponentGesture();
+        _suppressComponentRelease = false;
+        if (valid && hit?.Component == gesture.Component && (ComponentLayoutPolicy.IsMetric(gesture.Component) || gesture.Component == TaskbarRestComponent.Performance) &&
             PresentationSettings.PerformanceComponent.OpenTaskManagerOnClick)
         { args.Handled = true; RequestOpenTaskManager(); }
     }

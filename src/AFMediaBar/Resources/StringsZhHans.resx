@@ -3232,7 +3232,7 @@
     <value>完整面板样式</value>
   </data>
   <data name="Performance.Visual.Description" xml:space="preserve">
-    <value>每项可单独选择，图形保留实时数值。网络上下行共用样式；预览使用示例数据。程序内存和网络的条形、环形表示近期相对水平。</value>
+    <value>每项可单独选择，图形保留实时数值。网络上下行共用样式；预览使用示例数据。程序内存和网络仅支持纯数值、趋势线和面积图；趋势图以最近一分钟峰值为相对刻度。</value>
   </data>
   <data name="Performance.Visual.Relative" xml:space="preserve">
     <value>相对于最近一分钟的峰值，不代表容量或带宽使用率。</value>

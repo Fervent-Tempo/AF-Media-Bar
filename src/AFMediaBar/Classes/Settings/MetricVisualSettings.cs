@@ -47,11 +47,19 @@ public readonly record struct MetricVisualSettings
         _ => this with { SystemNetwork = style }
     };
 
+    /// <summary>无总量上限的指标只使用数值或趋势，旧条形及环形选择回退为数值。</summary>
+    public static MetricVisualStyle ResolveStyle(MetricKind metric, MetricVisualStyle style) =>
+        !Enum.IsDefined(style) || (metric is MetricKind.ProcessMemory or MetricKind.SystemNetwork &&
+            style is MetricVisualStyle.Bar or MetricVisualStyle.Ring) ? MetricVisualStyle.Numeric : style;
+
     public MetricVisualSettings Normalize(MetricVisualSettings defaults = default)
     {
         var result = this;
         foreach (var metric in Enum.GetValues<MetricKind>())
-            if (!Enum.IsDefined(result.Get(metric))) result = result.With(metric, defaults.Get(metric));
+        {
+            var style = result.Get(metric);
+            result = result.With(metric, ResolveStyle(metric, Enum.IsDefined(style) ? style : defaults.Get(metric)));
+        }
         return result;
     }
 }

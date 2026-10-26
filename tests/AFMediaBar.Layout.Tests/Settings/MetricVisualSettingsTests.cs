@@ -60,7 +60,7 @@ public sealed class MetricVisualSettingsTests
                         }
                     };
                     SettingsManager.Current.PerformanceComponent = PerformanceComponentSettings.Default with
-                    { Visuals = new MetricVisualSettings { ProcessMemory = MetricVisualStyle.Ring } };
+                    { Visuals = new MetricVisualSettings { ProcessMemory = MetricVisualStyle.Area } };
                     store.Flush();
                     Assert.IsNull(store.SaveCurrentAsUserDefaults());
                 }
@@ -68,7 +68,7 @@ public sealed class MetricVisualSettingsTests
                 loaded.Initialize();
                 Assert.AreEqual(175, SettingsManager.Current.TaskbarExperience.FullPanel.ScalePercent);
                 Assert.AreEqual(MetricVisualStyle.Line, SettingsManager.Current.TaskbarExperience.FullPanel.PerformanceVisuals.SystemNetwork);
-                Assert.AreEqual(MetricVisualStyle.Ring, SettingsManager.Current.PerformanceComponent.Visuals.ProcessMemory);
+                Assert.AreEqual(MetricVisualStyle.Area, SettingsManager.Current.PerformanceComponent.Visuals.ProcessMemory);
                 SettingsManager.SetUserDefaults(loaded.LoadUserDefaults());
                 SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
                 { FullPanel = TaskbarFullPanelSettings.Full with { ScalePercent = 80, PerformanceVisuals = new() { SystemCpu = MetricVisualStyle.Bar } } };
@@ -106,6 +106,10 @@ public sealed class MetricVisualSettingsTests
             {
                 SettingsManager.Current = new AppSettings();
                 using var model = new ComponentsSettingsViewModel(new LegacySettingsConfiguration(page), localization);
+                model.BarProcessMemoryVisual = MetricVisualStyle.Ring;
+                model.PanelSystemNetworkVisual = MetricVisualStyle.Bar;
+                Assert.AreEqual(MetricVisualStyle.Numeric, model.BarProcessMemoryVisual);
+                Assert.AreEqual(MetricVisualStyle.Numeric, model.PanelSystemNetworkVisual);
                 model.BarSystemCpuVisual = MetricVisualStyle.Ring;
                 model.PanelSystemNetworkVisual = MetricVisualStyle.Line;
                 Assert.AreEqual(MetricVisualStyle.Area, model.PanelSystemCpuVisual);

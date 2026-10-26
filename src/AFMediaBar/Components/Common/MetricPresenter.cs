@@ -26,19 +26,19 @@ public sealed class MetricPresenter : Grid
     private SystemMetricsSnapshot _snapshot;
     public bool ShowHover { get; set; } = true;
     public MetricKind Metric { get => _metric; set { _metric = value; Refresh(); } }
-    public MetricVisualStyle VisualStyle { get => _visualStyle; set { _visualStyle = value; Refresh(); } }
+    public MetricVisualStyle VisualStyle { get => MetricVisualSettings.ResolveStyle(Metric, _visualStyle); set { _visualStyle = value; Refresh(); } }
     public bool Compact { get => _compact; set { _compact = value; Refresh(); } }
     public bool Vertical { get => _vertical; set { _vertical = value; Refresh(); } }
     public IReadOnlyList<MetricChart> Charts => _charts.Take(Metric == MetricKind.SystemNetwork ? 2 : 1).ToArray();
     // 按完整读数的常用位数留固定预算，采样更新不改变组件长度。
     public double PreferredWidth => Metric switch
     {
-        MetricKind.SystemNetwork => VisualStyle == MetricVisualStyle.Ring ? 156 : 104,
-        MetricKind.ProcessMemory => VisualStyle == MetricVisualStyle.Ring ? 96 : 112,
+        MetricKind.SystemNetwork => 104,
+        MetricKind.ProcessMemory => 112,
         _ => VisualStyle == MetricVisualStyle.Ring ? 84 : 76
     };
     public double PreferredVerticalLength => Metric == MetricKind.SystemNetwork
-        ? VisualStyle == MetricVisualStyle.Ring ? 112 : 100 : 64;
+        ? 100 : 64;
 
     public MetricPresenter()
     {
@@ -106,7 +106,13 @@ public sealed class MetricPresenter : Grid
                 : "↓ " + MetricPresentationPolicy.FormatRate(_snapshot.NetworkDownloadBytesPerSecond))
                 : MetricPresentationPolicy.Format(Metric, _snapshot);
             var split = formatted.IndexOf(' ');
-            var label = formatted[..Math.Max(0, split)];
+            var label = !network ? Metric switch
+            {
+                MetricKind.SystemMemory => "M",
+                MetricKind.SystemCpu => "C",
+                MetricKind.SystemGpu => "G",
+                _ => "A"
+            } : formatted[..Math.Max(0, split)];
             var value = split >= 0 ? formatted[(split + 1)..] : formatted;
             var plotHeight = Math.Max(1, ActualHeight / (network && !sideBySide ? 2 : 1));
             var size = Compact ? network ? 12d : 13d : 16d;
@@ -160,10 +166,9 @@ public sealed class MetricPresenter : Grid
             }
             if (VisualStyle == MetricVisualStyle.Ring)
             {
-                var number = value.TrimEnd('%').Split(' ')[0];
-                var unit = value.EndsWith('%') ? "%" : value.Contains(' ') ? value[(value.IndexOf(' ') + 1)..] : string.Empty;
-                var ringLabel = label + (unit.Length == 0 ? "" : (Vertical && network ? "" : " ") + unit);
-                // 竖向卡片为标签和单位预留行高，测量宽度与实际左右留白保持一致。
+                // 单位跟随读数；圆心放不下完整读数时，在同一卡片内保留完整文本。
+                var ringLabel = label;
+                // 竖向卡片为标签预留行高，测量宽度与实际左右留白保持一致。
                 var header = 0d;
                 if (Vertical)
                 {
@@ -174,10 +179,10 @@ public sealed class MetricPresenter : Grid
                     header = _measureText.DesiredSize.Height + 4;
                     _measureText.TextWrapping = TextWrapping.NoWrap;
                 }
-                var diameter = Math.Min(Math.Min(plotHeight - header - 2, laneWidth - 4), Compact ? 32 : 48);
+                var diameter = Math.Min(Math.Min(plotHeight - header - 2, laneWidth - 4), Compact ? 36 : 48);
                 chart.Width = chart.Height = Math.Max(8, diameter);
                 chart.HorizontalAlignment = HorizontalAlignment.Right; chart.VerticalAlignment = VerticalAlignment.Center;
-                _measureText.Text = number; _measureText.FontSize = readout.FontSize;
+                _measureText.Text = value; _measureText.FontSize = readout.FontSize;
                 _measureText.FontWeight = readout.FontWeight; _measureText.FontFamily = readout.FontFamily;
                 _measureText.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 var numberFits = _measureText.DesiredSize.Width <= diameter - 6;
@@ -190,7 +195,7 @@ public sealed class MetricPresenter : Grid
                     name.HorizontalAlignment = Vertical ? HorizontalAlignment.Center : HorizontalAlignment.Left;
                     chart.HorizontalAlignment = Vertical ? HorizontalAlignment.Center : HorizontalAlignment.Right;
                     chart.Margin = Vertical ? new Thickness(2, header, 2, 2) : new Thickness(2);
-                    readout.Text = number; readout.HorizontalAlignment = Vertical ? HorizontalAlignment.Center : HorizontalAlignment.Right;
+                    readout.Text = value; readout.HorizontalAlignment = Vertical ? HorizontalAlignment.Center : HorizontalAlignment.Right;
                     readout.VerticalAlignment = VerticalAlignment.Center;
                     readout.Width = Math.Max(1, diameter);
                     readout.Margin = Vertical ? new Thickness(0, header, 0, 2) : new Thickness(0, 0, 2, 0);
@@ -215,8 +220,12 @@ public sealed class MetricPresenter : Grid
             MetricKind.SystemGpu => "GPU",
             _ => "CPU"
         };
-        var description = fullName + ": " + MetricPresentationPolicy.Format(Metric, _snapshot);
-        if (Metric is MetricKind.ProcessMemory or MetricKind.SystemNetwork && VisualStyle is MetricVisualStyle.Ring or MetricVisualStyle.Bar)
+        var fullReadout = MetricPresentationPolicy.Format(Metric, _snapshot);
+        // 格式化文本已带短标签，提示仅使用完整名称与读数，避免 GPU: GPU 4%。
+        if (Metric != MetricKind.SystemNetwork && fullReadout.IndexOf(' ') is var separator && separator >= 0)
+            fullReadout = fullReadout[(separator + 1)..];
+        var description = fullName + ": " + fullReadout;
+        if (Metric is MetricKind.ProcessMemory or MetricKind.SystemNetwork && VisualStyle is MetricVisualStyle.Line or MetricVisualStyle.Area)
             description += " · " + Translations.Get("Performance.Visual.Relative");
         ToolTip = description;
         AutomationProperties.SetName(this, description);
