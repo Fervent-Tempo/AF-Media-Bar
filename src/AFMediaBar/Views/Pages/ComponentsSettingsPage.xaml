@@ -534,6 +534,18 @@
                                 <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Full.Entry.Hover}" />
                             </ComboBox>
                         </components:SettingsRow>
+                        <components:SettingsRow
+                            Title="{DynamicResource Loc.DisplayModes.Full.Entry.HoverDelay.Title}"
+                            Description="{DynamicResource Loc.DisplayModes.Full.Entry.HoverDelay.Description}"
+                            Icon="{ui:SymbolIcon Timer24}"
+                            Visibility="{Binding ViewModel.Layers.UsesFullPanelEntryHover, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                            <components:SettingsNumericEditor
+                                Value="{Binding ViewModel.Layers.FullPanelEntryHoverDelaySeconds, Mode=TwoWay}"
+                                Minimum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MinimumFullPanelEntryHoverDelaySeconds}}"
+                                Maximum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MaximumFullPanelEntryHoverDelaySeconds}}"
+                                Step="{Binding Source={x:Static settings:TaskbarExperienceSettings.FullPanelEntryHoverDelayStepSeconds}}"
+                                Unit="{DynamicResource Loc.Settings.Numeric.Seconds}" />
+                        </components:SettingsRow>
                         <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Info24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>

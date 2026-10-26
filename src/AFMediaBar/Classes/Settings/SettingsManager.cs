@@ -228,6 +228,7 @@ public static class SettingsManager
             ArtworkVisible = defaults.TaskbarExperience.ArtworkVisible,
             FullPanelEntryVisible = defaults.TaskbarExperience.FullPanelEntryVisible,
             FullPanelEntryTrigger = defaults.TaskbarExperience.FullPanelEntryTrigger,
+            FullPanelEntryHoverDelayMilliseconds = defaults.TaskbarExperience.FullPanelEntryHoverDelayMilliseconds,
             HoverControls = defaults.TaskbarExperience.HoverControls,
             OutputDeviceVisible = defaults.TaskbarExperience.OutputDeviceVisible,
             InputDeviceVisible = defaults.TaskbarExperience.InputDeviceVisible,

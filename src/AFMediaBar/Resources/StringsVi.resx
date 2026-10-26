@@ -2999,7 +2999,13 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
     <value>Nhấp chuột</value>
   </data>
   <data name="DisplayModes.Full.Entry.Hover" xml:space="preserve">
-    <value>Di chuột trong 0,5 giây</value>
+    <value>Di chuột</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Title" xml:space="preserve">
+    <value>Thời gian chờ khi di chuột</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Description" xml:space="preserve">
+    <value>Mở bảng đầy đủ sau khi con trỏ ở trên thanh mở trong khoảng thời gian này.</value>
   </data>
   <data name="Memory.Title" xml:space="preserve"><value>Công cụ bộ nhớ</value></data>
   <data name="Memory.Open" xml:space="preserve"><value>Mở công cụ bộ nhớ</value></data>

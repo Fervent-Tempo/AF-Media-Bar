@@ -45,6 +45,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     private Func<bool>? _canRemainVisible;
     private Func<bool>? _isBarPointerActive;
     private FullPanelHandleTrigger _trigger;
+    private TimeSpan _hoverDelay;
     private TimeSpan? _hoverSince;
     private TimeSpan? _outsideSince;
     private TimeSpan _nextContrastRefresh;
@@ -90,13 +91,15 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         surface.MouseLeftButtonUp += Surface_MouseLeftButtonUp;
         surface.MouseLeftButtonDown += Surface_MouseLeftButtonDown;
         surface.MouseEnter += Surface_MouseEnter;
+        surface.MouseLeave += (_, _) => _hoverSince = null;
+        surface.PreviewMouseDown += (_, _) => _hoverSince = null;
         Content = surface;
         _pointerTimer = new DispatcherTimer(DispatcherPriority.Input, Dispatcher) { Interval = TimeSpan.FromMilliseconds(50) };
         _pointerTimer.Tick += PointerTimer_Tick;
     }
 
     public void Reveal(TrayIconBounds bar, Rect handleBounds, Rect hitBounds, Rect transitBounds, FullPanelOpenRequestEventArgs request,
-        bool vertical, bool taskbarOnLeadingEdge, FullPanelHandleTrigger trigger, Func<bool> canRemainVisible,
+        bool vertical, bool taskbarOnLeadingEdge, FullPanelHandleTrigger trigger, int hoverDelayMilliseconds, Func<bool> canRemainVisible,
         Func<bool>? isBarPointerActive = null)
     {
         if (_disposed) return;
@@ -106,7 +109,14 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         _request = request;
         _canRemainVisible = canRemainVisible;
         _isBarPointerActive = isBarPointerActive;
+        var hoverDelay = TimeSpan.FromMilliseconds(hoverDelayMilliseconds);
+        if (_trigger != trigger || _hoverDelay != hoverDelay)
+        {
+            _hoverSince = null;
+            _isPressed = false;
+        }
         _trigger = trigger;
+        _hoverDelay = hoverDelay;
         if (IsVisible)
         {
             _taskbarSuspended = false;
@@ -375,7 +385,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
                 return;
             }
             _hoverSince ??= now;
-            if (_trigger == FullPanelHandleTrigger.Hover && now - _hoverSince.Value >= TimeSpan.FromMilliseconds(500))
+            if (_trigger == FullPanelHandleTrigger.Hover && now - _hoverSince.Value >= _hoverDelay)
                 RequestOpen();
         }
         catch (Exception exception)
@@ -395,12 +405,14 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         e.Handled = true;
         var pressed = _isPressed;
         _isPressed = false;
-        if (pressed && IsMouseOver && !_input.ConsumeSuppressedClick()) RequestOpen();
+        var suppressed = _input.ConsumeSuppressedClick();
+        if (_trigger == FullPanelHandleTrigger.Click && pressed && IsMouseOver && !suppressed) RequestOpen();
     }
 
     private void Surface_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        _isPressed = true;
+        _hoverSince = null;
+        _isPressed = _trigger == FullPanelHandleTrigger.Click;
         e.Handled = true;
     }
 

@@ -2961,7 +2961,13 @@
     <value>点击打开</value>
   </data>
   <data name="DisplayModes.Full.Entry.Hover" xml:space="preserve">
-    <value>悬停 0.5 秒</value>
+    <value>悬停打开</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Title" xml:space="preserve">
+    <value>悬停等待时间</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Description" xml:space="preserve">
+    <value>指针在入口连续停留达到此时间后打开完整面板。</value>
   </data>
   <data name="Memory.Title" xml:space="preserve"><value>内存工具</value></data>
   <data name="Memory.Open" xml:space="preserve"><value>打开内存工具</value></data>

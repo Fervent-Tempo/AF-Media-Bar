@@ -2961,7 +2961,13 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
     <value>Click</value>
   </data>
   <data name="DisplayModes.Full.Entry.Hover" xml:space="preserve">
-    <value>Hover for 0.5 seconds</value>
+    <value>Hover</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Title" xml:space="preserve">
+    <value>Hover delay</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Description" xml:space="preserve">
+    <value>Open the full panel after the pointer stays over the handle for this duration.</value>
   </data>
   <data name="Memory.Title" xml:space="preserve"><value>Memory tools</value></data>
   <data name="Memory.Open" xml:space="preserve"><value>Open memory tools</value></data>

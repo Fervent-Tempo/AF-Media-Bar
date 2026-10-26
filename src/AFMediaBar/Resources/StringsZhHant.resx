@@ -2961,7 +2961,13 @@
     <value>點擊開啟</value>
   </data>
   <data name="DisplayModes.Full.Entry.Hover" xml:space="preserve">
-    <value>懸停 0.5 秒</value>
+    <value>懸停開啟</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Title" xml:space="preserve">
+    <value>懸停等待時間</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Description" xml:space="preserve">
+    <value>指標在入口連續停留達到此時間後開啟完整面板。</value>
   </data>
   <data name="Memory.Title" xml:space="preserve"><value>記憶體工具</value></data>
   <data name="Memory.Open" xml:space="preserve"><value>開啟記憶體工具</value></data>
