@@ -1482,7 +1482,9 @@ namespace AFMediaBar.Components
             var layout = LayoutPresets.GetLayout(_currentMode, LayoutOrientation.Horizontal);
             var artwork = layout.Components.FirstOrDefault(component =>
                 string.Equals(component.Id, LayoutComponentIds.Artwork, StringComparison.Ordinal));
-            var inset = _isSmallTaskbar && UsesAdaptiveTaskbarText ? 2 : artwork?.Bounds.X ?? 0;
+            // 留白取决于任务栏实际高度，不能随文字是否收起而变化。
+            var inset = UsesAdaptiveTaskbarText && MainBorder.Height < SmallTaskbarPresentationPolicy.CompactCrossAxisThresholdDip
+                ? 2 : artwork?.Bounds.X ?? 0;
             return double.IsFinite(inset) && inset > 0 ? inset : 0;
         }
 

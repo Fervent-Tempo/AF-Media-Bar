@@ -198,6 +198,7 @@ public sealed class TaskbarArrangementPresentationTests
                 AssertPerformanceLayout(control);
                 VerticalTaskbarPresentationChecks.Verify(control);
                 SmallTaskbarPresentationChecks.Verify(control);
+                AssertFontSizeKeepsArtworkInset();
                 AssertMetadataSurvivesOrientationChanges();
                 AssertLyricsSurviveOrientationChanges();
                 AssertLyricsTimelineChangesResizeRepeatedText();
@@ -261,6 +262,39 @@ public sealed class TaskbarArrangementPresentationTests
                 }
             }
         }
+    }
+
+    private static void AssertFontSizeKeepsArtworkInset()
+    {
+        var settings = new AppSettings { Position = TaskbarBarPosition.End };
+        settings.TaskbarExperience = new()
+        {
+            Arrangement = TaskbarContentArrangement.Left,
+            LengthMode = TaskbarLengthMode.Fixed,
+            FixedLengthDip = 180,
+            SpectrumVisible = false,
+            PerformanceVisible = false
+        };
+        var control = new TaskBarMediaControl { AllowRestConnectionTransition = false };
+        try
+        {
+            control.ApplyPresentationSettings(settings);
+            control.UpdateSongInfo(MediaSnapshot.Disconnected with { IsConnected = true, Title = "Title", Artist = "Artist" });
+            foreach (var cross in new[] { 24d, 32d, 44d })
+            {
+                double? inset = null;
+                foreach (var font in new[] { 100, 80, 125, 100 })
+                {
+                    settings.TaskbarExperience = settings.TaskbarExperience with { MediaFontSizePercent = font };
+                    control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal, 100, 100, cross);
+                    control.ApplyPrimaryLength(180);
+                    var left = Canvas.GetLeft((FrameworkElement)control.FindName("SongImageBorder"));
+                    if (inset is { } expected) Assert.AreEqual(expected, left, .01, $"Height {cross}, font {font}% moved artwork.");
+                    inset = left;
+                }
+            }
+        }
+        finally { control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
     }
 
     private static void AssertLyricsTimelineChangesResizeRepeatedText()

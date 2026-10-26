@@ -9,6 +9,8 @@ public readonly record struct TaskbarTextBudget(double FontScale, double Padding
 /// <summary>横向行高与竖向列宽共用的可测试预算策略。</summary>
 public static class SmallTaskbarPresentationPolicy
 {
+    /// <summary>低于此实际厚度时使用紧凑几何留白，与文字是否收起无关。</summary>
+    public const double CompactCrossAxisThresholdDip = 36;
     /// <summary>生成当前画面，保留原帧和逐字时间信息。</summary>
     public static LyricsPresentationFrame Project(LyricsPresentationFrame frame, bool hideSecondary) =>
         hideSecondary ? frame with
@@ -27,7 +29,7 @@ public static class SmallTaskbarPresentationPolicy
         var primary = double.IsFinite(primaryFontSize) ? Math.Max(1, primaryFontSize) : 14;
         var secondary = double.IsFinite(secondaryFontSize) ? Math.Max(1, secondaryFontSize) : 12;
         var gap = double.IsFinite(gapDip) ? Math.Max(0, gapDip) : 0;
-        var padding = cross < 36 ? Math.Min(1, cross / 8) : 2;
+        var padding = cross < CompactCrossAxisThresholdDip ? Math.Min(1, cross / 8) : 2;
         var available = Math.Max(1, cross - padding * 2);
         var lineHeight = vertical ? 1 : 1.25;
         var hideSecondary = (primary + secondary) * lineHeight + gap > available + .1;
