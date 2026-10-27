@@ -306,6 +306,8 @@ namespace AFMediaBar
                 services.AddScoped<AppearancePage>();
                 services.AddScoped<ApplicationAppearancePage>();
                 services.AddScoped<RestStatePage>();
+                services.AddScoped<QuickStartPage>();
+                services.AddScoped<QuickStartViewModel>();
                 services.AddScoped<FullPanelPage>();
                 services.AddScoped<SpectrumPage>();
                 services.AddScoped<PerformancePage>();

@@ -78,7 +78,10 @@ public readonly record struct SettingsSearchEntry(
     string PageTitle,
     string Title,
     string Description,
-    IReadOnlyList<string> Keywords);
+    IReadOnlyList<string> Keywords)
+{
+    public string? OptionId { get; init; }
+}
 
 /// <summary>
 /// 一条搜索命中。/ A single search hit.
@@ -93,7 +96,10 @@ public readonly record struct SettingsSearchHit(
     string GroupId,
     string PageTitle,
     string Title,
-    string Description);
+    string Description)
+{
+    public string? OptionId { get; init; }
+}
 
 /// <summary>
 /// 设置搜索策略：把用户输入解析成按相关度排序的分组命中。
@@ -144,14 +150,14 @@ public static class SettingsSearchPolicy
                     entry.GroupId,
                     entry.PageTitle,
                     entry.Title,
-                    entry.Description)));
+                    entry.Description) { OptionId = entry.OptionId }));
             }
         }
 
         return scored
             .OrderBy(candidate => candidate.Rank)
             .ThenBy(candidate => candidate.Order)
-            .DistinctBy(candidate => (candidate.Hit.Page, candidate.Hit.GroupId))
+            .DistinctBy(candidate => (candidate.Hit.Page, candidate.Hit.GroupId, candidate.Hit.OptionId))
             .Take(MaxResults)
             .Select(candidate => candidate.Hit)
             .ToArray();

@@ -11,6 +11,7 @@ public static class SettingsPageCatalog
 {
     private static readonly IReadOnlyList<SettingsPageDefinition> TaskbarPages = Array.AsReadOnly(new[]
     {
+        new SettingsPageDefinition(SettingsPageKey.QuickStart, "Settings.Section.Start", "Sparkle24", true),
         new SettingsPageDefinition(SettingsPageKey.ScreenAndPlacement, "Common.Page.ScreenAndPlacement", "Desktop24", true, HasModeContent: true),
         new SettingsPageDefinition(SettingsPageKey.RestState, "Common.Page.RestState", "Layer24", false),
         new SettingsPageDefinition(SettingsPageKey.Appearance, "Settings.Page.BarAppearance", "PaintBrush24", false),

@@ -249,7 +249,7 @@ public class SettingsGroupStrip : Control
     /// never be left sitting at an intermediate opacity.
     /// </summary>
     /// <param name="groupId">Stable group identity.</param>
-    public void RevealGroup(string groupId)
+    public void RevealGroup(string groupId, string? optionId = null)
     {
         var groups = ResolveGroups();
         var group = groups.FirstOrDefault(candidate => candidate.GroupId == groupId);
@@ -258,6 +258,20 @@ public class SettingsGroupStrip : Control
         // Search resolves a group, so reveal its details before measuring the scroll target.
         ExpandDetails(group);
         group.UpdateLayout();
+        if (optionId is not null)
+        {
+            var title = optionId.StartsWith('@') ? optionId[1..] : Translations.Get(optionId);
+            var row = LogicalDescendants(group).OfType<SettingsRow>().FirstOrDefault(candidate => candidate.Title == title && candidate.IsVisible);
+            if (row is not null)
+            {
+                StopJump();
+                row.BringIntoView();
+                var input = VisualDescendants(row).OfType<Control>().FirstOrDefault(control => control.Focusable && control.IsEnabled && control.IsVisible);
+                if (input is not null) input.Focus();
+                else { row.Focusable = true; row.Focus(); }
+                return;
+            }
+        }
         JumpTo(groupIndex);
         if (MotionPolicy.ResolveCurrent().Mode == MotionMode.Instant ||
             InputManager.Current.MostRecentInputDevice is KeyboardDevice) return;
@@ -280,6 +294,25 @@ public class SettingsGroupStrip : Control
         };
 
         group.BeginAnimation(UIElement.OpacityProperty, animation, HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private static IEnumerable<DependencyObject> LogicalDescendants(DependencyObject parent)
+    {
+        foreach (var child in LogicalTreeHelper.GetChildren(parent).OfType<DependencyObject>())
+        {
+            yield return child;
+            foreach (var descendant in LogicalDescendants(child)) yield return descendant;
+        }
+    }
+
+    private static IEnumerable<DependencyObject> VisualDescendants(DependencyObject parent)
+    {
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, index);
+            yield return child;
+            foreach (var descendant in VisualDescendants(child)) yield return descendant;
+        }
     }
 
     private static void ExpandDetails(DependencyObject element)

@@ -39,7 +39,9 @@ namespace AFMediaBar.Views.Windows
         private readonly AppLogService _log;
         private SettingsContext _displayedContext = SettingsContext.Initial;
         private SettingsMode? _navigationMode;
-        private SettingsPageKey _currentPage = SettingsPageKey.ScreenAndPlacement;
+        private SettingsPageKey _currentPage = SettingsPageKey.QuickStart;
+        private readonly Dictionary<string, SettingsPageKey> _lastSectionPages = new();
+        private readonly Dictionary<string, NavigationViewItem> _sectionItems = new();
         private bool _closed;
 
         public SettingsWindowViewModel ViewModel { get; }
@@ -96,20 +98,7 @@ namespace AFMediaBar.Views.Windows
             AddHandler(AFMediaBar.Components.SettingsNavigationButton.NavigateEvent, new RoutedEventHandler(OnRelatedSettingsRequested));
             RootNavigation.Navigated += OnNavigated;
 
-            // 落地页：窗口每次打开都直接落在「显示与位置」。
-            //
-            // 不发起导航时内容区是空的：导航控件在收到第一个导航请求之前不会创建任何页面，用户打开设置看到的就是一片
-            // 空白。这里挂在"窗口变为可见"而不是构造函数上——构造函数早于 Show，那时导航视图还没有内容宿主，立刻导航
-            // 等于什么都没发生（MainWindow 里的更新跳转也踩过这一条）；再排到 Loaded 之后，等布局完成。
-            // 由打开方发起的导航（例如更新提示要落在「更新亮点」）排在本次之后，因此仍然由它决定最终页面。
-            // Landing page: the window lands straight on "display and placement" every time it opens.
-            //
-            // Without a navigation request the content area is empty: the navigation control creates no page until the first request
-            // arrives, so opening the settings shows nothing at all. This hangs off "window became visible" rather than the
-            // constructor, because the constructor runs before Show, when the navigation view has no content host yet and navigating
-            // does nothing (the update jump in MainWindow hit the same thing); the call is then queued behind Loaded so layout has
-            // finished. A navigation issued by whoever opened the window — the update notice lands on "release highlights" — is queued after
-            // this one and therefore still decides the final page.
+            // 默认首页等待内容宿主就绪；调用方排在其后的显式导航仍然优先。
             IsVisibleChanged += OnVisibilityChangedForLandingPage;
 
             // 更新提示的订阅与显示放在窗口构造的最后：它依赖 InitializeComponent 创建好的导航项。
@@ -139,7 +128,7 @@ namespace AFMediaBar.Views.Windows
 
             Dispatcher.BeginInvoke(
                 DispatcherPriority.Loaded,
-                new Action(() => { if (!_closed) Navigate(typeof(DisplayModesPage)); }));
+                new Action(() => { if (!_closed) Navigate(typeof(QuickStartPage)); }));
         }
 
         #endregion Landing page
@@ -195,21 +184,15 @@ namespace AFMediaBar.Views.Windows
             args.Handled = true;
         }
 
-        /// <summary>
-        /// 选中候选后先导航到目标页面，再让该页的分组标签条滚到命中的分组并脉冲一次。
-        /// 跳转必须等到新页面完成布局，否则分组位置还是上一次的。
-        /// Selecting a suggestion navigates to the page and then asks that page's group strip to scroll to the
-        /// matching group and pulse it. The jump waits for the new page to finish layout, because group positions
-        /// would otherwise still belong to the previous page.
-        /// </summary>
+        /// <summary>导航到命中的唯一编辑位置，完成布局后展开分组并聚焦具体选项。</summary>
         private void OnSearchSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
         {
             if (args.SelectedItem is SettingsSearchSuggestion suggestion)
-                NavigateToGroup(suggestion.Hit.Page, suggestion.Hit.GroupId);
+                NavigateToGroup(suggestion.Hit.Page, suggestion.Hit.GroupId, suggestion.Hit.OptionId);
         }
 
         /// <summary>通过稳定页面与分组标识定位设置，供搜索、快捷入口和系统通知复用。</summary>
-        public void NavigateToGroup(SettingsPageKey page, string groupId)
+        public void NavigateToGroup(SettingsPageKey page, string groupId, string? optionId = null)
         {
             if (_closed) return;
             (page, groupId) = SettingsPageCatalog.ResolveDestination(page, groupId);
@@ -217,21 +200,11 @@ namespace AFMediaBar.Views.Windows
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
             {
                 if (_closed || _currentPage != page) return;
-                FindDescendant<SettingsGroupStrip>(RootNavigation)?.RevealGroup(groupId);
+                FindDescendant<SettingsGroupStrip>(RootNavigation)?.RevealGroup(groupId, optionId);
             }));
         }
 
-        /// <summary>
-        /// 搜索候选项：主文案是「页面 › 分组」，副文案说明该分组能改什么。
-        ///
-        /// 主文案的拼装样式（分隔符与两侧顺序）取自语言文件，两个名称则已经分别是当前
-        /// 语言的页面名与分组名，因此候选行不会拼出半句旧语言。
-        /// Search suggestion: the primary line is "page › group" and the secondary line says what it changes.
-        ///
-        /// The pattern of the primary line, its separator and the order of its two sides, comes from the language file,
-        /// while each name is already a page name and a group name in the active language, so a suggestion line can
-        /// never be composed half in the old language.
-        /// </summary>
+        /// <summary>使用当前语言呈现页面路径、选项名称与说明。</summary>
         private sealed class SettingsSearchSuggestion
         {
             public SettingsSearchSuggestion(SettingsSearchHit hit) => Hit = hit;
@@ -357,7 +330,7 @@ namespace AFMediaBar.Views.Windows
         /// </summary>
         private void HighlightSidebarItem(Type pageType)
         {
-            var item = RootNavigation.MenuItems.OfType<NavigationViewItem>()
+            var item = EnumerateNavigationItems(RootNavigation.MenuItems.OfType<NavigationViewItem>())
                 .Concat(RootNavigation.FooterMenuItems.OfType<NavigationViewItem>())
                 .FirstOrDefault(candidate => candidate.TargetPageType == pageType);
             _sidebarSelection.Highlight(item);
@@ -365,7 +338,13 @@ namespace AFMediaBar.Views.Windows
 
         private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
         {
-            if (args.Page is Page destination) _currentPage = SettingsPageProvider.PageTypes.First(pair => pair.Value == destination.GetType()).Key;
+            if (args.Page is Page destination)
+            {
+                _currentPage = SettingsPageProvider.PageTypes.First(pair => pair.Value == destination.GetType()).Key;
+                if (SettingsNavigationCatalog.SectionFor(_currentPage) is { } section)
+                    _lastSectionPages[section.Id] = _currentPage;
+                ExpandCurrentSection();
+            }
             SettingsRevealAnimator.Cancel(_transitionContent);
             _transitionContent = null;
             if (args.Page is Page page &&
@@ -410,7 +389,7 @@ namespace AFMediaBar.Views.Windows
 
         private async void SettingsWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
-            Navigate(typeof(ScreenAndPlacementPage));
+            Navigate(typeof(QuickStartPage));
             await _contexts.StartAsync();
         }
 
@@ -424,17 +403,70 @@ namespace AFMediaBar.Views.Windows
             // The items are rebuilt, so the one named by an earlier programmatic navigation is gone; hand the
             // highlight back to SelectedItem.
             _sidebarSelection.Highlight(null);
-            foreach (var definition in SettingsPageCatalog.ForMode(_contexts.Current.Mode))
+            _sectionItems.Clear();
+            var definitions = SettingsPageCatalog.ForMode(_contexts.Current.Mode);
+            foreach (var section in SettingsNavigationCatalog.Sections)
             {
-                var item = definition.Key == SettingsPageKey.ReleaseHighlights ? UpdateNoticeNavItem : new NavigationViewItem
+                var pages = section.Pages.Select(key => definitions.FirstOrDefault(page => page.Key == key))
+                    .OfType<SettingsPageDefinition>().ToArray();
+                if (pages.Length == 0) continue;
+                if (pages.Length == 1 && section.Id == "start")
                 {
-                    TargetPageType = SettingsPageProvider.PageTypes[definition.Key],
-                    Icon = new SymbolIcon(Enum.Parse<SymbolRegular>(definition.IconName))
+                    RootNavigation.MenuItems.Add(CreateNavigationItem(pages[0]));
+                    continue;
+                }
+                var sectionItem = new NavigationViewItem
+                {
+                    Icon = new SymbolIcon(Enum.Parse<SymbolRegular>(section.IconName))
                 };
-                if (definition.Key != SettingsPageKey.ReleaseHighlights) item.SetResourceReference(ContentControl.ContentProperty, "Loc." + definition.TitleKey);
-                item.NavigationCacheMode = NavigationCacheMode.Disabled;
-                if (definition.IsFooter) RootNavigation.FooterMenuItems.Add(item);
-                else RootNavigation.MenuItems.Add(item);
+                sectionItem.SetResourceReference(ContentControl.ContentProperty, "Loc." + section.TitleKey);
+                foreach (var page in pages) sectionItem.MenuItems.Add(CreateNavigationItem(page, includeIcon: false));
+                sectionItem.Click += (_, args) =>
+                {
+                    if (!ReferenceEquals(args.Source, sectionItem)) return;
+                    var destination = _lastSectionPages.TryGetValue(section.Id, out var last) && pages.Any(page => page.Key == last)
+                        ? last : pages[0].Key;
+                    Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+                    {
+                        if (_closed) return;
+                        Navigate(SettingsPageProvider.PageTypes[destination]);
+                        ExpandCurrentSection();
+                    }));
+                };
+                _sectionItems[section.Id] = sectionItem;
+                RootNavigation.MenuItems.Add(sectionItem);
+            }
+            foreach (var definition in definitions.Where(page => page.IsFooter))
+                RootNavigation.FooterMenuItems.Add(definition.Key == SettingsPageKey.ReleaseHighlights
+                    ? UpdateNoticeNavItem : CreateNavigationItem(definition));
+            ExpandCurrentSection();
+            HighlightSidebarItem(SettingsPageProvider.PageTypes[_currentPage]);
+        }
+
+        private static NavigationViewItem CreateNavigationItem(SettingsPageDefinition definition, bool includeIcon = true)
+        {
+            var item = new NavigationViewItem
+            {
+                TargetPageType = SettingsPageProvider.PageTypes[definition.Key],
+                NavigationCacheMode = NavigationCacheMode.Disabled
+            };
+            if (includeIcon) item.Icon = new SymbolIcon(Enum.Parse<SymbolRegular>(definition.IconName));
+            item.SetResourceReference(ContentControl.ContentProperty, "Loc." + definition.TitleKey);
+            return item;
+        }
+
+        private void ExpandCurrentSection()
+        {
+            var current = SettingsNavigationCatalog.SectionFor(_currentPage)?.Id;
+            foreach (var (id, item) in _sectionItems) item.IsExpanded = id == current;
+        }
+
+        private static IEnumerable<NavigationViewItem> EnumerateNavigationItems(IEnumerable<NavigationViewItem> items)
+        {
+            foreach (var item in items)
+            {
+                yield return item;
+                foreach (var child in EnumerateNavigationItems(item.MenuItems.OfType<NavigationViewItem>())) yield return child;
             }
         }
 

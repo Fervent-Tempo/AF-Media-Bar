@@ -3366,4 +3366,232 @@ Mẫu bị loại: {3}; sự kiện: {4}</value></data>
   <data name="Settings.Page.About.Description" xml:space="preserve"><value>Thông tin dự án, người đóng góp, nhà tài trợ và giấy phép.</value></data>
   <data name="Settings.Page.ReleaseHighlights.Description" xml:space="preserve"><value>Xem tính năng mới và lịch sử các phiên bản chính thức.</value></data>
   <data name="Settings.Preview.LayerDisabled" xml:space="preserve"><value>Hiện không có nội dung để hiển thị.</value></data>
+  <data name="Settings.Section.Start" xml:space="preserve">
+    <value>Bắt đầu nhanh</value>
+  </data>
+  <data name="Settings.Section.Bar" xml:space="preserve">
+    <value>Thanh phương tiện</value>
+  </data>
+  <data name="Settings.Section.Content" xml:space="preserve">
+    <value>Nội dung và thành phần</value>
+  </data>
+  <data name="Settings.Section.Playback" xml:space="preserve">
+    <value>Phát và thiết bị</value>
+  </data>
+  <data name="Settings.Section.Interaction" xml:space="preserve">
+    <value>Tương tác và thông báo</value>
+  </data>
+  <data name="Settings.Section.App" xml:space="preserve">
+    <value>Ứng dụng</value>
+  </data>
+  <data name="Start.Description" xml:space="preserve">
+    <value>Tìm hiểu thao tác cơ bản và các thiết lập thường dùng.</value>
+  </data>
+  <data name="Start.Overview" xml:space="preserve">
+    <value>Ba lớp trải nghiệm</value>
+  </data>
+  <data name="Start.Intro" xml:space="preserve">
+    <value>AF Media Bar</value>
+  </data>
+  <data name="Start.Intro.Description" xml:space="preserve">
+    <value>Xem nội dung đang phát ở trạng thái thường trực, điều khiển khi di chuột và mở bảng đầy đủ để xem thêm. Các lớp dùng chung thiết lập giao diện và tính năng.</value>
+  </data>
+  <data name="Start.Rest" xml:space="preserve">
+    <value>Thường trực</value>
+  </data>
+  <data name="Start.Rest.Description" xml:space="preserve">
+    <value>Chọn ảnh bìa, văn bản, thành phần, thứ tự và nội dung giữ lại khi không có phương tiện.</value>
+  </data>
+  <data name="Start.Hover" xml:space="preserve">
+    <value>Điều khiển nhanh</value>
+  </data>
+  <data name="Start.Hover.Description" xml:space="preserve">
+    <value>Di chuột lên thanh để hiện nút phát. Có thể chọn nút hiển thị, kích thước và khoảng cách.</value>
+  </data>
+  <data name="Start.Full" xml:space="preserve">
+    <value>Bảng đầy đủ</value>
+  </data>
+  <data name="Start.Full.Description" xml:space="preserve">
+    <value>Dùng nút mở rộng để xem ảnh bìa, lời bài hát và các vùng khác.</value>
+  </data>
+  <data name="Start.Tutorials" xml:space="preserve">
+    <value>Hướng dẫn cơ bản</value>
+  </data>
+  <data name="Start.Tutorial.Mode" xml:space="preserve">
+    <value>Chọn chế độ và vị trí</value>
+  </data>
+  <data name="Start.Tutorial.Mode.Short" xml:space="preserve">
+    <value>Chọn chế độ thanh tác vụ hoặc nổi, sau đó điều chỉnh vị trí.</value>
+  </data>
+  <data name="Start.Tutorial.Mode.Body" xml:space="preserve">
+    <value>1. Chọn chế độ và màn hình trong Hiển thị và vị trí.
+2. Chế độ thanh tác vụ đi theo thanh tác vụ hệ thống. Hiển thị dọc cần thanh tác vụ ở cạnh trái hoặc phải.
+3. Chế độ nổi cho phép chỉnh vị trí, hướng và thu gọn ở cạnh. Mỗi chế độ giữ riêng thiết lập hình học.</value>
+  </data>
+  <data name="Start.Tutorial.Playback" xml:space="preserve">
+    <value>Phát và chọn nguồn</value>
+  </data>
+  <data name="Start.Tutorial.Playback.Short" xml:space="preserve">
+    <value>Bắt đầu phát trong trình phát rồi chọn nguồn trên thanh.</value>
+  </data>
+  <data name="Start.Tutorial.Playback.Body" xml:space="preserve">
+    <value>1. Phát một bài trong trình phát được hỗ trợ.
+2. Nếu có nhiều nguồn, chọn ứng dụng trong menu nguồn phương tiện.
+3. Chỉnh tự động chuyển, ứng dụng ưu tiên và danh sách cho phép trong Nguồn phương tiện. Nút điều khiển và dòng thời gian tùy thuộc trình phát.</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics" xml:space="preserve">
+    <value>Thiết lập văn bản và lời bài hát</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics.Short" xml:space="preserve">
+    <value>Chỉnh văn bản, cách hiển thị lời và nguồn lời bài hát.</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics.Body" xml:space="preserve">
+    <value>1. Chỉnh bố cục tiêu đề, nghệ sĩ và lời trong Văn bản và lời bài hát.
+2. Thiết lập hai dòng, dòng phụ và hiệu ứng từng từ.
+3. Bật và sắp xếp nguồn lời. Tìm trực tuyến gửi tên bài, nghệ sĩ; có thể tắt nguồn không cần dùng.</value>
+  </data>
+  <data name="Start.Tutorial.Devices" xml:space="preserve">
+    <value>Chuyển thiết bị âm thanh</value>
+  </data>
+  <data name="Start.Tutorial.Devices.Short" xml:space="preserve">
+    <value>Quản lý thiết bị vào/ra rồi chọn nút trên thanh.</value>
+  </data>
+  <data name="Start.Tutorial.Devices.Body" xml:space="preserve">
+    <value>1. Bật, đặt bí danh và sắp xếp thiết bị trong Thiết bị âm thanh.
+2. Hiện nút đầu vào hoặc đầu ra trong Thường trực.
+3. Chỉnh phím tắt và đích thao tác trong Tương tác và phím tắt. Pin Bluetooth cần bật thử nghiệm và dữ liệu từ Windows, trình điều khiển.</value>
+  </data>
+  <data name="Start.Tutorial.Daily" xml:space="preserve">
+    <value>Thao tác hằng ngày và sắp xếp</value>
+  </data>
+  <data name="Start.Tutorial.Daily.Short" xml:space="preserve">
+    <value>Nhấp, cuộn, phím tắt và tay nắm kéo.</value>
+  </data>
+  <data name="Start.Tutorial.Daily.Body" xml:space="preserve">
+    <value>Chỉnh hành vi nhấp và cuộn trong Tương tác và phím tắt.
+Kéo tay nắm bên phải để sắp xếp hoặc chọn nó rồi nhấn Alt + Lên/Xuống. Nhấn Esc để hủy kéo.
+Nhấn Ctrl + F để tìm thiết lập. Liên kết hiện khi di chuột hoặc đưa tiêu điểm bàn phím vào hàng.</value>
+  </data>
+  <data name="Start.Releases" xml:space="preserve">
+    <value>Tính năng theo phiên bản</value>
+  </data>
+  <data name="Start.Release16" xml:space="preserve">
+    <value>Bản chính thức 1.6</value>
+  </data>
+  <data name="Start.Release16.Body" xml:space="preserve">
+    <value>Quản lý và phím tắt chuyển thiết bị âm thanh đã chính thức khả dụng, hỗ trợ bí danh và thứ tự.
+Chế độ nổi thu gọn ở cả bốn cạnh; hiển thị dọc theo hướng thanh tác vụ hệ thống.
+Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn là thử nghiệm, mặc định tắt.</value>
+  </data>
+  <data name="Start.ReleaseNotes" xml:space="preserve">
+    <value>Xem ghi chú phát hành</value>
+  </data>
+  <data name="Start.Development" xml:space="preserve">
+    <value>Trung tâm thiết lập đang phát triển</value>
+  </data>
+  <data name="Start.Development.Body" xml:space="preserve">
+    <value>Bản dựng cục bộ này có điều hướng theo mục, Bắt đầu nhanh và các trang theo tác vụ. Những thay đổi giao diện này tách biệt với ghi chú bản chính thức 1.6.</value>
+  </data>
+  <data name="Start.History" xml:space="preserve">
+    <value>Lịch sử phiên bản</value>
+  </data>
+  <data name="Start.History.Description" xml:space="preserve">
+    <value>Nội dung dưới đây từ bộ nhớ đệm hoặc danh mục đi kèm. Mở Điểm nổi bật để xem lịch sử đầy đủ.</value>
+  </data>
+  <data name="Start.Players" xml:space="preserve">
+    <value>Hỗ trợ trình phát</value>
+  </data>
+  <data name="Start.Players.Note" xml:space="preserve">
+    <value>Khả năng tùy thuộc phiên bản và phiên phát. SMTC là phiên phương tiện Windows; điều khiển hay thời gian không được cung cấp sẽ không khả dụng. Bảng mô tả cách tích hợp, không xác nhận mọi phiên bản.</value>
+  </data>
+  <data name="Start.Player" xml:space="preserve">
+    <value>Trình phát / kênh</value>
+  </data>
+  <data name="Start.Metadata" xml:space="preserve">
+    <value>Thông tin</value>
+  </data>
+  <data name="Start.Control" xml:space="preserve">
+    <value>Điều khiển</value>
+  </data>
+  <data name="Start.Timeline" xml:space="preserve">
+    <value>Dòng thời gian</value>
+  </data>
+  <data name="Start.Lyrics" xml:space="preserve">
+    <value>Lời bài hát</value>
+  </data>
+  <data name="Start.Plugins" xml:space="preserve">
+    <value>Điều kiện tiện ích</value>
+  </data>
+  <data name="Start.NetEase" xml:space="preserve">
+    <value>NetEase Cloud Music</value>
+  </data>
+  <data name="Start.KuGou" xml:space="preserve">
+    <value>KuGou Music</value>
+  </data>
+  <data name="Start.OtherSmtc" xml:space="preserve">
+    <value>Trình phát SMTC khác</value>
+  </data>
+  <data name="Start.NoSmtc" xml:space="preserve">
+    <value>Trình phát khác không có SMTC</value>
+  </data>
+  <data name="Start.BuiltIn" xml:space="preserve">
+    <value>Tích hợp; không cần cài thêm</value>
+  </data>
+  <data name="Start.MemoryAndSmtc" xml:space="preserve">
+    <value>Bộ nhớ / SMTC</value>
+  </data>
+  <data name="Start.MemoryTimeline" xml:space="preserve">
+    <value>Bổ sung từ bộ nhớ</value>
+  </data>
+  <data name="Start.NetEaseLyrics" xml:space="preserve">
+    <value>Bộ nhớ / trực tuyến</value>
+  </data>
+  <data name="Start.OnlineLyrics" xml:space="preserve">
+    <value>Nguồn / khớp trực tuyến</value>
+  </data>
+  <data name="Start.SessionDependent" xml:space="preserve">
+    <value>Tùy phiên phát</value>
+  </data>
+  <data name="Start.NoPlugin" xml:space="preserve">
+    <value>SMTC không cần tiện ích</value>
+  </data>
+  <data name="Start.NotDetected" xml:space="preserve">
+    <value>Chưa có nhận diện chung</value>
+  </data>
+  <data name="Start.UnverifiedPlugin" xml:space="preserve">
+    <value>Yêu cầu bên thứ ba chưa xác minh</value>
+  </data>
+  <data name="Start.Shortcuts" xml:space="preserve">
+    <value>Thiết lập thường dùng</value>
+  </data>
+  <data name="Start.Help" xml:space="preserve">
+    <value>Câu hỏi và trợ giúp</value>
+  </data>
+  <data name="Start.Faq.Source" xml:space="preserve">
+    <value>Không hiện nội dung đang phát?</value>
+  </data>
+  <data name="Start.Faq.Source.Body" xml:space="preserve">
+    <value>Bắt đầu phát rồi kiểm tra nguồn đang chọn và danh sách cho phép. Trình phát không có phiên phương tiện hệ thống hoặc tích hợp riêng có thể không được nhận diện.</value>
+  </data>
+  <data name="Start.Faq.Lyrics" xml:space="preserve">
+    <value>Có thông tin bài nhưng không có lời?</value>
+  </data>
+  <data name="Start.Faq.Lyrics.Body" xml:space="preserve">
+    <value>Kiểm tra nguồn lời đã bật, kết nối và thông tin bài. Một số bài không có lời. Nguồn trực tuyến đã tắt sẽ không được truy vấn.</value>
+  </data>
+  <data name="Start.Runtime" xml:space="preserve">
+    <value>Yêu cầu môi trường chạy</value>
+  </data>
+  <data name="Start.Runtime.Body" xml:space="preserve">
+    <value>Cần Windows 10 1809 trở lên, x64 và Microsoft Edge WebView2 Evergreen Runtime. Gói phát hành có sẵn .NET; đầu ra dựng thông thường có thể cần cài môi trường chạy riêng.</value>
+  </data>
+  <data name="Start.ProjectHelp" xml:space="preserve">
+    <value>Trợ giúp dự án</value>
+  </data>
+  <data name="Start.Report" xml:space="preserve">
+    <value>Báo cáo vấn đề</value>
+  </data>
+  <data name="Start.WebView" xml:space="preserve">
+    <value>Tải WebView2</value>
+  </data>
 </root>

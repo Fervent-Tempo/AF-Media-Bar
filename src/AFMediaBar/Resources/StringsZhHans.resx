@@ -3328,4 +3328,232 @@
   <data name="Settings.Page.About.Description" xml:space="preserve"><value>项目信息、开发者、赞助与许可。</value></data>
   <data name="Settings.Page.ReleaseHighlights.Description" xml:space="preserve"><value>查看正式版本的新功能与历史介绍。</value></data>
   <data name="Settings.Preview.LayerDisabled" xml:space="preserve"><value>当前没有可显示的内容。</value></data>
+  <data name="Settings.Section.Start" xml:space="preserve">
+    <value>快速开始</value>
+  </data>
+  <data name="Settings.Section.Bar" xml:space="preserve">
+    <value>媒体栏</value>
+  </data>
+  <data name="Settings.Section.Content" xml:space="preserve">
+    <value>内容与组件</value>
+  </data>
+  <data name="Settings.Section.Playback" xml:space="preserve">
+    <value>播放与设备</value>
+  </data>
+  <data name="Settings.Section.Interaction" xml:space="preserve">
+    <value>交互与通知</value>
+  </data>
+  <data name="Settings.Section.App" xml:space="preserve">
+    <value>应用</value>
+  </data>
+  <data name="Start.Description" xml:space="preserve">
+    <value>了解媒体栏的基本操作，按任务找到常用设置。</value>
+  </data>
+  <data name="Start.Overview" xml:space="preserve">
+    <value>三层体验</value>
+  </data>
+  <data name="Start.Intro" xml:space="preserve">
+    <value>AF Media Bar</value>
+  </data>
+  <data name="Start.Intro.Description" xml:space="preserve">
+    <value>常驻状态显示正在播放的内容，悬停时使用快捷控制，打开完整面板查看更多信息。各层共享外观与功能设置。</value>
+  </data>
+  <data name="Start.Rest" xml:space="preserve">
+    <value>常驻状态</value>
+  </data>
+  <data name="Start.Rest.Description" xml:space="preserve">
+    <value>选择封面、文字与扩展组件，调整排列及无媒体时的保留内容。</value>
+  </data>
+  <data name="Start.Hover" xml:space="preserve">
+    <value>快捷控制</value>
+  </data>
+  <data name="Start.Hover.Description" xml:space="preserve">
+    <value>将指针移到媒体栏上，显示播放按钮。按钮显隐、大小和间距可单独调整。</value>
+  </data>
+  <data name="Start.Full" xml:space="preserve">
+    <value>完整面板</value>
+  </data>
+  <data name="Start.Full.Description" xml:space="preserve">
+    <value>通过展开入口打开完整面板，查看封面、歌词和其他区域。</value>
+  </data>
+  <data name="Start.Tutorials" xml:space="preserve">
+    <value>基础教程</value>
+  </data>
+  <data name="Start.Tutorial.Mode" xml:space="preserve">
+    <value>选择模式与位置</value>
+  </data>
+  <data name="Start.Tutorial.Mode.Short" xml:space="preserve">
+    <value>先选择任务栏或悬浮模式，再调整位置。</value>
+  </data>
+  <data name="Start.Tutorial.Mode.Body" xml:space="preserve">
+    <value>1. 在“显示与位置”选择当前模式和显示器。
+2. 任务栏模式跟随系统任务栏；竖向显示需要系统任务栏位于屏幕左侧或右侧。
+3. 悬浮模式可调整位置、方向与贴边收起。两种模式的几何设置分别保留。</value>
+  </data>
+  <data name="Start.Tutorial.Playback" xml:space="preserve">
+    <value>开始播放与选择来源</value>
+  </data>
+  <data name="Start.Tutorial.Playback.Short" xml:space="preserve">
+    <value>在播放器中开始播放，再从媒体栏选择来源。</value>
+  </data>
+  <data name="Start.Tutorial.Playback.Body" xml:space="preserve">
+    <value>1. 打开受支持的播放器并播放曲目。
+2. 如果有多个来源，在媒体来源菜单中选择需要的应用。
+3. 自动切换、优先应用与允许列表在“媒体来源”设置。按钮和时间轴是否可用取决于播放器提供的能力。</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics" xml:space="preserve">
+    <value>设置文字与歌词</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics.Short" xml:space="preserve">
+    <value>调整媒体文字、歌词显示与取词来源。</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics.Body" xml:space="preserve">
+    <value>1. 在“文字与歌词”调整标题、歌手和歌词的布局。
+2. 在“歌词显示”设置双行、副行与逐字效果。
+3. 在“取词来源”启用需要的来源并调整顺序。在线检索会发送曲名、歌手等信息；不需要时可以关闭。</value>
+  </data>
+  <data name="Start.Tutorial.Devices" xml:space="preserve">
+    <value>切换音频设备</value>
+  </data>
+  <data name="Start.Tutorial.Devices.Short" xml:space="preserve">
+    <value>管理输入输出设备，再选择媒体栏中的入口。</value>
+  </data>
+  <data name="Start.Tutorial.Devices.Body" xml:space="preserve">
+    <value>1. 在“音频设备”启用需要的设备，设置别名与排列顺序。
+2. 在“常驻状态”显示输入或输出设备按钮。
+3. 设备切换快捷键与操作目标在“交互与快捷键”。蓝牙电量需要先启用对应实验功能，且依赖 Windows 和驱动提供的数据。</value>
+  </data>
+  <data name="Start.Tutorial.Daily" xml:space="preserve">
+    <value>日常操作与排序</value>
+  </data>
+  <data name="Start.Tutorial.Daily.Short" xml:space="preserve">
+    <value>点击、滚轮、快捷键和拖动排序。</value>
+  </data>
+  <data name="Start.Tutorial.Daily.Body" xml:space="preserve">
+    <value>点击与滚轮的行为在“交互与快捷键”统一设置。
+可排序列表使用最右侧手柄；聚焦手柄后按 Alt＋↑／↓ 也可排序，拖动中按 Esc 取消。
+使用 Ctrl＋F 搜索设置。关联入口在指针悬停或键盘焦点进入该行时显示。</value>
+  </data>
+  <data name="Start.Releases" xml:space="preserve">
+    <value>版本功能</value>
+  </data>
+  <data name="Start.Release16" xml:space="preserve">
+    <value>正式版 1.6</value>
+  </data>
+  <data name="Start.Release16.Body" xml:space="preserve">
+    <value>音频设备管理与切换快捷键正式可用，支持设备别名与排序。
+提供悬浮模式、四边贴边收起，以及与系统任务栏方向一致的竖向显示。
+完整面板入口支持点击或悬停打开；蓝牙电量仍为默认关闭的实验功能。</value>
+  </data>
+  <data name="Start.ReleaseNotes" xml:space="preserve">
+    <value>查看正式版说明</value>
+  </data>
+  <data name="Start.Development" xml:space="preserve">
+    <value>开发中的设置中心</value>
+  </data>
+  <data name="Start.Development.Body" xml:space="preserve">
+    <value>本次本地构建包含新的分区导航、快速开始和按任务组织的设置页面。这些界面改动不属于正式版 1.6 的更新说明。</value>
+  </data>
+  <data name="Start.History" xml:space="preserve">
+    <value>历史版本资料</value>
+  </data>
+  <data name="Start.History.Description" xml:space="preserve">
+    <value>以下内容来自本地缓存或内置版本目录；完整内容可在“更新亮点”查看。</value>
+  </data>
+  <data name="Start.Players" xml:space="preserve">
+    <value>播放器支持</value>
+  </data>
+  <data name="Start.Players.Note" xml:space="preserve">
+    <value>能力取决于播放器版本和当前会话。SMTC 是 Windows 系统媒体会话；未提供的控制或时间轴会不可用。表中描述现有接入方式，不代表所有版本均已验证。</value>
+  </data>
+  <data name="Start.Player" xml:space="preserve">
+    <value>播放器／通道</value>
+  </data>
+  <data name="Start.Metadata" xml:space="preserve">
+    <value>媒体信息</value>
+  </data>
+  <data name="Start.Control" xml:space="preserve">
+    <value>播放控制</value>
+  </data>
+  <data name="Start.Timeline" xml:space="preserve">
+    <value>时间轴</value>
+  </data>
+  <data name="Start.Lyrics" xml:space="preserve">
+    <value>歌词</value>
+  </data>
+  <data name="Start.Plugins" xml:space="preserve">
+    <value>插件条件</value>
+  </data>
+  <data name="Start.NetEase" xml:space="preserve">
+    <value>网易云音乐</value>
+  </data>
+  <data name="Start.KuGou" xml:space="preserve">
+    <value>酷狗音乐</value>
+  </data>
+  <data name="Start.OtherSmtc" xml:space="preserve">
+    <value>其它 SMTC 播放器</value>
+  </data>
+  <data name="Start.NoSmtc" xml:space="preserve">
+    <value>未接入 SMTC 的其它播放器</value>
+  </data>
+  <data name="Start.BuiltIn" xml:space="preserve">
+    <value>内置适配，无需另装</value>
+  </data>
+  <data name="Start.MemoryAndSmtc" xml:space="preserve">
+    <value>内存通道／SMTC</value>
+  </data>
+  <data name="Start.MemoryTimeline" xml:space="preserve">
+    <value>内存通道补全</value>
+  </data>
+  <data name="Start.NetEaseLyrics" xml:space="preserve">
+    <value>内存／在线取词</value>
+  </data>
+  <data name="Start.OnlineLyrics" xml:space="preserve">
+    <value>来源歌词／在线匹配</value>
+  </data>
+  <data name="Start.SessionDependent" xml:space="preserve">
+    <value>取决于会话</value>
+  </data>
+  <data name="Start.NoPlugin" xml:space="preserve">
+    <value>SMTC 本身无需插件</value>
+  </data>
+  <data name="Start.NotDetected" xml:space="preserve">
+    <value>尚无通用发现能力</value>
+  </data>
+  <data name="Start.UnverifiedPlugin" xml:space="preserve">
+    <value>如需第三方插件，要求待核实</value>
+  </data>
+  <data name="Start.Shortcuts" xml:space="preserve">
+    <value>常用设置</value>
+  </data>
+  <data name="Start.Help" xml:space="preserve">
+    <value>常见问题与帮助</value>
+  </data>
+  <data name="Start.Faq.Source" xml:space="preserve">
+    <value>没有显示正在播放的内容？</value>
+  </data>
+  <data name="Start.Faq.Source.Body" xml:space="preserve">
+    <value>先在播放器中开始播放，再检查“媒体来源”的允许列表和当前选择。未提供系统媒体会话、也没有专用适配的播放器可能无法被发现。</value>
+  </data>
+  <data name="Start.Faq.Lyrics" xml:space="preserve">
+    <value>有曲目但没有歌词？</value>
+  </data>
+  <data name="Start.Faq.Lyrics.Body" xml:space="preserve">
+    <value>检查取词来源是否启用、网络是否可用，以及曲名和歌手是否正确。部分曲目没有可用歌词；关闭在线来源后不会继续联网检索。</value>
+  </data>
+  <data name="Start.Runtime" xml:space="preserve">
+    <value>运行组件要求</value>
+  </data>
+  <data name="Start.Runtime.Body" xml:space="preserve">
+    <value>需要 Windows 10 1809 或更新的 x64 系统，以及 Microsoft Edge WebView2 Evergreen Runtime。正式发布包包含 .NET 运行时；普通构建输出可能需要单独安装运行时。</value>
+  </data>
+  <data name="Start.ProjectHelp" xml:space="preserve">
+    <value>项目帮助</value>
+  </data>
+  <data name="Start.Report" xml:space="preserve">
+    <value>反馈问题</value>
+  </data>
+  <data name="Start.WebView" xml:space="preserve">
+    <value>WebView2 下载</value>
+  </data>
 </root>

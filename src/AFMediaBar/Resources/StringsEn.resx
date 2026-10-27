@@ -3328,4 +3328,232 @@ Dropped samples: {3}; events: {4}</value></data>
   <data name="Settings.Page.About.Description" xml:space="preserve"><value>Project information, contributors, sponsors, and licenses.</value></data>
   <data name="Settings.Page.ReleaseHighlights.Description" xml:space="preserve"><value>Read new features and the history of official releases.</value></data>
   <data name="Settings.Preview.LayerDisabled" xml:space="preserve"><value>There is no content to display.</value></data>
+  <data name="Settings.Section.Start" xml:space="preserve">
+    <value>Quick start</value>
+  </data>
+  <data name="Settings.Section.Bar" xml:space="preserve">
+    <value>Media bar</value>
+  </data>
+  <data name="Settings.Section.Content" xml:space="preserve">
+    <value>Content &amp; components</value>
+  </data>
+  <data name="Settings.Section.Playback" xml:space="preserve">
+    <value>Playback &amp; devices</value>
+  </data>
+  <data name="Settings.Section.Interaction" xml:space="preserve">
+    <value>Interaction &amp; notifications</value>
+  </data>
+  <data name="Settings.Section.App" xml:space="preserve">
+    <value>Application</value>
+  </data>
+  <data name="Start.Description" xml:space="preserve">
+    <value>Learn the media bar and find settings for common tasks.</value>
+  </data>
+  <data name="Start.Overview" xml:space="preserve">
+    <value>Three layers</value>
+  </data>
+  <data name="Start.Intro" xml:space="preserve">
+    <value>AF Media Bar</value>
+  </data>
+  <data name="Start.Intro.Description" xml:space="preserve">
+    <value>See what is playing at rest, use controls on hover, and open the full panel for more detail. All layers share appearance and feature settings.</value>
+  </data>
+  <data name="Start.Rest" xml:space="preserve">
+    <value>At rest</value>
+  </data>
+  <data name="Start.Rest.Description" xml:space="preserve">
+    <value>Choose artwork, text and components, their order, and what stays visible without media.</value>
+  </data>
+  <data name="Start.Hover" xml:space="preserve">
+    <value>Quick controls</value>
+  </data>
+  <data name="Start.Hover.Description" xml:space="preserve">
+    <value>Hover over the media bar to reveal playback buttons. Choose which buttons appear and adjust their size and spacing.</value>
+  </data>
+  <data name="Start.Full" xml:space="preserve">
+    <value>Full panel</value>
+  </data>
+  <data name="Start.Full.Description" xml:space="preserve">
+    <value>Use the expand entry to open artwork, lyrics and other panel regions.</value>
+  </data>
+  <data name="Start.Tutorials" xml:space="preserve">
+    <value>Getting started</value>
+  </data>
+  <data name="Start.Tutorial.Mode" xml:space="preserve">
+    <value>Choose a mode and position</value>
+  </data>
+  <data name="Start.Tutorial.Mode.Short" xml:space="preserve">
+    <value>Choose taskbar or floating mode, then set its position.</value>
+  </data>
+  <data name="Start.Tutorial.Mode.Body" xml:space="preserve">
+    <value>1. Choose the mode and monitor in Display &amp; position.
+2. Taskbar mode follows the system taskbar. Vertical display requires a taskbar on the left or right edge.
+3. In floating mode, adjust position, orientation and edge collapse. Geometry is stored separately for each mode.</value>
+  </data>
+  <data name="Start.Tutorial.Playback" xml:space="preserve">
+    <value>Play and choose a source</value>
+  </data>
+  <data name="Start.Tutorial.Playback.Short" xml:space="preserve">
+    <value>Start playback in a player, then select its source.</value>
+  </data>
+  <data name="Start.Tutorial.Playback.Body" xml:space="preserve">
+    <value>1. Start a track in a supported player.
+2. If several sources are available, select the application in the media-source menu.
+3. Configure automatic switching, preferred apps and the allow list in Media sources. Controls and timeline support depend on the player.</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics" xml:space="preserve">
+    <value>Set up text and lyrics</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics.Short" xml:space="preserve">
+    <value>Adjust media text, lyric presentation and lyric sources.</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics.Body" xml:space="preserve">
+    <value>1. Adjust title, artist and lyric layout in Text &amp; lyrics.
+2. Set two-line lyrics, secondary lines and word timing in Lyric display.
+3. Enable and order lyric sources. Online searches send track and artist information; disable sources you do not need.</value>
+  </data>
+  <data name="Start.Tutorial.Devices" xml:space="preserve">
+    <value>Switch audio devices</value>
+  </data>
+  <data name="Start.Tutorial.Devices.Short" xml:space="preserve">
+    <value>Manage input and output devices, then choose their media-bar entries.</value>
+  </data>
+  <data name="Start.Tutorial.Devices.Body" xml:space="preserve">
+    <value>1. Enable, rename and order devices in Audio devices.
+2. Show input or output buttons in At rest.
+3. Configure device shortcuts and action targets in Interaction &amp; shortcuts. Bluetooth battery requires its experiment and data supplied by Windows and the driver.</value>
+  </data>
+  <data name="Start.Tutorial.Daily" xml:space="preserve">
+    <value>Daily use and ordering</value>
+  </data>
+  <data name="Start.Tutorial.Daily.Short" xml:space="preserve">
+    <value>Clicks, wheel gestures, shortcuts and drag handles.</value>
+  </data>
+  <data name="Start.Tutorial.Daily.Body" xml:space="preserve">
+    <value>Configure click and wheel actions in Interaction &amp; shortcuts.
+Reorder lists with the handle on the right, or focus it and press Alt + Up/Down. Press Esc to cancel a drag.
+Press Ctrl + F to search. Related links appear when a row is hovered or contains keyboard focus.</value>
+  </data>
+  <data name="Start.Releases" xml:space="preserve">
+    <value>Version highlights</value>
+  </data>
+  <data name="Start.Release16" xml:space="preserve">
+    <value>Release 1.6</value>
+  </data>
+  <data name="Start.Release16.Body" xml:space="preserve">
+    <value>Audio device management and switching shortcuts are now available, with aliases and ordering.
+Floating mode supports collapse at all four edges; vertical display follows the system taskbar orientation.
+The full-panel entry opens on click or hover. Bluetooth battery remains an experiment, off by default.</value>
+  </data>
+  <data name="Start.ReleaseNotes" xml:space="preserve">
+    <value>Read release notes</value>
+  </data>
+  <data name="Start.Development" xml:space="preserve">
+    <value>Settings centre in development</value>
+  </data>
+  <data name="Start.Development.Body" xml:space="preserve">
+    <value>This local build includes section navigation, Quick start and task-based settings pages. These interface changes are separate from the published 1.6 release notes.</value>
+  </data>
+  <data name="Start.History" xml:space="preserve">
+    <value>Release history</value>
+  </data>
+  <data name="Start.History.Description" xml:space="preserve">
+    <value>The following comes from the local cache or bundled catalogue. Open Update highlights for the complete history.</value>
+  </data>
+  <data name="Start.Players" xml:space="preserve">
+    <value>Player support</value>
+  </data>
+  <data name="Start.Players.Note" xml:space="preserve">
+    <value>Capabilities depend on player version and session. SMTC is the Windows system media session; missing controls or timeline data remain unavailable. This table describes integrations, not validation of every version.</value>
+  </data>
+  <data name="Start.Player" xml:space="preserve">
+    <value>Player / channel</value>
+  </data>
+  <data name="Start.Metadata" xml:space="preserve">
+    <value>Media info</value>
+  </data>
+  <data name="Start.Control" xml:space="preserve">
+    <value>Controls</value>
+  </data>
+  <data name="Start.Timeline" xml:space="preserve">
+    <value>Timeline</value>
+  </data>
+  <data name="Start.Lyrics" xml:space="preserve">
+    <value>Lyrics</value>
+  </data>
+  <data name="Start.Plugins" xml:space="preserve">
+    <value>Plugins</value>
+  </data>
+  <data name="Start.NetEase" xml:space="preserve">
+    <value>NetEase Cloud Music</value>
+  </data>
+  <data name="Start.KuGou" xml:space="preserve">
+    <value>KuGou Music</value>
+  </data>
+  <data name="Start.OtherSmtc" xml:space="preserve">
+    <value>Other SMTC players</value>
+  </data>
+  <data name="Start.NoSmtc" xml:space="preserve">
+    <value>Other players without SMTC</value>
+  </data>
+  <data name="Start.BuiltIn" xml:space="preserve">
+    <value>Built in; no extra plugin</value>
+  </data>
+  <data name="Start.MemoryAndSmtc" xml:space="preserve">
+    <value>Memory / SMTC</value>
+  </data>
+  <data name="Start.MemoryTimeline" xml:space="preserve">
+    <value>Memory enhancement</value>
+  </data>
+  <data name="Start.NetEaseLyrics" xml:space="preserve">
+    <value>Memory / online</value>
+  </data>
+  <data name="Start.OnlineLyrics" xml:space="preserve">
+    <value>Source / online match</value>
+  </data>
+  <data name="Start.SessionDependent" xml:space="preserve">
+    <value>Session dependent</value>
+  </data>
+  <data name="Start.NoPlugin" xml:space="preserve">
+    <value>SMTC needs no plugin</value>
+  </data>
+  <data name="Start.NotDetected" xml:space="preserve">
+    <value>No generic discovery</value>
+  </data>
+  <data name="Start.UnverifiedPlugin" xml:space="preserve">
+    <value>Third-party requirements unverified</value>
+  </data>
+  <data name="Start.Shortcuts" xml:space="preserve">
+    <value>Common settings</value>
+  </data>
+  <data name="Start.Help" xml:space="preserve">
+    <value>Questions &amp; help</value>
+  </data>
+  <data name="Start.Faq.Source" xml:space="preserve">
+    <value>Nothing appears while playing?</value>
+  </data>
+  <data name="Start.Faq.Source.Body" xml:space="preserve">
+    <value>Start playback, then check the selected source and allow list. Players without a system media session or dedicated integration may not be discovered.</value>
+  </data>
+  <data name="Start.Faq.Lyrics" xml:space="preserve">
+    <value>Track information but no lyrics?</value>
+  </data>
+  <data name="Start.Faq.Lyrics.Body" xml:space="preserve">
+    <value>Check enabled lyric sources, connectivity and track metadata. Some tracks have no available lyrics. Disabled online sources are not queried.</value>
+  </data>
+  <data name="Start.Runtime" xml:space="preserve">
+    <value>Runtime requirements</value>
+  </data>
+  <data name="Start.Runtime.Body" xml:space="preserve">
+    <value>Requires Windows 10 1809 or later, x64, and Microsoft Edge WebView2 Evergreen Runtime. Release packages include .NET; ordinary build output may require a separate runtime.</value>
+  </data>
+  <data name="Start.ProjectHelp" xml:space="preserve">
+    <value>Project help</value>
+  </data>
+  <data name="Start.Report" xml:space="preserve">
+    <value>Report an issue</value>
+  </data>
+  <data name="Start.WebView" xml:space="preserve">
+    <value>Get WebView2</value>
+  </data>
 </root>

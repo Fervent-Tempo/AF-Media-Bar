@@ -49,6 +49,11 @@
 </PropertyGroup>
 
   <ItemGroup>
+    <!-- 只读搜索元数据，与编译后的页面使用同一份设置标题与分组。 -->
+    <EmbeddedResource Include="Views\Pages\*Page.xaml" LogicalName="AFMediaBar.SettingsSearch.%(Filename).xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="NAudio.Wasapi" Version="3.1.0" />
     <PackageReference Include="Dubya.WindowsMediaController" Version="2.5.6" />
     <PackageReference Include="Lyricify.Lyrics.Helper" Version="0.2.0" />

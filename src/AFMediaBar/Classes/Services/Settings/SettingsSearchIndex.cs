@@ -47,7 +47,7 @@ public static class SettingsSearchIndex
                 var entries = _cachedEntries;
                 if (entries is null || _cachedLanguage != language)
                 {
-                    entries = Build(language);
+                    entries = Build(language).Concat(SettingsOptionSearchCatalog.ForLanguage(language)).ToArray();
                     _cachedLanguage = language;
                     _cachedEntries = entries;
                 }
@@ -60,8 +60,8 @@ public static class SettingsSearchIndex
     /// <summary>搜索唯一设置页面；未开启实验的专属选项不加入结果。</summary>
     public static IReadOnlyList<SettingsSearchEntry> ForContext(SettingsContext context) => Entries.Where(entry =>
         SettingsPageCatalog.Find(entry.Page, context.Mode) is not null &&
-        (entry.Page != SettingsPageKey.Application || entry.GroupId != "Memory.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.MemoryTools) &&
-        (entry.Page != SettingsPageKey.Widgets || entry.GroupId != "Battery.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.BluetoothBattery) &&
+        (entry.Page != SettingsPageKey.MemoryTools || entry.GroupId != "Memory.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.MemoryTools) &&
+        (entry.Page != SettingsPageKey.BluetoothBattery || entry.GroupId != "Battery.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.BluetoothBattery) &&
         (entry.Page != SettingsPageKey.ScreenAndPlacement || entry.GroupId == "Common.Group.ChooseDisplayMode" ||
             entry.GroupId == "Common.Group.ScreenAndPlacement" && context.Mode == SettingsMode.Taskbar ||
             entry.GroupId == "Placement.Floating.Title" && context.Mode == SettingsMode.FloatingBar) &&

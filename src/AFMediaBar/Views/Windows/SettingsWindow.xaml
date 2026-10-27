@@ -91,19 +91,13 @@
                             <ui:SymbolIconSource Symbol="Search24" />
                         </ui:IconSourceElement>
                     </ui:AutoSuggestBox.Icon>
-                    <!--
-                        两行候选：主行是「页面 › 分组」，副行说明该分组能改什么。
-                        命中只到分组粒度，因此副行是用户确认“是不是这个”的唯一线索。
-                        Two-line suggestions: the primary line is "page › group" and the secondary line says what
-                        the group can change. A hit resolves to a group, so the secondary line is the only clue that
-                        confirms it is the right one.
-                    -->
+                    <!-- 搜索结果显示页面路径与具体选项，说明用于确认选项作用。 -->
                     <ui:AutoSuggestBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Margin="0,-2">
-                                <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock FontSize="15" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
                                 <TextBlock
-                                    FontSize="11"
+                                    FontSize="13"
                                     Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                                     Text="{Binding Subtitle}"
                                     TextTrimming="CharacterEllipsis" />

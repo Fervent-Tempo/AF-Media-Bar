@@ -4,6 +4,7 @@ using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Services.Localization;
 using System.Text.Json;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -14,6 +15,30 @@ namespace AFMediaBar.Layout.Tests;
 [DoNotParallelize]
 public sealed class SettingsOrganizationTests
 {
+    [TestMethod]
+    public void NavigationAssignsEveryNonFooterPageToOneSection()
+    {
+        var assigned = SettingsNavigationCatalog.Sections.SelectMany(section => section.Pages).ToArray();
+        Assert.AreEqual(assigned.Length, assigned.Distinct().Count(), "A page must not have two sidebar editing entries.");
+        CollectionAssert.AreEquivalent(SettingsPageCatalog.ForMode(SettingsMode.Taskbar).Where(page => !page.IsFooter)
+            .Select(page => page.Key).ToArray(), assigned);
+        Assert.AreEqual(SettingsPageKey.QuickStart, SettingsNavigationCatalog.Sections[0].Pages[0]);
+    }
+
+    [TestMethod]
+    public void SpecificOptionSearchKeepsItsIdentityAndUniqueEditingDestination()
+    {
+        var entries = SettingsOptionSearchCatalog.ForLanguage(LocalizationLanguage.SimplifiedChinese).ToArray();
+        var font = entries.Single(entry => entry.OptionId == "Appearance.Row.MediaFontSize.Title");
+        Assert.AreEqual(SettingsPageKey.Lyrics, font.Page);
+        Assert.AreEqual("Common.Group.MediaBarText", font.GroupId);
+        var hit = SettingsSearchPolicy.Search(font.Title, entries).First();
+        Assert.AreEqual(font.OptionId, hit.OptionId);
+        Assert.AreEqual(font.Page, hit.Page);
+        Assert.IsTrue(entries.Any(entry => entry.Page == SettingsPageKey.BluetoothBattery));
+        Assert.IsTrue(entries.Any(entry => entry.Page == SettingsPageKey.MemoryTools));
+    }
+
     private AppSettings _previous = null!;
     private AppSettings? _previousDefaults;
 
