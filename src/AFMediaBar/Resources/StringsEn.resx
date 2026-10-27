@@ -611,7 +611,7 @@
     <value>Support me</value>
   </data>
   <data name="Common.Group.ThemeAndBackdrop" xml:space="preserve">
-    <value>All windows</value>
+    <value>Theme and material</value>
   </data>
   <data name="Common.Group.TrackChangeNotification" xml:space="preserve">
     <value>Track-change notification</value>
@@ -662,7 +662,7 @@
     <value>Application</value>
   </data>
   <data name="Common.Page.Appearance" xml:space="preserve">
-    <value>Appearance</value>
+    <value>Media bar appearance</value>
   </data>
   <data name="Common.Page.Components" xml:space="preserve">
     <value>Components</value>
@@ -1004,7 +1004,7 @@
     <value>Show the title and artist, or lyrics when enabled.</value>
   </data>
   <data name="DisplayModes.Rest.Component.OutputDevice" xml:space="preserve">
-    <value>Output-device button</value>
+    <value>Output device</value>
   </data>
   <data name="DisplayModes.Rest.Component.OutputDevice.Description" xml:space="preserve">
     <value>Click to choose an output device or scroll to switch.</value>
@@ -1028,7 +1028,7 @@
     <value>Show a live spectrum of all audio from the current output device.</value>
   </data>
   <data name="DisplayModes.Rest.Component.Volume" xml:space="preserve">
-    <value>Volume button</value>
+    <value>Volume</value>
   </data>
   <data name="DisplayModes.Rest.Component.Volume.Description" xml:space="preserve">
     <value>Click to open the volume menu or scroll to adjust the current source.</value>
@@ -1130,7 +1130,7 @@
     <value>Small cover</value>
   </data>
   <data name="DisplayModes.Rest.Row.SmallArtwork.Description" xml:space="preserve">
-    <value>Shrinks the cover to about 80% and centers it for a lighter look.</value>
+    <value>Center the artwork at 80% of its original size.</value>
   </data>
   <data name="DisplayModes.Rest.Row.SmallArtwork.Badge" xml:space="preserve">
     <value>Turn on "Show artwork" first</value>
@@ -2325,7 +2325,7 @@
     <value>Choose a display mode, monitor, and media bar position.</value>
   </data>
   <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
-    <value>Application appearance</value>
+    <value>Personalization</value>
   </data>
   <data name="Common.Page.TaskbarAppearance" xml:space="preserve">
     <value>Media bar appearance</value>
@@ -3249,4 +3249,32 @@ Sampling: 1 s active, 4 s idle; paused when display is off, locked or suspended.
 Folder: {1}
 Latest sample: {2}
 Dropped samples: {3}; events: {4}</value></data>
+  <data name="Common.Page.RestState" xml:space="preserve"><value>Always-on view</value></data>
+  <data name="Settings.RestState.Subtitle" xml:space="preserve"><value>Choose visible components, their order, and what remains without media.</value></data>
+  <data name="Settings.RestState.Visible" xml:space="preserve"><value>Visible content</value></data>
+  <data name="Settings.RestState.Idle" xml:space="preserve"><value>Without media</value></data>
+  <data name="Settings.RestState.IdleDescription" xml:space="preserve"><value>Turn off every item to hide the media bar when no media is available.</value></data>
+  <data name="Settings.RestState.OrderHint" xml:space="preserve"><value>Artwork and media text stay at the start. Other components can be reordered.</value></data>
+  <data name="Settings.RestState.Fixed" xml:space="preserve"><value>Fixed</value></data>
+  <data name="Settings.RestState.BatteryHint" xml:space="preserve"><value>Requires the Bluetooth battery experiment and a selected device.</value></data>
+  <data name="Settings.RestState.VisibilityLink" xml:space="preserve"><value>Configure always-on visibility</value></data>
+  <data name="Settings.Component.Configure" xml:space="preserve"><value>Configure</value></data>
+  <data name="Settings.Preview.Title" xml:space="preserve"><value>Preview</value></data>
+  <data name="Settings.Preview.Track" xml:space="preserve"><value>Sample track</value></data>
+  <data name="Settings.Preview.Artist" xml:space="preserve"><value>Sample artist</value></data>
+  <data name="Settings.Preview.Note" xml:space="preserve"><value>Uses current settings with fixed sample content. No live media or device data is read.</value></data>
+  <data name="Settings.Preview.Empty" xml:space="preserve"><value>No components retained. The bar is hidden without media.</value></data>
+  <data name="Settings.Preview.Idle" xml:space="preserve"><value>Preview without media</value></data>
+  <data name="Settings.Personalization.Subtitle" xml:space="preserve"><value>Set the application theme, window material, accent color, and fonts.</value></data>
+  <data name="Settings.Personalization.Accent" xml:space="preserve"><value>Accent color</value></data>
+  <data name="Settings.Personalization.Sample" xml:space="preserve"><value>Interface sample</value></data>
+  <data name="Settings.Personalization.SampleDescription" xml:space="preserve"><value>Review the current theme, fonts, and accent color.</value></data>
+  <data name="Settings.RestState.ArtworkAndProgress" xml:space="preserve"><value>Artwork and progress</value></data>
+  <data name="Settings.RestState.ArtworkDetails" xml:space="preserve"><value>Artwork details</value></data>
+  <data name="Settings.RestState.ArtworkHint" xml:space="preserve"><value>The idle quick-launch note is configured separately.</value></data>
+  <data name="Settings.RestState.ProgressHint" xml:space="preserve"><value>Show read-only progress. Hidden when duration is unavailable.</value></data>
+  <data name="Settings.RestState.DevicesAndVolume" xml:space="preserve"><value>Devices and volume</value></data>
+  <data name="Settings.RestState.SpaceHint" xml:space="preserve"><value>These controls take up space on the media bar.</value></data>
+  <data name="Settings.RestState.Extensions" xml:space="preserve"><value>Additional components</value></data>
+  <data name="Settings.RestState.Volume" xml:space="preserve"><value>Volume</value></data>
 </root>

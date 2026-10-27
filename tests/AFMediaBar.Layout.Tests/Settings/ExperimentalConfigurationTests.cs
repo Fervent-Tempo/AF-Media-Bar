@@ -185,6 +185,8 @@ public sealed class ExperimentalConfigurationTests
                 Assert.AreEqual("mic", SettingsManager.Current.AudioDevices.InputBlacklist.Single().EndpointId);
                 Assert.AreEqual(GlobalInteractionSettings.Default.PrimaryWheelAction, SettingsManager.Current.Interaction.PrimaryWheelAction);
                 SettingsManager.ResetContentLayout();
+                Assert.IsTrue(SettingsManager.Current.TaskbarExperience.InputDeviceVisible);
+                SettingsManager.ResetRestState();
                 Assert.AreEqual(TaskbarExperienceSettings.Default.InputDeviceVisible, SettingsManager.Current.TaskbarExperience.InputDeviceVisible);
                 Assert.IsNull(SettingsManager.Current.TaskbarExperience.RestComponentOrder);
             }

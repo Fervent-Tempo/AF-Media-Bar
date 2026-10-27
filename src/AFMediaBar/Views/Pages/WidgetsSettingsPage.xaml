@@ -94,7 +94,6 @@
                                             IsNested="True"
                                             Title="{Binding DisplayName}">
                                             <StackPanel Orientation="Horizontal">
-                                                <components:SettingsReorderHandle ItemKey="{Binding Id}" />
                                                 <ui:Button
                                                     Margin="4,0,0,0"
                                                     Command="{Binding DataContext.ViewModel.Note.RemoveQuickLaunchCommand, RelativeSource={RelativeSource AncestorType=Page}}"
@@ -102,6 +101,7 @@
                                                     Icon="{ui:SymbolIcon Delete24}"
                                                     Style="{StaticResource AfSettingsIconButtonStyle}"
                                                     ToolTip="{DynamicResource Loc.Media.QuickLaunch.Remove}" />
+                                                <components:SettingsReorderHandle ItemKey="{Binding Id}" />
                                             </StackPanel>
                                         </components:SettingsRow>
                                     </DataTemplate>
@@ -139,12 +139,7 @@
                 <components:SettingsGroup GroupId="Widgets.Spectrum" Header="{DynamicResource Loc.Widgets.Spectrum}"
                     Description="{DynamicResource Loc.Widgets.Spectrum.Description}" Icon="{ui:SymbolIcon DataHistogram24}">
                     <StackPanel>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Media.Spectrum.Visible.Description}"
-                            Icon="{ui:SymbolIcon DataHistogram24}"
-                            Title="{DynamicResource Loc.Media.Spectrum.Visible.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.SpectrumVisible, Mode=TwoWay}" />
-                        </components:SettingsRow>
+                        <components:SettingsNavigationButton Destination="RestState" GroupId="Common.RestLayer" Content="{DynamicResource Loc.Settings.RestState.VisibilityLink}" HorizontalAlignment="Left" Margin="0,0,0,12" />
                         <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon DataBarVertical24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
@@ -281,12 +276,7 @@
                 <components:SettingsGroup GroupId="Widgets.Performance" Header="{DynamicResource Loc.Widgets.Performance}"
                     Description="{DynamicResource Loc.Media.Performance.Metrics.Description}" Icon="{ui:SymbolIcon DataUsage24}">
                     <StackPanel>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Media.Performance.Visible.Description}"
-                            Icon="{ui:SymbolIcon Gauge24}"
-                            Title="{DynamicResource Loc.Media.Performance.Visible.Title}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PerformanceVisible, Mode=TwoWay}" />
-                        </components:SettingsRow>
+                        <components:SettingsNavigationButton Destination="RestState" GroupId="Common.RestLayer" Content="{DynamicResource Loc.Settings.RestState.VisibilityLink}" HorizontalAlignment="Left" Margin="0,0,0,12" />
                         <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Gauge24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
@@ -408,7 +398,7 @@
                             <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Battery.ListRefresh}" Command="{Binding RefreshDevicesListCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
                             <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Battery.Clear}" Command="{Binding ClearSelectionCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
                         </WrapPanel>
-                        <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.WidgetEnabled}"><ui:ToggleSwitch IsChecked="{Binding Enabled, Mode=TwoWay}"/></components:SettingsRow>
+                        <components:SettingsNavigationButton Destination="RestState" GroupId="Common.RestLayer" Content="{DynamicResource Loc.Settings.RestState.VisibilityLink}" HorizontalAlignment="Left" Margin="0,0,0,12" />
                         <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.DisplayMode}"><ComboBox SelectedValuePath="Tag" SelectedValue="{Binding DisplayMode, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}">
                             <ComboBoxItem Content="{DynamicResource Loc.Battery.WhenConnected}" Tag="{x:Static settings:BluetoothBatteryDisplayMode.WhenConnected}"/>
                             <ComboBoxItem Content="{DynamicResource Loc.Battery.WhenLow}" Tag="{x:Static settings:BluetoothBatteryDisplayMode.WhenLow}"/>

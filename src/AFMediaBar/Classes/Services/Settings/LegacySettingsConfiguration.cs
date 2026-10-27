@@ -136,6 +136,7 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
             case SettingsResetScope.DeviceManagement: SettingsManager.ResetDeviceManagement(); return;
             case SettingsResetScope.Interaction: SettingsManager.ResetInteraction(); return;
             case SettingsResetScope.Components: SettingsManager.ResetComponents(); return;
+            case SettingsResetScope.RestState: SettingsManager.ResetRestState(); return;
             case SettingsResetScope.Appearance: SettingsManager.ResetTaskbarAppearance(); return;
         }
         if (Target == BarConfigurationTarget.Taskbar)

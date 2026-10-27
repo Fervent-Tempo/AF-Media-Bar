@@ -265,10 +265,18 @@ public static class SettingsManager
         next.QuickLaunch = defaults.QuickLaunch;
         next.SpectrumComponent = defaults.SpectrumComponent;
         next.PerformanceComponent = defaults.PerformanceComponent;
-        next.BluetoothBatteryWidget = defaults.BluetoothBatteryWidget;
-        next.TaskbarExperience = next.TaskbarExperience with
-        { SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible, PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible };
+        next.BluetoothBatteryWidget = defaults.BluetoothBatteryWidget with { Enabled = next.BluetoothBatteryWidget.Enabled };
         Replace(next, SettingsResetScope.Components);
+    }
+
+    /// <summary>恢复常驻页的显隐与排序，详细参数和两种模式的几何保持原值。</summary>
+    public static void ResetRestState()
+    {
+        var next = Current.Clone();
+        var defaults = Defaults;
+        next.TaskbarExperience = AFMediaBar.Classes.Services.Settings.SettingsResetPolicy.Rest(next.TaskbarExperience, defaults.TaskbarExperience);
+        next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
+        Replace(next, SettingsResetScope.RestState);
     }
     public static void ResetDeviceManagement()
     {

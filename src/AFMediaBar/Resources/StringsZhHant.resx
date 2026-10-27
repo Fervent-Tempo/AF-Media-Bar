@@ -611,7 +611,7 @@
     <value>贊助我</value>
   </data>
   <data name="Common.Group.ThemeAndBackdrop" xml:space="preserve">
-    <value>所有視窗</value>
+    <value>主題與材質</value>
   </data>
   <data name="Common.Group.TrackChangeNotification" xml:space="preserve">
     <value>曲目切換通知</value>
@@ -662,7 +662,7 @@
     <value>應用程式</value>
   </data>
   <data name="Common.Page.Appearance" xml:space="preserve">
-    <value>外觀</value>
+    <value>媒體列外觀</value>
   </data>
   <data name="Common.Page.Components" xml:space="preserve">
     <value>元件設定</value>
@@ -1004,7 +1004,7 @@
     <value>顯示標題與演出者；啟用歌詞時顯示歌詞。</value>
   </data>
   <data name="DisplayModes.Rest.Component.OutputDevice" xml:space="preserve">
-    <value>輸出裝置按鈕</value>
+    <value>輸出裝置</value>
   </data>
   <data name="DisplayModes.Rest.Component.OutputDevice.Description" xml:space="preserve">
     <value>點擊選擇輸出裝置，捲動切換裝置。</value>
@@ -1028,7 +1028,7 @@
     <value>顯示目前輸出裝置所有聲音的即時頻譜。</value>
   </data>
   <data name="DisplayModes.Rest.Component.Volume" xml:space="preserve">
-    <value>音量按鈕</value>
+    <value>音量</value>
   </data>
   <data name="DisplayModes.Rest.Component.Volume.Description" xml:space="preserve">
     <value>點擊開啟音量功能表，捲動調整目前來源的音量。</value>
@@ -1130,7 +1130,7 @@
     <value>小封面</value>
   </data>
   <data name="DisplayModes.Rest.Row.SmallArtwork.Description" xml:space="preserve">
-    <value>把封面縮到原來的八成左右並置中，媒體欄看起來更清爽。</value>
+    <value>以原尺寸的 80% 置中顯示封面。</value>
   </data>
   <data name="DisplayModes.Rest.Row.SmallArtwork.Badge" xml:space="preserve">
     <value>需先開啟顯示封面</value>
@@ -2325,7 +2325,7 @@
     <value>選擇顯示模式，設定顯示器與媒體列位置。</value>
   </data>
   <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
-    <value>應用程式外觀</value>
+    <value>個人化</value>
   </data>
   <data name="Common.Page.TaskbarAppearance" xml:space="preserve">
     <value>媒體列外觀</value>
@@ -3249,4 +3249,32 @@
 目錄：{1}
 最近取樣：{2}
 已捨棄取樣：{3}；事件：{4}</value></data>
+  <data name="Common.Page.RestState" xml:space="preserve"><value>常駐狀態</value></data>
+  <data name="Settings.RestState.Subtitle" xml:space="preserve"><value>設定常駐元件的顯示、順序與無媒體狀態。</value></data>
+  <data name="Settings.RestState.Visible" xml:space="preserve"><value>顯示內容</value></data>
+  <data name="Settings.RestState.Idle" xml:space="preserve"><value>沒有媒體時</value></data>
+  <data name="Settings.RestState.IdleDescription" xml:space="preserve"><value>可全部關閉；沒有媒體時會隱藏媒體列。</value></data>
+  <data name="Settings.RestState.OrderHint" xml:space="preserve"><value>封面與媒體文字固定於起始側，其餘元件可排序。</value></data>
+  <data name="Settings.RestState.Fixed" xml:space="preserve"><value>固定</value></data>
+  <data name="Settings.RestState.BatteryHint" xml:space="preserve"><value>需啟用藍牙電量實驗並選擇追蹤裝置。</value></data>
+  <data name="Settings.RestState.VisibilityLink" xml:space="preserve"><value>調整常駐顯示</value></data>
+  <data name="Settings.Component.Configure" xml:space="preserve"><value>前往設定</value></data>
+  <data name="Settings.Preview.Title" xml:space="preserve"><value>局部預覽</value></data>
+  <data name="Settings.Preview.Track" xml:space="preserve"><value>範例曲目</value></data>
+  <data name="Settings.Preview.Artist" xml:space="preserve"><value>範例歌手</value></data>
+  <data name="Settings.Preview.Note" xml:space="preserve"><value>使用目前設定與固定範例，不讀取實際媒體或裝置資料。</value></data>
+  <data name="Settings.Preview.Empty" xml:space="preserve"><value>未保留元件，沒有媒體時媒體列會隱藏。</value></data>
+  <data name="Settings.Preview.Idle" xml:space="preserve"><value>預覽無媒體狀態</value></data>
+  <data name="Settings.Personalization.Subtitle" xml:space="preserve"><value>設定應用程式主題、視窗材質、強調色與字型。</value></data>
+  <data name="Settings.Personalization.Accent" xml:space="preserve"><value>強調色</value></data>
+  <data name="Settings.Personalization.Sample" xml:space="preserve"><value>介面範例</value></data>
+  <data name="Settings.Personalization.SampleDescription" xml:space="preserve"><value>檢查目前主題、字型與強調色的顯示效果。</value></data>
+  <data name="Settings.RestState.ArtworkAndProgress" xml:space="preserve"><value>封面與進度</value></data>
+  <data name="Settings.RestState.ArtworkDetails" xml:space="preserve"><value>封面細節</value></data>
+  <data name="Settings.RestState.ArtworkHint" xml:space="preserve"><value>無媒體時的小音符另外設定。</value></data>
+  <data name="Settings.RestState.ProgressHint" xml:space="preserve"><value>顯示唯讀進度；無時長時隱藏。</value></data>
+  <data name="Settings.RestState.DevicesAndVolume" xml:space="preserve"><value>裝置與音量</value></data>
+  <data name="Settings.RestState.SpaceHint" xml:space="preserve"><value>顯示這些控制項會占用媒體列空間。</value></data>
+  <data name="Settings.RestState.Extensions" xml:space="preserve"><value>擴充元件</value></data>
+  <data name="Settings.RestState.Volume" xml:space="preserve"><value>音量</value></data>
 </root>

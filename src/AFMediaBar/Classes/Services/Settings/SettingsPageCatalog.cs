@@ -12,9 +12,11 @@ public static class SettingsPageCatalog
     private static readonly IReadOnlyList<SettingsPageDefinition> TaskbarPages = Array.AsReadOnly(new[]
     {
         new SettingsPageDefinition(SettingsPageKey.ScreenAndPlacement, "Common.Page.ScreenAndPlacement", "Desktop24", true, HasModeContent: true),
+        new SettingsPageDefinition(SettingsPageKey.RestState, "Common.Page.RestState", "Layer24", false),
         new SettingsPageDefinition(SettingsPageKey.Components, "Common.Page.ContentLayout", "Grid24", false),
         new SettingsPageDefinition(SettingsPageKey.Widgets, "Common.Page.Widgets", "Apps24", true),
         new SettingsPageDefinition(SettingsPageKey.Appearance, "Common.Page.Appearance", "PaintBrush24", true, HasModeContent: true),
+        new SettingsPageDefinition(SettingsPageKey.ApplicationAppearance, "Common.Page.ApplicationAppearance", "Color24", true),
         new SettingsPageDefinition(SettingsPageKey.Lyrics, "Common.Page.Lyrics", "TextQuote24", false),
         new SettingsPageDefinition(SettingsPageKey.Interaction, "Common.Page.Interaction", "HandDraw24", false),
         new SettingsPageDefinition(SettingsPageKey.DeviceManagement, "Device.Management.Title", "Headphones24", true),
@@ -39,9 +41,11 @@ public static class SettingsPageCatalog
     /// <summary>旧页面和分组入口仍定位到重组后的唯一编辑位置。</summary>
     public static (SettingsPageKey Page, string GroupId) ResolveDestination(SettingsPageKey page, string groupId) => (page, groupId) switch
     {
-        (SettingsPageKey.DisplayModes, "Common.RestLayer" or "Common.HoverLayer" or "Common.FullLayer") => (SettingsPageKey.Components, groupId),
+        (SettingsPageKey.DisplayModes, "Common.RestLayer") => (SettingsPageKey.RestState, groupId),
+        (SettingsPageKey.DisplayModes, "Common.HoverLayer" or "Common.FullLayer") => (SettingsPageKey.Components, groupId),
         (SettingsPageKey.DisplayModes, _) => (SettingsPageKey.ScreenAndPlacement, groupId),
-        (SettingsPageKey.ApplicationAppearance, _) => (SettingsPageKey.Appearance, groupId),
+        (SettingsPageKey.Components, "Common.RestLayer" or "Common.Group.ComponentOrder" or "Settings.RestState.Idle") => (SettingsPageKey.RestState, groupId),
+        (SettingsPageKey.Appearance, "Common.Group.ThemeAndBackdrop" or "Common.Group.Fonts" or "Settings.Personalization.Accent") => (SettingsPageKey.ApplicationAppearance, groupId),
         (SettingsPageKey.Appearance, "Common.Group.MediaBarWidth" or "Appearance.Group.RestLayout" or "Appearance.Group.InteractionButtons") => (SettingsPageKey.Components, groupId),
         (SettingsPageKey.Lyrics, "Common.Group.LyricsAlignment") => (SettingsPageKey.Components, "Appearance.Group.RestLayout"),
         (SettingsPageKey.MediaAndNotifications, "Common.Group.QuickLaunch") => (SettingsPageKey.Widgets, "Widgets.Note"),

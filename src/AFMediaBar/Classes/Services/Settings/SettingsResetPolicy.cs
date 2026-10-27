@@ -7,10 +7,25 @@ namespace AFMediaBar.Classes.Services.Settings;
 internal static class SettingsResetPolicy
 {
     public static TaskbarExperienceSettings Content(TaskbarExperienceSettings current, TaskbarExperienceSettings defaults) =>
-        defaults with
+        Rest(defaults with
         {
-            MediaFontSizePercent = current.MediaFontSizePercent,
-            SpectrumVisible = current.SpectrumVisible,
-            PerformanceVisible = current.PerformanceVisible
+            MediaFontSizePercent = current.MediaFontSizePercent
+        }, current);
+
+    /// <summary>仅恢复常驻页拥有的字段，保留布局、快捷控制和完整面板。</summary>
+    public static TaskbarExperienceSettings Rest(TaskbarExperienceSettings current, TaskbarExperienceSettings defaults) =>
+        current with
+        {
+            ArtworkVisible = defaults.ArtworkVisible,
+            SmallArtwork = defaults.SmallArtwork,
+            ArtworkProgressVisible = defaults.ArtworkProgressVisible,
+            RestProgressVisible = defaults.RestProgressVisible,
+            OutputDeviceVisible = defaults.OutputDeviceVisible,
+            InputDeviceVisible = defaults.InputDeviceVisible,
+            VolumeVisible = defaults.VolumeVisible,
+            SpectrumVisible = defaults.SpectrumVisible,
+            PerformanceVisible = defaults.PerformanceVisible,
+            RestComponentOrder = defaults.RestComponentOrder,
+            IdleComponents = defaults.IdleComponents
         };
 }

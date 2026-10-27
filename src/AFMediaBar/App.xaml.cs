@@ -305,6 +305,9 @@ namespace AFMediaBar
                 services.AddScoped<SettingsPageProvider>();
                 services.AddScoped<AppearancePage>();
                 services.AddScoped<ApplicationAppearancePage>();
+                services.AddScoped<RestStatePage>();
+                services.AddScoped<RestStateViewModel>();
+                services.AddScoped<SettingsPreviewViewModel>();
                 services.AddScoped<TaskbarAppearanceViewModel>();
                 services.AddScoped<AppearanceViewModel>();
 

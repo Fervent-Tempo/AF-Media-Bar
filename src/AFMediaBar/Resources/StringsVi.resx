@@ -506,7 +506,7 @@
     <value>Ủng hộ tôi</value>
   </data>
   <data name="Common.Group.ThemeAndBackdrop" xml:space="preserve">
-    <value>Chủ đề và hiệu ứng nền</value>
+    <value>Chủ đề và chất liệu</value>
   </data>
   <data name="Common.Group.TrackChangeNotification" xml:space="preserve">
     <value>Thông báo đổi bài hát</value>
@@ -554,7 +554,7 @@
     <value>Giới thiệu</value>
   </data>
   <data name="Common.Page.Appearance" xml:space="preserve">
-    <value>Giao diện</value>
+    <value>Giao diện thanh đa phương tiện</value>
   </data>
   <data name="Common.Page.Application" xml:space="preserve">
     <value>Ứng dụng</value>
@@ -968,7 +968,7 @@
     <value>Hiển thị tiêu đề và nghệ sĩ, hoặc lời bài hát khi được bật.</value>
   </data>
   <data name="DisplayModes.Rest.Component.OutputDevice" xml:space="preserve">
-    <value>Nút thiết bị đầu ra</value>
+    <value>Thiết bị đầu ra</value>
   </data>
   <data name="DisplayModes.Rest.Component.OutputDevice.Description" xml:space="preserve">
     <value>Nhấp để chọn thiết bị đầu ra hoặc cuộn chuột để chuyển đổi.</value>
@@ -992,7 +992,7 @@
     <value>Hiển thị sóng âm thanh trực tiếp từ thiết bị đầu ra hiện tại.</value>
   </data>
   <data name="DisplayModes.Rest.Component.Volume" xml:space="preserve">
-    <value>Nút âm lượng</value>
+    <value>Âm lượng</value>
   </data>
   <data name="DisplayModes.Rest.Component.Volume.Description" xml:space="preserve">
     <value>Nhấp để mở menu âm lượng hoặc cuộn chuột để điều chỉnh nguồn phát hiện tại.</value>
@@ -1061,7 +1061,7 @@
     <value>Ảnh bìa nhỏ</value>
   </data>
   <data name="DisplayModes.Rest.Row.SmallArtwork.Description" xml:space="preserve">
-    <value>Thu nhỏ ảnh bìa còn khoảng 80% và căn giữa cho gọn hơn.</value>
+    <value>Căn giữa ảnh bìa ở mức 80% kích thước gốc.</value>
   </data>
   <data name="DisplayModes.Rest.Row.SmallArtwork.Badge" xml:space="preserve">
     <value>Hãy bật "Hiển thị ảnh bìa" trước</value>
@@ -2297,7 +2297,7 @@
     <value>Văn bản và phông chữ</value>
   </data>
   <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
-    <value>Giao diện ứng dụng</value>
+    <value>Cá nhân hóa</value>
   </data>
   <data name="Common.Page.ContentLayout" xml:space="preserve">
     <value>Nội dung &amp; bố cục</value>
@@ -3287,4 +3287,32 @@ Lấy mẫu: 1 giây khi hoạt động, 4 giây khi nhàn rỗi; tạm dừng k
 Thư mục: {1}
 Mẫu gần nhất: {2}
 Mẫu bị loại: {3}; sự kiện: {4}</value></data>
+  <data name="Common.Page.RestState" xml:space="preserve"><value>Chế độ thường trực</value></data>
+  <data name="Settings.RestState.Subtitle" xml:space="preserve"><value>Chọn thành phần hiển thị, thứ tự và nội dung giữ lại khi không có nội dung phát.</value></data>
+  <data name="Settings.RestState.Visible" xml:space="preserve"><value>Nội dung hiển thị</value></data>
+  <data name="Settings.RestState.Idle" xml:space="preserve"><value>Khi không có nội dung phát</value></data>
+  <data name="Settings.RestState.IdleDescription" xml:space="preserve"><value>Tắt tất cả để ẩn thanh khi không có nội dung phát.</value></data>
+  <data name="Settings.RestState.OrderHint" xml:space="preserve"><value>Ảnh bìa và văn bản đa phương tiện được cố định ở đầu. Có thể sắp xếp các thành phần còn lại.</value></data>
+  <data name="Settings.RestState.Fixed" xml:space="preserve"><value>Cố định</value></data>
+  <data name="Settings.RestState.BatteryHint" xml:space="preserve"><value>Cần bật thử nghiệm pin Bluetooth và chọn thiết bị theo dõi.</value></data>
+  <data name="Settings.RestState.VisibilityLink" xml:space="preserve"><value>Chỉnh hiển thị thường trực</value></data>
+  <data name="Settings.Component.Configure" xml:space="preserve"><value>Mở thiết lập</value></data>
+  <data name="Settings.Preview.Title" xml:space="preserve"><value>Xem trước</value></data>
+  <data name="Settings.Preview.Track" xml:space="preserve"><value>Bài hát mẫu</value></data>
+  <data name="Settings.Preview.Artist" xml:space="preserve"><value>Nghệ sĩ mẫu</value></data>
+  <data name="Settings.Preview.Note" xml:space="preserve"><value>Dùng cài đặt hiện tại với nội dung mẫu cố định, không đọc dữ liệu phát hay thiết bị thực tế.</value></data>
+  <data name="Settings.Preview.Empty" xml:space="preserve"><value>Không giữ lại thành phần nào. Thanh sẽ ẩn khi không có nội dung phát.</value></data>
+  <data name="Settings.Preview.Idle" xml:space="preserve"><value>Xem trước khi không phát</value></data>
+  <data name="Settings.Personalization.Subtitle" xml:space="preserve"><value>Đặt chủ đề, chất liệu cửa sổ, màu nhấn và phông chữ.</value></data>
+  <data name="Settings.Personalization.Accent" xml:space="preserve"><value>Màu nhấn</value></data>
+  <data name="Settings.Personalization.Sample" xml:space="preserve"><value>Giao diện mẫu</value></data>
+  <data name="Settings.Personalization.SampleDescription" xml:space="preserve"><value>Xem chủ đề, phông chữ và màu nhấn hiện tại.</value></data>
+  <data name="Settings.RestState.ArtworkAndProgress" xml:space="preserve"><value>Ảnh bìa và tiến trình</value></data>
+  <data name="Settings.RestState.ArtworkDetails" xml:space="preserve"><value>Chi tiết ảnh bìa</value></data>
+  <data name="Settings.RestState.ArtworkHint" xml:space="preserve"><value>Nốt nhạc khởi chạy khi không có nội dung được thiết lập riêng.</value></data>
+  <data name="Settings.RestState.ProgressHint" xml:space="preserve"><value>Hiển thị tiến trình chỉ đọc. Ẩn khi không có thời lượng.</value></data>
+  <data name="Settings.RestState.DevicesAndVolume" xml:space="preserve"><value>Thiết bị và âm lượng</value></data>
+  <data name="Settings.RestState.SpaceHint" xml:space="preserve"><value>Các điều khiển này chiếm không gian trên thanh đa phương tiện.</value></data>
+  <data name="Settings.RestState.Extensions" xml:space="preserve"><value>Thành phần bổ sung</value></data>
+  <data name="Settings.RestState.Volume" xml:space="preserve"><value>Âm lượng</value></data>
 </root>

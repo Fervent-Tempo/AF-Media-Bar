@@ -368,7 +368,8 @@ namespace AFMediaBar.Views.Windows
             if (args.Page is Page destination) _currentPage = SettingsPageProvider.PageTypes.First(pair => pair.Value == destination.GetType()).Key;
             SettingsRevealAnimator.Cancel(_transitionContent);
             _transitionContent = null;
-            if (args.Page is Page page && page.FindName("PageScroll") is ScrollViewer { Content: Panel content })
+            if (args.Page is Page page &&
+                (page.FindName("PageScroll") as ScrollViewer ?? (page.FindName("PageLayout") as SettingsPageLayout)?.ScrollViewer) is { Content: Panel content })
             {
                 _transitionContent = content;
                 SettingsRevealAnimator.Replay(content);

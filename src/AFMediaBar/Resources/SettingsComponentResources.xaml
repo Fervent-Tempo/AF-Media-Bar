@@ -143,6 +143,7 @@
         icon chip, title, and description; the right side is the control slot, with a 4 DIP gap between cards.
     -->
     <Style TargetType="{x:Type components:SettingsRow}">
+        <Setter Property="FontSize" Value="14" />
         <Setter Property="Margin" Value="{StaticResource AfSettingsRowGap}" />
         <Setter Property="Padding" Value="16,13" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -185,9 +186,11 @@
                                 VerticalAlignment="Center"
                                 TextElement.Foreground="{DynamicResource AfOnAccentBrush}">
                                 <Border
+                                    x:Name="IconSurface"
                                     Background="{DynamicResource AfAccentBrush}"
                                     CornerRadius="8" />
                                 <ContentControl
+                                    x:Name="RowIcon"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     Content="{TemplateBinding Icon}"
@@ -266,6 +269,14 @@
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="ControlHost" Property="Opacity" Value="0.45" />
+                        </Trigger>
+                        <Trigger Property="IsIconMonochrome" Value="True">
+                            <Setter TargetName="IconSurface" Property="Background" Value="Transparent" />
+                            <Setter TargetName="IconChip" Property="Width" Value="20" />
+                            <Setter TargetName="IconChip" Property="Height" Value="20" />
+                            <Setter TargetName="IconChip" Property="TextElement.Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <Setter TargetName="RowIcon" Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <Setter TargetName="RowIcon" Property="FontSize" Value="20" />
                         </Trigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
@@ -650,15 +661,15 @@
 
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock
-                                    FontSize="24"
+                                    FontSize="30"
                                     FontWeight="{DynamicResource AppTextStrongFontWeight}"
                                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                     Text="{TemplateBinding Title}" />
                                 <TextBlock
                                     x:Name="PageSubtitle"
                                     Margin="0,3,0,0"
-                                    FontSize="12"
-                                    LineHeight="17"
+                                    FontSize="13"
+                                    LineHeight="20"
                                     LineStackingStrategy="BlockLineHeight"
                                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                     Text="{TemplateBinding Subtitle}"
@@ -860,10 +871,15 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="GripSurface" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            <Setter TargetName="GripSurface" Property="Background" Value="{DynamicResource AfSettingsCardBrush}" />
+                            <Setter TargetName="GripSurface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="GripSurface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
                         </Trigger>
                         <Trigger Property="IsDragging" Value="True">
                             <Setter Property="Foreground" Value="{DynamicResource AfAccentBrush}" />
+                            <Setter TargetName="GripSurface" Property="Background" Value="{DynamicResource AfAccentTintBrush}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.45" />
@@ -951,6 +967,133 @@
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!-- 行内关联入口低于开关的视觉权重，焦点边框仍保持可见。 -->
+    <Style x:Key="AfSettingsRelatedLinkStyle" TargetType="{x:Type components:SettingsNavigationButton}"
+           BasedOn="{StaticResource AfSettingsNavigationButtonStyle}">
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="{DynamicResource AppTextFontWeight}" />
+        <Setter Property="Opacity" Value="0" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type components:SettingsNavigationButton}">
+                    <Border x:Name="LinkSurface" Padding="{TemplateBinding Padding}" CornerRadius="5"
+                            Background="{TemplateBinding Background}" BorderThickness="1" BorderBrush="{TemplateBinding BorderBrush}">
+                        <StackPanel Orientation="Horizontal">
+                            <ContentPresenter ContentSource="Content" VerticalAlignment="Center" RecognizesAccessKey="True" />
+                            <ui:SymbolIcon Symbol="ChevronRight24" FontSize="12" Margin="5,0,0,0"
+                                Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="LinkSurface" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="LinkSurface" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="LinkSurface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorDisabledBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType={x:Type components:SettingsRow}}}" Value="True">
+                <Setter Property="Opacity" Value="1" />
+                <Setter Property="IsHitTestVisible" Value="True" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource AncestorType={x:Type components:SettingsRow}}}" Value="True">
+                <Setter Property="Opacity" Value="1" />
+                <Setter Property="IsHitTestVisible" Value="True" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsStylusOver, RelativeSource={RelativeSource AncestorType={x:Type components:SettingsRow}}}" Value="True">
+                <Setter Property="Opacity" Value="1" />
+                <Setter Property="IsHitTestVisible" Value="True" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="AfSettingsPilotRowStyle" TargetType="{x:Type components:SettingsRow}"
+           BasedOn="{StaticResource {x:Type components:SettingsRow}}">
+        <Setter Property="IsIconMonochrome" Value="True" />
+        <Setter Property="MinHeight" Value="56" />
+    </Style>
+    <Style x:Key="AfSettingsSubsectionTitleStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        <Setter Property="Margin" Value="16,18,16,8" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="AfSettingsPilotGroupStyle" TargetType="{x:Type components:SettingsGroup}"
+           BasedOn="{StaticResource {x:Type components:SettingsGroup}}">
+        <Setter Property="Margin" Value="0,0,0,28" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type components:SettingsGroup}">
+                    <StackPanel>
+                        <TextBlock Text="{TemplateBinding Header}" FontSize="20" Margin="0,0,0,14"
+                            FontWeight="{DynamicResource AppTextStrongFontWeight}" TextWrapping="Wrap"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <Border Background="{DynamicResource AfSettingsGroupSurfaceBrush}" Padding="6"
+                            BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" CornerRadius="10">
+                            <ContentPresenter ContentSource="Content" />
+                        </Border>
+                    </StackPanel>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="{x:Type components:SettingsPageLayout}">
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type components:SettingsPageLayout}">
+                    <Grid Margin="32,0" MaxWidth="1680">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                        <ContentPresenter ContentSource="Header" Margin="0,20,0,0" />
+                        <Grid Grid.Row="1" Margin="0,18,0,0">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition x:Name="Gap" Width="32" /><ColumnDefinition Width="{TemplateBinding PreviewColumn}" /></Grid.ColumnDefinitions>
+                            <ScrollViewer x:Name="PART_ScrollViewer" Grid.RowSpan="2" VerticalScrollBarVisibility="Auto"
+                                HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" Padding="0,0,4,24"
+                                Content="{TemplateBinding Content}" HorizontalContentAlignment="Stretch" />
+                            <ui:CardExpander x:Name="PreviewHost" Grid.Column="2" Grid.RowSpan="2" VerticalAlignment="Top"
+                                Background="{DynamicResource AfSettingsPreviewSurfaceBrush}"
+                                BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1"
+                                IsExpanded="{Binding PreviewExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                                <ui:CardExpander.Header><TextBlock Text="{DynamicResource Loc.Settings.Preview.Title}" FontSize="14" /></ui:CardExpander.Header>
+                                <ContentPresenter Content="{TemplateBinding Preview}" Margin="0,4,0,12" />
+                            </ui:CardExpander>
+                        </Grid>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsWide" Value="False">
+                            <Setter TargetName="Gap" Property="Width" Value="0" />
+                            <Setter TargetName="PART_ScrollViewer" Property="Grid.Row" Value="1" />
+                            <Setter TargetName="PART_ScrollViewer" Property="Grid.RowSpan" Value="1" />
+                            <Setter TargetName="PART_ScrollViewer" Property="Grid.ColumnSpan" Value="3" />
+                            <Setter TargetName="PART_ScrollViewer" Property="Margin" Value="0,14,0,0" />
+                            <Setter TargetName="PreviewHost" Property="Grid.Column" Value="0" />
+                            <Setter TargetName="PreviewHost" Property="Grid.RowSpan" Value="1" />
+                            <Setter TargetName="PreviewHost" Property="Grid.ColumnSpan" Value="3" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

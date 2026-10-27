@@ -48,6 +48,9 @@ public enum SettingsPageKey
     DeviceManagement,
     /// <summary>频谱、性能与蓝牙电量的小组件配置。</summary>
     Widgets,
+
+    /// <summary>常驻组件显隐、顺序及无媒体保留项。</summary>
+    RestState,
 }
 
 /// <summary>

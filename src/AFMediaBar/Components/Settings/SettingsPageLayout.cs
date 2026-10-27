@@ -1,0 +1,68 @@
+// 设置页的自适应版心与预览布局；只管理呈现，不持有设置或外部资源。
+using System.Windows;
+using System.Windows.Controls;
+
+namespace AFMediaBar.Components;
+
+/// <summary>为固定页头、设置滚动区和局部预览提供统一布局。</summary>
+[TemplatePart(Name = "PART_ScrollViewer", Type = typeof(ScrollViewer))]
+public sealed class SettingsPageLayout : HeaderedContentControl
+{
+    private static readonly DependencyPropertyKey ScrollViewerPropertyKey = DependencyProperty.RegisterReadOnly(
+        nameof(ScrollViewer), typeof(ScrollViewer), typeof(SettingsPageLayout), new PropertyMetadata(null));
+    public static readonly DependencyProperty ScrollViewerProperty = ScrollViewerPropertyKey.DependencyProperty;
+    private static readonly DependencyPropertyKey IsWidePropertyKey = DependencyProperty.RegisterReadOnly(
+        nameof(IsWide), typeof(bool), typeof(SettingsPageLayout), new PropertyMetadata(false));
+    public static readonly DependencyProperty IsWideProperty = IsWidePropertyKey.DependencyProperty;
+    private static readonly DependencyPropertyKey PreviewColumnPropertyKey = DependencyProperty.RegisterReadOnly(
+        nameof(PreviewColumn), typeof(GridLength), typeof(SettingsPageLayout), new PropertyMetadata(new GridLength(360)));
+    public static readonly DependencyProperty PreviewColumnProperty = PreviewColumnPropertyKey.DependencyProperty;
+    public static readonly DependencyProperty PreviewProperty = DependencyProperty.Register(
+        nameof(Preview), typeof(object), typeof(SettingsPageLayout), new PropertyMetadata(null));
+    public static readonly DependencyProperty PreviewExpandedProperty = DependencyProperty.Register(
+        nameof(PreviewExpanded), typeof(bool), typeof(SettingsPageLayout), new PropertyMetadata(false, OnExpandedChanged));
+    private bool _wideExpanded = true;
+    private bool _compactExpanded;
+    private bool _changingLayout;
+
+    static SettingsPageLayout() => DefaultStyleKeyProperty.OverrideMetadata(typeof(SettingsPageLayout), new FrameworkPropertyMetadata(typeof(SettingsPageLayout)));
+
+    public ScrollViewer? ScrollViewer => (ScrollViewer?)GetValue(ScrollViewerProperty);
+    public bool IsWide => (bool)GetValue(IsWideProperty);
+    public GridLength PreviewColumn => (GridLength)GetValue(PreviewColumnProperty);
+    public object? Preview { get => GetValue(PreviewProperty); set => SetValue(PreviewProperty, value); }
+    public bool PreviewExpanded { get => (bool)GetValue(PreviewExpandedProperty); set => SetValue(PreviewExpandedProperty, value); }
+
+    public override void OnApplyTemplate()
+    {
+        base.OnApplyTemplate();
+        SetValue(ScrollViewerPropertyKey, GetTemplateChild("PART_ScrollViewer") as ScrollViewer);
+        UpdateLayoutMode();
+    }
+
+    protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+    {
+        base.OnRenderSizeChanged(sizeInfo);
+        UpdateLayoutMode();
+    }
+
+    private void UpdateLayoutMode()
+    {
+        var width = Math.Min(1680d, Math.Max(0d, ActualWidth - 64d));
+        var wide = width >= 1000d;
+        SetValue(PreviewColumnPropertyKey, new GridLength(wide ? Math.Clamp(width * .32d, 360d, 520d) : 0d));
+        if (wide == IsWide) return;
+        _changingLayout = true;
+        SetValue(IsWidePropertyKey, wide);
+        SetCurrentValue(PreviewExpandedProperty, wide ? _wideExpanded : _compactExpanded);
+        _changingLayout = false;
+    }
+
+    private static void OnExpandedChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
+    {
+        var layout = (SettingsPageLayout)sender;
+        if (layout._changingLayout) return;
+        if (layout.IsWide) layout._wideExpanded = (bool)args.NewValue;
+        else layout._compactExpanded = (bool)args.NewValue;
+    }
+}

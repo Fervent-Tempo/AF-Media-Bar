@@ -79,10 +79,11 @@ public static class SettingsSearchIndex
         string titleKey,
         string descriptionKey,
         LocalizationLanguage language,
-        string[] keywords) =>
+        string[] keywords,
+        string? groupId = null) =>
         new(
             page,
-            titleKey,
+            groupId ?? titleKey,
             Translations.Get(PageTitleKey(page), language),
             Translations.Get(titleKey, language),
             Translations.Get(descriptionKey, language),
@@ -169,12 +170,14 @@ public static class SettingsSearchIndex
             language,
             ["显示器", "屏幕", "monitor", "display", "朝向", "横向", "纵向", "竖向", "vertical", "orientation", "避让", "图标", "锁定", "位置", "偏移", "厚度方向偏移", "offset", "重置", "承载", "承载显示器", "承载与位置", "边缘偏移", "靠左", "靠右", "居中", "置中", "对齐", "對齊", "alignment", "left", "right", "center"]),
         Create(
-            SettingsPageKey.Components,
-            "Common.RestLayer",
+            SettingsPageKey.RestState,
+            "Settings.RestState.Visible",
             "Search.DisplayModes.RestLayer.Description",
             language,
-            ["静置", "静置层", "靜置層", "常驻", "常驻状态", "常駐狀態", "rest", "rest layer", "always-on view", "进度", "播放进度", "progress", "设备按钮", "输出设备", "音量按钮", "没有媒体", "无媒体", "空闲", "idle", "隐藏", "保留组件", "小音符", "封面放大", "artwork zoom"]),
-        Create(SettingsPageKey.Components, "Common.Group.ComponentOrder", "Common.ComponentOrder.Description", language,
+            ["静置", "静置层", "靜置層", "常驻", "常驻状态", "常駐狀態", "rest", "rest layer", "always-on view", "进度", "播放进度", "progress", "设备按钮", "输出设备", "音量按钮", "显示频谱", "显示性能", "显示电量", "小封面", "封面边缘进度", "small artwork"], "Common.RestLayer"),
+        Create(SettingsPageKey.RestState, "Settings.RestState.Idle", "Settings.RestState.IdleDescription", language,
+            ["没有媒体", "无媒体", "空闲", "idle", "隐藏", "保留组件", "小音符", "without media"]),
+        Create(SettingsPageKey.RestState, "Common.Group.ComponentOrder", "Common.ComponentOrder.Description", language,
             ["组件顺序", "順序", "排序", "order", "上移", "下移", "layout", "组件位置"]),
         Create(SettingsPageKey.Widgets, "Widgets.Spectrum", "Widgets.Spectrum.Description", language,
             ["小组件", "小元件", "组件设置", "widgets", "频谱", "spectrum", "音频采集范围", "采集设备", "前台程序音频", "audio capture scope", "current media application", "all applications", "音訊擷取範圍", "phạm vi thu âm thanh", "柱数", "刷新率", "灵敏度", "波形", "像素", "上下对称"]),
@@ -265,7 +268,7 @@ public static class SettingsSearchIndex
         Create(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground", "Appearance.Row.TaskbarBackground.Description", language,
             ["背景层", "磨砂", "透明任务栏", "frost", "background", "TranslucentTB", "浓度", "opacity", "无媒体", "無媒體", "idle", "底色", "tint", "边框", "邊框", "border", "封面纹理", "封面紋理", "texture", "không có nội dung", "màu nền", "đường viền", "họa tiết"]),
         Create(
-            SettingsPageKey.Appearance,
+            SettingsPageKey.ApplicationAppearance,
             "Common.Group.ThemeAndBackdrop",
             "Search.Appearance.ThemeAndBackdrop.Description",
             language,
@@ -295,7 +298,9 @@ public static class SettingsSearchIndex
             language,
             ["交互按钮大小", "按钮尺寸", "小", "中", "大", "hover button size", "button spacing", "悬停层间距", "静置层按钮", "图标大小"]),
 
-        Create(SettingsPageKey.Appearance, "Common.Group.Fonts", "Search.Appearance.Fonts.Description", language,
+        Create(SettingsPageKey.ApplicationAppearance, "Settings.Personalization.Accent", "Appearance.Accent.Hint", language,
+            ["强调色", "強調色", "accent", "取色", "色板", "hex", "调色", "picker"]),
+        Create(SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts", "Search.Appearance.Fonts.Description", language,
             ["字体", "font", "字重", "weight", "西文", "中文", "预览", "segoe", "雅黑"]),
         // ---- 应用 / Application ----
         //

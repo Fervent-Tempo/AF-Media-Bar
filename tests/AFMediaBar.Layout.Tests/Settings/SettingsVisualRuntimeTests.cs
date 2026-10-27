@@ -139,7 +139,7 @@ public sealed class SettingsVisualRuntimeTests
         var root = FindRepository();
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
         var eventNames = new HashSet<string> { "Loaded", "Unloaded", "Click", "SelectionChanged", "Checked", "Unchecked", "SizeChanged", "MouseLeftButtonDown", "KeyDown", "IsVisibleChanged", "PreviewKeyDown", "LostKeyboardFocus" };
-        foreach (var name in new[] { "DisplayModes", "ScreenAndPlacement", "Appearance", "ApplicationAppearance", "Interaction", "Lyrics", "ComponentsSettings", "WidgetsSettings", "ExtraFeatures", "Application", "DeviceManagement", "Experimental", "ReleaseHighlights", "About" })
+        foreach (var name in new[] { "DisplayModes", "ScreenAndPlacement", "Appearance", "ApplicationAppearance", "RestState", "Interaction", "Lyrics", "ComponentsSettings", "WidgetsSettings", "ExtraFeatures", "Application", "DeviceManagement", "Experimental", "ReleaseHighlights", "About" })
         {
             var document = XDocument.Load(Path.Combine(root, "src", "AFMediaBar", "Views", "Pages", name + "Page.xaml"));
             document.Root!.Attribute(x + "Class")!.Remove();
@@ -157,6 +157,12 @@ public sealed class SettingsVisualRuntimeTests
             page.Measure(new Size(800, 550));
             page.ApplyTemplate();
             Assert.IsNotNull(page.Content, name + " page must load its content.");
+            if (page.Content is SettingsPageLayout layout)
+            {
+                layout.ApplyTemplate();
+                Assert.IsInstanceOfType<Panel>(layout.ScrollViewer?.Content,
+                    name + " must expose its groups directly to the pinned group strip.");
+            }
         }
     }
 

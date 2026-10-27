@@ -72,9 +72,9 @@ public sealed class SettingsOrganizationTests
         SettingsManager.ResetContentLayout();
 
         current = SettingsManager.Current;
-        Assert.AreEqual(saved.TaskbarExperience.Normalize() with { MediaFontSizePercent = 120, RestComponentOrder = null, SpectrumVisible = true, PerformanceVisible = true },
-            current.TaskbarExperience with { RestComponentOrder = null });
-        CollectionAssert.AreEqual(saved.TaskbarExperience.RestComponentOrder!.ToArray(), current.TaskbarExperience.RestComponentOrder!.ToArray());
+        Assert.AreEqual(JsonSerializer.Serialize(saved.TaskbarExperience.Normalize() with { MediaFontSizePercent = 120, RestComponentOrder = null, SpectrumVisible = true, PerformanceVisible = true, ArtworkProgressVisible = true }),
+            JsonSerializer.Serialize(current.TaskbarExperience with { RestComponentOrder = null }));
+        Assert.IsNull(current.TaskbarExperience.RestComponentOrder);
         Assert.AreEqual(spectrum, current.SpectrumComponent);
         Assert.AreEqual(JsonSerializer.Serialize(performance), JsonSerializer.Serialize(current.PerformanceComponent));
         Assert.AreEqual(battery, current.BluetoothBatteryWidget);
@@ -111,11 +111,71 @@ public sealed class SettingsOrganizationTests
 
         Assert.AreEqual(saved.SpectrumComponent, SettingsManager.Current.SpectrumComponent);
         Assert.AreEqual(JsonSerializer.Serialize(saved.PerformanceComponent.Normalize()), JsonSerializer.Serialize(SettingsManager.Current.PerformanceComponent));
-        Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize(), SettingsManager.Current.BluetoothBatteryWidget);
-        Assert.AreEqual(layout with { SpectrumVisible = false, PerformanceVisible = false }, SettingsManager.Current.TaskbarExperience);
+        Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize() with { Enabled = false }, SettingsManager.Current.BluetoothBatteryWidget);
+        Assert.AreEqual(layout, SettingsManager.Current.TaskbarExperience);
         Assert.AreEqual(JsonSerializer.Serialize(devices), JsonSerializer.Serialize(SettingsManager.Current.AudioDevices));
         SettingsManager.ResetDeviceManagement();
-        Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize(), SettingsManager.Current.BluetoothBatteryWidget);
+        Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize() with { Enabled = false }, SettingsManager.Current.BluetoothBatteryWidget);
+    }
+
+    [TestMethod]
+    public void RestResetUsesSnapshotWithoutResettingGeometryOrComponentParameters()
+    {
+        var saved = new AppSettings
+        {
+            TaskbarExperience = TaskbarExperienceSettings.Default with
+            {
+                ArtworkVisible = false,
+                SmallArtwork = true,
+                RestComponentOrder = [TaskbarRestComponent.Volume, TaskbarRestComponent.Spectrum],
+                IdleComponents = []
+            },
+            BluetoothBatteryWidget = new() { Enabled = true }
+        };
+        SettingsManager.SetUserDefaults(saved);
+        var current = SettingsManager.Current;
+        current.TaskbarExperience = current.TaskbarExperience with
+        {
+            FixedLengthDip = 620,
+            ComponentSpacingDip = 20,
+            HoverLayerEnabled = false,
+            FullPanelEntryVisible = false
+        };
+        current.SpectrumComponent = current.SpectrumComponent with { BandCount = 22 };
+        current.BluetoothBatteryWidget = current.BluetoothBatteryWidget with { DeviceId = "keep-device", LowThreshold = 35 };
+        current.LyricsEnabled = false;
+        var spectrum = current.SpectrumComponent;
+        var appearance = current.Appearance;
+        var floating = JsonSerializer.Serialize(current.FloatingBar);
+
+        SettingsManager.ResetRestState();
+
+        current = SettingsManager.Current;
+        Assert.IsFalse(current.TaskbarExperience.ArtworkVisible);
+        Assert.IsTrue(current.TaskbarExperience.SmallArtwork);
+        Assert.AreEqual(0, current.TaskbarExperience.IdleComponents!.Count);
+        CollectionAssert.AreEqual(new[] { TaskbarRestComponent.Volume, TaskbarRestComponent.Spectrum }, current.TaskbarExperience.RestComponentOrder!.ToArray());
+        Assert.AreEqual(620d, current.TaskbarExperience.FixedLengthDip);
+        Assert.AreEqual(20d, current.TaskbarExperience.ComponentSpacingDip);
+        Assert.IsFalse(current.TaskbarExperience.HoverLayerEnabled);
+        Assert.IsFalse(current.TaskbarExperience.FullPanelEntryVisible);
+        Assert.AreEqual(spectrum, current.SpectrumComponent);
+        Assert.AreEqual(appearance, current.Appearance);
+        Assert.AreEqual(floating, JsonSerializer.Serialize(current.FloatingBar));
+        Assert.IsFalse(current.LyricsEnabled);
+        Assert.IsTrue(current.BluetoothBatteryWidget.Enabled);
+        Assert.AreEqual("keep-device", current.BluetoothBatteryWidget.DeviceId);
+        Assert.AreEqual(35, current.BluetoothBatteryWidget.LowThreshold);
+    }
+
+    [TestMethod]
+    public void MovedGroupsResolveToTheirOnlyEditor()
+    {
+        Assert.AreEqual((SettingsPageKey.RestState, "Common.RestLayer"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Components, "Common.RestLayer"));
+        Assert.AreEqual((SettingsPageKey.RestState, "Common.Group.ComponentOrder"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Components, "Common.Group.ComponentOrder"));
+        Assert.AreEqual((SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Appearance, "Common.Group.Fonts"));
+        Assert.AreEqual((SettingsPageKey.ApplicationAppearance, "Common.Group.ThemeAndBackdrop"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Appearance, "Common.Group.ThemeAndBackdrop"));
+        Assert.AreEqual((SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground"));
     }
 
     [TestMethod]

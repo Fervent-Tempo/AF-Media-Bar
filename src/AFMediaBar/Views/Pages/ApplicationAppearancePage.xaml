@@ -1,105 +1,102 @@
-<!-- Application-wide theme, window materials and interface typography; media layout belongs to the taskbar page. -->
-<Page
-    x:Class="AFMediaBar.Views.Pages.ApplicationAppearancePage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:components="clr-namespace:AFMediaBar.Components"
-    xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-    ScrollViewer.CanContentScroll="False">
-
-    <!-- Application-wide theme, materials and interface typography. -->
-
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <components:SettingsGroupStrip Margin="{StaticResource AfSettingsHeaderMargin}" MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
-            Grid.Row="0"
-            PageIcon="{ui:SymbolIcon PaintBrush24}"
-            Subtitle="{DynamicResource Loc.ApplicationAppearance.Header.Subtitle}"
-            Target="{Binding ElementName=PageScroll}"
-            Title="{DynamicResource Loc.Common.Page.ApplicationAppearance}" />
-
-        <ScrollViewer
-            x:Name="PageScroll"
-            Grid.Row="1"
-            Margin="{StaticResource AfSettingsScrollMargin}"
-            HorizontalScrollBarVisibility="Disabled"
-            VerticalScrollBarVisibility="Auto">
-            <StackPanel
-                x:Name="PageRoot"
-                MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
-                Loaded="OnPageLoaded"
-                Unloaded="OnPageUnloaded">
-
-                <components:SettingsGroup GroupId="Common.Group.ThemeAndBackdrop" Header="{DynamicResource Loc.Common.Group.ThemeAndBackdrop}" Icon="{ui:SymbolIcon Color24}">
-                    <StackPanel>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.Theme.Description}"
+<Page x:Class="AFMediaBar.Views.Pages.ApplicationAppearancePage"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:components="clr-namespace:AFMediaBar.Components"
+ xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings"
+ xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+ Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
+ <Page.Resources>
+  <Style TargetType="{x:Type components:SettingsRow}" BasedOn="{StaticResource AfSettingsPilotRowStyle}" />
+  <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}" />
+ </Page.Resources>
+ <components:SettingsPageLayout x:Name="PageLayout">
+  <components:SettingsPageLayout.Header><components:SettingsGroupStrip
+   Title="{DynamicResource Loc.Common.Page.ApplicationAppearance}" Subtitle="{DynamicResource Loc.Settings.Personalization.Subtitle}"
+   PageIcon="{ui:SymbolIcon Color24}" Target="{Binding ScrollViewer, ElementName=PageLayout}" /></components:SettingsPageLayout.Header>
+  <components:SettingsPageLayout.Preview><StackPanel>
+   <Border Padding="18" Margin="0,0,0,16" CornerRadius="8" Background="{DynamicResource AfSettingsInputBrush}"
+    BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1">
+    <StackPanel><TextBlock Text="{DynamicResource Loc.Settings.Personalization.Sample}" FontSize="20" TextWrapping="Wrap" />
+     <TextBlock Margin="0,10,0,0" Text="{DynamicResource Loc.Settings.Personalization.SampleDescription}" FontSize="13" LineHeight="20" TextWrapping="Wrap" />
+     <Border Margin="0,16,0,0" Padding="14,8" HorizontalAlignment="Left" Background="{DynamicResource AfAccentBrush}" CornerRadius="5">
+      <TextBlock Text="{DynamicResource Loc.Settings.Personalization.Accent}" Foreground="{DynamicResource AfOnAccentBrush}" FontSize="14" />
+     </Border></StackPanel>
+   </Border><components:SettingsPreview DataContext="{Binding Preview}" />
+  </StackPanel></components:SettingsPageLayout.Preview>
+  <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded" Unloaded="OnPageUnloaded">
+<components:SettingsGroup GroupId="Common.Group.ThemeAndBackdrop" Header="{DynamicResource Loc.Common.Group.ThemeAndBackdrop}"><StackPanel><components:SettingsRow
                             Icon="{ui:SymbolIcon Color24}"
                             Title="{DynamicResource Loc.Appearance.Row.Theme.Title}">
                             <ComboBox
                                 MinWidth="{StaticResource AfSettingsSelectMinWidth}"
                                 SelectedValue="{Binding ViewModel.ApplicationThemeMode, Mode=TwoWay}"
                                 SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Theme.Automatic}" Tag="{x:Static settings:ApplicationThemeMode.Automatic}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Theme.Light}" Tag="{x:Static settings:ApplicationThemeMode.Light}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Theme.Dark}" Tag="{x:Static settings:ApplicationThemeMode.Dark}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Theme.Automatic}"
+                                    Tag="{x:Static settings:ApplicationThemeMode.Automatic}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Theme.Light}"
+                                    Tag="{x:Static settings:ApplicationThemeMode.Light}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Theme.Dark}"
+                                    Tag="{x:Static settings:ApplicationThemeMode.Dark}" />
                             </ComboBox>
-                        </components:SettingsRow>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.Backdrop.Description}"
+                        </components:SettingsRow><components:SettingsRow
                             Icon="{ui:SymbolIcon WindowConsole20}"
+                            Description="{DynamicResource Loc.Appearance.Row.Backdrop.Description}"
                             Title="{DynamicResource Loc.Appearance.Row.Backdrop.Title}">
-                            <ComboBox
-                                MinWidth="{StaticResource AfSettingsSelectMinWidth}"
-                                SelectedValue="{Binding ViewModel.BackdropMode, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Backdrop.Solid}" Tag="{x:Static settings:ApplicationBackdropMode.FluentSolid}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Backdrop.Mica}" Tag="{x:Static settings:ApplicationBackdropMode.Mica}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Backdrop.MicaAlt}" Tag="{x:Static settings:ApplicationBackdropMode.MicaAlt}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Backdrop.Acrylic}" Tag="{x:Static settings:ApplicationBackdropMode.Acrylic}" />
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.BackdropMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Backdrop.Solid}"
+                                    Tag="{x:Static settings:ApplicationBackdropMode.FluentSolid}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Backdrop.Mica}"
+                                    Tag="{x:Static settings:ApplicationBackdropMode.Mica}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Backdrop.MicaAlt}"
+                                    Tag="{x:Static settings:ApplicationBackdropMode.MicaAlt}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Backdrop.Acrylic}"
+                                    Tag="{x:Static settings:ApplicationBackdropMode.Acrylic}" />
                             </ComboBox>
-                        </components:SettingsRow>
-
-                        <!--
-                            材质浓度：只作用于"应用自己绘制材质"的两处（Windows 10 的窗口，以及永不激活的曲目通知）。
-                            Windows 11 的云母/亚克力/Mica Alt 由 DWM 绘制，浓度对它无效，因此行说明里写清了适用面。
-                            Material concentration: it only affects the two places where the application paints the material itself
-                            (Windows 10 windows and the never-activating track notification). Mica, Acrylic, and Mica Alt on Windows 11
-                            are painted by DWM and ignore it, which the row's description states.
-                        -->
-
-                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,2,0,4"><TextBlock
-                            Style="{StaticResource AfSettingsHintTextStyle}"
-                            Text="{DynamicResource Loc.Appearance.BackdropTint.Hint}" /></Border>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.Accent.Description}"
-                            Icon="{ui:SymbolIcon ColorBackground20}"
+                        </components:SettingsRow><ui:CardExpander
+                            Padding="16,12" Margin="0,0,0,4"
+                            Background="{DynamicResource AfSettingsCardBrush}"
+                            BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1"
+                            IsExpanded="False">
+                            <ui:CardExpander.Header>
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="WindowConsole20" FontSize="20" Margin="0,0,14,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock
+                                        Style="{StaticResource AfSettingsRowTitleStyle}"
+                                        Text="{DynamicResource Loc.Settings.Advanced.Backdrop.Title}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel Margin="0,8,0,4">
+                                <TextBlock Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,0,0,10"
+                                    Text="{DynamicResource Loc.Appearance.BackdropTint.Hint}" />
+                                <components:SettingsRow IsNested="True" Icon="{ui:SymbolIcon Color24}"
+                                    Title="{DynamicResource Loc.Appearance.Row.BackdropTint.Title}">
+                                    <components:SettingsNumericEditor
+                                        Value="{Binding ViewModel.BackdropTintOpacityPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumBackdropTintOpacityPercent}}"
+                                        Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumBackdropTintOpacityPercent}}"
+                                        Step="{Binding Source={x:Static settings:AppearanceSettings.BackdropTintOpacityStep}}"
+                                        Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander></StackPanel></components:SettingsGroup><components:SettingsGroup GroupId="Settings.Personalization.Accent" Header="{DynamicResource Loc.Settings.Personalization.Accent}"><StackPanel><components:SettingsRow
+                            Icon="{ui:SymbolIcon Color24}"
                             Title="{DynamicResource Loc.Appearance.Row.Accent.Title}">
-                            <ComboBox
-                                MinWidth="{StaticResource AfSettingsSelectMinWidth}"
-                                SelectedValue="{Binding ViewModel.AccentColorMode, Mode=TwoWay}"
-                                SelectedValuePath="Tag">
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Accent.FollowSystem}" Tag="{x:Static settings:AccentColorMode.System}" />
-                                <ComboBoxItem Content="{DynamicResource Loc.Appearance.Accent.Custom}" Tag="{x:Static settings:AccentColorMode.Custom}" />
+                            <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.AccentColorMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Accent.FollowSystem}"
+                                    Tag="{x:Static settings:AccentColorMode.System}" />
+                                <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Accent.Custom}"
+                                    Tag="{x:Static settings:AccentColorMode.Custom}" />
                             </ComboBox>
-                        </components:SettingsRow>
-
-                        <!--
-                            自选色板。这里的颜色是刻意的硬编码：色块展示的就是"用户正在挑选的那个颜色"，它按定义不是主题语义画刷，
-                            与上面模拟任意壁纸的对照预览属于同一类例外。
-                            Custom swatch strip. These colours are deliberately hardcoded: a swatch shows the very colour the user is
-                            picking, which by definition is not a theme semantic brush, making it the same class of exception as the
-                            wallpaper contrast preview above.
-                        -->
-                        <Border
+                        </components:SettingsRow><Border
                             Margin="0,4,0,0"
                             Padding="14,12"
                             Background="{DynamicResource AfSettingsInfoSurfaceBrush}"
@@ -234,44 +231,16 @@
                                         Text="{Binding ViewModel.AccentColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
                             </StackPanel>
-                        </Border>
-
-                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,8,0,0"><TextBlock
-                            Style="{StaticResource AfSettingsHintTextStyle}"
-                            Text="{DynamicResource Loc.Appearance.Accent.Hint}" /></Border>
-
+                        </Border><Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,8,0,0">
+                            <TextBlock Style="{StaticResource AfSettingsHintTextStyle}" Text="{DynamicResource Loc.Appearance.Accent.Hint}" />
+                        </Border></StackPanel></components:SettingsGroup>                <components:SettingsGroup
+                    GroupId="Common.Group.Fonts"
+                    Header="{DynamicResource Loc.Common.Group.Fonts}"
+                    Description="{DynamicResource Loc.Appearance.Scope.Fonts}">
+                    <StackPanel>
                         <components:SettingsRow
-                            Badge="{Binding ViewModel.MotionModeText}"
-                            BadgeTone="Accent"
-                            Description="{Binding ViewModel.MotionDetailText}"
-                            Icon="{ui:SymbolIcon ArrowSync24}"
-                            Title="{DynamicResource Loc.Appearance.Row.Motion.Title}" />
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon CircleHalfFill24}">
-                        <ui:CardExpander.Header><StackPanel>
-                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Backdrop.Title}" />
-                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Settings.Advanced.Backdrop.Description}" />
-                            </StackPanel></ui:CardExpander.Header>
-                            <StackPanel>
-<components:SettingsRow IsNested="True"
-                            Description="{DynamicResource Loc.Appearance.Row.BackdropTint.Description}"
-                            Icon="{ui:SymbolIcon CircleHalfFill24}"
-                            Title="{DynamicResource Loc.Appearance.Row.BackdropTint.Title}">
-                            <components:SettingsNumericEditor
-                                    Value="{Binding ViewModel.BackdropTintOpacityPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                    Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumBackdropTintOpacityPercent}}"
-                                    Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumBackdropTintOpacityPercent}}"
-                                    Step="{Binding Source={x:Static settings:AppearanceSettings.BackdropTintOpacityStep}}"
-                                    Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
-                        </components:SettingsRow>
-                            </StackPanel>
-                        </ui:CardExpander>
-                    </StackPanel>
-                </components:SettingsGroup>
-<components:SettingsGroup GroupId="Common.Group.Fonts" Header="{DynamicResource Loc.Common.Group.Fonts}" Icon="{ui:SymbolIcon TextFont24}"><StackPanel>
-
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.LatinFont.Description}"
                             Icon="{ui:SymbolIcon TextFont24}"
+                            Description="{DynamicResource Loc.Appearance.Row.LatinFont.Description}"
                             Title="{DynamicResource Loc.Appearance.Row.LatinFont.Title}">
                             <ComboBox
                                 MinWidth="{StaticResource AfSettingsSelectMinWidth}"
@@ -300,10 +269,9 @@
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
                         </components:SettingsRow>
-
                         <components:SettingsRow
+                            Icon="{ui:SymbolIcon TextFont24}"
                             Description="{DynamicResource Loc.Appearance.Row.CjkFont.Description}"
-                            Icon="{ui:SymbolIcon LocalLanguage24}"
                             Title="{DynamicResource Loc.Appearance.Row.CjkFont.Title}">
                             <ComboBox
                                 MinWidth="{StaticResource AfSettingsSelectMinWidth}"
@@ -332,25 +300,16 @@
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
                         </components:SettingsRow>
-
-                        <!--
-                            上下限用 Binding 而不是 x:Static：x:Static 返回装箱的 int，
-                            RangeBase.Maximum 需要 double，标记扩展不做这个转换，而绑定会。
-                            The bounds use Binding rather than x:Static because x:Static yields a boxed int,
-                            RangeBase.Maximum wants a double, and the markup extension performs no conversion
-                            while the binding engine does.
-                        -->
                         <components:SettingsRow
+                            Icon="{ui:SymbolIcon TextFont24}"
                             Description="{DynamicResource Loc.Appearance.Row.FontWeight.Description}"
-                            Icon="{ui:SymbolIcon TextBold24}"
                             Title="{DynamicResource Loc.Appearance.Row.FontWeight.Title}">
                             <components:SettingsNumericEditor
-                                    Value="{Binding ViewModel.FontWeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                    Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumFontWeight}}"
-                                    Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumFontWeight}}"
-                                    Step="{Binding Source={x:Static settings:AppearanceSettings.FontWeightStep}}" />
+                                Value="{Binding ViewModel.FontWeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumFontWeight}}"
+                                Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumFontWeight}}"
+                                Step="{Binding Source={x:Static settings:AppearanceSettings.FontWeightStep}}" />
                         </components:SettingsRow>
-
                         <Border
                             Margin="0,4,0,0"
                             Padding="16,13"
@@ -385,17 +344,9 @@
                                     Text="{DynamicResource Loc.Appearance.Specimen.Line3}" />
                             </StackPanel>
                         </Border>
-
-                            </StackPanel></components:SettingsGroup>
-
-                <ui:Button
-                    Margin="0,16,0,40"
-                    HorizontalAlignment="Left"
-                    Click="ResetButton_Click"
-                    Content="{DynamicResource Loc.Common.ResetPageDefaults}"
-                    Icon="{ui:SymbolIcon ArrowReset24}"
-                    Style="{StaticResource AfSettingsButtonStyle}" />
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+                    </StackPanel>
+                </components:SettingsGroup>
+   <ui:Button Click="ResetButton_Click" Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="0,0,0,20" />
+  </StackPanel>
+ </components:SettingsPageLayout>
 </Page>

@@ -17,6 +17,8 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INaviga
     {
         [SettingsPageKey.ScreenAndPlacement] = typeof(ScreenAndPlacementPage),
         [SettingsPageKey.Appearance] = typeof(AppearancePage),
+        [SettingsPageKey.ApplicationAppearance] = typeof(ApplicationAppearancePage),
+        [SettingsPageKey.RestState] = typeof(RestStatePage),
         [SettingsPageKey.Interaction] = typeof(InteractionPage),
         [SettingsPageKey.DeviceManagement] = typeof(DeviceManagementPage),
         [SettingsPageKey.Lyrics] = typeof(LyricsPage),
@@ -51,8 +53,7 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INaviga
         return cache.Get(pageType, definition);
     }
     /// <summary>保留调用方的旧页面类型入口，不创建重复设置页。</summary>
-    public static Type ResolvePageType(Type pageType) => pageType == typeof(DisplayModesPage) ? typeof(ScreenAndPlacementPage)
-        : pageType == typeof(ApplicationAppearancePage) ? typeof(AppearancePage) : pageType;
+    public static Type ResolvePageType(Type pageType) => pageType == typeof(DisplayModesPage) ? typeof(ScreenAndPlacementPage) : pageType;
     /// <summary>Releases cached objects when the settings window closes.</summary>
     public void Dispose() => cache.Dispose();
 }

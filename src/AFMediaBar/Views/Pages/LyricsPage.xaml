@@ -382,11 +382,11 @@
                                                     IsNested="True"
                                                     Title="{Binding DisplayName}">
                                                     <StackPanel Orientation="Horizontal">
+                                                        <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=TwoWay}" />
                                                         <StackPanel Orientation="Horizontal"
                                                             Visibility="{Binding DataContext.ViewModel.IsManualSourceRule, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                                                             <components:SettingsReorderHandle ItemKey="{Binding SourceId}" />
                                                         </StackPanel>
-                                                        <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=TwoWay}" />
                                                     </StackPanel>
                                                 </components:SettingsRow>
                                             </DataTemplate>
