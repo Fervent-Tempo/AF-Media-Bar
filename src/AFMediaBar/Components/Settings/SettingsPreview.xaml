@@ -50,14 +50,15 @@
                         </ItemsControl>
                         <Border Height="3" Margin="0,10,0,0" CornerRadius="1" Background="{DynamicResource AfAccentBrush}"
                             Visibility="{Binding ShowProgress, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                        <TextBlock Text="{DynamicResource Loc.Settings.Preview.Empty}" TextWrapping="Wrap" FontSize="13"
+                        <TextBlock Text="{Binding EmptyText}" TextWrapping="Wrap" FontSize="13"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                             Visibility="{Binding IsEmpty, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
                     </StackPanel>
                 </Border>
             </StackPanel>
         </Border>
-        <CheckBox Margin="0,16,0,0" Content="{DynamicResource Loc.Settings.Preview.Idle}" IsChecked="{Binding ShowIdle, Mode=TwoWay}" FontSize="13" />
+        <CheckBox Margin="0,16,0,0" Content="{DynamicResource Loc.Settings.Preview.Idle}" IsChecked="{Binding ShowIdle, Mode=TwoWay}" FontSize="13"
+            Visibility="{Binding IsRest, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
         <TextBlock Margin="0,12,0,0" Text="{DynamicResource Loc.Settings.Preview.Note}" TextWrapping="Wrap" FontSize="13" LineHeight="20"
             Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
     </StackPanel>

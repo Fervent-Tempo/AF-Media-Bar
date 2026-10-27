@@ -18,7 +18,7 @@ public sealed class SettingsPageLayout : HeaderedContentControl
         nameof(PreviewColumn), typeof(GridLength), typeof(SettingsPageLayout), new PropertyMetadata(new GridLength(360)));
     public static readonly DependencyProperty PreviewColumnProperty = PreviewColumnPropertyKey.DependencyProperty;
     public static readonly DependencyProperty PreviewProperty = DependencyProperty.Register(
-        nameof(Preview), typeof(object), typeof(SettingsPageLayout), new PropertyMetadata(null));
+        nameof(Preview), typeof(object), typeof(SettingsPageLayout), new PropertyMetadata(null, (sender, _) => ((SettingsPageLayout)sender).UpdateLayoutMode()));
     public static readonly DependencyProperty PreviewExpandedProperty = DependencyProperty.Register(
         nameof(PreviewExpanded), typeof(bool), typeof(SettingsPageLayout), new PropertyMetadata(false, OnExpandedChanged));
     private bool _wideExpanded = true;
@@ -49,7 +49,7 @@ public sealed class SettingsPageLayout : HeaderedContentControl
     private void UpdateLayoutMode()
     {
         var width = Math.Min(1680d, Math.Max(0d, ActualWidth - 64d));
-        var wide = width >= 1000d;
+        var wide = Preview is not null && width >= 1000d;
         SetValue(PreviewColumnPropertyKey, new GridLength(wide ? Math.Clamp(width * .32d, 360d, 520d) : 0d));
         if (wide == IsWide) return;
         _changingLayout = true;

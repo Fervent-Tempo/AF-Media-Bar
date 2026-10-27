@@ -7,7 +7,7 @@ using Wpf.Ui.Abstractions.Controls;
 
 namespace AFMediaBar.Views.Pages;
 
-/// <summary>Read-only latest and historical version highlights.</summary>
+/// <summary>呈现更新亮点设置，编辑器与服务由既有作用域拥有。</summary>
 public partial class ReleaseHighlightsPage : INavigableView<ReleaseHighlightsViewModel>
 {
     /// <summary>Injected bindable page state.</summary>

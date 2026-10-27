@@ -80,14 +80,17 @@ public static class SettingsSearchIndex
         string descriptionKey,
         LocalizationLanguage language,
         string[] keywords,
-        string? groupId = null) =>
-        new(
-            page,
-            groupId ?? titleKey,
-            Translations.Get(PageTitleKey(page), language),
+        string? groupId = null)
+    {
+        var destination = SettingsPageCatalog.ResolveDestination(page, groupId ?? titleKey);
+        return new(
+            destination.Page,
+            destination.GroupId,
+            Translations.Get(PageTitleKey(destination.Page), language),
             Translations.Get(titleKey, language),
             Translations.Get(descriptionKey, language),
             ComposeKeywords(titleKey, descriptionKey, keywords));
+    }
 
     /// <summary>
     /// 关键词表：手工同义词在前，三种语言的分组标题与说明在后。

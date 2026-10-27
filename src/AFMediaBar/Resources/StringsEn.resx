@@ -2227,7 +2227,7 @@
   <data name="Wheel.Line.WithValue" xml:space="preserve">
     <value>{0}: {1}</value>
   </data>
-  <data name="Common.Page.ReleaseHighlights" xml:space="preserve"><value>What’s new</value></data>
+  <data name="Common.Page.ReleaseHighlights" xml:space="preserve"><value>Release highlights</value></data>
   <data name="Settings.Navigation.Back" xml:space="preserve"><value>Back</value></data>
   <data name="ReleaseHighlights.Header.Subtitle" xml:space="preserve"><value>Explore the latest improvements and previous releases.</value></data>
   <data name="ReleaseHighlights.Latest" xml:space="preserve"><value>Latest release</value></data>
@@ -2319,7 +2319,7 @@
     <value>Font preview · 가나다 · 示例文字</value>
   </data>
   <data name="Common.Page.ScreenAndPlacement" xml:space="preserve">
-    <value>Display &amp; placement</value>
+    <value>Display and position</value>
   </data>
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
     <value>Choose a display mode, monitor, and media bar position.</value>
@@ -2909,7 +2909,7 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Lyrics.Sources.Order.Reset" xml:space="preserve">
     <value>Restore default order</value>
   </data>
-  <data name="Common.Page.Experimental" xml:space="preserve"><value>Experimental features</value></data>
+  <data name="Common.Page.Experimental" xml:space="preserve"><value>Experiments</value></data>
   <data name="Experimental.Warning" xml:space="preserve"><value>Experimental features have not been fully tested. Please report problems through any existing feedback channel.</value></data>
   <data name="Experimental.Enable" xml:space="preserve"><value>Enable this experiment</value></data>
   <data name="Experimental.Vertical.Title" xml:space="preserve"><value>Vertical taskbar</value></data>
@@ -3277,4 +3277,55 @@ Dropped samples: {3}; events: {4}</value></data>
   <data name="Settings.RestState.SpaceHint" xml:space="preserve"><value>These controls take up space on the media bar.</value></data>
   <data name="Settings.RestState.Extensions" xml:space="preserve"><value>Additional components</value></data>
   <data name="Settings.RestState.Volume" xml:space="preserve"><value>Volume</value></data>
+  <data name="Settings.Group.TextProcessing" xml:space="preserve"><value>Text processing</value></data>
+  <data name="Settings.Group.Capture" xml:space="preserve"><value>Capture</value></data>
+  <data name="Settings.Group.Presentation" xml:space="preserve"><value>Style and size</value></data>
+  <data name="Settings.Group.Metrics" xml:space="preserve"><value>Metrics and sampling</value></data>
+  <data name="Settings.Group.DisplayAndOrder" xml:space="preserve"><value>Display and order</value></data>
+  <data name="Settings.Group.LaunchActions" xml:space="preserve"><value>Launch actions</value></data>
+  <data name="Settings.Group.ApplicationList" xml:space="preserve"><value>Applications</value></data>
+  <data name="Settings.Group.Entry" xml:space="preserve"><value>Entry and opening</value></data>
+  <data name="Settings.Group.PanelSections" xml:space="preserve"><value>Panel sections</value></data>
+  <data name="Settings.Group.Files" xml:space="preserve"><value>Settings files</value></data>
+  <data name="Settings.Group.Defaults" xml:space="preserve"><value>Personal defaults and reset</value></data>
+  <data name="Settings.Group.Logs" xml:space="preserve"><value>Logs</value></data>
+  <data name="Settings.Group.Developer" xml:space="preserve"><value>Developer tools</value></data>
+  <data name="Settings.Experiment.Required" xml:space="preserve"><value>Enable this feature in Experiments first.</value></data>
+  <data name="Settings.Page.QuickControls" xml:space="preserve"><value>Quick controls</value></data>
+  <data name="Settings.Page.ComponentsSettings.Description" xml:space="preserve"><value>Set hover controls, button visibility, and size.</value></data>
+  <data name="Settings.Page.FullPanel" xml:space="preserve"><value>Full panel</value></data>
+  <data name="Settings.Page.FullPanel.Description" xml:space="preserve"><value>Set the entry, opening behavior, and panel sections.</value></data>
+  <data name="Settings.Page.BarAppearance" xml:space="preserve"><value>Appearance and layout</value></data>
+  <data name="Settings.Page.Appearance.Description" xml:space="preserve"><value>Set media bar background, length, spacing, and expansion direction.</value></data>
+  <data name="Settings.Page.TextAndLyrics" xml:space="preserve"><value>Text and lyrics</value></data>
+  <data name="Settings.Page.Lyrics.Description" xml:space="preserve"><value>Set media text, lyric display, text processing, and lyric sources.</value></data>
+  <data name="Settings.Page.NoteAndLaunch" xml:space="preserve"><value>Note and quick launch</value></data>
+  <data name="Settings.Page.WidgetsSettings.Description" xml:space="preserve"><value>Set note colors, launch actions, and the application list.</value></data>
+  <data name="Settings.Page.Spectrum" xml:space="preserve"><value>Spectrum</value></data>
+  <data name="Settings.Page.Spectrum.Description" xml:space="preserve"><value>Set capture scope, device, and spectrum style.</value></data>
+  <data name="Settings.Page.Performance" xml:space="preserve"><value>Performance</value></data>
+  <data name="Settings.Page.Performance.Description" xml:space="preserve"><value>Choose metrics, display mode, and sampling interval.</value></data>
+  <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>Bluetooth battery</value></data>
+  <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>Choose a tracked device, display mode, and low-battery reminders.</value></data>
+  <data name="Settings.Page.MediaSource" xml:space="preserve"><value>Media sources</value></data>
+  <data name="Settings.Page.ExtraFeatures.Description" xml:space="preserve"><value>Choose players, automatic switching behavior, and the allow list.</value></data>
+  <data name="Settings.Page.TrackNotifications" xml:space="preserve"><value>Track notifications</value></data>
+  <data name="Settings.Page.TrackNotifications.Description" xml:space="preserve"><value>Set notification position, duration, and display.</value></data>
+  <data name="Settings.Page.GeneralAndUpdates" xml:space="preserve"><value>General and updates</value></data>
+  <data name="Settings.Page.Application.Description" xml:space="preserve"><value>Set language, startup, and updates.</value></data>
+  <data name="Settings.Page.Configuration" xml:space="preserve"><value>Configuration and defaults</value></data>
+  <data name="Settings.Page.Configuration.Description" xml:space="preserve"><value>Open the settings folder, manage personal defaults, and reset settings.</value></data>
+  <data name="Settings.Page.Diagnostics" xml:space="preserve"><value>Diagnostics and logs</value></data>
+  <data name="Settings.Page.Diagnostics.Description" xml:space="preserve"><value>View logs and manage developer tools.</value></data>
+  <data name="Settings.Page.MemoryTools" xml:space="preserve"><value>Memory tools</value></data>
+  <data name="Settings.Page.MemoryTools.Description" xml:space="preserve"><value>View memory readings and manage manual actions and automatic policies.</value></data>
+  <data name="Settings.Page.ScreenAndPlacement.Description" xml:space="preserve"><value>Choose display mode, monitor, and position.</value></data>
+  <data name="Settings.Page.InteractionAndHotkeys" xml:space="preserve"><value>Interaction and shortcuts</value></data>
+  <data name="Settings.Page.Interaction.Description" xml:space="preserve"><value>Set click, wheel, keyboard, and tray actions.</value></data>
+  <data name="Settings.Page.AudioDevices" xml:space="preserve"><value>Audio devices</value></data>
+  <data name="Settings.Page.DeviceManagement.Description" xml:space="preserve"><value>Manage input and output devices, aliases, order, and communications policy.</value></data>
+  <data name="Settings.Page.Experimental.Description" xml:space="preserve"><value>Manage experiments and open their configuration.</value></data>
+  <data name="Settings.Page.About.Description" xml:space="preserve"><value>Project information, contributors, sponsors, and licenses.</value></data>
+  <data name="Settings.Page.ReleaseHighlights.Description" xml:space="preserve"><value>Read new features and the history of official releases.</value></data>
+  <data name="Settings.Preview.LayerDisabled" xml:space="preserve"><value>There is no content to display.</value></data>
 </root>

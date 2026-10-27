@@ -2909,7 +2909,7 @@
   <data name="Lyrics.Sources.Order.Reset" xml:space="preserve">
     <value>恢复默认顺序</value>
   </data>
-  <data name="Common.Page.Experimental" xml:space="preserve"><value>实验性功能</value></data>
+  <data name="Common.Page.Experimental" xml:space="preserve"><value>实验功能</value></data>
   <data name="Experimental.Warning" xml:space="preserve"><value>实验性功能未经充分测试，如遇问题，请通过任意现有反馈渠道反馈。</value></data>
   <data name="Experimental.Enable" xml:space="preserve"><value>启用此实验</value></data>
   <data name="Experimental.Vertical.Title" xml:space="preserve"><value>竖向任务栏</value></data>
@@ -3277,4 +3277,55 @@
   <data name="Settings.RestState.SpaceHint" xml:space="preserve"><value>显示这些控件会占用媒体栏空间。</value></data>
   <data name="Settings.RestState.Extensions" xml:space="preserve"><value>扩展组件</value></data>
   <data name="Settings.RestState.Volume" xml:space="preserve"><value>音量</value></data>
+  <data name="Settings.Group.TextProcessing" xml:space="preserve"><value>文本处理</value></data>
+  <data name="Settings.Group.Capture" xml:space="preserve"><value>采集</value></data>
+  <data name="Settings.Group.Presentation" xml:space="preserve"><value>样式与尺寸</value></data>
+  <data name="Settings.Group.Metrics" xml:space="preserve"><value>指标与采样</value></data>
+  <data name="Settings.Group.DisplayAndOrder" xml:space="preserve"><value>显示与顺序</value></data>
+  <data name="Settings.Group.LaunchActions" xml:space="preserve"><value>启动操作</value></data>
+  <data name="Settings.Group.ApplicationList" xml:space="preserve"><value>程序列表</value></data>
+  <data name="Settings.Group.Entry" xml:space="preserve"><value>入口与打开方式</value></data>
+  <data name="Settings.Group.PanelSections" xml:space="preserve"><value>面板区域</value></data>
+  <data name="Settings.Group.Files" xml:space="preserve"><value>设置文件</value></data>
+  <data name="Settings.Group.Defaults" xml:space="preserve"><value>个人默认与重置</value></data>
+  <data name="Settings.Group.Logs" xml:space="preserve"><value>日志</value></data>
+  <data name="Settings.Group.Developer" xml:space="preserve"><value>开发工具</value></data>
+  <data name="Settings.Experiment.Required" xml:space="preserve"><value>此功能需先在实验功能中启用。</value></data>
+  <data name="Settings.Page.QuickControls" xml:space="preserve"><value>快捷控制</value></data>
+  <data name="Settings.Page.ComponentsSettings.Description" xml:space="preserve"><value>设置悬停控制、按钮显隐与尺寸。</value></data>
+  <data name="Settings.Page.FullPanel" xml:space="preserve"><value>完整面板</value></data>
+  <data name="Settings.Page.FullPanel.Description" xml:space="preserve"><value>设置入口、打开方式和面板区域。</value></data>
+  <data name="Settings.Page.BarAppearance" xml:space="preserve"><value>外观与布局</value></data>
+  <data name="Settings.Page.Appearance.Description" xml:space="preserve"><value>设置媒体栏背景、长度、间距与展开方向。</value></data>
+  <data name="Settings.Page.TextAndLyrics" xml:space="preserve"><value>文字与歌词</value></data>
+  <data name="Settings.Page.Lyrics.Description" xml:space="preserve"><value>设置媒体文字、歌词显示、文本处理和取词来源。</value></data>
+  <data name="Settings.Page.NoteAndLaunch" xml:space="preserve"><value>小音符与快速启动</value></data>
+  <data name="Settings.Page.WidgetsSettings.Description" xml:space="preserve"><value>设置音符颜色、启动操作和程序列表。</value></data>
+  <data name="Settings.Page.Spectrum" xml:space="preserve"><value>频谱</value></data>
+  <data name="Settings.Page.Spectrum.Description" xml:space="preserve"><value>设置采集范围、设备与频谱样式。</value></data>
+  <data name="Settings.Page.Performance" xml:space="preserve"><value>性能</value></data>
+  <data name="Settings.Page.Performance.Description" xml:space="preserve"><value>选择指标、显示方式和采样间隔。</value></data>
+  <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>蓝牙电量</value></data>
+  <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>选择追踪设备、显示方式与低电量提醒。</value></data>
+  <data name="Settings.Page.MediaSource" xml:space="preserve"><value>媒体来源</value></data>
+  <data name="Settings.Page.ExtraFeatures.Description" xml:space="preserve"><value>选择播放器、自动切换策略与允许列表。</value></data>
+  <data name="Settings.Page.TrackNotifications" xml:space="preserve"><value>曲目通知</value></data>
+  <data name="Settings.Page.TrackNotifications.Description" xml:space="preserve"><value>设置曲目通知的位置、时间与显示器。</value></data>
+  <data name="Settings.Page.GeneralAndUpdates" xml:space="preserve"><value>常规与更新</value></data>
+  <data name="Settings.Page.Application.Description" xml:space="preserve"><value>设置语言、开机启动与更新。</value></data>
+  <data name="Settings.Page.Configuration" xml:space="preserve"><value>配置与默认</value></data>
+  <data name="Settings.Page.Configuration.Description" xml:space="preserve"><value>打开设置文件夹、管理个人默认值与重置。</value></data>
+  <data name="Settings.Page.Diagnostics" xml:space="preserve"><value>诊断与日志</value></data>
+  <data name="Settings.Page.Diagnostics.Description" xml:space="preserve"><value>查看日志并管理开发工具。</value></data>
+  <data name="Settings.Page.MemoryTools" xml:space="preserve"><value>内存工具</value></data>
+  <data name="Settings.Page.MemoryTools.Description" xml:space="preserve"><value>查看内存读数，管理手动操作与自动策略。</value></data>
+  <data name="Settings.Page.ScreenAndPlacement.Description" xml:space="preserve"><value>选择显示模式、显示器与位置。</value></data>
+  <data name="Settings.Page.InteractionAndHotkeys" xml:space="preserve"><value>交互与快捷键</value></data>
+  <data name="Settings.Page.Interaction.Description" xml:space="preserve"><value>设置点击、滚轮、快捷键与托盘操作。</value></data>
+  <data name="Settings.Page.AudioDevices" xml:space="preserve"><value>音频设备</value></data>
+  <data name="Settings.Page.DeviceManagement.Description" xml:space="preserve"><value>管理输入输出设备、别名、顺序与通信策略。</value></data>
+  <data name="Settings.Page.Experimental.Description" xml:space="preserve"><value>管理实验开关并前往对应配置。</value></data>
+  <data name="Settings.Page.About.Description" xml:space="preserve"><value>项目信息、开发者、赞助与许可。</value></data>
+  <data name="Settings.Page.ReleaseHighlights.Description" xml:space="preserve"><value>查看正式版本的新功能与历史介绍。</value></data>
+  <data name="Settings.Preview.LayerDisabled" xml:space="preserve"><value>当前没有可显示的内容。</value></data>
 </root>

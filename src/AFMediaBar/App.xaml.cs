@@ -306,6 +306,14 @@ namespace AFMediaBar
                 services.AddScoped<AppearancePage>();
                 services.AddScoped<ApplicationAppearancePage>();
                 services.AddScoped<RestStatePage>();
+                services.AddScoped<FullPanelPage>();
+                services.AddScoped<SpectrumPage>();
+                services.AddScoped<PerformancePage>();
+                services.AddScoped<BluetoothBatteryPage>();
+                services.AddScoped<TrackNotificationsPage>();
+                services.AddScoped<ConfigurationPage>();
+                services.AddScoped<DiagnosticsPage>();
+                services.AddScoped<MemoryToolsPage>();
                 services.AddScoped<RestStateViewModel>();
                 services.AddScoped<SettingsPreviewViewModel>();
                 services.AddScoped<TaskbarAppearanceViewModel>();

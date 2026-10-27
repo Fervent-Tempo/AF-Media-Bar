@@ -19,6 +19,14 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INaviga
         [SettingsPageKey.Appearance] = typeof(AppearancePage),
         [SettingsPageKey.ApplicationAppearance] = typeof(ApplicationAppearancePage),
         [SettingsPageKey.RestState] = typeof(RestStatePage),
+        [SettingsPageKey.FullPanel] = typeof(FullPanelPage),
+        [SettingsPageKey.Spectrum] = typeof(SpectrumPage),
+        [SettingsPageKey.Performance] = typeof(PerformancePage),
+        [SettingsPageKey.BluetoothBattery] = typeof(BluetoothBatteryPage),
+        [SettingsPageKey.TrackNotifications] = typeof(TrackNotificationsPage),
+        [SettingsPageKey.Configuration] = typeof(ConfigurationPage),
+        [SettingsPageKey.Diagnostics] = typeof(DiagnosticsPage),
+        [SettingsPageKey.MemoryTools] = typeof(MemoryToolsPage),
         [SettingsPageKey.Interaction] = typeof(InteractionPage),
         [SettingsPageKey.DeviceManagement] = typeof(DeviceManagementPage),
         [SettingsPageKey.Lyrics] = typeof(LyricsPage),
@@ -41,15 +49,6 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INaviga
         pageType = ResolvePageType(pageType);
         var match = PageTypes.FirstOrDefault(pair => pair.Value == pageType);
         if (match.Value is null || SettingsPageCatalog.Find(match.Key, _context.Mode) is not { } definition) return null;
-        if (pageType == typeof(AppearancePage))
-        {
-            var page = (AppearancePage)cache.Get(pageType, definition with { HasModeContent = false });
-            var editor = SettingsPageCatalog.CanEditProfile(_context.Mode)
-                ? (TaskbarAppearanceViewModel)cache.Get(typeof(TaskbarAppearanceViewModel), definition with { IsGlobal = false })
-                : null;
-            page.SetTaskbarEditor(editor);
-            return page;
-        }
         return cache.Get(pageType, definition);
     }
     /// <summary>保留调用方的旧页面类型入口，不创建重复设置页。</summary>

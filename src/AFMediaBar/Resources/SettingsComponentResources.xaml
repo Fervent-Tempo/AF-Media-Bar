@@ -362,28 +362,23 @@
         展开器沿用一级卡片标题，展开体留出统一内边距，容纳独立的子卡片。
     -->
     <ControlTemplate x:Key="AfSettingsExpanderIconTemplate" TargetType="{x:Type ContentControl}">
-        <Border Width="32" Height="32" Background="{DynamicResource AfAccentBrush}" CornerRadius="8"
-                TextElement.Foreground="{DynamicResource AfOnAccentBrush}">
+        <Border Width="20" Height="20" Background="Transparent"
+                TextElement.Foreground="{DynamicResource TextFillColorSecondaryBrush}">
             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Content="{TemplateBinding Content}" />
         </Border>
     </ControlTemplate>
 
     <ControlTemplate x:Key="AfSettingsExpanderToggleTemplate" TargetType="{x:Type ToggleButton}">
-        <Border x:Name="HeaderSurface" Padding="{TemplateBinding Padding}" Background="Transparent" CornerRadius="8">
+        <Border x:Name="HeaderSurface" Padding="{TemplateBinding Padding}" Background="Transparent" CornerRadius="8" BorderBrush="Transparent" BorderThickness="1">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <ContentPresenter VerticalAlignment="Center" Content="{TemplateBinding Content}" />
-                <Border Grid.Column="1" Margin="12,0,0,0" Padding="10,6" VerticalAlignment="Center"
-                        Background="{DynamicResource AfAccentTintBrush}" BorderBrush="{DynamicResource AfAccentBrush}"
-                        BorderThickness="1" CornerRadius="8">
+                <Border Grid.Column="1" Margin="12,0,0,0" Padding="8,6" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock x:Name="ExpandHint" Margin="0,0,8,0" VerticalAlignment="Center"
-                                   FontSize="12" FontWeight="{DynamicResource AppTextMediumFontWeight}"
-                                   Foreground="{DynamicResource AfAccentBrush}" Text="{DynamicResource Loc.Settings.Expand}" />
-                        <ui:SymbolIcon x:Name="ExpandChevron" FontSize="16" Foreground="{DynamicResource AfAccentBrush}"
+                        <ui:SymbolIcon x:Name="ExpandChevron" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                        Symbol="ChevronDown24" />
                     </StackPanel>
                 </Border>
@@ -391,11 +386,16 @@
         </Border>
         <ControlTemplate.Triggers>
             <Trigger Property="IsChecked" Value="True">
-                <Setter TargetName="ExpandHint" Property="Text" Value="{DynamicResource Loc.Settings.Collapse}" />
                 <Setter TargetName="ExpandChevron" Property="Symbol" Value="ChevronUp24" />
             </Trigger>
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter TargetName="HeaderSurface" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter TargetName="HeaderSurface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="HeaderSurface" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
             </Trigger>
         </ControlTemplate.Triggers>
     </ControlTemplate>
@@ -433,7 +433,7 @@
                                         </Grid.ColumnDefinitions>
                                         <ContentControl x:Name="ControlIcon" Margin="0,0,14,0" VerticalAlignment="Center"
                                                         Content="{TemplateBinding Icon}" FontSize="18" Focusable="False"
-                                                        Foreground="{DynamicResource AfOnAccentBrush}"
+                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                         Template="{StaticResource AfSettingsExpanderIconTemplate}" />
                                         <ContentPresenter Grid.Column="1" VerticalAlignment="Center"
                                                           Content="{TemplateBinding Header}" />
@@ -1066,13 +1066,14 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type components:SettingsPageLayout}">
-                    <Grid Margin="32,0" MaxWidth="1680">
+                    <Grid x:Name="PageFrame" Margin="32,0" MaxWidth="1680">
                         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
                         <ContentPresenter ContentSource="Header" Margin="0,20,0,0" />
                         <Grid Grid.Row="1" Margin="0,18,0,0">
                             <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition x:Name="Gap" Width="32" /><ColumnDefinition Width="{TemplateBinding PreviewColumn}" /></Grid.ColumnDefinitions>
                             <ScrollViewer x:Name="PART_ScrollViewer" Grid.RowSpan="2" VerticalScrollBarVisibility="Auto"
+                                Background="Transparent"
                                 HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" Padding="0,0,4,24"
                                 Content="{TemplateBinding Content}" HorizontalContentAlignment="Stretch" />
                             <ui:CardExpander x:Name="PreviewHost" Grid.Column="2" Grid.RowSpan="2" VerticalAlignment="Top"
@@ -1085,6 +1086,10 @@
                         </Grid>
                     </Grid>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="Preview" Value="{x:Null}">
+                            <Setter TargetName="PageFrame" Property="MaxWidth" Value="1120" />
+                            <Setter TargetName="PreviewHost" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
                         <Trigger Property="IsWide" Value="False">
                             <Setter TargetName="Gap" Property="Width" Value="0" />
                             <Setter TargetName="PART_ScrollViewer" Property="Grid.Row" Value="1" />

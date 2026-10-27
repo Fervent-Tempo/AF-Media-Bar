@@ -51,6 +51,15 @@ public enum SettingsPageKey
 
     /// <summary>常驻组件显隐、顺序及无媒体保留项。</summary>
     RestState,
+    FullPanel,
+    Spectrum,
+    Performance,
+    BluetoothBattery,
+    TrackNotifications,
+    Configuration,
+    Diagnostics,
+    MemoryTools,
+    QuickStart,
 }
 
 /// <summary>

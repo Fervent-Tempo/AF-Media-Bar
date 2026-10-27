@@ -187,6 +187,12 @@ public partial class ExtraFeaturesViewModel : ObservableObject
     }
 
     public void ResetExtraFeatures() => SettingsManager.ResetExtraFeatures();
+    public void ResetSection(SettingsResetScope scope)
+    {
+        if (scope == SettingsResetScope.MediaSource) SettingsManager.ResetMediaSource();
+        else if (scope == SettingsResetScope.TrackNotifications) SettingsManager.ResetTrackNotifications();
+        else throw new ArgumentOutOfRangeException(nameof(scope));
+    }
 
     /// <summary>
     /// 写状态行。参数是文案键而不是拼好的句子，因此语言变化后这一行会自己跟着换语言。

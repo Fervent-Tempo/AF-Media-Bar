@@ -581,7 +581,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         if (_disposed || !_configuration.IsActive) return;
         if (!_dispatcher.CheckAccess()) { DispatcherHelper.Run(_dispatcher, () => OnSettingsChanged(sender, e)); return; }
         if (e.PropertyName is nameof(AppSettings.Experiments) or nameof(AppSettings.FloatingBar) ||
-            e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.Components or SettingsResetScope.RestState or SettingsResetScope.All)
+            e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.Components or SettingsResetScope.RestState or SettingsResetScope.QuickControls or SettingsResetScope.FullPanel or SettingsResetScope.BarAppearance or SettingsResetScope.All)
             RaiseAll();
         else if (!_isRefreshing && (e.PropertyName is nameof(AppSettings.Position) or nameof(AppSettings.TaskbarExperience)))
         {

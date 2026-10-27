@@ -373,7 +373,7 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
         _isRefreshing = true;
         try
         {
-            if (args.PropertyName == nameof(AppSettings.Appearance) || args.ResetScope is SettingsResetScope.Appearance or SettingsResetScope.All)
+            if (args.PropertyName == nameof(AppSettings.Appearance) || args.ResetScope is SettingsResetScope.Appearance or SettingsResetScope.BarAppearance or SettingsResetScope.TextAndLyrics or SettingsResetScope.QuickLaunch or SettingsResetScope.All)
                 RefreshIdleNoteColor();
             RaiseTaskbarAppearance();
             OnPropertyChanged(nameof(PlayerForegroundMode));

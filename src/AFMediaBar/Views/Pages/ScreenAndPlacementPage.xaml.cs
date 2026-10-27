@@ -6,7 +6,7 @@ using Wpf.Ui.Abstractions.Controls;
 
 namespace AFMediaBar.Views.Pages;
 
-/// <summary>Independent settings page for monitor selection and taskbar placement.</summary>
+/// <summary>呈现显示与位置设置，编辑器与服务由既有作用域拥有。</summary>
 public partial class ScreenAndPlacementPage : INavigableView<DisplayModesViewModel>
 {
     /// <summary>Shared display settings state; this page creates no monitor service or settings owner.</summary>

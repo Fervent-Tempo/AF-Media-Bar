@@ -2303,10 +2303,10 @@
     <value>Nội dung &amp; bố cục</value>
   </data>
   <data name="Common.Page.ReleaseHighlights" xml:space="preserve">
-    <value>Điểm mới của phiên bản</value>
+    <value>Điểm mới</value>
   </data>
   <data name="Common.Page.ScreenAndPlacement" xml:space="preserve">
-    <value>Màn hình &amp; vị trí</value>
+    <value>Hiển thị và vị trí</value>
   </data>
   <data name="Common.Page.TaskbarAppearance" xml:space="preserve">
     <value>Giao diện thanh media</value>
@@ -3315,4 +3315,55 @@ Mẫu bị loại: {3}; sự kiện: {4}</value></data>
   <data name="Settings.RestState.SpaceHint" xml:space="preserve"><value>Các điều khiển này chiếm không gian trên thanh đa phương tiện.</value></data>
   <data name="Settings.RestState.Extensions" xml:space="preserve"><value>Thành phần bổ sung</value></data>
   <data name="Settings.RestState.Volume" xml:space="preserve"><value>Âm lượng</value></data>
+  <data name="Settings.Group.TextProcessing" xml:space="preserve"><value>Xử lý văn bản</value></data>
+  <data name="Settings.Group.Capture" xml:space="preserve"><value>Thu âm thanh</value></data>
+  <data name="Settings.Group.Presentation" xml:space="preserve"><value>Kiểu và kích thước</value></data>
+  <data name="Settings.Group.Metrics" xml:space="preserve"><value>Chỉ số và lấy mẫu</value></data>
+  <data name="Settings.Group.DisplayAndOrder" xml:space="preserve"><value>Hiển thị và thứ tự</value></data>
+  <data name="Settings.Group.LaunchActions" xml:space="preserve"><value>Thao tác khởi chạy</value></data>
+  <data name="Settings.Group.ApplicationList" xml:space="preserve"><value>Danh sách ứng dụng</value></data>
+  <data name="Settings.Group.Entry" xml:space="preserve"><value>Lối vào và cách mở</value></data>
+  <data name="Settings.Group.PanelSections" xml:space="preserve"><value>Các vùng của bảng</value></data>
+  <data name="Settings.Group.Files" xml:space="preserve"><value>Tệp thiết lập</value></data>
+  <data name="Settings.Group.Defaults" xml:space="preserve"><value>Mặc định cá nhân và đặt lại</value></data>
+  <data name="Settings.Group.Logs" xml:space="preserve"><value>Nhật ký</value></data>
+  <data name="Settings.Group.Developer" xml:space="preserve"><value>Công cụ phát triển</value></data>
+  <data name="Settings.Experiment.Required" xml:space="preserve"><value>Trước tiên, hãy bật tính năng này trong mục Thử nghiệm.</value></data>
+  <data name="Settings.Page.QuickControls" xml:space="preserve"><value>Điều khiển nhanh</value></data>
+  <data name="Settings.Page.ComponentsSettings.Description" xml:space="preserve"><value>Thiết lập điều khiển khi di chuột, nút hiển thị và kích thước.</value></data>
+  <data name="Settings.Page.FullPanel" xml:space="preserve"><value>Bảng đầy đủ</value></data>
+  <data name="Settings.Page.FullPanel.Description" xml:space="preserve"><value>Thiết lập lối vào, cách mở và các vùng của bảng.</value></data>
+  <data name="Settings.Page.BarAppearance" xml:space="preserve"><value>Giao diện và bố cục</value></data>
+  <data name="Settings.Page.Appearance.Description" xml:space="preserve"><value>Thiết lập nền, chiều dài, khoảng cách và hướng mở của thanh đa phương tiện.</value></data>
+  <data name="Settings.Page.TextAndLyrics" xml:space="preserve"><value>Văn bản và lời bài hát</value></data>
+  <data name="Settings.Page.Lyrics.Description" xml:space="preserve"><value>Thiết lập văn bản, hiển thị lời, xử lý văn bản và nguồn lời bài hát.</value></data>
+  <data name="Settings.Page.NoteAndLaunch" xml:space="preserve"><value>Nốt nhạc và khởi chạy nhanh</value></data>
+  <data name="Settings.Page.WidgetsSettings.Description" xml:space="preserve"><value>Thiết lập màu nốt nhạc, thao tác khởi chạy và danh sách ứng dụng.</value></data>
+  <data name="Settings.Page.Spectrum" xml:space="preserve"><value>Phổ âm thanh</value></data>
+  <data name="Settings.Page.Spectrum.Description" xml:space="preserve"><value>Thiết lập phạm vi thu, thiết bị và kiểu phổ âm thanh.</value></data>
+  <data name="Settings.Page.Performance" xml:space="preserve"><value>Hiệu năng</value></data>
+  <data name="Settings.Page.Performance.Description" xml:space="preserve"><value>Chọn chỉ số, cách hiển thị và chu kỳ lấy mẫu.</value></data>
+  <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>Pin Bluetooth</value></data>
+  <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>Chọn thiết bị theo dõi, cách hiển thị và cảnh báo pin yếu.</value></data>
+  <data name="Settings.Page.MediaSource" xml:space="preserve"><value>Nguồn đa phương tiện</value></data>
+  <data name="Settings.Page.ExtraFeatures.Description" xml:space="preserve"><value>Chọn trình phát, quy tắc tự động chuyển và danh sách cho phép.</value></data>
+  <data name="Settings.Page.TrackNotifications" xml:space="preserve"><value>Thông báo bài hát</value></data>
+  <data name="Settings.Page.TrackNotifications.Description" xml:space="preserve"><value>Thiết lập vị trí, thời gian và màn hình thông báo.</value></data>
+  <data name="Settings.Page.GeneralAndUpdates" xml:space="preserve"><value>Chung và cập nhật</value></data>
+  <data name="Settings.Page.Application.Description" xml:space="preserve"><value>Thiết lập ngôn ngữ, khởi động cùng hệ thống và cập nhật.</value></data>
+  <data name="Settings.Page.Configuration" xml:space="preserve"><value>Cấu hình và mặc định</value></data>
+  <data name="Settings.Page.Configuration.Description" xml:space="preserve"><value>Mở thư mục thiết lập, quản lý mặc định cá nhân và đặt lại cấu hình.</value></data>
+  <data name="Settings.Page.Diagnostics" xml:space="preserve"><value>Chẩn đoán và nhật ký</value></data>
+  <data name="Settings.Page.Diagnostics.Description" xml:space="preserve"><value>Xem nhật ký và quản lý công cụ phát triển.</value></data>
+  <data name="Settings.Page.MemoryTools" xml:space="preserve"><value>Công cụ bộ nhớ</value></data>
+  <data name="Settings.Page.MemoryTools.Description" xml:space="preserve"><value>Xem số liệu bộ nhớ, quản lý thao tác thủ công và quy tắc tự động.</value></data>
+  <data name="Settings.Page.ScreenAndPlacement.Description" xml:space="preserve"><value>Chọn chế độ hiển thị, màn hình và vị trí.</value></data>
+  <data name="Settings.Page.InteractionAndHotkeys" xml:space="preserve"><value>Tương tác và phím tắt</value></data>
+  <data name="Settings.Page.Interaction.Description" xml:space="preserve"><value>Thiết lập thao tác nhấp, cuộn, phím tắt và khay hệ thống.</value></data>
+  <data name="Settings.Page.AudioDevices" xml:space="preserve"><value>Thiết bị âm thanh</value></data>
+  <data name="Settings.Page.DeviceManagement.Description" xml:space="preserve"><value>Quản lý thiết bị vào ra, bí danh, thứ tự và chính sách liên lạc.</value></data>
+  <data name="Settings.Page.Experimental.Description" xml:space="preserve"><value>Quản lý tính năng thử nghiệm và mở thiết lập tương ứng.</value></data>
+  <data name="Settings.Page.About.Description" xml:space="preserve"><value>Thông tin dự án, người đóng góp, nhà tài trợ và giấy phép.</value></data>
+  <data name="Settings.Page.ReleaseHighlights.Description" xml:space="preserve"><value>Xem tính năng mới và lịch sử các phiên bản chính thức.</value></data>
+  <data name="Settings.Preview.LayerDisabled" xml:space="preserve"><value>Hiện không có nội dung để hiển thị.</value></data>
 </root>

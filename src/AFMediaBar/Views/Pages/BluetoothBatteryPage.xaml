@@ -1,0 +1,75 @@
+<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.BluetoothBatteryPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
+    <Page.Resources>
+        <Style x:Key="SpectrumParameterRowStyle" BasedOn="{StaticResource {x:Type components:SettingsRow}}" TargetType="{x:Type components:SettingsRow}">
+            <Setter Property="Badge" Value=""/>
+            <Setter Property="IsEnabled" Value="{Binding ViewModel.Components.CanConfigureSpectrum}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.Components.CanConfigureSpectrum}" Value="False">
+                    <Setter Property="Badge" Value="{DynamicResource Loc.Media.Badge.EnableFirst}"/>
+                    <Setter Property="BadgeTone" Value="Attention"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="PerformanceParameterRowStyle" BasedOn="{StaticResource {x:Type components:SettingsRow}}" TargetType="{x:Type components:SettingsRow}">
+            <Setter Property="Badge" Value=""/>
+            <Setter Property="IsEnabled" Value="{Binding ViewModel.Components.CanConfigurePerformance}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.Components.CanConfigurePerformance}" Value="False">
+                    <Setter Property="Badge" Value="{DynamicResource Loc.Media.Badge.EnableFirst}"/>
+                    <Setter Property="BadgeTone" Value="Attention"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="{x:Type components:SettingsRow}" BasedOn="{StaticResource AfSettingsPilotRowStyle}"/>
+        <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/>
+    </Page.Resources>
+    <components:SettingsPageLayout x:Name="PageLayout">
+        <components:SettingsPageLayout.Header>
+            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Page.BluetoothBattery}" Subtitle="{DynamicResource Loc.Settings.Page.BluetoothBattery.Description}" PageIcon="{ui:SymbolIcon Bluetooth24}" Target="{Binding ScrollViewer, ElementName=PageLayout}"/>
+        </components:SettingsPageLayout.Header>
+        <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded">
+            <StackPanel Margin="0,0,0,20">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ViewModel.Battery.IsExperimentEnabled}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <TextBlock Text="{DynamicResource Loc.Settings.Experiment.Required}" Style="{StaticResource AfSettingsHintTextStyle}"/>
+                <components:SettingsNavigationButton Destination="Experimental" GroupId="Battery.Title" Content="{DynamicResource Loc.Settings.Component.Configure}"/>
+            </StackPanel>
+            <components:SettingsGroup GroupId="Battery.Title" Header="{DynamicResource Loc.Battery.Title}" Description="{DynamicResource Loc.Battery.SelectHint}" Icon="{ui:SymbolIcon Bluetooth24}">
+                <StackPanel DataContext="{Binding ViewModel.Battery}" IsEnabled="{Binding IsExperimentEnabled}">
+                    <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.Select}">
+                        <ComboBox ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice, Mode=TwoWay}" DisplayMemberPath="DisplayName" MinWidth="{StaticResource AfSettingsSelectMinWidth}" MaxWidth="{StaticResource AfSettingsSelectLongMaxWidth}"/>
+                    </components:SettingsRow>
+                    <WrapPanel Style="{StaticResource AfSettingsStandaloneActionsStyle}">
+                        <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Battery.ListRefresh}" Command="{Binding RefreshDevicesListCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                        <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Battery.Clear}" Command="{Binding ClearSelectionCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                    </WrapPanel>
+                    <components:SettingsNavigationButton Destination="RestState" GroupId="Common.RestLayer" Content="{DynamicResource Loc.Settings.RestState.VisibilityLink}" HorizontalAlignment="Left" Margin="0,0,0,12"/>
+                    <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.DisplayMode}">
+                        <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding DisplayMode, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}">
+                            <ComboBoxItem Content="{DynamicResource Loc.Battery.WhenConnected}" Tag="{x:Static settings:BluetoothBatteryDisplayMode.WhenConnected}"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.Battery.WhenLow}" Tag="{x:Static settings:BluetoothBatteryDisplayMode.WhenLow}"/>
+                        </ComboBox>
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.Notify}">
+                        <ui:ToggleSwitch IsChecked="{Binding Notifications, Mode=TwoWay}"/>
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.Threshold}">
+                        <components:SettingsNumericEditor Minimum="{Binding MinimumLowThreshold}" Maximum="{Binding MaximumLowThreshold}" Value="{Binding LowThreshold, Mode=TwoWay}" Step="1" Unit="{DynamicResource Loc.Settings.Numeric.Percent}"/>
+                    </components:SettingsRow>
+                    <TextBlock Text="{Binding CurrentDetails}" TextWrapping="Wrap" Style="{StaticResource AfSettingsStatusTextStyle}"/>
+                    <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.RefreshHint}">
+                        <ui:Button Content="{DynamicResource Loc.Battery.Refresh}" Command="{Binding RefreshCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                    </components:SettingsRow>
+                </StackPanel>
+            </components:SettingsGroup>
+            <ui:Button Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" Click="ResetButton_Click" HorizontalAlignment="Left" Margin="0,0,0,20"/>
+        </StackPanel>
+    </components:SettingsPageLayout>
+</Page>

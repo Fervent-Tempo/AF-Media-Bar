@@ -67,7 +67,8 @@ public sealed class AudioSettingsPageLoadingTests
                 using var batteryEditor = new BluetoothBatterySettingsViewModel(battery, configuration, localization);
                 using var quickLaunch = new AFMediaBar.Classes.Services.QuickLaunchService();
                 using var note = new QuickLaunchSettingsViewModel(quickLaunch, configuration, localization);
-                var widgetsModel = new WidgetsSettingsViewModel(components, batteryEditor, note, configuration);
+                using var layout = new TaskbarAppearanceViewModel(configuration, new AFMediaBar.Classes.Services.TaskbarLengthConstraintsService(), localization);
+                var widgetsModel = new WidgetsSettingsViewModel(components, batteryEditor, note, configuration, layout);
                 await widgetsModel.RefreshAsync();
                 var widgets = new WidgetsSettingsPage(widgetsModel);
                 widgets.Measure(new Size(820, 900));
@@ -157,7 +158,7 @@ public sealed class AudioSettingsPageLoadingTests
             window.Show();
             navigation.ReplaceContent(page);
             await window.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-            var scroll = (ScrollViewer)page.FindName("PageScroll");
+            var scroll = ((SettingsPageLayout)page.FindName("PageLayout")).ScrollViewer!;
             Assert.IsTrue(scroll.ScrollableHeight > 0, "测试窗口必须产生真实溢出。");
             var notice = (FrameworkElement)page.FindName("ExperimentalWarning");
             var gaps = new[] { notice.TranslatePoint(new Point(12, notice.ActualHeight + 4), page),

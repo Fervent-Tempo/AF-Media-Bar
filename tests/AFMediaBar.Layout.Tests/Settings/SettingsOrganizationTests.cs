@@ -176,6 +176,61 @@ public sealed class SettingsOrganizationTests
         Assert.AreEqual((SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Appearance, "Common.Group.Fonts"));
         Assert.AreEqual((SettingsPageKey.ApplicationAppearance, "Common.Group.ThemeAndBackdrop"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Appearance, "Common.Group.ThemeAndBackdrop"));
         Assert.AreEqual((SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground"));
+        Assert.AreEqual((SettingsPageKey.Spectrum, "Widgets.Spectrum"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Widgets, "Widgets.Spectrum"));
+        Assert.AreEqual((SettingsPageKey.TrackNotifications, "Common.Group.TrackChangeNotification"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.MediaAndNotifications, "Common.Group.TrackChangeNotification"));
+        Assert.AreEqual((SettingsPageKey.Lyrics, "Common.Group.MediaBarText"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Components, "Appearance.Group.RestLayout"));
+    }
+
+    [TestMethod]
+    public void QuickControlsResetPreservesRestFullPanelAndText()
+    {
+        var saved = new AppSettings { TaskbarExperience = TaskbarExperienceSettings.Default with { HoverLayerEnabled = false, HoverButtonSpacingDip = 7 } };
+        SettingsManager.SetUserDefaults(saved);
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+        { ArtworkVisible = false, FullPanelEntryVisible = false, MediaFontSizePercent = 120, ComponentSpacingDip = 24, HoverButtonSpacingDip = 2 };
+        using var context = new SettingsPageContext();
+        new LegacySettingsConfiguration(context).Reset(SettingsResetScope.QuickControls);
+        var result = SettingsManager.Current.TaskbarExperience;
+        Assert.IsFalse(result.HoverLayerEnabled);
+        Assert.AreEqual(7d, result.HoverButtonSpacingDip);
+        Assert.IsFalse(result.ArtworkVisible);
+        Assert.IsFalse(result.FullPanelEntryVisible);
+        Assert.AreEqual(120, result.MediaFontSizePercent);
+        Assert.AreEqual(24d, result.ComponentSpacingDip);
+    }
+
+    [TestMethod]
+    public void ComponentDetailsResetPreservesVisibilityAndOtherComponentParameters()
+    {
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { SpectrumVisible = false };
+        SettingsManager.Current.SpectrumComponent = SettingsManager.Current.SpectrumComponent with { BandCount = 22 };
+        SettingsManager.Current.BluetoothBatteryWidget = new() { Enabled = true, DeviceId = "keep-device" };
+        var battery = SettingsManager.Current.BluetoothBatteryWidget;
+        using var context = new SettingsPageContext();
+        new LegacySettingsConfiguration(context).Reset(SettingsResetScope.Spectrum);
+        Assert.AreEqual(new AppSettings().SpectrumComponent, SettingsManager.Current.SpectrumComponent);
+        Assert.IsFalse(SettingsManager.Current.TaskbarExperience.SpectrumVisible);
+        Assert.AreEqual(battery, SettingsManager.Current.BluetoothBatteryWidget);
+    }
+
+    [TestMethod]
+    public void FloatingAppearanceResetUsesItsDefaultGeometryWithoutChangingTaskbarOrLyrics()
+    {
+        var defaults = new AppSettings { FloatingBar = new() { Profile = new() { FixedLengthDip = 640, LengthMode = TaskbarLengthMode.Fixed } } };
+        SettingsManager.SetUserDefaults(defaults);
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { FixedLengthDip = 410, MediaFontSizePercent = 115 };
+        SettingsManager.Current.LyricsFixedWidthEnabled = true;
+        SettingsManager.Current.LyricsFixedWidthDip = 350;
+        SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { Profile = new() { FixedLengthDip = 720, LyricsFixedWidthDip = 280 } };
+        using var context = new SettingsPageContext();
+        context.Initialize(SettingsContext.Initial with { Mode = SettingsMode.FloatingBar });
+        new LegacySettingsConfiguration(context).Reset(SettingsResetScope.BarAppearance);
+        Assert.AreEqual(640d, SettingsManager.Current.FloatingBar.Profile!.FixedLengthDip);
+        Assert.AreEqual(280, SettingsManager.Current.FloatingBar.Profile.LyricsFixedWidthDip);
+        Assert.AreEqual(410d, SettingsManager.Current.TaskbarExperience.FixedLengthDip);
+        Assert.AreEqual(115, SettingsManager.Current.TaskbarExperience.MediaFontSizePercent);
+        Assert.IsTrue(SettingsManager.Current.LyricsFixedWidthEnabled);
+        Assert.AreEqual(350, SettingsManager.Current.LyricsFixedWidthDip);
     }
 
     [TestMethod]

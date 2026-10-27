@@ -17,6 +17,12 @@ public sealed class ContentLayoutViewModel(
     public LyricsViewModel Lyrics { get; } = lyrics;
     public CancellationToken ContextCancellationToken => configuration.CancellationToken;
 
+    /// <summary>按独立子页的字段归属恢复默认，不扩大到整个布局页。</summary>
+    public void ResetSection(SettingsResetScope scope)
+    {
+        if (configuration.IsActive) configuration.Reset(scope);
+    }
+
     public void ResetContentLayout()
     {
         if (configuration.IsActive) configuration.Reset(SettingsResetScope.ContentLayout);

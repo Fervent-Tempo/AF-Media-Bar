@@ -130,6 +130,22 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
     public void Reset(SettingsResetScope scope)
     {
         if (!IsActive) return;
+        if (SettingsSectionResetPolicy.Handles(scope))
+        {
+            var sectionRoot = SettingsManager.Current;
+            var sectionDefaults = (SettingsManager.UserDefaults ?? new AppSettings()).Clone();
+            if (Target == BarConfigurationTarget.FloatingBar)
+                sectionDefaults = (sectionDefaults.FloatingBar.Profile ?? BarDisplaySettings.Capture(sectionDefaults)).ApplyTo(sectionDefaults);
+            var sectionNext = SettingsSectionResetPolicy.Apply(Current, sectionDefaults, scope);
+            if (Target == BarConfigurationTarget.FloatingBar)
+            {
+                var sectionFloating = sectionNext.FloatingBar with { Profile = BarDisplaySettings.Capture(sectionNext) };
+                sectionNext = BarDisplaySettings.Capture(sectionRoot).ApplyTo(sectionNext);
+                sectionNext.FloatingBar = sectionFloating;
+            }
+            SettingsManager.Replace(sectionNext, scope);
+            return;
+        }
         switch (scope)
         {
             case SettingsResetScope.Lyrics: SettingsManager.ResetLyrics(); return;

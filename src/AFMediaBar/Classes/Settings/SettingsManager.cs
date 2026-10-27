@@ -259,6 +259,11 @@ public static class SettingsManager
         next.MediaSelection = defaults.MediaSelection;
         Replace(next, SettingsResetScope.ExtraFeatures);
     }
+
+    public static void ResetMediaSource() => Replace(AFMediaBar.Classes.Services.Settings.SettingsSectionResetPolicy.Apply(
+        Current, Defaults, SettingsResetScope.MediaSource), SettingsResetScope.MediaSource);
+    public static void ResetTrackNotifications() => Replace(AFMediaBar.Classes.Services.Settings.SettingsSectionResetPolicy.Apply(
+        Current, Defaults, SettingsResetScope.TrackNotifications), SettingsResetScope.TrackNotifications);
     public static void ResetComponents()
     {
         var next = Current.Clone(); var defaults = Defaults;

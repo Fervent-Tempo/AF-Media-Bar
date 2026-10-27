@@ -1,291 +1,161 @@
-<Page
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:components="clr-namespace:AFMediaBar.Components"
-    xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    x:Class="AFMediaBar.Views.Pages.AppearancePage"
-    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-    ScrollViewer.CanContentScroll="False">
+<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.AppearancePage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
     <Page.Resources>
         <Style x:Key="ForegroundPreviewTextStyle" TargetType="{x:Type TextBlock}">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
-            <Setter Property="Text" Value="AF Media Bar" />
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}"/>
+            <Setter Property="Text" Value="AF Media Bar"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Taskbar.PlayerForegroundMode}" Value="Automatic">
-                    <Setter Property="Foreground" Value="White" />
+                    <Setter Property="Foreground" Value="White"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Taskbar.PlayerForegroundMode}" Value="LightText">
-                    <Setter Property="Foreground" Value="White" />
+                    <Setter Property="Foreground" Value="White"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Taskbar.PlayerForegroundMode}" Value="DarkText">
-                    <Setter Property="Foreground" Value="#FF1A1A1A" />
+                    <Setter Property="Foreground" Value="#FF1A1A1A"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
         <Style x:Key="ForegroundPreviewOnLightTextStyle" BasedOn="{StaticResource ForegroundPreviewTextStyle}" TargetType="{x:Type TextBlock}">
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Taskbar.PlayerForegroundMode}" Value="Automatic">
-                    <Setter Property="Foreground" Value="#FF1A1A1A" />
+                    <Setter Property="Foreground" Value="#FF1A1A1A"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="FixedLengthRowStyle" BasedOn="{StaticResource {x:Type components:SettingsRow}}" TargetType="{x:Type components:SettingsRow}">
+            <Setter Property="Badge" Value=""/>
+            <Setter Property="IsEnabled" Value="{Binding ViewModel.Layout.CanEditFixedTaskbarLength}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.Layout.FollowMediaTextLength}" Value="True">
+                    <Setter Property="Badge" Value="{DynamicResource Loc.DisplayModes.Width.Row.Fixed.Badge}"/>
+                    <Setter Property="BadgeTone" Value="Attention"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="FixedWidthRowStyle" BasedOn="{StaticResource {x:Type components:SettingsRow}}" TargetType="{x:Type components:SettingsRow}">
+            <Setter Property="Badge" Value=""/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.Lyrics.CanConfigureFixedWidth}" Value="False">
+                    <Setter Property="Badge" Value="{DynamicResource Loc.Lyrics.Row.FixedWidth.Badge}"/>
+                    <Setter Property="BadgeTone" Value="Attention"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="SmallArtworkRowStyle" BasedOn="{StaticResource {x:Type components:SettingsRow}}" TargetType="{x:Type components:SettingsRow}">
+            <Setter Property="Badge" Value=""/>
+            <Setter Property="IsEnabled" Value="{Binding ViewModel.Layers.RestArtworkVisible}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.Layers.RestArtworkVisible}" Value="False">
+                    <Setter Property="Badge" Value="{DynamicResource Loc.DisplayModes.Rest.Row.SmallArtwork.Badge}"/>
+                    <Setter Property="BadgeTone" Value="Attention"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="HoverDependencyHintStyle" BasedOn="{StaticResource AfSettingsHintTextStyle}" TargetType="TextBlock">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ViewModel.Layers.HoverLayerEnabled}" Value="False">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="{x:Type components:SettingsRow}" BasedOn="{StaticResource AfSettingsPilotRowStyle}"/>
+        <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/>
     </Page.Resources>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <components:SettingsGroupStrip
-            Margin="{StaticResource AfSettingsHeaderMargin}"
-            MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
-            Grid.Row="0"
-            PageIcon="{ui:SymbolIcon PaintBrush24}"
-            Subtitle="{DynamicResource Loc.Appearance.Unified.Header.Subtitle}"
-            Target="{Binding ElementName=PageScroll}"
-            Title="{DynamicResource Loc.Common.Page.Appearance}" />
-        <ScrollViewer
-            x:Name="PageScroll"
-            Grid.Row="1"
-            Margin="{StaticResource AfSettingsScrollMargin}"
-            HorizontalScrollBarVisibility="Disabled"
-            VerticalScrollBarVisibility="Auto">
-            <StackPanel x:Name="PageRoot" MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Loaded="OnPageLoaded" Unloaded="OnPageUnloaded">
-
-
-                <components:SettingsGroup
-                    GroupId="Common.Group.MediaBarText"
-                    Header="{DynamicResource Loc.Common.Group.MediaBarText}"
-                    Icon="{ui:SymbolIcon TextColor24}"
-                    Visibility="{Binding HasTaskbarSettings, Converter={StaticResource AfBooleanToVisibilityConverter}}"
-                    Description="{DynamicResource Loc.Appearance.Scope.Taskbar}">
-                    <StackPanel>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.MediaFontSize.Description}"
-                            Icon="{ui:SymbolIcon TextFont24}"
-                            Title="{DynamicResource Loc.Appearance.Row.MediaFontSize.Title}">
-                            <components:SettingsNumericEditor
-                                Value="{Binding Taskbar.MediaFontSizePercent, Mode=TwoWay}"
-                                Minimum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MinimumMediaFontSizePercent}}"
-                                Maximum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MaximumMediaFontSizePercent}}"
-                                Step="{Binding Source={x:Static settings:TaskbarExperienceSettings.MediaFontSizeStepPercent}}"
-                                Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
-                        </components:SettingsRow>
-                        <components:SettingsRow
-                            Description="{DynamicResource Loc.Appearance.Row.TextColor.Description}"
-                            Icon="{ui:SymbolIcon TextColor24}"
-                            Title="{DynamicResource Loc.Appearance.Row.TextColor.Title}">
-                            <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding Taskbar.PlayerForegroundMode, Mode=TwoWay}" SelectedValuePath="Tag">
-                                <ComboBoxItem
-                                    Content="{DynamicResource Loc.Appearance.TextColor.Automatic}"
-                                    Tag="{x:Static settings:PlayerForegroundMode.Automatic}" />
-                                <ComboBoxItem
-                                    Content="{DynamicResource Loc.Appearance.TextColor.LightText}"
-                                    Tag="{x:Static settings:PlayerForegroundMode.LightText}" />
-                                <ComboBoxItem
-                                    Content="{DynamicResource Loc.Appearance.TextColor.DarkText}"
-                                    Tag="{x:Static settings:PlayerForegroundMode.DarkText}" />
-                            </ComboBox>
-                        </components:SettingsRow>
-                        <Grid Margin="0,4,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="12" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Padding="14,10" Background="#FF202020" CornerRadius="6">
-                                <StackPanel>
-                                    <TextBlock Style="{StaticResource ForegroundPreviewTextStyle}" />
-                                    <TextBlock
-                                        Margin="0,4,0,0"
-                                        FontSize="11"
-                                        Foreground="#B3FFFFFF"
-                                        Text="{DynamicResource Loc.Appearance.Preview.DarkWallpaper}" />
-                                </StackPanel>
-                            </Border>
-                            <Border Grid.Column="2" Padding="14,10" Background="#FFF2F2F2" CornerRadius="6">
-                                <StackPanel>
-                                    <TextBlock Style="{StaticResource ForegroundPreviewOnLightTextStyle}" />
-                                    <TextBlock
-                                        Margin="0,4,0,0"
-                                        FontSize="11"
-                                        Foreground="#B3000000"
-                                        Text="{DynamicResource Loc.Appearance.Preview.LightWallpaper}" />
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,8,0,0">
-                            <TextBlock Style="{StaticResource AfSettingsHintTextStyle}" Text="{DynamicResource Loc.Appearance.Preview.Hint}" />
-                        </Border>
-
-                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextLayout}" Destination="Components" GroupId="Appearance.Group.RestLayout"/>
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.LyricsPresentation}" Destination="Lyrics" GroupId="Lyrics.Group.Presentation"/>
-                        </WrapPanel>
-                    </StackPanel>
-                </components:SettingsGroup>
-                <components:SettingsGroup GroupId="Appearance.IdleNote.Title"
-                    Header="{DynamicResource Loc.Appearance.IdleNote.Title}"
-                    Description="{DynamicResource Loc.Appearance.IdleNote.Description}"
-                    Icon="{ui:SymbolIcon MusicNote220}"
-                    Visibility="{Binding HasTaskbarSettings, Converter={StaticResource AfBooleanToVisibilityConverter}}">
-                    <StackPanel>
-                        <components:SettingsRow Title="{DynamicResource Loc.Appearance.IdleNote.Custom}"
-                            Description="{DynamicResource Loc.Appearance.IdleNote.Hint}" Icon="{ui:SymbolIcon Color24}">
-                            <ui:ToggleSwitch IsChecked="{Binding Taskbar.UseCustomIdleNoteColor, Mode=TwoWay}" />
-                        </components:SettingsRow>
-                        <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,4,0,0"
-                                Visibility="{Binding Taskbar.UseCustomIdleNoteColor, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+    <components:SettingsPageLayout x:Name="PageLayout">
+        <components:SettingsPageLayout.Header>
+            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Page.BarAppearance}" Subtitle="{DynamicResource Loc.Settings.Page.Appearance.Description}" PageIcon="{ui:SymbolIcon PaintBrush24}" Target="{Binding ScrollViewer, ElementName=PageLayout}"/>
+        </components:SettingsPageLayout.Header>
+        <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded" Unloaded="OnPageUnloaded">
+            <components:SettingsGroup GroupId="Appearance.Group.TaskbarBackground" Header="{DynamicResource Loc.Appearance.Group.TaskbarBackground}" Icon="{ui:SymbolIcon Blur24}" Visibility="{Binding HasTaskbarSettings, Converter={StaticResource AfBooleanToVisibilityConverter}}" Description="{DynamicResource Loc.Appearance.Scope.Taskbar}">
+                <StackPanel>
+                    <components:SettingsRow Title="{DynamicResource Loc.Appearance.Row.TaskbarBackground.Title}" Description="{DynamicResource Loc.Appearance.Row.TaskbarBackground.Description}" Icon="{ui:SymbolIcon Blur24}">
+                        <ui:ToggleSwitch IsChecked="{Binding Taskbar.UseFrostedTaskbarBackground, Mode=TwoWay}"/>
+                    </components:SettingsRow>
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Options24}">
+                        <ui:CardExpander.Header>
                             <StackPanel>
-                                <!-- 色块展示待选颜色，沿用现有色板样式。 -->
-                                <WrapPanel Margin="0,0,0,10">
-                                    <Button Background="#0078D4" Margin="0,0,6,0" ToolTip="#0078D4" Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                            Command="{Binding Taskbar.SetIdleNoteColorCommand}" CommandParameter="#0078D4" />
-                                    <Button Background="#FF8A8A" Margin="0,0,6,0" ToolTip="#FF8A8A" Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                            Command="{Binding Taskbar.SetIdleNoteColorCommand}" CommandParameter="#FF8A8A" />
-                                    <Button Background="#F7C948" Margin="0,0,6,0" ToolTip="#F7C948" Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                            Command="{Binding Taskbar.SetIdleNoteColorCommand}" CommandParameter="#F7C948" />
-                                    <Button Background="#42CBA6" Margin="0,0,6,0" ToolTip="#42CBA6" Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                            Command="{Binding Taskbar.SetIdleNoteColorCommand}" CommandParameter="#42CBA6" />
-                                    <Button Background="#9C7CFF" Margin="0,0,6,0" ToolTip="#9C7CFF" Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                            Command="{Binding Taskbar.SetIdleNoteColorCommand}" CommandParameter="#9C7CFF" />
-                                    <Button Background="#FFFFFF" ToolTip="#FFFFFF" Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                            Command="{Binding Taskbar.SetIdleNoteColorCommand}" CommandParameter="#FFFFFF" />
-                                </WrapPanel>
-                                <WrapPanel Style="{StaticResource AfSettingsActionsStyle}">
-                                    <TextBlock Text="{DynamicResource Loc.Appearance.Accent.HexLabel}" VerticalAlignment="Center" />
-                                    <TextBox Width="110" Margin="8,0,0,0" MaxLength="9"
-                                        Text="{Binding Taskbar.IdleNoteColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Appearance.IdleNote.FollowAccent}"
-                                        Command="{Binding Taskbar.ResetIdleNoteColorCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
-                                </WrapPanel>
+                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Appearance.TaskbarBackground.Details.Title}"/>
+                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Appearance.TaskbarBackground.Details.Description}"/>
                             </StackPanel>
-                        </Border>
-
-                        <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                            <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestContent}" Destination="Components" GroupId="Common.RestLayer"/>
-                        </WrapPanel>
-                    </StackPanel>
-                </components:SettingsGroup>
-                <components:SettingsGroup
-                    GroupId="Appearance.Group.TaskbarBackground"
-                    Header="{DynamicResource Loc.Appearance.Group.TaskbarBackground}"
-                    Icon="{ui:SymbolIcon Blur24}"
-                    Visibility="{Binding HasTaskbarSettings, Converter={StaticResource AfBooleanToVisibilityConverter}}"
-                    Description="{DynamicResource Loc.Appearance.Scope.Taskbar}">
-                    <StackPanel>
-                        <components:SettingsRow
-                            Title="{DynamicResource Loc.Appearance.Row.TaskbarBackground.Title}"
-                            Description="{DynamicResource Loc.Appearance.Row.TaskbarBackground.Description}"
-                            Icon="{ui:SymbolIcon Blur24}">
-                            <ui:ToggleSwitch IsChecked="{Binding Taskbar.UseFrostedTaskbarBackground, Mode=TwoWay}" />
-                        </components:SettingsRow>
-                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Options24}">
-                            <ui:CardExpander.Header>
-                                <StackPanel>
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowTitleStyle}"
-                                        Text="{DynamicResource Loc.Appearance.TaskbarBackground.Details.Title}" />
-                                    <TextBlock
-                                        Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                        Text="{DynamicResource Loc.Appearance.TaskbarBackground.Details.Description}" />
-                                </StackPanel>
-                            </ui:CardExpander.Header>
+                        </ui:CardExpander.Header>
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource Loc.Appearance.Background.Prerequisite}" Margin="0,0,0,8">
+                                <TextBlock.Style>
+                                    <Style BasedOn="{StaticResource AfSettingsHintTextStyle}" TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Taskbar.UseFrostedTaskbarBackground}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <components:SettingsRow Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundWhenIdle.Title}" Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundWhenIdle.Description}" Icon="{ui:SymbolIcon MusicNote220}" IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}" IsNested="True">
+                                <ui:ToggleSwitch IsChecked="{Binding Taskbar.ShowTaskbarBackgroundWhenIdle, Mode=TwoWay}"/>
+                            </components:SettingsRow>
+                            <components:SettingsRow Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundBorder.Title}" Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundBorder.Description}" Icon="{ui:SymbolIcon Square24}" IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}" IsNested="True">
+                                <ui:ToggleSwitch IsChecked="{Binding Taskbar.ShowTaskbarBackgroundBorder, Mode=TwoWay}"/>
+                            </components:SettingsRow>
+                            <components:SettingsRow Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundTexture.Title}" Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundTexture.Description}" Icon="{ui:SymbolIcon Image24}" IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}" IsNested="True">
+                                <ui:ToggleSwitch IsChecked="{Binding Taskbar.ShowTaskbarBackgroundTexture, Mode=TwoWay}"/>
+                            </components:SettingsRow>
+                            <components:SettingsRow Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundTint.Title}" Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundTint.Description}" Icon="{ui:SymbolIcon Color24}" IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}" IsNested="True">
+                                <ui:ToggleSwitch IsChecked="{Binding Taskbar.ShowTaskbarBackgroundTint, Mode=TwoWay}"/>
+                            </components:SettingsRow>
+                            <components:SettingsRow Description="{DynamicResource Loc.Appearance.Row.TaskbarFrostedStyle.Description}" Icon="{ui:SymbolIcon Color24}" IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}" IsNested="True" Title="{DynamicResource Loc.Appearance.Row.TaskbarFrostedStyle.Title}">
+                                <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding Taskbar.TaskbarFrostedStyle, Mode=TwoWay}" SelectedValuePath="Tag">
+                                    <ComboBoxItem Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Neutral}" Tag="{x:Static settings:TaskbarFrostedStyle.Neutral}"/>
+                                    <ComboBoxItem Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Cool}" Tag="{x:Static settings:TaskbarFrostedStyle.Cool}"/>
+                                    <ComboBoxItem Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Warm}" Tag="{x:Static settings:TaskbarFrostedStyle.Warm}"/>
+                                    <ComboBoxItem Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Artwork}" Tag="{x:Static settings:TaskbarFrostedStyle.Artwork}"/>
+                                </ComboBox>
+                            </components:SettingsRow>
+                            <components:SettingsRow Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundOpacity.Description}" Icon="{ui:SymbolIcon CircleHalfFill24}" IsEnabled="{Binding Taskbar.CanEditTaskbarBackgroundOpacity}" IsNested="True" Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundOpacity.Title}">
+                                <components:SettingsNumericEditor Unit="%" Value="{Binding Taskbar.TaskbarBackgroundOpacityPercent, Mode=TwoWay}" Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumTaskbarBackgroundOpacityPercent}}" Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumTaskbarBackgroundOpacityPercent}}" Step="{Binding Source={x:Static settings:AppearanceSettings.TaskbarBackgroundOpacityStep}}"/>
+                            </components:SettingsRow>
+                        </StackPanel>
+                    </ui:CardExpander>
+                </StackPanel>
+            </components:SettingsGroup>
+            <components:SettingsGroup GroupId="Common.Group.MediaBarWidth" Description="{DynamicResource Loc.DisplayModes.Width.Group.Description}" Header="{DynamicResource Loc.Common.Group.MediaBarWidth}" Icon="{ui:SymbolIcon ResizeLarge24}">
+                <StackPanel>
+                    <components:SettingsDiagram Margin="0,0,0,12" Kind="TaskbarLength"/>
+                    <components:SettingsRow Description="{DynamicResource Loc.ContentLayout.LengthMode.Description}" Icon="{ui:SymbolIcon ArrowAutofitWidth24}" Title="{DynamicResource Loc.ContentLayout.LengthMode.Title}">
+                        <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.Layout.LengthMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBoxItem Content="{DynamicResource Loc.ContentLayout.LengthMode.Follow}" Tag="{x:Static settings:TaskbarLengthMode.FollowContent}"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.ContentLayout.LengthMode.Fixed}" Tag="{x:Static settings:TaskbarLengthMode.Fixed}"/>
+                        </ComboBox>
+                    </components:SettingsRow>
+                    <components:SettingsRow Description="{DynamicResource Loc.DisplayModes.Width.Row.Fixed.Description}" Icon="{ui:SymbolIcon SlideSize24}" Style="{StaticResource FixedLengthRowStyle}" Title="{DynamicResource Loc.DisplayModes.Width.Row.Fixed.Title}" Visibility="{Binding ViewModel.Layout.UsesFixedTaskbarLength, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                        <components:SettingsNumericEditor Value="{Binding ViewModel.Layout.FixedTaskbarLengthDip, Mode=TwoWay}" Minimum="{Binding ViewModel.Layout.FixedTaskbarLengthMinimum}" Maximum="{Binding ViewModel.Layout.FixedTaskbarLengthMaximum}" Step="1" Unit="{DynamicResource Loc.Settings.Numeric.Dip}"/>
+                    </components:SettingsRow>
+                    <TextBlock Style="{StaticResource AfSettingsHintTextStyle}" Margin="0,4,0,8" Text="{Binding ViewModel.Layout.FixedTaskbarLengthRangeText}" Visibility="{Binding ViewModel.Layout.UsesFixedTaskbarLength, Converter={StaticResource AfBooleanToVisibilityConverter}}"/>
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon PaddingLeft24}">
+                        <ui:CardExpander.Header>
                             <StackPanel>
-                                <TextBlock Text="{DynamicResource Loc.Appearance.Background.Prerequisite}" Margin="0,0,0,8">
-                                    <TextBlock.Style>
-                                        <Style BasedOn="{StaticResource AfSettingsHintTextStyle}" TargetType="TextBlock">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Taskbar.UseFrostedTaskbarBackground}" Value="False">
-                                                    <Setter Property="Visibility" Value="Visible" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                                <components:SettingsRow
-                                    Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundWhenIdle.Title}"
-                                    Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundWhenIdle.Description}"
-                                    Icon="{ui:SymbolIcon MusicNote220}"
-                                    IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}"
-                                    IsNested="True">
-                                    <ui:ToggleSwitch IsChecked="{Binding Taskbar.ShowTaskbarBackgroundWhenIdle, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundBorder.Title}"
-                                    Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundBorder.Description}"
-                                    Icon="{ui:SymbolIcon Square24}"
-                                    IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}"
-                                    IsNested="True">
-                                    <ui:ToggleSwitch IsChecked="{Binding Taskbar.ShowTaskbarBackgroundBorder, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundTexture.Title}"
-                                    Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundTexture.Description}"
-                                    Icon="{ui:SymbolIcon Image24}"
-                                    IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}"
-                                    IsNested="True">
-                                    <ui:ToggleSwitch IsChecked="{Binding Taskbar.ShowTaskbarBackgroundTexture, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundTint.Title}"
-                                    Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundTint.Description}"
-                                    Icon="{ui:SymbolIcon Color24}"
-                                    IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}"
-                                    IsNested="True">
-                                    <ui:ToggleSwitch IsChecked="{Binding Taskbar.ShowTaskbarBackgroundTint, Mode=TwoWay}" />
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Description="{DynamicResource Loc.Appearance.Row.TaskbarFrostedStyle.Description}"
-                                    Icon="{ui:SymbolIcon Color24}"
-                                    IsEnabled="{Binding Taskbar.UseFrostedTaskbarBackground}"
-                                    IsNested="True"
-                                    Title="{DynamicResource Loc.Appearance.Row.TaskbarFrostedStyle.Title}">
-                                    <ComboBox
-                                        MinWidth="{StaticResource AfSettingsSelectMinWidth}"
-                                        SelectedValue="{Binding Taskbar.TaskbarFrostedStyle, Mode=TwoWay}"
-                                        SelectedValuePath="Tag">
-                                        <ComboBoxItem
-                                            Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Neutral}"
-                                            Tag="{x:Static settings:TaskbarFrostedStyle.Neutral}" />
-                                        <ComboBoxItem
-                                            Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Cool}"
-                                            Tag="{x:Static settings:TaskbarFrostedStyle.Cool}" />
-                                        <ComboBoxItem
-                                            Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Warm}"
-                                            Tag="{x:Static settings:TaskbarFrostedStyle.Warm}" />
-                                        <ComboBoxItem
-                                            Content="{DynamicResource Loc.Appearance.TaskbarFrostedStyle.Artwork}"
-                                            Tag="{x:Static settings:TaskbarFrostedStyle.Artwork}" />
-                                    </ComboBox>
-                                </components:SettingsRow>
-                                <components:SettingsRow
-                                    Description="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundOpacity.Description}"
-                                    Icon="{ui:SymbolIcon CircleHalfFill24}"
-                                    IsEnabled="{Binding Taskbar.CanEditTaskbarBackgroundOpacity}"
-                                    IsNested="True"
-                                    Title="{DynamicResource Loc.Appearance.Row.TaskbarBackgroundOpacity.Title}">
-                                    <components:SettingsNumericEditor
-                                        Unit="%"
-                                        Value="{Binding Taskbar.TaskbarBackgroundOpacityPercent, Mode=TwoWay}"
-                                        Minimum="{Binding Source={x:Static settings:AppearanceSettings.MinimumTaskbarBackgroundOpacityPercent}}"
-                                        Maximum="{Binding Source={x:Static settings:AppearanceSettings.MaximumTaskbarBackgroundOpacityPercent}}"
-                                        Step="{Binding Source={x:Static settings:AppearanceSettings.TaskbarBackgroundOpacityStep}}" />
-                                </components:SettingsRow>
+                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Spacing.Title}"/>
+                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Settings.Advanced.Spacing.Description}"/>
                             </StackPanel>
-                        </ui:CardExpander>
-                    </StackPanel>
-                </components:SettingsGroup>
-                <ui:Button
-                    Margin="0,16,0,40"
-                    HorizontalAlignment="Left"
-                    Click="ResetButton_Click"
-                    Content="{DynamicResource Loc.Common.ResetPageDefaults}"
-                    Icon="{ui:SymbolIcon ArrowReset24}"
-                    Style="{StaticResource AfSettingsButtonStyle}" />
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+                        </ui:CardExpander.Header>
+                        <StackPanel>
+                            <components:SettingsRow IsNested="True" Description="{DynamicResource Loc.DisplayModes.Width.Row.Spacing.Description}" Icon="{ui:SymbolIcon PaddingLeft24}" Title="{DynamicResource Loc.DisplayModes.Width.Row.Spacing.Title}">
+                                <components:SettingsNumericEditor Value="{Binding ViewModel.Layout.ComponentSpacingDip, Mode=TwoWay}" Minimum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MinimumComponentSpacingDip}}" Maximum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MaximumComponentSpacingDip}}" Step="1" Unit="{DynamicResource Loc.Settings.Numeric.Dip}"/>
+                            </components:SettingsRow>
+                        </StackPanel>
+                    </ui:CardExpander>
+                    <components:SettingsRow IsNested="True" Visibility="{Binding ViewModel.Layers.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}" Description="{DynamicResource Loc.DisplayModes.Placement.Row.Arrangement.Description}" Icon="{ui:SymbolIcon ArrowMove24}" Title="{DynamicResource Loc.DisplayModes.Placement.Row.Arrangement.Title}">
+                        <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" x:Name="ArrangementPicker" SelectedIndex="{Binding ViewModel.Layers.TaskbarArrangementIndex, Mode=TwoWay}">
+                            <ComboBoxItem Content="{DynamicResource Loc.ContentLayout.Arrangement.Auto}" Tag="{x:Null}"/>
+                            <ComboBoxItem Content="{Binding ViewModel.Layers.ExpandStartText}" Tag="{x:Static settings:TaskbarContentArrangement.Left}"/>
+                            <ComboBoxItem Content="{Binding ViewModel.Layers.ExpandEndText}" Tag="{x:Static settings:TaskbarContentArrangement.Right}"/>
+                        </ComboBox>
+                    </components:SettingsRow>
+                </StackPanel>
+            </components:SettingsGroup>
+            <ui:Button Click="ResetButton_Click" Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="0,0,0,20"/>
+        </StackPanel>
+    </components:SettingsPageLayout>
 </Page>
