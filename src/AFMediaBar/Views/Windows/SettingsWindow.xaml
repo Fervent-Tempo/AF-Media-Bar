@@ -11,8 +11,8 @@
     xmlns:pages="clr-namespace:AFMediaBar.Views.Pages"
     xmlns:settings="clr-namespace:AFMediaBar.Classes.Models.Settings"
     Title="{Binding ViewModel.ApplicationTitle, Mode=OneWay}"
-    Width="1100"
-    Height="650"
+    Width="1320"
+    Height="840"
     MinWidth="640" MinHeight="460"
     d:DataContext="{d:DesignInstance local:SettingsWindow,
                                      IsDesignTimeCreatable=True}"

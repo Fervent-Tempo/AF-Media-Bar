@@ -80,6 +80,7 @@ namespace AFMediaBar.Views.Windows
             DataContext = this;
 
             InitializeComponent();
+            SourceInitialized += OnInitialWindowSize;
             _sidebarSelection = new SettingsSidebarSelectionAnimator(RootNavigation, SidebarSelectionOverlay);
             SettingsResetDialog.SetHost(RootContentDialog, _contexts.CancellationToken);
             ArtistSeparatorsEditor.SetHost(RootContentDialog, _contexts.CancellationToken);
@@ -113,6 +114,18 @@ namespace AFMediaBar.Views.Windows
         }
 
         #region Landing page
+
+        private void OnInitialWindowSize(object? sender, EventArgs args)
+        {
+            var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            var info = new AFMediaBar.Classes.Interop.NativeMethods.MONITORINFOEX();
+            info.cbSize = System.Runtime.InteropServices.Marshal.SizeOf<AFMediaBar.Classes.Interop.NativeMethods.MONITORINFOEX>();
+            var monitor = AFMediaBar.Classes.Interop.NativeMethods.MonitorFromWindow(handle, 2);
+            if (!AFMediaBar.Classes.Interop.NativeMethods.GetMonitorInfo(monitor, ref info)) return;
+            var dpi = VisualTreeHelper.GetDpi(this);
+            Width = Math.Max(MinWidth, Math.Min(Width, (info.rcWork.Right - info.rcWork.Left) / dpi.DpiScaleX - 32));
+            Height = Math.Max(MinHeight, Math.Min(Height, (info.rcWork.Bottom - info.rcWork.Top) / dpi.DpiScaleY - 32));
+        }
 
         /// <summary>
         /// 窗口从隐藏变为可见时导航到落地页；排到 Loaded 优先级等待导航视图的内容宿主就绪。

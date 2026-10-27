@@ -3,7 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:components="clr-namespace:AFMediaBar.Components"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    Foreground="{DynamicResource TextFillColorPrimaryBrush}" Unloaded="OnPageUnloaded">
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False" Unloaded="OnPageUnloaded">
     <Page.Resources>
         <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/>
         <Style x:Key="BodyText" TargetType="TextBlock">
@@ -128,7 +128,7 @@
             <components:SettingsGroup GroupId="Start.Players" Header="{DynamicResource Loc.Start.Players}" Icon="{ui:SymbolIcon MusicNote220}">
                 <StackPanel Margin="16">
                     <TextBlock Margin="0,0,0,12" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Players.Note}"/>
-                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" PreviewMouseWheel="OnTableMouseWheel">
                         <Grid MinWidth="860">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="1.4*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="0.7*"/>

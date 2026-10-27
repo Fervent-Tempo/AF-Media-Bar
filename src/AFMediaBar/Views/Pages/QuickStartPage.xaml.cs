@@ -25,4 +25,11 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
     }
 
     private void OnPageUnloaded(object sender, RoutedEventArgs args) => ViewModel.Deactivate();
+
+    private void OnTableMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs args)
+    {
+        if (PageLayout.ScrollViewer is not { } scroll) return;
+        scroll.ScrollToVerticalOffset(scroll.VerticalOffset - args.Delta);
+        args.Handled = true;
+    }
 }
