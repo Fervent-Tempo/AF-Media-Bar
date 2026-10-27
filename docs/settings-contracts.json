@@ -392,7 +392,8 @@
       "members": {
         "Off": {"value": 0, "release": "v1.4.0"},
         "Zoom": {"value": 1, "release": "v1.4.0"},
-        "Preview": {"value": 2, "release": "v1.4.0"}
+        "Preview": {"value": 2, "release": "v1.4.0"},
+        "None": {"value": 3, "release": "unreleased"}
       }
     },
     "CjkFontPreset": {

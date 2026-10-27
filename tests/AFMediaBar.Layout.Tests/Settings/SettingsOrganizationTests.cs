@@ -217,4 +217,14 @@ public sealed class SettingsOrganizationTests
         Assert.AreEqual(defaults.Interaction.ArtworkHoverMode, SettingsManager.Current.Interaction.ArtworkHoverMode);
         Assert.IsFalse(SettingsManager.Current.TaskbarExperience.ArtworkVisible);
     }
+
+    [TestMethod]
+    public void ArtworkHoverModeKeepsNoZoomAndDefaultsToSlightZoom()
+    {
+        // 旧设置缺字段时仍是轻微放大（1.1×），新增选项不能改掉这个默认语义。
+        Assert.AreEqual(ArtworkHoverMode.Off, new AppSettings().Interaction.ArtworkHoverMode);
+        // 「不放大」要能通过保存前的归一化，不能被枚举校验打回默认。
+        var settings = new AppSettings().Interaction with { ArtworkHoverMode = ArtworkHoverMode.None };
+        Assert.AreEqual(ArtworkHoverMode.None, settings.Normalize().ArtworkHoverMode);
+    }
 }
