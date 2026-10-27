@@ -1193,13 +1193,16 @@
     <value>點擊封面</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Description" xml:space="preserve">
-    <value>滑鼠放到封面上時的放大方式。原地放大讓封面頂出工作列上方，大圖預覽彈出一張獨立的大圖，關閉則只在列內輕微放大。</value>
+    <value>滑鼠放到封面上時的放大方式。輕微放大大約 1.1 倍，只在列內變化；原地放大讓封面頂出工作列上方；大圖預覽彈出獨立大圖；不放大則保持原樣。</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Title" xml:space="preserve">
     <value>懸停封面放大</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Mode.Off" xml:space="preserve">
-    <value>關閉（1.1×）</value>
+    <value>輕微放大（1.1×）</value>
+  </data>
+  <data name="Interaction.Row.ArtworkHover.Mode.None" xml:space="preserve">
+    <value>不放大</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Mode.Zoom" xml:space="preserve">
     <value>原地放大（2×）</value>
@@ -2970,7 +2973,13 @@
     <value>點擊開啟</value>
   </data>
   <data name="DisplayModes.Full.Entry.Hover" xml:space="preserve">
-    <value>懸停 0.5 秒</value>
+    <value>懸停開啟</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Title" xml:space="preserve">
+    <value>懸停等待時間</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Description" xml:space="preserve">
+    <value>指標在入口連續停留達到此時間後開啟完整面板。</value>
   </data>
   <data name="Memory.Title" xml:space="preserve"><value>記憶體工具</value></data>
   <data name="Memory.Open" xml:space="preserve"><value>開啟記憶體工具</value></data>
@@ -3216,7 +3225,28 @@
   <data name="Lyrics.Row.BracketSymbols.Title" xml:space="preserve"><value>淨化譯文格式</value></data>
   <data name="Lyrics.Row.BracketSymbols.Description" xml:space="preserve"><value>預設開啟。清理部分翻譯來源多餘的行首斜槓與括號，使譯文顯示更加簡潔。</value></data>
   <data name="Settings.Numeric.Minutes" xml:space="preserve"><value>分鐘</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Title" xml:space="preserve"><value>覆蓋工作列</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Description" xml:space="preserve"><value>開啟後懸浮媒體欄顯示在工作列上方，可以拖到工作列區域使用。</value></data>
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>邊緣自動收合</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>預設開啟。拖到工作區邊緣後，移開滑鼠收合，靠近時展開；支援四邊。</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展開桌面媒體列</value></data>
+  <data name="Developer.Action.PerformanceStatus" xml:space="preserve"><value>效能記錄狀態</value></data>
+  <data name="Developer.Description.PerformanceStatus" xml:space="preserve"><value>顯示 Debug 持續記錄狀態、目錄、最近取樣與捨棄數量。</value></data>
+  <data name="Developer.Action.PerformanceStart" xml:space="preserve"><value>開啟效能記錄</value></data>
+  <data name="Developer.Description.PerformanceStart" xml:space="preserve"><value>開啟本次程序的背景記錄；Debug 啟動時預設開啟。</value></data>
+  <data name="Developer.Action.PerformanceStop" xml:space="preserve"><value>停止效能記錄</value></data>
+  <data name="Developer.Description.PerformanceStop" xml:space="preserve"><value>停止取樣並於背景儲存剩餘記錄；下次啟動時預設恢復。</value></data>
+  <data name="Developer.Action.PerformanceMark" xml:space="preserve"><value>標記剛才的異常</value></data>
+  <data name="Developer.Description.PerformanceMark" xml:space="preserve"><value>加入時間標記並要求寫入檔案。</value></data>
+  <data name="Developer.Action.PerformanceOpen" xml:space="preserve"><value>開啟效能記錄目錄</value></data>
+  <data name="Developer.Description.PerformanceOpen" xml:space="preserve"><value>開啟獨立的效能記錄目錄。</value></data>
+  <data name="Developer.Performance.State.Running" xml:space="preserve"><value>記錄中</value></data>
+  <data name="Developer.Performance.State.Stopping" xml:space="preserve"><value>停止中</value></data>
+  <data name="Developer.Performance.State.Stopped" xml:space="preserve"><value>已停止</value></data>
+  <data name="Developer.Performance.State.Failed" xml:space="preserve"><value>記錄失敗</value></data>
+  <data name="Developer.Performance.Status" xml:space="preserve"><value>狀態：{0}
+取樣：活動時 1 秒，閒置時 4 秒；螢幕關閉、鎖定或睡眠時暫停。
+目錄：{1}
+最近取樣：{2}
+已捨棄取樣：{3}；事件：{4}</value></data>
 </root>

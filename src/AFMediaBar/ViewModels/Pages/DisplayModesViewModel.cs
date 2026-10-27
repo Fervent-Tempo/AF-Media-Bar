@@ -70,6 +70,13 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         get => SettingsManager.Current.FloatingBar.Layer == FloatingBarLayer.Topmost ? 1 : 0;
         set { if (IsFloatingBarMode && !_isRefreshing) _configuration.SetFloatingBar(SettingsManager.Current.FloatingBar with { Layer = value == 1 ? FloatingBarLayer.Topmost : FloatingBarLayer.Desktop }); }
     }
+
+    /// <summary>覆盖任务栏与窗口层级相互独立；开启后即使选桌面层，悬浮条也按置顶处理。</summary>
+    public bool FloatingOverlayTaskbar
+    {
+        get => SettingsManager.Current.FloatingBar.OverlayTaskbar;
+        set { if (IsFloatingBarMode && !_isRefreshing) _configuration.SetFloatingBar(SettingsManager.Current.FloatingBar with { OverlayTaskbar = value }); }
+    }
     public bool FloatingEdgeCollapseEnabled
     {
         get => SettingsManager.Current.FloatingBar.EdgeCollapseEnabled;
@@ -106,6 +113,24 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         {
             FullPanelEntryTrigger = value == 1 ? FullPanelHandleTrigger.Hover : FullPanelHandleTrigger.Click
         });
+    }
+
+    public bool UsesFullPanelEntryHover => _configuration.Current.TaskbarExperience.FullPanelEntryTrigger == FullPanelHandleTrigger.Hover;
+
+    /// <summary>界面使用秒，持久化与入口计时使用整数毫秒。</summary>
+    public double FullPanelEntryHoverDelaySeconds
+    {
+        get => _configuration.Current.TaskbarExperience.FullPanelEntryHoverDelayMilliseconds / 1000d;
+        set
+        {
+            if (!double.IsFinite(value)) return;
+            var seconds = Math.Clamp(value, TaskbarExperienceSettings.MinimumFullPanelEntryHoverDelaySeconds,
+                TaskbarExperienceSettings.MaximumFullPanelEntryHoverDelaySeconds);
+            UpdateExperience(_configuration.Current.TaskbarExperience with
+            {
+                FullPanelEntryHoverDelayMilliseconds = (int)Math.Round(seconds * 1000, MidpointRounding.AwayFromZero)
+            });
+        }
     }
 
     /// <summary>只控制外侧横杆，不限制其它交互打开完整面板。</summary>
@@ -690,6 +715,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(IsFloatingBarMode));
             OnPropertyChanged(nameof(CanChangeMode)); OnPropertyChanged(nameof(RuntimeModeSelection));
             OnPropertyChanged(nameof(FloatingOrientation)); OnPropertyChanged(nameof(FloatingLayer)); OnPropertyChanged(nameof(RuntimeStatus));
+            OnPropertyChanged(nameof(FloatingOverlayTaskbar));
             OnPropertyChanged(nameof(FloatingEdgeCollapseEnabled));
             OnPropertyChanged(nameof(TaskbarPosition));
             RaiseExperience(); OnPropertyChanged(nameof(Orientation)); OnPropertyChanged(nameof(IsTaskbarPositionLocked));
@@ -709,6 +735,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(HoverLayerEnabled));
         OnPropertyChanged(nameof(FullPanelEntryVisible));
         OnPropertyChanged(nameof(FullPanelEntryTriggerIndex));
+        OnPropertyChanged(nameof(UsesFullPanelEntryHover));
+        OnPropertyChanged(nameof(FullPanelEntryHoverDelaySeconds));
         OnPropertyChanged(nameof(RestProgressVisible));
         OnPropertyChanged(nameof(ArtworkProgressVisible));
         OnPropertyChanged(nameof(RestArtworkVisible));

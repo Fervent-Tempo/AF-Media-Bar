@@ -1148,13 +1148,16 @@
     <value>Nhấn vào ảnh bìa</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Description" xml:space="preserve">
-    <value>Cách phóng to khi bạn đưa chuột lên ảnh bìa. Phóng to tại chỗ làm ảnh nhô lên phía trên thanh tác vụ, xem trước lớn mở một thẻ riêng, còn tắt chỉ phóng nhẹ bên trong thanh.</value>
+    <value>Cách phóng to khi đưa chuột lên ảnh bìa. Phóng nhẹ khoảng 1,1 lần chỉ trong thanh, phóng to tại chỗ làm ảnh nhô lên trên thanh tác vụ, xem trước lớn mở thẻ riêng, không phóng to thì giữ nguyên.</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Title" xml:space="preserve">
     <value>Phóng to ảnh bìa khi di chuột</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Mode.Off" xml:space="preserve">
-    <value>Tắt (1.1×)</value>
+    <value>Phóng nhẹ (1.1×)</value>
+  </data>
+  <data name="Interaction.Row.ArtworkHover.Mode.None" xml:space="preserve">
+    <value>Không phóng to</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Mode.Zoom" xml:space="preserve">
     <value>Phóng to tại chỗ (2×)</value>
@@ -3008,7 +3011,13 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
     <value>Nhấp chuột</value>
   </data>
   <data name="DisplayModes.Full.Entry.Hover" xml:space="preserve">
-    <value>Di chuột trong 0,5 giây</value>
+    <value>Di chuột</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Title" xml:space="preserve">
+    <value>Thời gian chờ khi di chuột</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Description" xml:space="preserve">
+    <value>Mở bảng đầy đủ sau khi con trỏ ở trên thanh mở trong khoảng thời gian này.</value>
   </data>
   <data name="Memory.Title" xml:space="preserve"><value>Công cụ bộ nhớ</value></data>
   <data name="Memory.Open" xml:space="preserve"><value>Mở công cụ bộ nhớ</value></data>
@@ -3254,7 +3263,28 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Lyrics.Row.BracketSymbols.Title" xml:space="preserve"><value>Làm gọn định dạng bản dịch</value></data>
   <data name="Lyrics.Row.BracketSymbols.Description" xml:space="preserve"><value>Mặc định bật. Dọn bớt dấu gạch chéo đầu dòng và ngoặc thừa do một số nguồn bản dịch thêm vào, giúp bản dịch hiển thị gọn gàng hơn.</value></data>
   <data name="Settings.Numeric.Minutes" xml:space="preserve"><value>phút</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Title" xml:space="preserve"><value>Phủ lên thanh tác vụ</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Description" xml:space="preserve"><value>Khi bật, thanh phương tiện nổi hiển thị trên thanh tác vụ và có thể kéo vào khu vực đó.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>Tự thu gọn ở cạnh màn hình</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>Mặc định bật. Kéo đến một trong bốn cạnh vùng làm việc; di chuột ra để thu gọn và đến gần để mở.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>Mở thanh phương tiện trên màn hình</value></data>
+  <data name="Developer.Action.PerformanceStatus" xml:space="preserve"><value>Trạng thái ghi hiệu năng</value></data>
+  <data name="Developer.Description.PerformanceStatus" xml:space="preserve"><value>Hiện trạng thái ghi Debug, thư mục, mẫu gần nhất và số bản ghi bị loại.</value></data>
+  <data name="Developer.Action.PerformanceStart" xml:space="preserve"><value>Bắt đầu ghi hiệu năng</value></data>
+  <data name="Developer.Description.PerformanceStart" xml:space="preserve"><value>Bắt đầu ghi cho tiến trình này. Tự động bật trong bản Debug.</value></data>
+  <data name="Developer.Action.PerformanceStop" xml:space="preserve"><value>Dừng ghi hiệu năng</value></data>
+  <data name="Developer.Description.PerformanceStop" xml:space="preserve"><value>Dừng lấy mẫu và lưu các bản ghi còn lại trong nền. Tự bật lại ở lần khởi động sau.</value></data>
+  <data name="Developer.Action.PerformanceMark" xml:space="preserve"><value>Đánh dấu sự cố vừa xảy ra</value></data>
+  <data name="Developer.Description.PerformanceMark" xml:space="preserve"><value>Thêm dấu thời gian và yêu cầu ghi dữ liệu ra tệp.</value></data>
+  <data name="Developer.Action.PerformanceOpen" xml:space="preserve"><value>Mở bản ghi hiệu năng</value></data>
+  <data name="Developer.Description.PerformanceOpen" xml:space="preserve"><value>Mở thư mục riêng chứa bản ghi hiệu năng.</value></data>
+  <data name="Developer.Performance.State.Running" xml:space="preserve"><value>Đang ghi</value></data>
+  <data name="Developer.Performance.State.Stopping" xml:space="preserve"><value>Đang dừng</value></data>
+  <data name="Developer.Performance.State.Stopped" xml:space="preserve"><value>Đã dừng</value></data>
+  <data name="Developer.Performance.State.Failed" xml:space="preserve"><value>Thất bại</value></data>
+  <data name="Developer.Performance.Status" xml:space="preserve"><value>Trạng thái: {0}
+Lấy mẫu: 1 giây khi hoạt động, 4 giây khi nhàn rỗi; tạm dừng khi tắt màn hình, khóa hoặc ngủ.
+Thư mục: {1}
+Mẫu gần nhất: {2}
+Mẫu bị loại: {3}; sự kiện: {4}</value></data>
 </root>

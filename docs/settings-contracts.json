@@ -30,6 +30,7 @@
       "orientation": "v1.5.0",
       "layer": "v1.5.0",
       "edgeCollapseEnabled": "v1.6.0",
+      "overlayTaskbar": "unreleased",
       "monitorDeviceIds": "v1.5.0",
       "positions": {
         "$items": {
@@ -187,6 +188,7 @@
       "contentLayout": "v1.2.0",
       "density": "v1.2.0",
       "fixedLengthDip": "v1.2.0",
+      "fullPanelEntryHoverDelayMilliseconds": "unreleased",
       "fullLayerEnabled": "v1.2.0",
       "fullPanel": {
         "$release": "v1.2.0",
@@ -391,7 +393,8 @@
       "members": {
         "Off": {"value": 0, "release": "v1.4.0"},
         "Zoom": {"value": 1, "release": "v1.4.0"},
-        "Preview": {"value": 2, "release": "v1.4.0"}
+        "Preview": {"value": 2, "release": "v1.4.0"},
+        "None": {"value": 3, "release": "unreleased"}
       }
     },
     "CjkFontPreset": {

@@ -1193,13 +1193,16 @@
     <value>Artwork click</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Description" xml:space="preserve">
-    <value>What happens when you rest the mouse on the cover. In-place zoom grows it above the taskbar, large preview pops out a standalone card, and off keeps a small zoom inside the bar.</value>
+    <value>What happens when you rest the mouse on the cover. Slight zoom grows it about 1.1× inside the bar, in-place zoom lifts it above the taskbar, large preview pops out a standalone card, and no zoom leaves it as is.</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Title" xml:space="preserve">
     <value>Artwork hover zoom</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Mode.Off" xml:space="preserve">
-    <value>Off (1.1×)</value>
+    <value>Slight zoom (1.1×)</value>
+  </data>
+  <data name="Interaction.Row.ArtworkHover.Mode.None" xml:space="preserve">
+    <value>No zoom</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Mode.Zoom" xml:space="preserve">
     <value>In-place zoom (2×)</value>
@@ -2970,7 +2973,13 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
     <value>Click</value>
   </data>
   <data name="DisplayModes.Full.Entry.Hover" xml:space="preserve">
-    <value>Hover for 0.5 seconds</value>
+    <value>Hover</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Title" xml:space="preserve">
+    <value>Hover delay</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Description" xml:space="preserve">
+    <value>Open the full panel after the pointer stays over the handle for this duration.</value>
   </data>
   <data name="Memory.Title" xml:space="preserve"><value>Memory tools</value></data>
   <data name="Memory.Open" xml:space="preserve"><value>Open memory tools</value></data>
@@ -3216,7 +3225,28 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Lyrics.Row.BracketSymbols.Title" xml:space="preserve"><value>Clean up translation formatting</value></data>
   <data name="Lyrics.Row.BracketSymbols.Description" xml:space="preserve"><value>On by default. Cleans up leftover leading slashes and brackets some translation sources include, so the translation reads more cleanly.</value></data>
   <data name="Settings.Numeric.Minutes" xml:space="preserve"><value>minutes</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Title" xml:space="preserve"><value>Overlay the taskbar</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Description" xml:space="preserve"><value>When on, the floating bar stays above the taskbar and can be dragged over that area.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>Auto-hide at desktop edges</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>On by default. Drag to any work-area edge; move away to hide and approach to reveal.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>Reveal desktop media bar</value></data>
+  <data name="Developer.Action.PerformanceStatus" xml:space="preserve"><value>Performance recording status</value></data>
+  <data name="Developer.Description.PerformanceStatus" xml:space="preserve"><value>Show Debug recording state, folder, latest sample and dropped records.</value></data>
+  <data name="Developer.Action.PerformanceStart" xml:space="preserve"><value>Start performance recording</value></data>
+  <data name="Developer.Description.PerformanceStart" xml:space="preserve"><value>Start recording for this process. Enabled automatically in Debug builds.</value></data>
+  <data name="Developer.Action.PerformanceStop" xml:space="preserve"><value>Stop performance recording</value></data>
+  <data name="Developer.Description.PerformanceStop" xml:space="preserve"><value>Stop sampling and save queued records in the background. Enabled again on next launch.</value></data>
+  <data name="Developer.Action.PerformanceMark" xml:space="preserve"><value>Mark a recent problem</value></data>
+  <data name="Developer.Description.PerformanceMark" xml:space="preserve"><value>Add a timestamp marker and request a file flush.</value></data>
+  <data name="Developer.Action.PerformanceOpen" xml:space="preserve"><value>Open performance records</value></data>
+  <data name="Developer.Description.PerformanceOpen" xml:space="preserve"><value>Open the separate performance recording folder.</value></data>
+  <data name="Developer.Performance.State.Running" xml:space="preserve"><value>Recording</value></data>
+  <data name="Developer.Performance.State.Stopping" xml:space="preserve"><value>Stopping</value></data>
+  <data name="Developer.Performance.State.Stopped" xml:space="preserve"><value>Stopped</value></data>
+  <data name="Developer.Performance.State.Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Developer.Performance.Status" xml:space="preserve"><value>State: {0}
+Sampling: 1 s active, 4 s idle; paused when display is off, locked or suspended.
+Folder: {1}
+Latest sample: {2}
+Dropped samples: {3}; events: {4}</value></data>
 </root>

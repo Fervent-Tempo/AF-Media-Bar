@@ -161,6 +161,7 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
                 MonitorDeviceIds = defaults.FloatingBar.MonitorDeviceIds,
                 Orientation = defaults.FloatingBar.Orientation,
                 Layer = defaults.FloatingBar.Layer,
+                OverlayTaskbar = defaults.FloatingBar.OverlayTaskbar,
                 EdgeCollapseEnabled = defaults.FloatingBar.EdgeCollapseEnabled
             };
         }

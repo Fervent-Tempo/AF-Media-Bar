@@ -4,6 +4,9 @@ using System.Runtime.InteropServices;
 using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Abstractions;
+#if DEBUG
+using AFMediaBar.Classes.Services.Diagnostics;
+#endif
 
 namespace AFMediaBar.Classes.Services;
 
@@ -25,6 +28,14 @@ public sealed class SystemMetricsService : IDisposable, ISystemMetricsSampler
     private readonly Process _currentProcess = Process.GetCurrentProcess();
     private readonly CpuUsagePolicy _cpu = new();
     private GpuUsageSampler? _gpuUsageSampler;
+#if DEBUG
+    private bool _diagnosticDemand;
+    private IReadOnlySet<int> _diagnosticProcessIds = new HashSet<int> { Environment.ProcessId };
+    internal void SetDiagnosticDemand(bool enabled) => _diagnosticDemand = enabled;
+    internal void SetDiagnosticProcessIds(IReadOnlySet<int> ids) => Volatile.Write(ref _diagnosticProcessIds, ids);
+    internal GpuProcessEngineUsage[] GetDiagnosticGpuUsage() => _gpuUsageSampler?.DiagnosticEntries ?? [];
+    internal GpuEngineTotal? GetDiagnosticBusiestEngine() => _gpuUsageSampler?.DiagnosticBusiestEngine;
+#endif
 
     public void SetDemand(IReadOnlyCollection<MetricKind> metrics)
     {
@@ -140,6 +151,10 @@ public sealed class SystemMetricsService : IDisposable, ISystemMetricsSampler
             return null;
         _gpuRetryTimestamp = null;
         _gpuUsageSampler ??= new GpuUsageSampler();
+#if DEBUG
+        _gpuUsageSampler.CaptureDiagnostics = _diagnosticDemand;
+        _gpuUsageSampler.DiagnosticProcessIds = Volatile.Read(ref _diagnosticProcessIds);
+#endif
         var value = _gpuUsageSampler.Sample();
         if (_gpuUsageSampler.IsFailed)
         {
@@ -217,6 +232,12 @@ public sealed class SystemMetricsService : IDisposable, ISystemMetricsSampler
         private uint _bufferCapacity;
         private bool _hasBaseline;
         public bool IsFailed { get; private set; }
+#if DEBUG
+        internal bool CaptureDiagnostics { get; set; }
+        internal IReadOnlySet<int> DiagnosticProcessIds { get; set; } = new HashSet<int>();
+        internal GpuProcessEngineUsage[] DiagnosticEntries { get; private set; } = [];
+        internal GpuEngineTotal? DiagnosticBusiestEngine { get; private set; }
+#endif
 
         internal GpuUsageSampler()
         {
@@ -243,6 +264,11 @@ public sealed class SystemMetricsService : IDisposable, ISystemMetricsSampler
 
         internal int? Sample()
         {
+#if DEBUG
+            DiagnosticEntries = [];
+            DiagnosticBusiestEngine = null;
+            List<GpuProcessEngineUsage>? diagnosticEntries = CaptureDiagnostics ? [] : null;
+#endif
             if (_query == nint.Zero ||
                 NativeMethods.PdhCollectQueryData(_query) != NativeMethods.ErrorSuccess)
             {
@@ -302,6 +328,13 @@ public sealed class SystemMetricsService : IDisposable, ISystemMetricsSampler
                 var key = GetEngineKey(item.Name);
                 _engineTotals.TryGetValue(key, out var total);
                 _engineTotals[key] = total + Math.Max(0, item.Value.DoubleValue);
+#if DEBUG
+                if (diagnosticEntries is not null)
+                {
+                    var name = Marshal.PtrToStringUni(item.Name);
+                    if (GpuProcessEngineUsage.TryParse(name, item.Value.DoubleValue, out var usage)) diagnosticEntries.Add(usage!);
+                }
+#endif
             }
 
             if (_engineTotals.Count == 0)
@@ -310,6 +343,16 @@ public sealed class SystemMetricsService : IDisposable, ISystemMetricsSampler
             }
 
             var busiestEngine = _engineTotals.Values.Max();
+#if DEBUG
+            if (diagnosticEntries is not null)
+            {
+                DiagnosticBusiestEngine = diagnosticEntries.GroupBy(item => (item.Adapter, item.Engine))
+                    .Select(group => new GpuEngineTotal(group.Key.Adapter, group.Key.Engine, group.Sum(item => item.Percent)))
+                    .MaxBy(item => item.Percent);
+                DiagnosticEntries = diagnosticEntries.Where(item => DiagnosticProcessIds.Contains(item.Pid)).Take(128)
+                    .Concat(diagnosticEntries.OrderByDescending(item => item.Percent).Take(32)).Distinct().ToArray();
+            }
+#endif
             return (int)Math.Clamp(Math.Round(busiestEngine), 0, 100);
         }
 

@@ -1,4 +1,5 @@
 using System.IO;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
@@ -34,8 +35,20 @@ public sealed record LyricsWebStyle(
 /// WebView2 lyrics adapter. It retains only the latest value of each message kind, so stale frames are never replayed after
 /// initialization or slow script execution.
 /// </summary>
-public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : IDisposable
+public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView, AppLogService? log = null, string hostId = "unknown", int generation = 0) : IDisposable
 {
+    private readonly string _instanceId = Guid.NewGuid().ToString("N");
+    private readonly long _created = Stopwatch.GetTimestamp();
+    private long _initializationTimestamp;
+    private int? _browserProcessId;
+    private string _initializationStage = "created";
+    private string _availableRuntime = "unknown";
+
+    private void LogPhase(string phase, double? durationMs = null)
+    {
+        log?.Info("Lyrics", $"phase={phase} renderer={_instanceId} host={hostId} generation={generation} availableRuntime={_availableRuntime} runtime={_runtimeVersion} browserPid={_browserProcessId} durationMs={durationMs:F1}");
+        log?.Diagnostic("Lyrics", phase, durationMs, _browserProcessId, _instanceId, generation);
+    }
     private readonly RepeatedFailureReporter _deliveryFailures = new();
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -75,6 +88,8 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
             return false;
 
         _initializationStarted = true;
+        _initializationTimestamp = Stopwatch.GetTimestamp();
+        LogPhase("initialize-start");
         try
         {
             _webView.DefaultBackgroundColor = System.Drawing.Color.Transparent;
@@ -89,6 +104,11 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
                 };
             }
 
+            _initializationStage = "runtime-discovery";
+            try { _availableRuntime = await Task.Run(() => CoreWebView2Environment.GetAvailableBrowserVersionString()); }
+            catch (Exception exception) { log?.Warn("Lyrics", $"renderer={_instanceId} available-runtime-unavailable hresult=0x{exception.HResult:X8}"); }
+            if (_disposed || _failed) return false;
+            _initializationStage = "ensure-controller";
             await _webView.EnsureCoreWebView2Async();
             if (_disposed || _failed || _webView.CoreWebView2 is null)
                 return false;
@@ -96,6 +116,8 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
             _core = _webView.CoreWebView2;
             _core.ProcessFailed += OnProcessFailed;
             _runtimeVersion = _core.Environment.BrowserVersionString;
+            _browserProcessId = checked((int)_core.BrowserProcessId);
+            LogPhase("controller-ready", Stopwatch.GetElapsedTime(_initializationTimestamp).TotalMilliseconds);
             var settings = _core.Settings;
             settings.AreBrowserAcceleratorKeysEnabled = false;
             settings.AreDefaultContextMenusEnabled = false;
@@ -104,12 +126,14 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
             settings.IsStatusBarEnabled = false;
             settings.IsZoomControlEnabled = false;
             _webView.NavigationCompleted += OnNavigationCompleted;
+            _initializationStage = "navigate";
             _webView.NavigateToString(BuildDocument());
             return true;
         }
         catch (Exception ex)
         {
-            AppLogService.Current?.Error("Lyrics", "Failed to initialize the web lyrics renderer.", ex);
+            log?.Error("Lyrics", $"phase=initialize-failed stage={_initializationStage} renderer={_instanceId} host={hostId} generation={generation} runtime={_runtimeVersion} hresult=0x{ex.HResult:X8} durationMs={Stopwatch.GetElapsedTime(_initializationTimestamp).TotalMilliseconds:F1}", ex);
+            LogPhase("initialize-failed", Stopwatch.GetElapsedTime(_initializationTimestamp).TotalMilliseconds);
             ReportFailure();
             return false;
         }
@@ -245,7 +269,8 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
     internal void HandleProcessFailure(CoreWebView2ProcessFailedKind kind, CoreWebView2ProcessFailedReason reason, int exitCode, bool developerInjected = false)
     {
         if (_disposed || _failed) return;
-        AppLogService.Current?.Warn("Lyrics", $"WebView2 process failure: origin={(developerInjected ? "DeveloperInjected" : "Runtime")}, kind={kind}, reason={reason}, exitCode=0x{exitCode:X8}, runtime={_runtimeVersion}");
+        log?.Warn("Lyrics", $"WebView2 process failure: renderer={_instanceId} host={hostId} generation={generation} browserPid={_browserProcessId} origin={(developerInjected ? "DeveloperInjected" : "Runtime")}, kind={kind}, reason={reason}, exitCode=0x{exitCode:X8}, runtime={_runtimeVersion}");
+        LogPhase(developerInjected ? "injected-process-failed" : "process-failed");
         if (kind == CoreWebView2ProcessFailedKind.RenderProcessUnresponsive)
         {
             if (_deliveryPaused || ++_unresponsiveNotifications < 2) return;
@@ -274,12 +299,14 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
         {
             if (!e.IsSuccess)
             {
+                LogPhase("navigation-failed", Stopwatch.GetElapsedTime(_initializationTimestamp).TotalMilliseconds);
                 AppLogService.Current?.Error("Lyrics", $"Web lyrics navigation failed: {e.WebErrorStatus}.");
                 ReportFailure();
                 return;
             }
 
             _documentReady = true;
+            LogPhase("navigation-completed", Stopwatch.GetElapsedTime(_initializationTimestamp).TotalMilliseconds);
             await DrainAsync();
             if (IsReady)
                 Ready?.Invoke(this, EventArgs.Empty);
@@ -385,6 +412,7 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView) : 
             return;
 
         _disposed = true;
+        LogPhase("dispose", Stopwatch.GetElapsedTime(_created).TotalMilliseconds);
         _documentReady = false;
         _pendingStyle = null;
         _pendingLyrics = null;

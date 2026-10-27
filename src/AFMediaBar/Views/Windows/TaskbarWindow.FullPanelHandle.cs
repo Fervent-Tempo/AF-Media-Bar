@@ -60,6 +60,7 @@ public partial class TaskbarWindow
             _externalFullPanelHandle.Reveal(bar, geometry.VisualBounds, geometry.HitBounds, geometry.TransitBounds,
                 new FullPanelOpenRequestEventArgs(GetMediaBarScreenBounds(), vertical, ensureOpen: true, side), vertical, positive,
                 SettingsManager.Current.TaskbarExperience.FullPanelEntryTrigger,
+                SettingsManager.Current.TaskbarExperience.FullPanelEntryHoverDelayMilliseconds,
                 () => CanKeepExternalFullPanelHandle() && taskbarHandle == _lastTaskbarHandle &&
                     Math.Abs(_taskBarService.GetTaskbarDpiScale(taskbarHandle) - dpi) < 0.001 &&
                     _taskBarService.TryGetTaskbarRect(taskbarHandle, out var current) &&

@@ -331,7 +331,7 @@ public sealed class MediaSessionService : IDisposable
         try
         {
             _notifications.TryShowNotification(Translations.Get("Media.ControlUnavailable.Title"),
-                Translations.Get("Media.ControlUnavailable.Body"));
+                Translations.Get("Media.ControlUnavailable.Body"), AFMediaBar.Classes.Models.ShellNotificationTarget.None, "Media.ControlUnavailable");
         }
         catch (Exception exception)
         {

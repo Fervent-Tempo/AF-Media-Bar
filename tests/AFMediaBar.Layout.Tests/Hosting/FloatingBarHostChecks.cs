@@ -60,6 +60,7 @@ internal static class FloatingBarHostChecks
             Assert.IsTrue(limits.Range.HasAvailableRange);
             var handle = new WindowInteropHelper(window).Handle;
             Assert.AreEqual(nint.Zero, AFMediaBar.Classes.Interop.NativeMethods.GetParent(handle));
+            await VerifyFullscreenVisibilityAsync(window, handle);
             VerifyEdgeRegionsAndInteractionHold(window, handle);
             VerifyLegacyDockIsPersistedOnce(window);
             await VerifyEdgeAnimationInterruptionAsync(window, handle);
@@ -84,6 +85,37 @@ internal static class FloatingBarHostChecks
             Assert.IsFalse(limits.Range.HasAvailableRange);
         }
         finally { window?.Dispose(); SettingsManager.Current = previous; }
+    }
+
+    private static async Task VerifyFullscreenVisibilityAsync(FloatingBarWindow window, nint handle)
+    {
+        const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        var timer = (DispatcherTimer)typeof(FloatingBarWindow).GetField("_fullscreenTimer", Flags)!.GetValue(window)!;
+        var fullscreen = typeof(FloatingBarWindow).GetField("_foregroundFullscreen", Flags)!;
+        var applyVisibility = typeof(FloatingBarWindow).GetMethod("ApplyVisibility", Flags)!;
+        var previous = SettingsManager.Current.FloatingBar;
+        var wasObserving = timer.IsEnabled;
+        timer.Stop();
+        try
+        {
+            SettingsManager.Current.FloatingBar = previous with { OverlayTaskbar = true };
+            // 注入已判定的全屏状态，避免测试依赖当前桌面；仍使用真实 HWND 和层级观察计时器。
+            fullscreen.SetValue(window, true);
+            applyVisibility.Invoke(window, null);
+            await Task.Delay(600);
+            Assert.IsFalse(AFMediaBar.Classes.Interop.NativeMethods.IsWindowVisible(handle),
+                "层级维护不能重新显示因前台全屏而隐藏的悬浮窗口。");
+            fullscreen.SetValue(window, false);
+            applyVisibility.Invoke(window, null);
+            Assert.IsTrue(AFMediaBar.Classes.Interop.NativeMethods.IsWindowVisible(handle), "退出全屏后必须恢复窗口。");
+        }
+        finally
+        {
+            fullscreen.SetValue(window, false);
+            SettingsManager.Current.FloatingBar = previous;
+            applyVisibility.Invoke(window, null);
+            if (wasObserving) timer.Start();
+        }
     }
 
     private static async Task VerifyContentResizePreservesPanelAsync(FloatingBarWindow window)
