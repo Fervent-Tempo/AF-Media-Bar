@@ -1479,7 +1479,10 @@ namespace AFMediaBar.Components
         /// </summary>
         private double GetTaskbarLeadingInset()
         {
-            var layout = LayoutPresets.GetLayout(_currentMode, LayoutOrientation.Horizontal, PresentationSettings.TaskbarExperience.SmallArtwork);
+            var experience = PresentationSettings.TaskbarExperience.Normalize();
+            var useSmallArtwork = experience.SmallArtwork && TaskbarRestLayoutPolicy.IsVisible(
+                TaskbarRestComponent.Artwork, ResolveRestVisibility(experience));
+            var layout = LayoutPresets.GetLayout(_currentMode, LayoutOrientation.Horizontal, useSmallArtwork);
             var artwork = layout.Components.FirstOrDefault(component =>
                 string.Equals(component.Id, LayoutComponentIds.Artwork, StringComparison.Ordinal));
             var inset = _isSmallTaskbar && UsesAdaptiveTaskbarText ? 2 : artwork?.Bounds.X ?? 0;

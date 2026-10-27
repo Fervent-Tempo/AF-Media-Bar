@@ -1,4 +1,4 @@
-// 小封面只改封面组件自身：在槽位内居中缩小，其他组件位置保持不动。
+// 检查小封面的预设尺寸；最终占位与相邻组件位置由真实控件布局验证。
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Settings;
@@ -10,7 +10,7 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class LayoutPresetsSmallArtworkTests
 {
     [TestMethod]
-    public void SmallArtworkCentersTheCoverInsideItsSlotAndLeavesOtherComponentsAlone()
+    public void SmallArtworkShrinksThePresetCoverBeforeRuntimeArrangement()
     {
         var normal = LayoutPresets.GetLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal);
         var small = LayoutPresets.GetLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal, smallArtwork: true);
@@ -24,7 +24,7 @@ public sealed class LayoutPresetsSmallArtworkTests
         Assert.AreEqual(normalArtwork.Bounds.Y + (normalArtwork.Bounds.Height - smallArtwork.Bounds.Height) / 2,
             smallArtwork.Bounds.Y, 0.001);
 
-        // 文字区等其余组件沿用原坐标：小封面只在封面自己的槽位里变化。
+        // 预设只调整封面，运行时再按实际尺寸排列相邻组件。
         CollectionAssert.AreEqual(BoundsExceptArtwork(normal), BoundsExceptArtwork(small));
     }
 

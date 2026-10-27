@@ -135,7 +135,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         set => UpdateExperience(_configuration.Current.TaskbarExperience with { ArtworkVisible = value });
     }
 
-    /// <summary>封面缩到原槽位的七成并居中；显示封面关闭时设置页会把这个开关置灰。</summary>
+    /// <summary>封面缩到八成并减少布局占位；显示封面关闭时设置页会把这个开关置灰。</summary>
     public bool SmallArtwork
     {
         get => _configuration.Current.TaskbarExperience.SmallArtwork;

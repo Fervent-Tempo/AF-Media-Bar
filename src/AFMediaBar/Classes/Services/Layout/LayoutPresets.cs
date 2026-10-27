@@ -61,24 +61,23 @@ public static class LayoutPresets
     }
 
     /// <summary>
-    /// 封面缩到原槽位的八成并在槽位内居中，其余组件位置不变；圆角与占位图标按同一比例缩小，
-    /// 否则小封面里的图标会显得过大。
+    /// 封面缩到八成，圆角与占位图标按同一比例缩小；运行时布局按缩小后的尺寸重排相邻组件。
     /// </summary>
     private static LayoutSchema CompactArtwork(LayoutSchema layout)
     {
-        const double scale = 0.8;
+        const double Scale = 0.8;
         return layout with
         {
             Components = layout.Components.Select(component =>
             {
                 if (!string.Equals(component.Id, LayoutComponentIds.Artwork, StringComparison.Ordinal)) return component;
                 var bounds = component.Bounds;
-                var size = Math.Max(1, Math.Round(bounds.Width * scale));
+                var size = Math.Max(1, Math.Round(bounds.Width * Scale));
                 var properties = new Dictionary<string, object>(component.Properties);
                 if (properties.TryGetValue("cornerRadius", out var radius) && radius is double cornerRadius)
-                    properties["cornerRadius"] = Math.Round(cornerRadius * scale, 2);
+                    properties["cornerRadius"] = Math.Round(cornerRadius * Scale, 2);
                 if (properties.TryGetValue("placeholderIconSize", out var iconSize) && iconSize is double placeholderSize)
-                    properties["placeholderIconSize"] = Math.Round(placeholderSize * scale, 2);
+                    properties["placeholderIconSize"] = Math.Round(placeholderSize * Scale, 2);
                 return component with
                 {
                     Bounds = new ComponentBounds(
