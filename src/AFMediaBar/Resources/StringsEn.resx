@@ -1126,6 +1126,15 @@
   <data name="DisplayModes.Rest.Row.Artwork.Title" xml:space="preserve">
     <value>Show artwork</value>
   </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Title" xml:space="preserve">
+    <value>Small cover</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Description" xml:space="preserve">
+    <value>Shrinks the cover to about 80% and centers it for a lighter look.</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Badge" xml:space="preserve">
+    <value>Turn on "Show artwork" first</value>
+  </data>
   <data name="DisplayModes.Rest.Row.Progress.Title" xml:space="preserve">
     <value>Show playback progress</value>
   </data>

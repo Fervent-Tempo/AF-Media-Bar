@@ -97,6 +97,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private double _appliedLengthScalePercent = double.NaN;
     private double _appliedThicknessScalePercent = double.NaN;
     private int _appliedMediaFontSizePercent = -1;
+    private bool? _appliedSmallArtwork;
     private int _dragStartCursorPrimary;
     private int _dragStartBarPrimary;
     private int _dragPrimaryLimit;
@@ -1105,12 +1106,15 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         if (orientation == LayoutOrientation.Horizontal && crossAxisDip.HasValue)
             crossAxisDip = Math.Min(crossAxisDip.Value, LayoutPresets.TaskbarHorizontal.Canvas.Height * thicknessScalePercent / 100);
         var mediaFontSizePercent = SettingsManager.Current.TaskbarExperience.Normalize().MediaFontSizePercent;
+        // 小封面会改变封面组件的尺寸与位置，必须参与重建判定，否则开关只在下次启动时生效。
+        var smallArtwork = SettingsManager.Current.TaskbarExperience.SmallArtwork;
         var layoutChanged = _appliedWindowMode != windowMode ||
                             orientationChanged ||
                             !lengthScalePercent.Equals(_appliedLengthScalePercent) ||
                             !thicknessScalePercent.Equals(_appliedThicknessScalePercent) ||
                             (crossAxisDip.HasValue && Math.Abs((orientation == LayoutOrientation.Vertical ? MediaControl.CurrentLayout?.Canvas.Width ?? 0 : MediaControl.CurrentLayout?.Canvas.Height ?? 0) - crossAxisDip.Value) > 0.1) ||
-                            mediaFontSizePercent != _appliedMediaFontSizePercent;
+                            mediaFontSizePercent != _appliedMediaFontSizePercent ||
+                            smallArtwork != _appliedSmallArtwork;
         if (layoutChanged)
         {
             var previousImmediate = _applySettingsSizeImmediately;
@@ -1124,6 +1128,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                 _appliedLengthScalePercent = lengthScalePercent;
                 _appliedThicknessScalePercent = thicknessScalePercent;
                 _appliedMediaFontSizePercent = mediaFontSizePercent;
+                _appliedSmallArtwork = smallArtwork;
                 MediaControl.RefreshDesiredSize();
             }
             finally

@@ -967,7 +967,7 @@ namespace AFMediaBar.Components
 
             // 从预设中获取布局
             // Get layout from presets
-            var layout = LayoutPresets.GetLayout(mode, orientation);
+            var layout = LayoutPresets.GetLayout(mode, orientation, PresentationSettings.TaskbarExperience.SmallArtwork);
             if ((mode is WindowMode.Taskbar or WindowMode.FloatingBar) && orientation == LayoutOrientation.Vertical)
             {
                 layout = layout with { Canvas = layout.Canvas with { Width = Math.Max(1, crossAxisDip ?? 48) } };
@@ -1479,7 +1479,10 @@ namespace AFMediaBar.Components
         /// </summary>
         private double GetTaskbarLeadingInset()
         {
-            var layout = LayoutPresets.GetLayout(_currentMode, LayoutOrientation.Horizontal);
+            var experience = PresentationSettings.TaskbarExperience.Normalize();
+            var useSmallArtwork = experience.SmallArtwork && TaskbarRestLayoutPolicy.IsVisible(
+                TaskbarRestComponent.Artwork, ResolveRestVisibility(experience));
+            var layout = LayoutPresets.GetLayout(_currentMode, LayoutOrientation.Horizontal, useSmallArtwork);
             var artwork = layout.Components.FirstOrDefault(component =>
                 string.Equals(component.Id, LayoutComponentIds.Artwork, StringComparison.Ordinal));
             // 留白取决于任务栏实际高度，不能随文字是否收起而变化。
@@ -2161,7 +2164,7 @@ namespace AFMediaBar.Components
                         EffectiveLyricFontSize)
                 : MeasureTextWidth(visibleText, SongTitle, isHorizontalMetadata);
             var textWidth = Math.Max(lyricWidth, MeasureTextWidth(artist, SongArtist, isHorizontalMetadata));
-            var preset = LayoutPresets.GetLayout(_currentMode, orientation);
+            var preset = LayoutPresets.GetLayout(_currentMode, orientation, PresentationSettings.TaskbarExperience.SmallArtwork);
             var request = LayoutSizeCalculator.Calculate(
                 preset,
                 PresentationSettings.LayoutLengthScalePercent / 100.0,

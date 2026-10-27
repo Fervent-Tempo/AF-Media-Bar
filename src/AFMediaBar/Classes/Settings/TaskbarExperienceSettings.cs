@@ -173,6 +173,14 @@ public readonly record struct TaskbarExperienceSettings(
 
     private readonly bool? _artworkVisible;
 
+    /// <summary>
+    /// 静置层封面缩到原槽位的八成并居中，默认关闭；只在显示封面时生效。
+    /// Shrinks the rest-layer artwork to 80% of its slot and centers it, off by default; applies only while the artwork is shown.
+    /// </summary>
+    public bool SmallArtwork { get => _smallArtwork ?? false; init => _smallArtwork = value; }
+
+    private readonly bool? _smallArtwork;
+
     /// <summary>静置层是否显示性能组件。 / Whether the rest layer shows the performance component.</summary>
     public bool PerformanceVisible { get; init; } = true;
 

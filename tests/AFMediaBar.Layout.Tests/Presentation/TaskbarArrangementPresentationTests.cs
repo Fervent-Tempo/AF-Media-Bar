@@ -198,6 +198,7 @@ public sealed class TaskbarArrangementPresentationTests
                 AssertPerformanceLayout(control);
                 VerticalTaskbarPresentationChecks.Verify(control);
                 SmallTaskbarPresentationChecks.Verify(control);
+                AssertSmallArtworkLayout(control);
                 AssertFontSizeKeepsArtworkInset();
                 AssertHoverControlsFitAtMinimumLength();
                 AssertMetadataSurvivesOrientationChanges();
@@ -220,6 +221,46 @@ public sealed class TaskbarArrangementPresentationTests
         if (failure is not null)
             ExceptionDispatchInfo.Capture(failure).Throw();
     }
+    private static void AssertSmallArtworkLayout(TaskBarMediaControl control)
+    {
+        var original = SettingsManager.Current;
+        try
+        {
+            SettingsManager.Current = new AppSettings();
+            control.UpdateSongInfo(MediaSnapshot.Disconnected with { IsConnected = true, Title = "Small artwork" });
+            var artwork = (Border)control.FindName("SongImageBorder");
+            var text = (FrameworkElement)control.FindName("SongInfoStackPanel");
+            foreach (var mode in new[] { WindowMode.Taskbar, WindowMode.FloatingBar })
+                foreach (var orientation in new[] { LayoutOrientation.Horizontal, LayoutOrientation.Vertical })
+                {
+                    void Apply(bool small, bool visible)
+                    {
+                        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+                        { SmallArtwork = small, ArtworkVisible = visible };
+                        control.ApplyLayout(mode, orientation, 100, 100, orientation == LayoutOrientation.Vertical ? 80 : 44);
+                        control.ApplyPrimaryLength(600);
+                    }
+
+                    double TextStart() => orientation == LayoutOrientation.Vertical ? Canvas.GetTop(text) : Canvas.GetLeft(text);
+                    Apply(false, true);
+                    var normalSize = artwork.Width;
+                    var normalTextStart = TextStart();
+                    Apply(true, true);
+                    Assert.AreEqual(Math.Round(normalSize * 0.8), artwork.Width, 0.01, $"{mode}/{orientation}: artwork must shrink at runtime.");
+                    Assert.AreEqual(artwork.Width, artwork.Height, 0.01);
+                    Assert.IsTrue(TextStart() < normalTextStart, "Smaller artwork must free space for the following text.");
+                    if (orientation == LayoutOrientation.Vertical)
+                        Assert.AreEqual((80 - artwork.Width) / 2, Canvas.GetLeft(artwork), 0.01);
+
+                    Apply(false, false);
+                    var hiddenTextStart = TextStart();
+                    Apply(true, false);
+                    Assert.AreEqual(hiddenTextStart, TextStart(), 0.01, "Hidden artwork must not add padding to the text.");
+                }
+        }
+        finally { SettingsManager.Replace(original); }
+    }
+
     private static void AssertMetadataSurvivesOrientationChanges()
     {
         var settings = new AppSettings

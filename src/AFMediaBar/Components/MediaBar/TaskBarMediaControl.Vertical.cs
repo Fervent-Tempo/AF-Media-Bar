@@ -91,9 +91,18 @@ public partial class TaskBarMediaControl
         PresentationSettings.TaskbarExperience.ComponentSpacingDip) *
         PresentationSettings.LayoutLengthScalePercent / 100d;
 
+    private double VerticalArtworkSize
+    {
+        get
+        {
+            var size = Math.Max(1, MainBorder.Width - 4);
+            return PresentationSettings.TaskbarExperience.SmallArtwork ? Math.Max(1, Math.Round(size * 0.8)) : size;
+        }
+    }
+
     private double VerticalComponentLength(TaskbarRestComponent component, TaskbarDensityMetrics metrics) => component switch
     {
-        TaskbarRestComponent.Artwork => Math.Max(1, MainBorder.Width - 4),
+        TaskbarRestComponent.Artwork => VerticalArtworkSize,
         TaskbarRestComponent.Spectrum => _verticalSpectrumLength,
         TaskbarRestComponent.Performance => _verticalPerformanceLength,
         TaskbarRestComponent.BluetoothBattery => BatteryVerticalLength,
@@ -143,25 +152,27 @@ public partial class TaskBarMediaControl
         _quickLaunchTooltip.Placement = tooltipPlacement;
         SongTitle.FontSize = VerticalPrimaryFontSize;
         SongArtist.FontSize = VerticalSecondaryFontSize;
-        SongImageBorder.Width = innerWidth;
-        SongImageBorder.Height = innerWidth;
-        SongImagePlaceholder.FontSize = Math.Max(12, innerWidth * 0.6);
+        SongImageBorder.Width = VerticalArtworkSize;
+        SongImageBorder.Height = VerticalArtworkSize;
+        SongImagePlaceholder.FontSize = Math.Max(12, VerticalArtworkSize * 0.6);
         var layout = ResolveVerticalLayout(primaryLength);
         _isRestLayerEmpty = layout.IsEmpty;
         ApplyRestComponentVisibility(layout);
         void Place(FrameworkElement element, TaskbarRestComponent component)
         {
             if (layout.Find(component) is not { } placement) return;
-            element.Width = innerWidth;
+            var isArtwork = component == TaskbarRestComponent.Artwork;
+            element.Width = isArtwork ? VerticalArtworkSize : innerWidth;
             element.Height = placement.Width;
+            var left = isArtwork ? (width - element.Width) / 2 : 2;
             element.HorizontalAlignment = HorizontalAlignment.Left;
             element.VerticalAlignment = VerticalAlignment.Top;
             if (element.Parent is Canvas)
             {
-                Canvas.SetLeft(element, 2);
+                Canvas.SetLeft(element, left);
                 Canvas.SetTop(element, placement.Left);
             }
-            else element.Margin = new Thickness(2, placement.Left, 0, 0);
+            else element.Margin = new Thickness(left, placement.Left, 0, 0);
         }
         if (!IsArtworkZoomActive) Place(SongImageBorder, TaskbarRestComponent.Artwork);
         if (_artworkHover._artworkZoomSubstitute is { } substitute) Place(substitute, TaskbarRestComponent.Artwork);
