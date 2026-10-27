@@ -71,7 +71,16 @@ public enum TaskbarRestComponent
     Volume = 5,
     InputDevice = 6,
     /// <summary>所选蓝牙设备的电量组件。</summary>
-    BluetoothBattery = 7
+    BluetoothBattery = 7,
+    SystemMemory = 8,
+    SystemCpu = 9,
+    SystemGpu = 10,
+    ProcessMemory = 11,
+    SystemNetwork = 12,
+    DragHandle = 13,
+    PreviousTrack = 14,
+    PlayPause = 15,
+    NextTrack = 16
 }
 
 /// <summary>播放器表面的基础背景方案。 / Basic background style for a player surface.</summary>
@@ -82,13 +91,21 @@ public enum PlayerSurfaceStyle
     ThemeTint = 2
 }
 
-/// <summary>任务栏完整层的功能组显隐设置。 / Visibility settings for taskbar full-panel feature groups.</summary>
+/// <summary>完整面板的分区、缩放与性能样式设置。</summary>
 public readonly record struct TaskbarFullPanelSettings(
     bool MediaInfoVisible,
     bool MediaControlsVisible,
     bool AudioControlsVisible,
     bool PerformanceVisible)
 {
+    // System.Text.Json 对结构体默认走无参构造，显式声明才会执行新增字段的初始化。
+    public TaskbarFullPanelSettings() : this(false, false, false, false) { }
+
+    public const int MinimumScalePercent = 75;
+    public const int MaximumScalePercent = 200;
+    public int ScalePercent { get; init; } = 100;
+    public MetricVisualSettings PerformanceVisuals { get; init; } = MetricVisualSettings.PanelDefault;
+
     /// <summary>仅显示媒体信息和媒体控制。 / Shows only media information and media controls.</summary>
     public static TaskbarFullPanelSettings Compact { get; } = new(true, true, false, false);
 
@@ -99,10 +116,16 @@ public readonly record struct TaskbarFullPanelSettings(
     public static TaskbarFullPanelSettings Default => Full;
 
     /// <summary>确保至少保留一个功能组。 / Ensures at least one feature group remains visible.</summary>
-    public TaskbarFullPanelSettings Normalize() =>
-        MediaInfoVisible || MediaControlsVisible || AudioControlsVisible || PerformanceVisible
-            ? this
-            : Compact;
+    public TaskbarFullPanelSettings Normalize()
+    {
+        var result = MediaInfoVisible || MediaControlsVisible || AudioControlsVisible || PerformanceVisible
+            ? this : this with { MediaInfoVisible = true, MediaControlsVisible = true };
+        return result with
+        {
+            ScalePercent = Math.Clamp(ScalePercent, MinimumScalePercent, MaximumScalePercent),
+            PerformanceVisuals = PerformanceVisuals.Normalize(MetricVisualSettings.PanelDefault)
+        };
+    }
 }
 
 /// <summary>任务栏悬停层中各项控制的显隐设置。 / Visibility settings for controls in the taskbar hover layer.</summary>
@@ -246,6 +269,7 @@ public readonly record struct TaskbarExperienceSettings(
     /// settings file never loses a component a newer version added; the relative order the user gave MUST NOT be rearranged.
     /// </summary>
     public IReadOnlyList<TaskbarRestComponent>? RestComponentOrder { get; init; }
+    public ComponentLayoutsSettings? ComponentLayouts { get; init; }
 
     /// <summary>
     /// 没有媒体（没有 SMTC 来源）时仍然留在任务栏上的静置层组件。这个行为没有开关：没有媒体时媒体栏本来就没有内容可显示，
@@ -320,6 +344,7 @@ public readonly record struct TaskbarExperienceSettings(
             MediaTextAlignment = Enum.IsDefined(MediaTextAlignment) ? MediaTextAlignment : defaults.MediaTextAlignment,
             Arrangement = Arrangement is { } arrangement && Enum.IsDefined(arrangement) ? arrangement : null,
             FullPanel = FullPanel.Normalize(),
+            ComponentLayouts = ComponentLayouts?.Normalize(),
             LengthMode = Enum.IsDefined(LengthMode) ? LengthMode : defaults.LengthMode,
             FixedLengthDip = double.IsFinite(FixedLengthDip) && FixedLengthDip >= MinimumStoredFixedLengthDip
                 ? Math.Clamp(Math.Round(FixedLengthDip, MidpointRounding.AwayFromZero), MinimumStoredFixedLengthDip, MaximumStoredFixedLengthDip)

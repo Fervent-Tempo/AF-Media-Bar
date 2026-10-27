@@ -1105,4 +1105,19 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <components:ComponentSymbolConverter x:Key="AfComponentSymbolConverter"/>
+    <DataTemplate x:Key="AfSettingsComponentRowTemplate">
+        <components:SettingsRow Title="{Binding DisplayName}" Description="{Binding Description}" OptionId="{Binding SearchId}"
+            Style="{StaticResource AfSettingsListItemStyle}" IsIconMonochrome="True">
+            <components:SettingsRow.Icon><ui:SymbolIcon Symbol="{Binding Component, Converter={StaticResource AfComponentSymbolConverter}}"/></components:SettingsRow.Icon>
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <components:SettingsNavigationButton Style="{StaticResource AfSettingsRelatedLinkStyle}" Content="{DynamicResource Loc.Settings.Component.Configure}"
+                    Destination="{Binding ConfigurationDestination}" GroupId="{Binding ConfigurationGroup}"
+                    Visibility="{Binding HasConfiguration, Converter={StaticResource AfBooleanToVisibilityConverter}}"/>
+                <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding IsVisible, Mode=TwoWay}" IsEnabled="{Binding CanToggle}" Margin="12,0" AutomationProperties.Name="{Binding DisplayName}"/>
+                <components:SettingsReorderHandle Grid.Column="2" ItemKey="{Binding Component}" AutomationProperties.Name="{Binding DisplayName}" Visibility="{Binding CanMove, Converter={StaticResource AfBooleanToVisibilityConverter}}"/>
+            </Grid>
+        </components:SettingsRow>
+    </DataTemplate>
 </ResourceDictionary>

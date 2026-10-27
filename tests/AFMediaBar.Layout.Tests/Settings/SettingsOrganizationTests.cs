@@ -97,9 +97,9 @@ public sealed class SettingsOrganizationTests
         SettingsManager.ResetContentLayout();
 
         current = SettingsManager.Current;
-        Assert.AreEqual(JsonSerializer.Serialize(saved.TaskbarExperience.Normalize() with { MediaFontSizePercent = 120, RestComponentOrder = null, SpectrumVisible = true, PerformanceVisible = true, ArtworkProgressVisible = true }),
+        Assert.AreEqual(JsonSerializer.Serialize(saved.TaskbarExperience.Normalize() with { MediaFontSizePercent = 120, RestComponentOrder = null }),
             JsonSerializer.Serialize(current.TaskbarExperience with { RestComponentOrder = null }));
-        Assert.IsNull(current.TaskbarExperience.RestComponentOrder);
+        CollectionAssert.AreEqual(saved.TaskbarExperience.RestComponentOrder!.ToArray(), current.TaskbarExperience.RestComponentOrder!.ToArray());
         Assert.AreEqual(spectrum, current.SpectrumComponent);
         Assert.AreEqual(JsonSerializer.Serialize(performance), JsonSerializer.Serialize(current.PerformanceComponent));
         Assert.AreEqual(battery, current.BluetoothBatteryWidget);
@@ -197,7 +197,7 @@ public sealed class SettingsOrganizationTests
     public void MovedGroupsResolveToTheirOnlyEditor()
     {
         Assert.AreEqual((SettingsPageKey.RestState, "Common.RestLayer"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Components, "Common.RestLayer"));
-        Assert.AreEqual((SettingsPageKey.RestState, "Common.Group.ComponentOrder"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Components, "Common.Group.ComponentOrder"));
+        Assert.AreEqual((SettingsPageKey.RestState, "Common.RestLayer"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Components, "Common.Group.ComponentOrder"));
         Assert.AreEqual((SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Appearance, "Common.Group.Fonts"));
         Assert.AreEqual((SettingsPageKey.ApplicationAppearance, "Common.Group.ThemeAndBackdrop"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Appearance, "Common.Group.ThemeAndBackdrop"));
         Assert.AreEqual((SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground"));

@@ -249,6 +249,8 @@ public partial class TaskBarMediaControl
         return surface.Visibility == Visibility.Visible &&
             (ReferenceEquals(surface, TaskbarSpectrumHoverSurface) ||
              ReferenceEquals(surface, TaskbarPerformanceHoverSurface) ||
+             _metricSurfaces.Values.Contains(surface) ||
+             ReferenceEquals(surface, TaskbarInputDeviceHoverSurface) ||
              ReferenceEquals(surface, TaskbarOutputDeviceHoverSurface) ||
              ReferenceEquals(surface, TaskbarVolumeHoverSurface));
     }
@@ -498,6 +500,7 @@ public partial class TaskBarMediaControl
         AnimateComponentHover(TaskbarOutputDeviceHoverSurface, TaskbarOutputDeviceHoverSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
         AnimateComponentHover(TaskbarVolumeHoverSurface, TaskbarVolumeHoverSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
         AnimateComponentHover(TaskbarBatterySurface, TaskbarBatterySurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
+        foreach (var surface in _metricSurfaces.Values) AnimateComponentHover(surface, surface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
     }
 
     private void SongImageBorder_MouseEnter(object sender, MouseEventArgs e)
@@ -694,6 +697,8 @@ public partial class TaskBarMediaControl
 
     private void HideTaskbarHoverLayer(bool immediate = false)
     {
+        if (_componentGestureActive && !immediate) return;
+        if (immediate) CancelComponentGesture();
         if (!immediate && !_isTaskbarHoverVisible && HoverRevealHost.Visibility == Visibility.Visible && CurrentMotion.UseTransitions)
             return;
         var generation = ++_hoverRevealGeneration;
@@ -807,6 +812,8 @@ public partial class TaskBarMediaControl
     /// </summary>
     private void InteractionSurface_MouseLeave(object sender, MouseEventArgs e)
     {
+        // 捕获切换或悬停按钮重排会暂时移走命中元素；指针仍在有效区域时保留排序。
+        if (_componentGestureActive && IsValidComponentDrop(e.GetPosition(this))) return;
         // 这个通知发生在 Shell 因指针离开任务栏而开始自动收起之前，是唯一个能在动画前清掉文字区 Blur 与裁剪动画的时机。
         // 等任务栏矩形开始变化后再清理已经太晚，WPF 与 Shell 会同时提交合成帧，这正是“交互后离开才偶发留角”的条件。
         // This notification arrives before the Shell starts auto-hiding after the pointer leaves the taskbar, making it the only point where the text

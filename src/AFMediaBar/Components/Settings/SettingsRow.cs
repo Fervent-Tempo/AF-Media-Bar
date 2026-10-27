@@ -19,6 +19,11 @@ namespace AFMediaBar.Components;
 /// </summary>
 public class SettingsRow : HeaderedContentControl
 {
+    /// <summary>动态设置行的稳定界面身份，不参与配置持久化。</summary>
+    public static readonly DependencyProperty OptionIdProperty = DependencyProperty.Register(
+        nameof(OptionId), typeof(string), typeof(SettingsRow), new PropertyMetadata(string.Empty));
+    public string OptionId { get => (string)GetValue(OptionIdProperty); set => SetValue(OptionIdProperty, value); }
+
     private static readonly DependencyPropertyKey IsCompactPropertyKey = DependencyProperty.RegisterReadOnly(
         nameof(IsCompact), typeof(bool), typeof(SettingsRow), new PropertyMetadata(false));
     /// <summary>Moves controls below the title when the sidebar leaves too little width for two columns.</summary>

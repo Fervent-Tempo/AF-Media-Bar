@@ -186,9 +186,10 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
         {
             next.TaskbarExperience = SettingsResetPolicy.Content(next.TaskbarExperience, defaults.TaskbarExperience) with
             { LengthMode = geometry.LengthMode, FixedLengthDip = geometry.FixedLengthDip, Arrangement = geometry.Arrangement };
+            next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
             if (scope == SettingsResetScope.DisplayModes)
             {
-                // 旧入口维持原有范围；当前内容与布局页保留小组件设置。
+                // 旧入口同时恢复组件参数；内容与布局只恢复显隐和顺序。
                 next.TaskbarExperience = next.TaskbarExperience with
                 { SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible, PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible };
                 next.SpectrumComponent = defaults.SpectrumComponent;

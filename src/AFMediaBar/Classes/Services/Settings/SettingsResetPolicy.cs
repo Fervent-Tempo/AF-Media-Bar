@@ -1,4 +1,4 @@
-// 计算内容页重置值，保留外观页字号和小组件页显隐；不发布事件或修改设置。
+// 计算内容页重置值，保留外观页字号及组件样式；不发布事件或修改设置。
 using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.Classes.Services.Settings;
@@ -7,10 +7,11 @@ namespace AFMediaBar.Classes.Services.Settings;
 internal static class SettingsResetPolicy
 {
     public static TaskbarExperienceSettings Content(TaskbarExperienceSettings current, TaskbarExperienceSettings defaults) =>
-        Rest(defaults with
+        defaults with
         {
-            MediaFontSizePercent = current.MediaFontSizePercent
-        }, current);
+            MediaFontSizePercent = current.MediaFontSizePercent,
+            FullPanel = defaults.FullPanel with { PerformanceVisuals = current.FullPanel.PerformanceVisuals }
+        };
 
     /// <summary>仅恢复常驻页拥有的字段，保留布局、快捷控制和完整面板。</summary>
     public static TaskbarExperienceSettings Rest(TaskbarExperienceSettings current, TaskbarExperienceSettings defaults) =>
@@ -26,6 +27,11 @@ internal static class SettingsResetPolicy
             SpectrumVisible = defaults.SpectrumVisible,
             PerformanceVisible = defaults.PerformanceVisible,
             RestComponentOrder = defaults.RestComponentOrder,
-            IdleComponents = defaults.IdleComponents
+            IdleComponents = defaults.IdleComponents,
+            ComponentLayouts = (current.ComponentLayouts ?? new()) with
+            {
+                Resident = defaults.ComponentLayouts?.Resident,
+                Idle = defaults.ComponentLayouts?.Idle
+            }
         };
 }

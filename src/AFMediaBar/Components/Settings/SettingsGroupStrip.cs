@@ -261,7 +261,7 @@ public class SettingsGroupStrip : Control
         if (optionId is not null)
         {
             var title = optionId.StartsWith('@') ? optionId[1..] : Translations.Get(optionId);
-            var row = LogicalDescendants(group).OfType<SettingsRow>().FirstOrDefault(candidate => candidate.Title == title && candidate.IsVisible);
+            var row = LogicalDescendants(group).OfType<SettingsRow>().FirstOrDefault(candidate => (candidate.OptionId == optionId || candidate.Title == title) && candidate.IsVisible);
             if (row is not null)
             {
                 StopJump();

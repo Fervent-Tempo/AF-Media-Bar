@@ -1624,10 +1624,10 @@
   <data name="Media.Notification.TargetMode.ForegroundWindow" xml:space="preserve">
     <value>Màn hình của cửa sổ đang dùng</value>
   </data>
-  <data name="Media.Performance.Metrics.Description" xml:space="preserve">
-    <value>Chọn các chỉ số cần hiển thị; chọn nhiều mục sẽ luân phiên hiển thị.</value>
+<data name="Media.Performance.Metrics.Description" xml:space="preserve">
+    <value>Thiết lập hiển thị, kiểu và thứ tự tại một nơi, kể cả chỉ số đang tắt.</value>
   </data>
-  <data name="Media.Performance.Metrics.Title" xml:space="preserve">
+<data name="Media.Performance.Metrics.Title" xml:space="preserve">
     <value>Chỉ số hiển thị</value>
   </data>
   <data name="Media.Performance.OpenTaskManager.Description" xml:space="preserve">
@@ -2695,10 +2695,10 @@
   <data name="Media.Performance.DisplayMode.Parallel" xml:space="preserve">
     <value>Cạnh nhau</value>
   </data>
-  <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>Kéo để sắp xếp chỉ số đã chọn. Hai chế độ dùng chung thứ tự; giữ ít nhất một chỉ số.</value>
+<data name="Media.Performance.Order.Description" xml:space="preserve">
+    <value>Kéo để sắp xếp mọi chỉ số. Các chỉ số bật hiển thị theo thứ tự này ở cả hai chế độ. Tắt chỉ số vẫn giữ vị trí và kiểu. Giữ ít nhất một chỉ số bật.</value>
   </data>
-  <data name="Panel.Performance.Upload" xml:space="preserve">
+<data name="Panel.Performance.Upload" xml:space="preserve">
     <value>Tải lên</value>
   </data>
   <data name="Panel.Performance.Download" xml:space="preserve">
@@ -3181,10 +3181,10 @@ Nguồn: {2}</value></data>
   <data name="Settings.Related.WidgetsSpectrum" xml:space="preserve"><value>Thông số phổ &amp; hiệu năng</value></data>
   <data name="Settings.Related.TextSize" xml:space="preserve"><value>Cỡ chữ</value></data>
   <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>Chính sách tối ưu bộ nhớ</value></data>
-  <data name="Common.Page.Widgets" xml:space="preserve">
-    <value>Tiện ích</value>
+<data name="Common.Page.Widgets" xml:space="preserve">
+    <value>Cài đặt thành phần</value>
   </data>
-  <data name="Widgets.Header.Subtitle" xml:space="preserve">
+<data name="Widgets.Header.Subtitle" xml:space="preserve">
     <value>Cấu hình nốt nhạc khởi chạy, phổ âm, hiệu năng và pin Bluetooth. Sắp xếp thành phần trong Nội dung và bố cục.</value>
   </data>
   <data name="Widgets.Spectrum" xml:space="preserve">
@@ -3267,8 +3267,8 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Placement.Floating.OverlayTaskbar.Description" xml:space="preserve"><value>Khi bật, thanh phương tiện nổi hiển thị trên thanh tác vụ và có thể kéo vào khu vực đó.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>Tự thu gọn ở cạnh màn hình</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>Mặc định bật. Kéo đến một trong bốn cạnh vùng làm việc; di chuột ra để thu gọn và đến gần để mở.</value></data>
-  <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>Mở thanh phương tiện trên màn hình</value></data>
-  <data name="Developer.Action.PerformanceStatus" xml:space="preserve"><value>Trạng thái ghi hiệu năng</value></data>
+<data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>Mở thanh phương tiện trên màn hình</value></data>
+<data name="Developer.Action.PerformanceStatus" xml:space="preserve"><value>Trạng thái ghi hiệu năng</value></data>
   <data name="Developer.Description.PerformanceStatus" xml:space="preserve"><value>Hiện trạng thái ghi Debug, thư mục, mẫu gần nhất và số bản ghi bị loại.</value></data>
   <data name="Developer.Action.PerformanceStart" xml:space="preserve"><value>Bắt đầu ghi hiệu năng</value></data>
   <data name="Developer.Description.PerformanceStart" xml:space="preserve"><value>Bắt đầu ghi cho tiến trình này. Tự động bật trong bản Debug.</value></data>
@@ -3594,4 +3594,60 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Start.WebView" xml:space="preserve">
     <value>Tải WebView2</value>
   </data>
+<data name="Performance.Visual.Numeric" xml:space="preserve">
+    <value>Số liệu</value>
+  </data>
+<data name="Performance.Visual.Bar" xml:space="preserve">
+    <value>Thanh</value>
+  </data>
+<data name="Performance.Visual.Ring" xml:space="preserve">
+    <value>Vòng</value>
+  </data>
+<data name="Performance.Visual.Line" xml:space="preserve">
+    <value>Đường xu hướng</value>
+  </data>
+<data name="Performance.Visual.Area" xml:space="preserve">
+    <value>Vùng xu hướng</value>
+  </data>
+<data name="Performance.Visual.Style" xml:space="preserve">
+    <value>Kiểu hiển thị</value>
+  </data>
+<data name="Performance.Visual.BarSurface" xml:space="preserve">
+    <value>Kiểu thanh phương tiện</value>
+  </data>
+<data name="Performance.Visual.Panel" xml:space="preserve">
+    <value>Kiểu bảng đầy đủ</value>
+  </data>
+<data name="Performance.Visual.Description" xml:space="preserve">
+    <value>Chọn kiểu riêng cho từng chỉ số. Biểu đồ giữ số liệu trực tiếp; tải lên và tải xuống dùng chung kiểu. Xem trước dùng dữ liệu mẫu. Bộ nhớ ứng dụng và mạng chỉ hỗ trợ số, đường và vùng; biểu đồ dùng đỉnh trong phút gần nhất làm thang đo tương đối.</value>
+  </data>
+<data name="Performance.Visual.Relative" xml:space="preserve">
+    <value>So với đỉnh trong phút gần nhất; không phải tỷ lệ sử dụng dung lượng hoặc băng thông.</value>
+  </data>
+<data name="Panel.Scale.Title" xml:space="preserve">
+    <value>Tỷ lệ bảng đầy đủ</value>
+  </data>
+<data name="Panel.Scale.Description" xml:space="preserve">
+    <value>Phóng cửa sổ và nội dung cùng tỷ lệ từ 75% đến 200%, lưu sau khi khởi động lại. Kéo cạnh ngoài giữ cố định cạnh đối diện; cạnh sát thanh đa phương tiện bị khóa. Khôi phục kích thước mặc định về 100%.</value>
+  </data>
+<data name="Panel.Scale.Reset" xml:space="preserve">
+    <value>Khôi phục kích thước mặc định</value>
+  </data>
+<data name="ComponentLayout.Resident" xml:space="preserve"><value>Thành phần thường trực</value></data>
+<data name="ComponentLayout.Idle" xml:space="preserve"><value>Khi không có phương tiện</value></data>
+<data name="ComponentLayout.Hover" xml:space="preserve"><value>Điều khiển khi di chuột</value></data>
+<data name="ComponentLayout.Description" xml:space="preserve"><value>Chọn hiển thị và thứ tự, kể cả mục đã tắt. Kéo thành phần trên thanh để sắp xếp.</value></data>
+<data name="ComponentLayout.FixedHead" xml:space="preserve"><value>Cố định ở đầu thanh</value></data>
+<data name="ComponentLayout.Move" xml:space="preserve"><value>Kéo tại đây để di chuyển thanh</value></data>
+<data name="ComponentLayout.Locked" xml:space="preserve"><value>Vị trí đã khóa</value></data>
+<data name="ComponentLayout.Cycle" xml:space="preserve"><value>Chỉ số luân phiên và thứ tự</value></data>
+  <data name="ComponentLayout.CycleDescription" xml:space="preserve"><value>Chọn chỉ số luân phiên và thứ tự. Chỉnh hiển thị và thứ tự chỉ số song song trong Thường trực. Kiểu áp dụng cho chỉ số tương ứng.</value></data>
+<data name="Settings.RestState.Details" xml:space="preserve"><value>Ảnh bìa và tiến độ</value></data>
+  <data name="Integration.Performance.Sampling" xml:space="preserve"><value>Lấy mẫu và hành vi</value></data>
+  <data name="Integration.Performance.Bar" xml:space="preserve"><value>Kiểu thanh và luân phiên</value></data>
+  <data name="Integration.Performance.Panel" xml:space="preserve"><value>Kiểu bảng đầy đủ</value></data>
+  <data name="Integration.Panel.Scale" xml:space="preserve"><value>Tỷ lệ bảng</value></data>
+  <data name="Integration.Panel.Scale.Description" xml:space="preserve"><value>Đổi tỷ lệ cửa sổ và nội dung cùng nhau từ 75% đến 200%. Cạnh sát thanh được giữ cố định.</value></data>
+  <data name="Integration.Panel.ResetSize" xml:space="preserve"><value>Khôi phục kích thước mặc định</value></data>
+  <data name="Settings.RestState.Description" xml:space="preserve"><value>Chọn thành phần, thứ tự và chi tiết cho trạng thái thường trực và không có phương tiện.</value></data>
 </root>

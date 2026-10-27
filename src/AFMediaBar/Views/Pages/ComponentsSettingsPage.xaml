@@ -1,91 +1,8 @@
-<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.ComponentsSettingsPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
-    <Page.Resources>
-        <Style x:Key="FixedLengthRowStyle" BasedOn="{StaticResource {x:Type components:SettingsRow}}" TargetType="{x:Type components:SettingsRow}">
-            <Setter Property="Badge" Value=""/>
-            <Setter Property="IsEnabled" Value="{Binding ViewModel.Layout.CanEditFixedTaskbarLength}"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ViewModel.Layout.FollowMediaTextLength}" Value="True">
-                    <Setter Property="Badge" Value="{DynamicResource Loc.DisplayModes.Width.Row.Fixed.Badge}"/>
-                    <Setter Property="BadgeTone" Value="Attention"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="FixedWidthRowStyle" BasedOn="{StaticResource {x:Type components:SettingsRow}}" TargetType="{x:Type components:SettingsRow}">
-            <Setter Property="Badge" Value=""/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ViewModel.Lyrics.CanConfigureFixedWidth}" Value="False">
-                    <Setter Property="Badge" Value="{DynamicResource Loc.Lyrics.Row.FixedWidth.Badge}"/>
-                    <Setter Property="BadgeTone" Value="Attention"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="SmallArtworkRowStyle" BasedOn="{StaticResource {x:Type components:SettingsRow}}" TargetType="{x:Type components:SettingsRow}">
-            <Setter Property="Badge" Value=""/>
-            <Setter Property="IsEnabled" Value="{Binding ViewModel.Layers.RestArtworkVisible}"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ViewModel.Layers.RestArtworkVisible}" Value="False">
-                    <Setter Property="Badge" Value="{DynamicResource Loc.DisplayModes.Rest.Row.SmallArtwork.Badge}"/>
-                    <Setter Property="BadgeTone" Value="Attention"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="HoverDependencyHintStyle" BasedOn="{StaticResource AfSettingsHintTextStyle}" TargetType="TextBlock">
-            <Setter Property="Visibility" Value="Collapsed"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ViewModel.Layers.HoverLayerEnabled}" Value="False">
-                    <Setter Property="Visibility" Value="Visible"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style TargetType="{x:Type components:SettingsRow}" BasedOn="{StaticResource AfSettingsPilotRowStyle}"/>
-        <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/>
-    </Page.Resources>
-    <components:SettingsPageLayout x:Name="PageLayout">
-        <components:SettingsPageLayout.Header>
-            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Page.QuickControls}" Subtitle="{DynamicResource Loc.Settings.Page.ComponentsSettings.Description}" PageIcon="{ui:SymbolIcon HandDraw24}" Target="{Binding ScrollViewer, ElementName=PageLayout}"/>
-        </components:SettingsPageLayout.Header>
-        <components:SettingsPageLayout.Preview>
-            <components:SettingsPreview xmlns:components="clr-namespace:AFMediaBar.Components" DataContext="{Binding Preview}"/>
-        </components:SettingsPageLayout.Preview>
-        <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded">
-            <components:SettingsGroup GroupId="Common.HoverLayer" Description="{DynamicResource Loc.DisplayModes.Hover.Group.Description}" Header="{DynamicResource Loc.Common.HoverLayer}" Icon="{ui:SymbolIcon HandDraw24}">
-                <StackPanel>
-                    <components:SettingsDiagram Margin="0,0,0,12" Kind="LayerHover"/>
-                    <components:SettingsRow Description="{DynamicResource Loc.DisplayModes.Hover.Row.Enable.Description}" Icon="{ui:SymbolIcon HandDraw24}" Title="{DynamicResource Loc.DisplayModes.Hover.Row.Enable.Title}">
-                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverLayerEnabled, Mode=TwoWay}"/>
-                    </components:SettingsRow>
-                    <TextBlock Style="{StaticResource HoverDependencyHintStyle}" Margin="0,4,0,8" Text="{DynamicResource Loc.ContentLayout.Hover.Prerequisite}"/>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Layer24}">
-                        <ui:CardExpander.Header>
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.DisplayModes.Hover.Expander.Title}"/>
-                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.DisplayModes.Hover.Expander.Description}"/>
-                            </StackPanel>
-                        </ui:CardExpander.Header>
-                        <StackPanel>
-                            <components:SettingsRow Icon="{ui:SymbolIcon Play24}" IsNested="True" Title="{DynamicResource Loc.Common.PlayPause}">
-                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverPlayPauseVisible, Mode=TwoWay}"/>
-                            </components:SettingsRow>
-                            <components:SettingsRow Icon="{ui:SymbolIcon Previous24}" IsNested="True" Title="{DynamicResource Loc.Common.PreviousNextTrack}">
-                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverPreviousNextVisible, Mode=TwoWay}"/>
-                            </components:SettingsRow>
-                            <components:SettingsRow Icon="{ui:SymbolIcon Speaker224}" IsNested="True" Title="{DynamicResource Loc.Common.OutputDevice}">
-                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverOutputDeviceVisible, Mode=TwoWay}"/>
-                            </components:SettingsRow>
-                            <components:SettingsRow Icon="{ui:SymbolIcon Mic24}" IsNested="True" Title="{DynamicResource Loc.Common.InputDevice}">
-                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverInputDeviceVisible, Mode=TwoWay}"/>
-                            </components:SettingsRow>
-                            <components:SettingsRow Icon="{ui:SymbolIcon Speaker124}" IsNested="True" Title="{DynamicResource Loc.Common.AudioControl}">
-                                <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverAudioControlVisible, Mode=TwoWay}"/>
-                            </components:SettingsRow>
-                        </StackPanel>
-                    </ui:CardExpander>
-                    <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer"/>
-                    </WrapPanel>
-                </StackPanel>
-            </components:SettingsGroup>
-            <components:SettingsGroup GroupId="Appearance.Group.InteractionButtons" Header="{DynamicResource Loc.Appearance.Group.InteractionButtons}" Icon="{ui:SymbolIcon CursorClick24}">
+<Page xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings" x:Class="AFMediaBar.Views.Pages.ComponentsSettingsPage" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
+<Page.Resources><Style TargetType="{x:Type components:SettingsRow}" BasedOn="{StaticResource AfSettingsPilotRowStyle}"/><Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/></Page.Resources>
+<components:SettingsPageLayout x:Name="PageLayout"><components:SettingsPageLayout.Header><components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Page.QuickControls}" Subtitle="{DynamicResource Loc.Settings.Page.QuickControls.Description}" PageIcon="{ui:SymbolIcon HandDraw24}" Target="{Binding ScrollViewer, ElementName=PageLayout}"/></components:SettingsPageLayout.Header>
+<components:SettingsPageLayout.Preview><components:SettingsPreview DataContext="{Binding Preview}"/></components:SettingsPageLayout.Preview>
+<StackPanel x:Name="PageRoot" Loaded="OnPageLoaded"><components:SettingsGroup GroupId="Common.HoverLayer" Header="{DynamicResource Loc.ComponentLayout.Hover}"><StackPanel><components:SettingsRow Title="{DynamicResource Loc.DisplayModes.Hover.Row.Enable.Title}" Description="{DynamicResource Loc.DisplayModes.Hover.Row.Enable.Description}" Icon="{ui:SymbolIcon HandDraw24}" ><ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverLayerEnabled, Mode=TwoWay}"/></components:SettingsRow><AdornerDecorator><ItemsControl ItemsSource="{Binding ViewModel.Layers.HoverLayoutEntries}" Style="{StaticResource AfSettingsSortableListStyle}" ItemTemplate="{StaticResource AfSettingsComponentRowTemplate}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layers.ReorderLayoutCommand}"/></AdornerDecorator></StackPanel></components:SettingsGroup><components:SettingsGroup GroupId="Appearance.Group.InteractionButtons" Header="{DynamicResource Loc.Appearance.Group.InteractionButtons}" Icon="{ui:SymbolIcon CursorClick24}">
                 <StackPanel>
                     <components:SettingsRow Description="{DynamicResource Loc.Appearance.Row.InteractionButtonSize.Description}" Icon="{ui:SymbolIcon TextAlignJustify24}" Title="{DynamicResource Loc.Appearance.Row.InteractionButtonSize.Title}">
                         <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.Layout.InteractionButtonSize, Mode=TwoWay}" SelectedValuePath="Tag">
@@ -101,8 +18,4 @@
                         <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer"/>
                     </WrapPanel>
                 </StackPanel>
-            </components:SettingsGroup>
-            <ui:Button Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" Click="ResetButton_Click" HorizontalAlignment="Left" Margin="0,0,0,20"/>
-        </StackPanel>
-    </components:SettingsPageLayout>
-</Page>
+            </components:SettingsGroup><ui:Button Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" Click="ResetButton_Click" HorizontalAlignment="Left" Margin="0,0,0,20"/></StackPanel></components:SettingsPageLayout></Page>

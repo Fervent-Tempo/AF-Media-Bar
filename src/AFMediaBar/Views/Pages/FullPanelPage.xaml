@@ -95,7 +95,7 @@
                     </ui:CardExpander>
                 </StackPanel>
             </components:SettingsGroup>
-            <ui:Button Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" Click="ResetButton_Click" HorizontalAlignment="Left" Margin="0,0,0,20"/>
+<components:SettingsGroup GroupId="Integration.Panel.Scale" Header="{DynamicResource Loc.Integration.Panel.Scale}"><StackPanel><components:SettingsRow Title="{DynamicResource Loc.Integration.Panel.Scale}" Description="{DynamicResource Loc.Integration.Panel.Scale.Description}" Icon="{ui:SymbolIcon ArrowMaximize24}" ><StackPanel><components:SettingsNumericEditor Value="{Binding ViewModel.Layers.FullPanelScalePercent, Mode=TwoWay}" Minimum="{Binding ViewModel.Layers.MinimumFullPanelScalePercent}" Maximum="{Binding ViewModel.Layers.MaximumFullPanelScalePercent}" Step="5" Unit="%"/><ui:Button Content="{DynamicResource Loc.Integration.Panel.ResetSize}" Command="{Binding ViewModel.Layers.ResetFullPanelScaleCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,8,0,0"/></StackPanel></components:SettingsRow></StackPanel></components:SettingsGroup>            <ui:Button Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" Click="ResetButton_Click" HorizontalAlignment="Left" Margin="0,0,0,20"/>
         </StackPanel>
     </components:SettingsPageLayout>
 </Page>

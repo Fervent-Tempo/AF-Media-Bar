@@ -1648,12 +1648,10 @@
   <data name="Media.Notification.TargetMode.ForegroundWindow" xml:space="preserve">
     <value>跟隨前景視窗所在的顯示器</value>
   </data>
-  <data name="Media.Performance.Metrics.Description" xml:space="preserve">
-    <value>選擇要顯示的指標；複選時輪流顯示。</value>
+<data name="Media.Performance.Metrics.Description" xml:space="preserve">
+    <value>統一設定指標的顯示、樣式和順序；關閉的指標也可預設。</value>
   </data>
-  <data name="Media.Performance.Metrics.Title" xml:space="preserve">
-    <value>顯示哪些指標</value>
-  </data>
+
   <data name="Media.Performance.OpenTaskManager.Description" xml:space="preserve">
     <value>點擊效能元件時開啟工作管理員。</value>
   </data>
@@ -2657,10 +2655,10 @@
   <data name="Media.Performance.DisplayMode.Parallel" xml:space="preserve">
     <value>並排顯示</value>
   </data>
-  <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>拖曳調整已選指標順序；兩種顯示方式共用順序，至少保留一個指標。</value>
+<data name="Media.Performance.Order.Description" xml:space="preserve">
+    <value>拖曳可調整全部指標的順序，依序輪播或並排顯示已開啟項；關閉再開啟會保留位置和樣式，至少保留一項。</value>
   </data>
-  <data name="Panel.Performance.Upload" xml:space="preserve">
+<data name="Panel.Performance.Upload" xml:space="preserve">
     <value>上傳</value>
   </data>
   <data name="Panel.Performance.Download" xml:space="preserve">
@@ -3143,10 +3141,10 @@
   <data name="Settings.Related.WidgetsSpectrum" xml:space="preserve"><value>頻譜與效能參數</value></data>
   <data name="Settings.Related.TextSize" xml:space="preserve"><value>文字大小</value></data>
   <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>記憶體最佳化策略</value></data>
-  <data name="Common.Page.Widgets" xml:space="preserve">
-    <value>小元件</value>
+<data name="Common.Page.Widgets" xml:space="preserve">
+    <value>元件設定</value>
   </data>
-  <data name="Widgets.Header.Subtitle" xml:space="preserve">
+<data name="Widgets.Header.Subtitle" xml:space="preserve">
     <value>設定小音符、頻譜、效能和藍牙電量；元件順序在內容與配置中調整。</value>
   </data>
   <data name="Widgets.Spectrum" xml:space="preserve">
@@ -3229,8 +3227,8 @@
   <data name="Placement.Floating.OverlayTaskbar.Description" xml:space="preserve"><value>開啟後懸浮媒體欄顯示在工作列上方，可以拖到工作列區域使用。</value></data>
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>邊緣自動收合</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>預設開啟。拖到工作區邊緣後，移開滑鼠收合，靠近時展開；支援四邊。</value></data>
-  <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展開桌面媒體列</value></data>
-  <data name="Developer.Action.PerformanceStatus" xml:space="preserve"><value>效能記錄狀態</value></data>
+<data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展開桌面媒體列</value></data>
+<data name="Developer.Action.PerformanceStatus" xml:space="preserve"><value>效能記錄狀態</value></data>
   <data name="Developer.Description.PerformanceStatus" xml:space="preserve"><value>顯示 Debug 持續記錄狀態、目錄、最近取樣與捨棄數量。</value></data>
   <data name="Developer.Action.PerformanceStart" xml:space="preserve"><value>開啟效能記錄</value></data>
   <data name="Developer.Description.PerformanceStart" xml:space="preserve"><value>開啟本次程序的背景記錄；Debug 啟動時預設開啟。</value></data>
@@ -3556,4 +3554,63 @@
   <data name="Start.WebView" xml:space="preserve">
     <value>下載 WebView2</value>
   </data>
+<data name="Media.Performance.Metrics.Title" xml:space="preserve">
+    <value>顯示指標</value>
+  </data>
+<data name="Performance.Visual.Numeric" xml:space="preserve">
+    <value>純數值</value>
+  </data>
+<data name="Performance.Visual.Bar" xml:space="preserve">
+    <value>條形</value>
+  </data>
+<data name="Performance.Visual.Ring" xml:space="preserve">
+    <value>環形</value>
+  </data>
+<data name="Performance.Visual.Line" xml:space="preserve">
+    <value>趨勢折線</value>
+  </data>
+<data name="Performance.Visual.Area" xml:space="preserve">
+    <value>趨勢面積圖</value>
+  </data>
+<data name="Performance.Visual.Style" xml:space="preserve">
+    <value>顯示樣式</value>
+  </data>
+<data name="Performance.Visual.BarSurface" xml:space="preserve">
+    <value>媒體列樣式</value>
+  </data>
+<data name="Performance.Visual.Panel" xml:space="preserve">
+    <value>完整面板樣式</value>
+  </data>
+<data name="Performance.Visual.Description" xml:space="preserve">
+    <value>每項可獨立選擇，圖形保留即時數值。網路上下行共用樣式；預覽使用範例資料。程式記憶體和網路僅支援純數值、趨勢線和面積圖；趨勢圖以最近一分鐘峰值為相對刻度。</value>
+  </data>
+<data name="Performance.Visual.Relative" xml:space="preserve">
+    <value>相對於最近一分鐘的峰值，不代表容量或頻寬使用率。</value>
+  </data>
+<data name="Panel.Scale.Title" xml:space="preserve">
+    <value>完整面板縮放</value>
+  </data>
+<data name="Panel.Scale.Description" xml:space="preserve">
+    <value>視窗與內容一起等比縮放（75%—200%），重新啟動後保留。拖曳外側邊緣時固定對側，靠近媒體列的一側無法調整。恢復預設尺寸會回到 100%。</value>
+  </data>
+<data name="Panel.Scale.Reset" xml:space="preserve">
+    <value>恢復預設尺寸</value>
+  </data>
+<data name="ComponentLayout.Resident" xml:space="preserve"><value>常駐顯示</value></data>
+<data name="ComponentLayout.Idle" xml:space="preserve"><value>無媒體顯示</value></data>
+<data name="ComponentLayout.Hover" xml:space="preserve"><value>懸停控制</value></data>
+<data name="ComponentLayout.Description" xml:space="preserve"><value>在此調整顯隱和順序；關閉項仍可排序。也可直接拖曳欄上元件排序。</value></data>
+<data name="ComponentLayout.FixedHead" xml:space="preserve"><value>固定在媒體欄頭部</value></data>
+<data name="ComponentLayout.Move" xml:space="preserve"><value>拖曳此處移動媒體欄</value></data>
+<data name="ComponentLayout.Locked" xml:space="preserve"><value>位置已鎖定</value></data>
+<data name="ComponentLayout.Cycle" xml:space="preserve"><value>輪換指標與順序</value></data>
+  <data name="ComponentLayout.CycleDescription" xml:space="preserve"><value>僅控制輪換參與項及順序；並排元件的顯隱和順序在「常駐狀態」調整。圖表樣式適用於對應指標。</value></data>
+<data name="Settings.RestState.Details" xml:space="preserve"><value>封面與進度</value></data>
+  <data name="Integration.Performance.Sampling" xml:space="preserve"><value>取樣與行為</value></data>
+  <data name="Integration.Performance.Bar" xml:space="preserve"><value>媒體列樣式與輪換</value></data>
+  <data name="Integration.Performance.Panel" xml:space="preserve"><value>完整面板樣式</value></data>
+  <data name="Integration.Panel.Scale" xml:space="preserve"><value>面板縮放</value></data>
+  <data name="Integration.Panel.Scale.Description" xml:space="preserve"><value>同步縮放視窗與內容，範圍為 75%–200%；靠近媒體列的一側保持貼合。</value></data>
+  <data name="Integration.Panel.ResetSize" xml:space="preserve"><value>還原預設尺寸</value></data>
+  <data name="Settings.RestState.Description" xml:space="preserve"><value>設定常駐與無媒體狀態的元件、順序和顯示細節。</value></data>
 </root>

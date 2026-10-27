@@ -299,7 +299,7 @@ public static class TaskbarRestLayoutPolicy
             fixedWidth += Math.Max(0, widthOf(component));
         }
 
-        var gapTotal = Math.Max(0, visible.Count - 1) * Math.Max(0, sectionGap);
+        var gapTotal = visible.Skip(1).Count(component => component != TaskbarRestComponent.DragHandle) * Math.Max(0, sectionGap);
         var textWidth = hasText
             ? Math.Max(0, availableWidth - leadingInset - trailingMargin - fixedWidth - gapTotal)
             : 0;
@@ -312,7 +312,7 @@ public static class TaskbarRestLayoutPolicy
             var width = component == TaskbarRestComponent.MediaText ? textWidth : Math.Max(0, widthOf(component));
             placements.Add(new TaskbarRestPlacement(component, cursor, width));
             cursor += width;
-            if (index < visible.Count - 1)
+            if (index < visible.Count - 1 && visible[index + 1] != TaskbarRestComponent.DragHandle)
             {
                 cursor += Math.Max(0, sectionGap);
             }

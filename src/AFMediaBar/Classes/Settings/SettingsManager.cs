@@ -1,4 +1,4 @@
-﻿// 维护当前设置、变更通知与重置门面；持久化由设置服务负责。
+// 维护当前设置、变更通知与重置门面；持久化由设置服务负责。
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
@@ -190,6 +190,7 @@ public static class SettingsManager
         var defaults = Defaults;
         next.TaskbarExperience = AFMediaBar.Classes.Services.Settings.SettingsResetPolicy.Content(next.TaskbarExperience,
             defaults.TaskbarExperience);
+        next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
         next.LyricsTextAlignment = defaults.LyricsTextAlignment;
         next.LyricsFixedWidthEnabled = defaults.LyricsFixedWidthEnabled;
         next.LyricsFixedWidthDip = defaults.LyricsFixedWidthDip;
@@ -221,8 +222,6 @@ public static class SettingsManager
             HoverLayerEnabled = defaults.TaskbarExperience.HoverLayerEnabled,
             FullLayerEnabled = defaults.TaskbarExperience.FullLayerEnabled,
             FullPanel = defaults.TaskbarExperience.FullPanel,
-            SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible,
-            PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible,
             RestProgressVisible = defaults.TaskbarExperience.RestProgressVisible,
             ArtworkProgressVisible = defaults.TaskbarExperience.ArtworkProgressVisible,
             ArtworkVisible = defaults.TaskbarExperience.ArtworkVisible,
@@ -271,6 +270,10 @@ public static class SettingsManager
         next.SpectrumComponent = defaults.SpectrumComponent;
         next.PerformanceComponent = defaults.PerformanceComponent;
         next.BluetoothBatteryWidget = defaults.BluetoothBatteryWidget with { Enabled = next.BluetoothBatteryWidget.Enabled };
+        next.TaskbarExperience = next.TaskbarExperience with
+        {
+            FullPanel = next.TaskbarExperience.FullPanel with { PerformanceVisuals = defaults.TaskbarExperience.FullPanel.PerformanceVisuals }
+        };
         Replace(next, SettingsResetScope.Components);
     }
 

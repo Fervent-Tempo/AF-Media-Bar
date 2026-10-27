@@ -37,6 +37,8 @@ public sealed class SettingsVisualRuntimeTests
         {
             VerifyNumericBinding(app);
             VerifyPageMarkup(app);
+            VerifyMetricStylePicker();
+            VerifyFullPanelMinimumSize();
             _ = new ExperimentalPage(null!);
             DeveloperToolsMarkupChecks.Verify(app, FindRepository());
         });
@@ -125,6 +127,72 @@ public sealed class SettingsVisualRuntimeTests
             Assert.AreEqual("1", counters.Attribute("passed")?.Value);
         }
         finally { if (Directory.Exists(results)) Directory.Delete(results, recursive: true); }
+    }
+
+    private static void VerifyMetricStylePicker()
+    {
+        var picker = new MetricStylePicker();
+        var combo = picker.Children.OfType<ComboBox>().Single();
+        var preview = picker.Children.OfType<MetricPresenter>().Single();
+        double? previousLeft = null;
+        double? previousWidth = null;
+        foreach (var style in Enum.GetValues<MetricVisualStyle>())
+        {
+            picker.VisualStyle = style;
+            picker.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            picker.Arrange(new Rect(new Point(), picker.DesiredSize));
+            picker.UpdateLayout();
+            var left = combo.TranslatePoint(new Point(), picker).X;
+            if (previousLeft is double expected) Assert.AreEqual(expected, left, 0.01, "切换样式不能移动选择框。");
+            if (previousWidth is double width) Assert.AreEqual(width, picker.ActualWidth, 0.01);
+            Assert.IsTrue(preview.TranslatePoint(new Point(), picker).X < left, "预览应位于选择框左侧。");
+            previousLeft = left;
+            previousWidth = picker.ActualWidth;
+        }
+    }
+
+    private static void VerifyFullPanelMinimumSize()
+    {
+        var document = XDocument.Load(Path.Combine(FindRepository(), "src", "AFMediaBar", "Views", "Windows", "TaskbarFullPanelWindow.xaml"));
+        XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+        document.Root!.Attribute(x + "Class")!.Remove();
+        var events = new HashSet<string> { "Deactivated", "PreviewKeyDown", "MouseLeftButtonUp", "Click", "PreviewMouseLeftButtonDown", "PreviewMouseLeftButtonUp", "LostMouseCapture", "DropDownOpened", "SelectionChanged", "PreviewMouseWheel" };
+        foreach (var element in document.Root.DescendantsAndSelf())
+            foreach (var attribute in element.Attributes().ToArray())
+                if (events.Contains(attribute.Name.LocalName)) attribute.Remove();
+        var markup = Regex.Replace(document.ToString(), "clr-namespace:AFMediaBar[.A-Za-z]+", match => match.Value + ";assembly=AFMediaBar");
+        var window = (Window)XamlReader.Parse(markup);
+        try
+        {
+            window.ApplyTemplate();
+            var minimumWidth = AFMediaBar.Classes.Services.Layout.FullPanelScalePolicy.ContentWidthDip * TaskbarFullPanelSettings.MinimumScalePercent / 100d
+                + AFMediaBar.Classes.Services.Layout.FullPanelScalePolicy.ShadowInsetDip * 2;
+            Assert.IsTrue(window.MinWidth <= minimumWidth, "隐式窗口样式的最小宽度不能撑大已缩小的面板。");
+            Assert.AreEqual(0d, window.MinHeight, "内容高度应能随缩放和区段折叠收缩。");
+            var section = (Border)window.FindName("PerformanceSection");
+            var cards = ((Grid)section.Child).Children.OfType<MetricPresenter>().ToArray();
+            Assert.AreEqual(5, cards.Length, "网速应合并成一张双向卡片。");
+            foreach (var scale in new[] { .75, 1d, 2d })
+                foreach (var style in Enum.GetValues<MetricVisualStyle>())
+                {
+                    section.LayoutTransform = new ScaleTransform(scale, scale);
+                    foreach (var card in cards)
+                    {
+                        card.VisualStyle = style;
+                        card.ApplySnapshot(new(100, 99, 88, 9999999, 1024 * 1024 * 1024d, 99999999999));
+                    }
+                    section.Measure(new Size(400 * scale, double.PositiveInfinity));
+                    section.Arrange(new Rect(new Point(), section.DesiredSize)); section.UpdateLayout();
+                    Assert.IsTrue(cards.All(card => card.ActualWidth > 0 && card.ActualHeight >= 60));
+                    var network = cards.Single(card => card.Metric == MetricKind.SystemNetwork);
+                    Assert.AreEqual(2, network.Charts.Count);
+                    Assert.IsTrue(network.ToolTip.ToString()!.Contains("↑") && network.ToolTip.ToString()!.Contains("↓"));
+                    var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)Math.Ceiling(section.ActualWidth * scale),
+                        (int)Math.Ceiling(section.ActualHeight * scale), 96, 96, PixelFormats.Pbgra32);
+                    bitmap.Render(section);
+                }
+        }
+        finally { window.Close(); }
     }
 
     private static void VerifyPageMarkup(Application app)

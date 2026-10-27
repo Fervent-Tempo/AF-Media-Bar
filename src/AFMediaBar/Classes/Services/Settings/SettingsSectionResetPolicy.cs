@@ -34,10 +34,11 @@ internal static class SettingsSectionResetPolicy
                 break;
             case SettingsResetScope.QuickControls:
                 next.TaskbarExperience = rest with { HoverLayerEnabled = target.HoverLayerEnabled, HoverControls = target.HoverControls,
-                    Density = target.Density, HoverButtonSpacingDip = target.HoverButtonSpacingDip };
+                    Density = target.Density, HoverButtonSpacingDip = target.HoverButtonSpacingDip,
+                    ComponentLayouts = (rest.ComponentLayouts ?? new()) with { Hover = target.ComponentLayouts?.Hover } };
                 break;
             case SettingsResetScope.FullPanel:
-                next.TaskbarExperience = rest with { FullLayerEnabled = target.FullLayerEnabled, FullPanel = target.FullPanel,
+                next.TaskbarExperience = rest with { FullLayerEnabled = target.FullLayerEnabled, FullPanel = target.FullPanel with { PerformanceVisuals = rest.FullPanel.PerformanceVisuals },
                     FullPanelEntryVisible = target.FullPanelEntryVisible, FullPanelEntryTrigger = target.FullPanelEntryTrigger,
                     FullPanelEntryHoverDelayMilliseconds = target.FullPanelEntryHoverDelayMilliseconds };
                 break;
@@ -69,7 +70,10 @@ internal static class SettingsSectionResetPolicy
                 next.Appearance = next.Appearance with { IdleNoteColor = defaults.Appearance.IdleNoteColor };
                 break;
             case SettingsResetScope.Spectrum: next.SpectrumComponent = defaults.SpectrumComponent; break;
-            case SettingsResetScope.Performance: next.PerformanceComponent = defaults.PerformanceComponent; break;
+            case SettingsResetScope.Performance:
+                next.PerformanceComponent = defaults.PerformanceComponent;
+                next.TaskbarExperience = rest with { FullPanel = rest.FullPanel with { PerformanceVisuals = target.FullPanel.PerformanceVisuals } };
+                break;
             case SettingsResetScope.BluetoothBattery:
                 next.BluetoothBatteryWidget = defaults.BluetoothBatteryWidget with { Enabled = current.BluetoothBatteryWidget.Enabled };
                 break;

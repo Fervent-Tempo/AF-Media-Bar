@@ -58,7 +58,7 @@ public static class SettingsSearchIndex
     }
 
     /// <summary>搜索唯一设置页面；未开启实验的专属选项不加入结果。</summary>
-    public static IReadOnlyList<SettingsSearchEntry> ForContext(SettingsContext context) => Entries.Where(entry =>
+    public static IReadOnlyList<SettingsSearchEntry> ForContext(SettingsContext context) => Entries.Concat(SettingsDynamicSearchCatalog.Entries(context)).Where(entry =>
         SettingsPageCatalog.Find(entry.Page, context.Mode) is not null &&
         (entry.Page != SettingsPageKey.MemoryTools || entry.GroupId != "Memory.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.MemoryTools) &&
         (entry.Page != SettingsPageKey.BluetoothBattery || entry.GroupId != "Battery.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.BluetoothBattery) &&

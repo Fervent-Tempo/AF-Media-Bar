@@ -121,6 +121,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         TargetMonitorDeviceId = targetMonitorDeviceId;
         Monitor = monitor;
         _commands = commands;
+        _mediaControl.ComponentReorderCommand = commands?.CommitComponentReorderCommand;
         _interactionRouter = interactionRouter;
         _audioInteractionService = audioInteractionService;
         _audioMonitor = audioMonitor;
@@ -540,9 +541,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             args.Handled = true;
             return;
         }
-        if (PresentationSettings.PerformanceComponent.OpenTaskManagerOnClick &&
-            _mediaControl.IsPerformanceComponentClick(args.OriginalSource as DependencyObject))
-        { _taskManagerClickPending = true; return; }
+        if (!_mediaControl.IsBarDragHandleHit(args.OriginalSource as DependencyObject)) return;
         if (PresentationSettings.TaskbarBarPositionLocked) return;
         for (var item = args.OriginalSource as DependencyObject; item is not null; item = item is Visual ? VisualTreeHelper.GetParent(item) : LogicalTreeHelper.GetParent(item))
             if (item is ButtonBase or Slider or ComboBox || item is FrameworkElement { Tag: "MediaAction" }) return;
@@ -567,6 +566,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             StopEdgeCollapse();
             _dockEdge = FloatingBarDockEdge.None;
             _dragging = true;
+            _mediaControl.SetBarDragActive(true);
             _mediaControl.SuspendQuickLaunchPresentation();
             _mediaControl.ApplyPlacementMotionSuspension(true);
             ClearInteraction();
@@ -589,6 +589,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
 
     private void EndDrag()
     {
+        _mediaControl.SetBarDragActive(false);
         _dragTimer.Stop();
         _dragPending = false;
         if (!_dragging) return;

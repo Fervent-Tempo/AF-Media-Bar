@@ -320,6 +320,15 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     private TaskbarHoverControlsSettings HoverControls =>
         _configuration.Current.TaskbarExperience.HoverControls;
 
+    public int FullPanelScalePercent
+    {
+        get => FullPanelSettings.ScalePercent;
+        set { if (!_isRefreshing) UpdateFullPanel(FullPanelSettings with { ScalePercent = value }); }
+    }
+    public int MinimumFullPanelScalePercent => TaskbarFullPanelSettings.MinimumScalePercent;
+    public int MaximumFullPanelScalePercent => TaskbarFullPanelSettings.MaximumScalePercent;
+    [RelayCommand] private void ResetFullPanelScale() => FullPanelScalePercent = 100;
+
     public bool FullPanelMediaInfoVisible
     {
         get => FullPanelSettings.MediaInfoVisible;
@@ -354,9 +363,9 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     /// The section combination the full panel currently uses, shown as a status text. The three names come from the
     /// same keys as the captions on the "apply a preset" buttons.
     /// </summary>
-    public string FullPanelLayoutStatus => FullPanelSettings == TaskbarFullPanelSettings.Compact
+    public string FullPanelLayoutStatus => FullPanelSettings with { ScalePercent = 100, PerformanceVisuals = MetricVisualSettings.PanelDefault } == TaskbarFullPanelSettings.Compact
         ? Translations.Get("DisplayModes.Full.Preset.Compact")
-        : FullPanelSettings == TaskbarFullPanelSettings.Full
+        : FullPanelSettings with { ScalePercent = 100, PerformanceVisuals = MetricVisualSettings.PanelDefault } == TaskbarFullPanelSettings.Full
             ? Translations.Get("DisplayModes.Full.Preset.Full")
             : Translations.Get("DisplayModes.Full.Preset.Custom");
 
@@ -484,6 +493,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         // 无媒体时保留组件列表由代码构建，首次打开页面前必须填充。
         // The idle-component list is built in code and must be populated before the page first opens.
         RefreshIdleComponentEntries();
+        RefreshComponentLayouts();
     }
 
     /// <summary>
@@ -502,6 +512,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         // notification on their own (the list instance is unchanged and so are the items' properties), so this has to refresh explicitly;
         // otherwise the column would keep the previous language after a switch.
         RefreshIdleComponentEntries();
+        RefreshComponentLayouts();
         OnPropertyChanged(string.Empty);
     }
 
@@ -509,8 +520,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     [RelayCommand] private void SwitchToDynamicIslandMode() => SelectMode(DisplayModeSelection.DynamicIsland);
     [RelayCommand] private void SwitchToDesktopCardMode() => SelectMode(DisplayModeSelection.DesktopCard);
     [RelayCommand] private void SwitchToFloatingBallMode() => SelectMode(DisplayModeSelection.FloatingBall);
-    [RelayCommand] private void ApplyCompactFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Compact);
-    [RelayCommand] private void ApplyFullFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Full);
+    [RelayCommand] private void ApplyCompactFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Compact with { ScalePercent = FullPanelSettings.ScalePercent, PerformanceVisuals = FullPanelSettings.PerformanceVisuals });
+    [RelayCommand] private void ApplyFullFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Full with { ScalePercent = FullPanelSettings.ScalePercent, PerformanceVisuals = FullPanelSettings.PerformanceVisuals });
 
     [RelayCommand]
     private void ResetTaskbarPosition()
@@ -583,6 +594,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         if (e.PropertyName is nameof(AppSettings.Experiments) or nameof(AppSettings.FloatingBar) ||
             e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.Components or SettingsResetScope.RestState or SettingsResetScope.QuickControls or SettingsResetScope.FullPanel or SettingsResetScope.BarAppearance or SettingsResetScope.All)
             RaiseAll();
+        else if (e.PropertyName == nameof(AppSettings.PerformanceComponent)) RefreshComponentLayouts();
         else if (!_isRefreshing && (e.PropertyName is nameof(AppSettings.Position) or nameof(AppSettings.TaskbarExperience)))
         {
             // Arrangement is derived from both properties. Publish their effective values while
@@ -747,6 +759,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(RestInputDeviceVisible)); OnPropertyChanged(nameof(HoverInputDeviceVisible));
         OnPropertyChanged(nameof(RestOutputDeviceVisible)); OnPropertyChanged(nameof(RestVolumeVisible));
         RefreshIdleComponentEntries();
+        RefreshComponentLayouts();
         RaiseFullPanel();
     }
 
@@ -761,6 +774,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CanToggleFullPanelAudioControls));
         OnPropertyChanged(nameof(CanToggleFullPanelPerformance));
         OnPropertyChanged(nameof(FullPanelLayoutStatus));
+        OnPropertyChanged(nameof(FullPanelScalePercent));
     }
 
     private enum FullPanelGroup
