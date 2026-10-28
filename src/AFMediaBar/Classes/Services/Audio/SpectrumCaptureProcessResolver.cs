@@ -31,6 +31,7 @@ public sealed class SpectrumCaptureProcessResolver(MediaSourceProcessResolver so
         var processes = ReadProcesses();
         var names = sourceResolver.ResolveProcessNames(source.SourceId);
         var candidates = new Dictionary<uint, float>();
+        var audioSessions = new List<(uint ProcessId, string ProcessName, string DisplayName, float Peak)>();
         using var enumerator = new MMDeviceEnumerator();
         using var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
         for (var index = 0; index < devices.Count; index++)
@@ -50,20 +51,27 @@ public sealed class SpectrumCaptureProcessResolver(MediaSourceProcessResolver so
                         if (session.State == AudioSessionState.AudioSessionStateExpired || processId == 0 ||
                             processId == Environment.ProcessId || !processes.TryGetValue(processId, out var process) ||
                             string.IsNullOrWhiteSpace(process.Name)) continue;
-                        if (!sourceResolver.Matches(source.SourceId, source.SourceName, process.Name, session.DisplayName)) continue;
-                        // 父进程只能按明确别名或同名关联；宽松的来源子串匹配可能误把启动器纳入采集。
-                        var root = ResolveRoot(processId, processes, name => names.Contains(name, StringComparer.OrdinalIgnoreCase) ||
-                            (names.Count == 0 && string.Equals(name, source.SourceName, StringComparison.OrdinalIgnoreCase)));
-                        if (root == Environment.ProcessId) continue;
-                        if (names.Count > 0 && (!processes.TryGetValue(root, out var rootProcess) ||
-                            !names.Contains(rootProcess.Name, StringComparer.OrdinalIgnoreCase))) continue;
-                        var peak = session.AudioMeterInformation?.MasterPeakValue ?? 0;
-                        candidates[root] = Math.Max(candidates.GetValueOrDefault(root), peak);
+                        audioSessions.Add((processId, process.Name, session.DisplayName,
+                            session.AudioMeterInformation?.MasterPeakValue ?? 0));
                     }
                     catch (COMException) { }
                 }
             }
             catch (COMException) { }
+        }
+
+        var matches = sourceResolver.ResolveMatches(source.SourceId, source.SourceName,
+            audioSessions.Select(session => (session.ProcessName, session.DisplayName)));
+        foreach (var session in audioSessions)
+        {
+            if (!matches.Contains(session.ProcessName)) continue;
+            // 父进程只能按明确别名或已匹配的完整进程名关联。
+            var root = ResolveRoot(session.ProcessId, processes, name =>
+                names.Contains(name, StringComparer.OrdinalIgnoreCase) || matches.Contains(name));
+            if (root == Environment.ProcessId) continue;
+            if (names.Count > 0 && (!processes.TryGetValue(root, out var rootProcess) ||
+                !names.Contains(rootProcess.Name, StringComparer.OrdinalIgnoreCase))) continue;
+            candidates[root] = Math.Max(candidates.GetValueOrDefault(root), session.Peak);
         }
 
         // 暂停的播放器可能暂时没有音频会话；仅用已有来源别名找到它，不凭其他程序的电平猜测。

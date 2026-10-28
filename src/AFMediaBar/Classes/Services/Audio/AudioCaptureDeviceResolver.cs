@@ -202,7 +202,7 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
         using var enumerator = new MMDeviceEnumerator();
         var defaultId = ResolveDefaultEndpointId(enumerator);
         var activeDeviceIds = new List<string>();
-        var candidates = new List<AudioEndpointAudibility>();
+        var sessions = new List<(string DeviceId, string ProcessName, string DisplayName, float Peak)>();
         using var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
         for (var index = 0; index < devices.Count; index++)
         {
@@ -211,24 +211,26 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
                 using var endpoint = devices[index];
                 var id = endpoint.ID;
                 activeDeviceIds.Add(id);
-                var rank = ResolveMediaAudibilityRank(endpoint, source, out var peak);
-                if (rank > AudioCaptureDevicePolicy.RankSilent)
-                    candidates.Add(new AudioEndpointAudibility(id, rank, peak));
+                if (source.IsConnected) ReadMediaSessions(endpoint, sessions);
             }
             catch (COMException)
             {
                 // A device may disappear while scanning; continue with surviving endpoints.
             }
         }
+        var matches = _sourceResolver.ResolveMatches(source.SourceId, source.SourceName,
+            sessions.Select(session => (session.ProcessName, session.DisplayName)));
+        var candidates = sessions.Where(session => matches.Contains(session.ProcessName))
+            .Select(session => new AudioEndpointAudibility(session.DeviceId,
+                session.Peak >= AudibleSessionPeakThreshold ? AudioCaptureDevicePolicy.RankApplication :
+                    AudioCaptureDevicePolicy.RankMatchedSilent, session.Peak)).ToArray();
         targetDeviceId = AudioCaptureDevicePolicy.SelectTarget(current, defaultId, activeDeviceIds, candidates);
         return true;
     }
 
-    private int ResolveMediaAudibilityRank(MMDevice endpoint, SpectrumCaptureProcessResolver.MediaIdentity source, out float peak)
+    private static void ReadMediaSessions(MMDevice endpoint,
+        List<(string DeviceId, string ProcessName, string DisplayName, float Peak)> result)
     {
-        peak = 0;
-        if (!source.IsConnected) return AudioCaptureDevicePolicy.RankSilent;
-        var matched = false;
         try
         {
             var sessions = endpoint.AudioSessionManager.Sessions;
@@ -240,18 +242,15 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
                     var processId = session.GetProcessID;
                     if (session.State == AudioSessionState.AudioSessionStateExpired || processId == 0 || processId == Environment.ProcessId) continue;
                     var name = ReadProcessName(processId);
-                    if (name is null || !_sourceResolver.Matches(source.SourceId, source.SourceName, name, session.DisplayName)) continue;
-                    matched = true;
-                    if (session.State == AudioSessionState.AudioSessionStateActive)
-                        peak = Math.Max(peak, session.AudioMeterInformation?.MasterPeakValue ?? 0);
+                    if (name is null) continue;
+                    var peak = session.State == AudioSessionState.AudioSessionStateActive
+                        ? session.AudioMeterInformation?.MasterPeakValue ?? 0 : 0;
+                    result.Add((endpoint.ID, name, session.DisplayName, peak));
                 }
                 catch (COMException) { }
             }
         }
         catch (COMException) { }
-        // 同一媒体程序在多个设备上有会话时，先选实际出声设备；暂停但仍连接的会话保留目标。
-        return !matched ? AudioCaptureDevicePolicy.RankSilent : peak >= AudibleSessionPeakThreshold
-            ? AudioCaptureDevicePolicy.RankApplication : AudioCaptureDevicePolicy.RankMatchedSilent;
     }
 
     private static string? ReadProcessName(uint processId)

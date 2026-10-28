@@ -8,7 +8,6 @@ namespace AFMediaBar.Classes.Services.Audio;
 /// </summary>
 public sealed class MediaSourceProcessResolver
 {
-    private const int MaximumRememberedSources = 64;
     private static readonly (string[] Tokens, string[] ProcessNames)[] KnownSources =
     [
         (["cloudmusic", "netease", "163music"], ["cloudmusic"]),
@@ -25,19 +24,17 @@ public sealed class MediaSourceProcessResolver
         (["foobar"], ["foobar2000"])
     ];
 
-    private readonly object _gate = new();
-    private readonly Dictionary<string, string> _rememberedProcesses = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Queue<string> _rememberedOrder = new();
-
-    /// <summary>
-    /// 返回来源标识对应的候选进程名，并优先包含运行期记忆的成功映射。
-    /// Returns candidate process names for a source identifier, preferring mappings learned successfully at runtime.
-    /// </summary>
+    /// <summary>返回可执行文件身份或登记别名；这些身份不允许显示名回退覆盖。</summary>
     public IReadOnlyList<string> ResolveProcessNames(string? sourceId)
     {
         if (string.IsNullOrWhiteSpace(sourceId))
         {
             return [];
+        }
+
+        if (sourceId.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+        {
+            return [NormalizeProcessName(sourceId)];
         }
 
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -49,68 +46,44 @@ public sealed class MediaSourceProcessResolver
             }
         }
 
-        if (sourceId.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-        {
-            names.Add(Path.GetFileNameWithoutExtension(sourceId));
-        }
-
         return names.ToArray();
     }
 
     /// <summary>
-    /// 使用规范化标识、显示名和已知别名判断音频会话是否属于指定媒体来源。
-    /// Determines whether an audio session belongs to a media source using normalized identifiers, display names, and known aliases.
+    /// 对同一次枚举的完整候选集进行匹配。未知来源仅接受完整名称，歧义时不选择进程。
+    /// Matches a complete scan using explicit identities or unique full-name fallbacks.
     /// </summary>
-    public bool Matches(string? sourceId, string? sourceName, string processName, string displayName)
+    public IReadOnlySet<string> ResolveMatches(string? sourceId, string? sourceName,
+        IEnumerable<(string ProcessName, string DisplayName)> candidates)
     {
-        var key = GetSourceKey(sourceId, sourceName);
-        lock (_gate)
+        var identities = ResolveProcessNames(sourceId);
+        var matches = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var candidate in candidates)
         {
-            if (key is not null && _rememberedProcesses.TryGetValue(key, out var remembered))
+            var processName = NormalizeProcessName(candidate.ProcessName);
+            if (identities.Count > 0)
             {
-                return string.Equals(remembered, processName, StringComparison.OrdinalIgnoreCase);
-            }
-        }
-
-        return ResolveProcessNames(sourceId).Contains(processName, StringComparer.OrdinalIgnoreCase) ||
-            (!string.IsNullOrWhiteSpace(sourceId) && sourceId.Contains(processName, StringComparison.OrdinalIgnoreCase)) ||
-            (!string.IsNullOrWhiteSpace(sourceName) &&
-             (string.Equals(sourceName, displayName, StringComparison.OrdinalIgnoreCase) ||
-              processName.Contains(sourceName, StringComparison.OrdinalIgnoreCase) ||
-              sourceName.Contains(processName, StringComparison.OrdinalIgnoreCase)));
-    }
-
-    /// <summary>
-    /// 记录一次已确认的来源到进程映射，供本次应用生命周期内后续解析复用。
-    /// Remembers a confirmed source-to-process mapping for reuse during the current application lifetime.
-    /// </summary>
-    public void Remember(string? sourceId, string? sourceName, string processName)
-    {
-        var key = GetSourceKey(sourceId, sourceName);
-        if (key is null)
-        {
-            return;
-        }
-
-        lock (_gate)
-        {
-            if (!_rememberedProcesses.ContainsKey(key))
-            {
-                while (_rememberedProcesses.Count >= MaximumRememberedSources &&
-                       _rememberedOrder.TryDequeue(out var oldest))
-                {
-                    _rememberedProcesses.Remove(oldest);
-                }
-
-                _rememberedOrder.Enqueue(key);
+                if (identities.Contains(processName, StringComparer.OrdinalIgnoreCase))
+                    matches.Add(candidate.ProcessName);
+                continue;
             }
 
-            _rememberedProcesses[key] = processName;
+            if (SameName(sourceId, processName) || SameName(sourceName, processName) ||
+                SameName(sourceName, candidate.DisplayName))
+                matches.Add(candidate.ProcessName);
         }
+
+        // 不缓存回退结果；候选退出、重启或显示名变化后，下次枚举重新确认身份。
+        return identities.Count == 0 && matches.Count > 1
+            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            : matches;
     }
 
-    private static string? GetSourceKey(string? sourceId, string? sourceName) =>
-        !string.IsNullOrWhiteSpace(sourceId)
-            ? $"id:{sourceId}"
-            : string.IsNullOrWhiteSpace(sourceName) ? null : $"name:{sourceName}";
+    private static bool SameName(string? source, string candidate) =>
+        !string.IsNullOrWhiteSpace(source) && !string.IsNullOrWhiteSpace(candidate) &&
+        string.Equals(source.Trim(), candidate.Trim(), StringComparison.OrdinalIgnoreCase);
+
+    private static string NormalizeProcessName(string name) =>
+        Path.GetFileNameWithoutExtension(name.Trim().EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+            ? name.Trim() : name.Trim() + ".exe");
 }
