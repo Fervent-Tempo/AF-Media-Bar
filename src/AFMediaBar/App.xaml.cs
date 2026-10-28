@@ -285,6 +285,9 @@ namespace AFMediaBar
                 services.AddTransient<SettingsWindow>();
                 services.AddSingleton<Func<SettingsWindow>>(sp =>
                     () => sp.GetRequiredService<SettingsWindow>());
+                services.AddSingleton(sp => new SingleWindowHost<SettingsWindow>(Current.Dispatcher,
+                    sp.GetRequiredService<Func<SettingsWindow>>(),
+                    exception => sp.GetRequiredService<AppLogService>().Error("Settings", "打开设置窗口失败", exception)));
                 services.AddTransient<FullPanelPresentationViewModel>();
                 services.AddTransient<TaskbarFullPanelWindow>();
                 services.AddSingleton<FullPanelWindowHost>();

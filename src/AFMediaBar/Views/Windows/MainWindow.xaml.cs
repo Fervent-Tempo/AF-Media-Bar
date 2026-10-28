@@ -50,7 +50,7 @@ namespace AFMediaBar.Views.Windows
         private readonly ScreenBackgroundSampler _screenBackgroundSampler;
         private readonly TaskbarOccupiedAreaService _occupiedAreaService;
         private readonly TaskbarLengthConstraintsService _taskbarLengthConstraints;
-        private readonly Func<SettingsWindow> _settingsWindowFactory;
+        private readonly SingleWindowHost<SettingsWindow> _settingsHost;
         private readonly GlobalInteractionRouter _interactionRouter;
         private readonly AudioInteractionService _audioInteractionService;
         private readonly AudioMonitorService _audioMonitorService;
@@ -70,7 +70,6 @@ namespace AFMediaBar.Views.Windows
         /// queries the power state itself.</summary>
         private readonly MemoryPruneCoordinator _memoryPruneCoordinator;
         private readonly List<TaskbarWindow> _taskbarWindows = [];
-        private SettingsWindow? _settingsWindow;
         private TrackChangeNotificationWindow? _trackChangeNotificationWindow;
         private string? _effectiveTaskbarTargetSignature;
         private int _taskbarCreatedMessage;
@@ -116,7 +115,7 @@ namespace AFMediaBar.Views.Windows
             ScreenBackgroundSampler screenBackgroundSampler,
             TaskbarOccupiedAreaService occupiedAreaService,
             TaskbarLengthConstraintsService taskbarLengthConstraints,
-            Func<SettingsWindow> settingsWindowFactory,
+            SingleWindowHost<SettingsWindow> settingsWindowHost,
             GlobalInteractionRouter interactionRouter,
             AudioInteractionService audioInteractionService,
             AudioMonitorService audioMonitorService,
@@ -139,12 +138,12 @@ namespace AFMediaBar.Views.Windows
             AFMediaBar.ViewModels.Components.AFContextMenuViewModel menuViewModel,
             QuickLaunchService quickLaunch)
         {
+            _settingsHost = settingsWindowHost;
             _quickLaunch = quickLaunch;
             ViewModel = viewModel;
             _memoryMenu = new AFMediaBar.Components.MemoryContextMenu(memoryTools, () =>
             {
-                ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
-                _settingsWindow?.NavigateToGroup(SettingsPageKey.Application, "Memory.Title");
+                _settingsHost.RequestOpen(window => window.NavigateToGroup(SettingsPageKey.Application, "Memory.Title"));
             });
             _batteryMenu = new ContextMenu();
             _batteryMenu.SetResourceReference(StyleProperty, typeof(ContextMenu));
@@ -155,8 +154,7 @@ namespace AFMediaBar.Views.Windows
             batterySettings.SetResourceReference(HeaderedItemsControl.HeaderProperty, "Loc.Battery.Open");
             batterySettings.Click += (_, _) =>
             {
-                ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
-                _settingsWindow?.NavigateToGroup(SettingsPageKey.DeviceManagement, "Battery.Title");
+                _settingsHost.RequestOpen(window => window.NavigateToGroup(SettingsPageKey.DeviceManagement, "Battery.Title"));
             };
             _batteryMenu.Items.Add(refreshBattery); _batteryMenu.Items.Add(batterySettings);
             Closed += (_, _) => { _memoryMenu.IsOpen = false; _batteryMenu.IsOpen = false; };
@@ -177,7 +175,7 @@ namespace AFMediaBar.Views.Windows
             _screenBackgroundSampler = screenBackgroundSampler;
             _occupiedAreaService = occupiedAreaService;
             _taskbarLengthConstraints = taskbarLengthConstraints;
-            _settingsWindowFactory = settingsWindowFactory;
+            _settingsHost.WindowClosed += SettingsWindow_Closed;
             _interactionRouter = interactionRouter;
             _audioInteractionService = audioInteractionService;
             _audioMonitorService = audioMonitorService;
@@ -286,6 +284,8 @@ namespace AFMediaBar.Views.Windows
             if (_isClosing) return;
 
             _isClosing = true;
+            _settingsHost.WindowClosed -= SettingsWindow_Closed;
+            _settingsHost.Dispose();
             _memoryMenu.IsOpen = false; _batteryMenu.IsOpen = false;
             DetachTaskbarHostsForExit();
             CloseDeveloperPreviews();
@@ -883,37 +883,12 @@ namespace AFMediaBar.Views.Windows
             if (_isClosing)
                 return;
 
-            _settingsWindow ??= _settingsWindowFactory();
-            _settingsWindow.Closed -= SettingsWindow_Closed;
-            _settingsWindow.Closed += SettingsWindow_Closed;
-            _settingsWindow.Show();
-            if (_settingsWindow.WindowState == WindowState.Minimized) _settingsWindow.WindowState = WindowState.Normal;
-            _settingsWindow.Activate();
+            _settingsHost.RequestOpen();
         }
 
-        /// <summary>
-        /// 打开设置窗口并直接落在「应用与关于」：托盘菜单、媒体栏右键菜单与系统通知都走这条路，
-        /// 用户因此不需要自己在六个页面里再找一次。
-        /// Opens the settings window straight on "application": the tray menu, the media-bar context menu
-        /// and the system notification all take this path, so the user never has to find that page again among six.
-        /// </summary>
         private void ViewModel_OpenUpdateSettingsRequested(object? sender, EventArgs e)
         {
-            if (_isClosing)
-                return;
-
-            ViewModel_OpenSettingsRequested(sender, e);
-            if (_settingsWindow is not { } settingsWindow)
-                return;
-
-            // 新建的窗口要等布局完成才接受导航，因此把跳转排到 Loaded 之后：立刻调用时导航视图还没有内容宿主，
-            // 表现就是"点了没反应"。
-            // A freshly created window only accepts navigation once its layout exists, so the jump is queued behind
-            // Loaded: calling it immediately finds a navigation view with no content host yet, which looks exactly
-            // like a click that does nothing.
-            settingsWindow.Dispatcher.BeginInvoke(
-                System.Windows.Threading.DispatcherPriority.Loaded,
-                new Action(() => settingsWindow.Navigate(typeof(AFMediaBar.Views.Pages.ApplicationPage))));
+            if (!_isClosing) _settingsHost.RequestOpen(window => window.Navigate(typeof(AFMediaBar.Views.Pages.ApplicationPage)));
         }
 
         private void UpdateService_OnStateChanged(UpdateState state)
@@ -963,27 +938,17 @@ namespace AFMediaBar.Views.Windows
             }
             if (target == ShellNotificationTarget.FloatingBarExperiment)
             {
-                ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
-                _settingsWindow?.NavigateToGroup(SettingsPageKey.ScreenAndPlacement, "Common.Group.ChooseDisplayMode");
+                _settingsHost.RequestOpen(window => window.NavigateToGroup(SettingsPageKey.ScreenAndPlacement, "Common.Group.ChooseDisplayMode"));
                 return;
             }
             if (target == ShellNotificationTarget.VerticalTaskbarExperiment)
             {
-                ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
-                _settingsWindow?.NavigateToGroup(SettingsPageKey.ScreenAndPlacement, "Common.Group.ScreenAndPlacement");
+                _settingsHost.RequestOpen(window => window.NavigateToGroup(SettingsPageKey.ScreenAndPlacement, "Common.Group.ScreenAndPlacement"));
                 return;
             }
             if (target != ShellNotificationTarget.TaskbarBackground) return;
 
-            ViewModel_OpenSettingsRequested(this, EventArgs.Empty);
-            if (_settingsWindow is not { } settingsWindow) return;
-            settingsWindow.Dispatcher.BeginInvoke(
-                System.Windows.Threading.DispatcherPriority.Loaded,
-                new Action(() =>
-                {
-                    if (_isClosing || !ReferenceEquals(_settingsWindow, settingsWindow)) return;
-                    settingsWindow.NavigateToGroup(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground");
-                }));
+            _settingsHost.RequestOpen(window => window.NavigateToGroup(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground"));
         }
 
         private void TaskbarWindow_PlacementFallbackRequested(object? sender, TaskbarPlacementFallbackEventArgs e)
@@ -1005,22 +970,8 @@ namespace AFMediaBar.Views.Windows
                 ShellNotificationTarget.None, pressure == TaskbarSpacePressure.Hidden ? "Taskbar.Hidden" : "Taskbar.Constrained");
         }
 
-        private void SettingsWindow_Closed(object? sender, EventArgs e)
-        {
-            if (sender is SettingsWindow window)
-            {
-                window.Closed -= SettingsWindow_Closed;
-                if (ReferenceEquals(_settingsWindow, window))
-                    _settingsWindow = null;
-
-                // 设置窗口是最大的界面树与缓存持有者（六个页面、说明图与全部设置控件），因此走**深度**回收：
-                // 关掉设置页之后用户通常回去做别的事，短时间不会再开，交还工作集换来的页错误不落在交互路径上。
-                // The settings window holds the largest visual tree and the most caches — six pages, the diagrams, and every settings control — so it gets
-                // the **deep** reclaim: after closing the settings the user usually goes off to do something else and will not reopen it right away, which
-                // keeps the page faults caused by returning the working set off the interaction path.
-                _memoryPruneCoordinator.RequestTrim(MemoryTrimTrigger.SettingsWindowClosed);
-            }
-        }
+        private void SettingsWindow_Closed(object? sender, EventArgs e) =>
+            _memoryPruneCoordinator.RequestTrim(MemoryTrimTrigger.SettingsWindowClosed);
 
         private void AudioControl_OnTrayContextMenuRequested(TrayIconBounds? bounds)
         {
