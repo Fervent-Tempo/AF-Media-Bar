@@ -22,6 +22,7 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
     private readonly RepeatedFailureReporter _captureFailures = new();
     private string? _captureLogSignature;
     private string _captureRestartReason = "initial";
+    private string? _pendingRestartReason;
     private readonly AudioCaptureDeviceResolver _deviceResolver;
     private readonly SpectrumCaptureProcessResolver _processResolver;
     private volatile SpectrumCaptureSource _captureSource;
@@ -69,6 +70,7 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         SpectrumCaptureProcessResolver processResolver)
     {
         _deviceResolver = deviceResolver;
+        _deviceResolver.Resolved += OnDeviceResolved;
         _processResolver = processResolver;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         lock (_sourceGate)
@@ -134,6 +136,7 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
     private void Unsubscribe()
     {
         SettingsManager.SettingsChanged -= OnSettingsChanged;
+        _deviceResolver.Resolved -= OnDeviceResolved;
     }
 
     private void InvalidateSourceCapture()
@@ -189,9 +192,26 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
     /// <summary>使旧采集失效，由后台释放并在需要时重建。 / Invalidates capture for background disposal and demand-driven recreation.</summary>
     public void ResetAfterEnvironmentChange()
     {
+        _deviceResolver.Refresh("af-output-switch");
+        if (_captureSource == SpectrumCaptureSource.CurrentDevice &&
+            _captureDeviceMode == SpectrumCaptureDeviceMode.FollowMediaSource) return;
+        RestartForEnvironment("environment-refreshed");
+    }
+
+    private void OnDeviceResolved(AudioCaptureDeviceResolver.Resolution result)
+    {
+        if (_captureSource == SpectrumCaptureSource.CurrentDevice &&
+            _captureDeviceMode == SpectrumCaptureDeviceMode.FollowMediaSource &&
+            (result.TargetChanged || result.EnvironmentRefresh))
+            RestartForEnvironment(result.TargetChanged ? "target-changed" : "environment-refreshed");
+    }
+
+    private void RestartForEnvironment(string reason)
+    {
         lock (_gate)
         {
             if (_disposed) return;
+            _pendingRestartReason = reason;
             InvalidateCapture();
             WakeWorker();
         }
@@ -371,9 +391,10 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         {
             capture.StartRecording();
             var signature = $"{source}|{processId}|{deviceId}|{format}";
-            var message = $"频谱采集已启动: source={source} pid={processId?.ToString() ?? "none"} device={deviceId ?? "none"} format={format} reason={_captureRestartReason}";
+            var restartReason = Interlocked.Exchange(ref _pendingRestartReason, null) ?? _captureRestartReason;
+            var message = $"频谱采集已启动: source={source} pid={processId?.ToString() ?? "none"} device={deviceId ?? "none"} format={format} reason={restartReason}";
             var recovered = _captureFailures.Recover(AppLogService.Current, "Audio", "capture", $"频谱采集已恢复: {message}");
-            if (!recovered && signature != _captureLogSignature) AppLogService.Current?.Info("Audio", message);
+            if (!recovered && (signature != _captureLogSignature || restartReason is "target-changed" or "environment-refreshed")) AppLogService.Current?.Info("Audio", message);
             else AppLogService.Current?.Verbose("Audio", message);
             _captureLogSignature = signature;
             var lastProcessCheck = Environment.TickCount64;

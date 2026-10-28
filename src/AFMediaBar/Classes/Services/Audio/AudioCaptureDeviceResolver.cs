@@ -22,6 +22,17 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
     private const float AudibleSessionPeakThreshold = 0.002f;
 
     private readonly MediaSourceProcessResolver _sourceResolver;
+    private readonly AudioPlatformService? _platform;
+    private readonly Func<SpectrumCaptureProcessResolver.MediaIdentity, string?, (bool Success, string? Target)> _scan;
+    private int _refreshVersion;
+    private long _refreshTick;
+    private int _refreshPass;
+    private string _refreshReason = "demand-resumed";
+    private readonly Task _worker;
+
+    internal readonly record struct Resolution(string? DeviceId, bool TargetChanged, bool EnvironmentRefresh, int Generation, string Reason);
+    internal event Action<Resolution>? Resolved;
+    internal Task Completion => _worker;
     private readonly object _sourceGate = new();
     private SpectrumCaptureProcessResolver.MediaIdentity _mediaSource =
         SpectrumCaptureProcessResolver.MediaIdentity.FromSnapshot(MediaSnapshot.Disconnected);
@@ -51,11 +62,42 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
     /// Starts the demand-driven resolution loop; the first spectrum sample triggers an immediate scan without background enumeration
     /// while the spectrum is unused.
     /// </summary>
-    public AudioCaptureDeviceResolver(MediaSourceProcessResolver sourceResolver)
+    public AudioCaptureDeviceResolver(MediaSourceProcessResolver sourceResolver, AudioPlatformService? platform = null)
+        : this(sourceResolver, platform, null) { }
+
+    // 只替换原生扫描边界，测试仍运行真实的等待、合并、代际和发布流程。
+    internal AudioCaptureDeviceResolver(Func<SpectrumCaptureProcessResolver.MediaIdentity, string?, (bool Success, string? Target)> scan)
+        : this(new MediaSourceProcessResolver(), null, scan) { }
+
+    private AudioCaptureDeviceResolver(MediaSourceProcessResolver sourceResolver, AudioPlatformService? platform,
+        Func<SpectrumCaptureProcessResolver.MediaIdentity, string?, (bool Success, string? Target)>? scan)
     {
         _sourceResolver = sourceResolver;
+        _platform = platform;
+        _scan = scan ?? ((source, current) =>
+        {
+            var success = TryResolveTarget(source, current, out var target);
+            return (success, target);
+        });
+        if (_platform is not null) _platform.Changed += OnEnvironmentChanged;
         var token = _cancellation.Token;
-        _ = Task.Run(() => RunLoopAsync(token));
+        _worker = Task.Run(() => RunLoopAsync(token));
+    }
+
+    private void OnEnvironmentChanged(object? sender, EventArgs args) => Refresh("device-notification");
+
+    /// <summary>使在途结果失效；有频谱需求时立即重扫，并在事件后约 250、750 毫秒补扫。</summary>
+    public void Refresh(string reason = "environment-changed")
+    {
+        lock (_sourceGate)
+        {
+            if (_isDisposed) return;
+            _refreshVersion++;
+            _refreshTick = Environment.TickCount64;
+            _refreshPass = 0;
+            _refreshReason = reason;
+        }
+        if (AudioCaptureDevicePolicy.ShouldScan(_pruneLevel, HasRecentDemand())) WakeScan();
     }
 
     /// <summary>报告频谱正在取样；从休眠状态恢复时唤醒后台解析器，不在调用线程枚举设备。
@@ -74,7 +116,7 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
             return;
         }
 
-        WakeScan();
+        Refresh("demand-resumed");
     }
 
     private void WakeScan()
@@ -97,14 +139,20 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
             if (_isDisposed || _mediaSource == source) return;
             _mediaSource = source;
             _sourceVersion++;
-            _targetDeviceId = null;
+
         }
-        if (HasRecentDemand()) WakeScan();
+        Refresh("media-source-changed");
     }
 
     /// <summary>记录剪枝档位；循环按档位决定扫描间隔与是否枚举。/ Records the prune level; the loop derives its scan interval and whether to enumerate from it.</summary>
     /// <param name="level">目标档位。/ The target level.</param>
-    public void Prune(MemoryPruneLevel level) => _pruneLevel = level;
+    public void Prune(MemoryPruneLevel level)
+    {
+        var previous = _pruneLevel;
+        _pruneLevel = level;
+        if (previous >= MemoryPruneLevel.DisplayOff && level < MemoryPruneLevel.DisplayOff)
+            Refresh("sampling-resumed");
+    }
 
     /// <summary>停止后台循环；循环在下一个唤醒点自我结束，已解析的目标保持可读（只影响采集重建的时机）。</summary>
     /// <summary>Stops the background loop; it ends at its next wake point, and the last resolved target stays readable (which only affects when a capture is rebuilt).</summary>
@@ -115,28 +163,39 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
             return;
         }
 
-        _isDisposed = true;
+        lock (_sourceGate)
+        {
+            if (_isDisposed) return;
+            _isDisposed = true;
+            _refreshVersion++;
+        }
+        if (_platform is not null) _platform.Changed -= OnEnvironmentChanged;
         _cancellation.Cancel();
-        _cancellation.Dispose();
     }
 
     private async Task RunLoopAsync(CancellationToken token)
     {
         try
         {
-            await _scanRequested.WaitAsync(token).ConfigureAwait(false);
-            Interlocked.Exchange(ref _scanWakePending, 0);
             while (!token.IsCancellationRequested)
             {
-                if (!HasRecentDemand())
+                if (!AudioCaptureDevicePolicy.ShouldScan(_pruneLevel, HasRecentDemand()))
                 {
                     await _scanRequested.WaitAsync(token).ConfigureAwait(false);
                     Interlocked.Exchange(ref _scanWakePending, 0);
+                    continue;
                 }
 
+                if (_scanRequested.Wait(0)) Interlocked.Exchange(ref _scanWakePending, 0);
                 ResolveOnce(token);
-                if (await _scanRequested.WaitAsync(AudioCaptureDevicePolicy.ResolveScanInterval(_pruneLevel), token)
-                        .ConfigureAwait(false))
+                TimeSpan delay;
+                lock (_sourceGate)
+                {
+                    var due = _refreshPass switch { 0 => 0, 1 => 250, 2 => 750, _ => -1 };
+                    delay = due < 0 ? AudioCaptureDevicePolicy.ResolveScanInterval(_pruneLevel) :
+                        TimeSpan.FromMilliseconds(Math.Max(0, _refreshTick + due - Environment.TickCount64));
+                }
+                if (await _scanRequested.WaitAsync(delay, token).ConfigureAwait(false))
                     Interlocked.Exchange(ref _scanWakePending, 0);
             }
         }
@@ -147,6 +206,7 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
         finally
         {
             _scanRequested.Dispose();
+            _cancellation.Dispose();
         }
     }
 
@@ -171,21 +231,41 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
         SpectrumCaptureProcessResolver.MediaIdentity source;
         string? current;
         int version;
-        lock (_sourceGate) { source = _mediaSource; current = _targetDeviceId; version = _sourceVersion; }
+        int generation;
+        int pass;
+        string reason;
+        lock (_sourceGate)
+        {
+            source = _mediaSource;
+            current = _targetDeviceId;
+            version = _sourceVersion;
+            generation = _refreshVersion;
+            pass = _refreshPass++;
+            reason = _refreshReason;
+        }
         try
         {
-            if (TryResolveTarget(source, current, out var resolved))
+            var result = _scan(source, current);
+            Resolution update;
+            lock (_sourceGate)
             {
-                lock (_sourceGate)
-                    if (!token.IsCancellationRequested && !_isDisposed && version == _sourceVersion)
-                        _targetDeviceId = resolved;
+                if (!result.Success || token.IsCancellationRequested || _isDisposed ||
+                    generation != _refreshVersion || version != _sourceVersion ||
+                    !AudioCaptureDevicePolicy.ShouldScan(_pruneLevel, HasRecentDemand())) return;
+                var changed = !string.Equals(current, result.Target, StringComparison.OrdinalIgnoreCase);
+                _targetDeviceId = result.Target;
+                update = new Resolution(result.Target, changed,
+                    pass == 0 && reason is not ("demand-resumed" or "media-source-changed"), generation, reason);
             }
+            var message = $"频谱端点解析: generation={generation} reason={reason} pass={pass} target={result.Target ?? "none"} changed={update.TargetChanged}";
+            if (pass == 0 || update.TargetChanged) AppLogService.Current?.Info("Audio", message);
+            else AppLogService.Current?.Verbose("Audio", message);
+            if (!_isDisposed) Resolved?.Invoke(update);
         }
         catch (Exception ex)
         {
-            // 音频栈在设备切换/驱动重启期间会短暂抛错：这不是故障，保留上一次目标即可。
-            // The audio stack briefly throws while devices switch or drivers restart: that is not a failure, keeping the previous target is enough.
-            Debug.WriteLine($"[AudioCaptureDeviceResolver] Resolve failed: {ex.Message}");
+            // 设备切换期间扫描失败时保留旧目标，后续补扫或轮询继续确认。
+            AppLogService.Current?.Verbose("Audio", $"频谱端点解析失败: generation={generation} reason={reason} {ex.Message}");
         }
     }
 
