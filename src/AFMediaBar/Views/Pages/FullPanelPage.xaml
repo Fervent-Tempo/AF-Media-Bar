@@ -42,7 +42,11 @@
     </Page.Resources>
     <components:SettingsPageLayout x:Name="PageLayout">
         <components:SettingsPageLayout.Header>
-            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Page.FullPanel}" Subtitle="{DynamicResource Loc.Settings.Page.FullPanel.Description}" PageIcon="{ui:SymbolIcon WindowConsole20}" Target="{Binding ScrollViewer, ElementName=PageLayout}"/>
+            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Page.FullPanel}" Subtitle="{DynamicResource Loc.Settings.Page.FullPanel.Description}" PageIcon="{ui:SymbolIcon WindowConsole20}" Target="{Binding ScrollViewer, ElementName=PageLayout}">
+                <components:SettingsGroupStrip.HeaderActions>
+                    <ui:Button Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" Click="ResetButton_Click" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top"/>
+                </components:SettingsGroupStrip.HeaderActions>
+            </components:SettingsGroupStrip>
         </components:SettingsPageLayout.Header>
         <components:SettingsPageLayout.Preview>
             <components:SettingsPreview xmlns:components="clr-namespace:AFMediaBar.Components" DataContext="{Binding Preview}"/>
@@ -50,9 +54,8 @@
         <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded">
             <components:SettingsGroup GroupId="Common.FullLayer" Description="{DynamicResource Loc.DisplayModes.Full.Group.Description}" Header="{DynamicResource Loc.Common.FullLayer}" Icon="{ui:SymbolIcon ProjectionScreen24}">
                 <StackPanel>
-                    <components:SettingsDiagram Margin="0,0,0,12" Kind="LayerFull"/>
                     <TextBlock Text="{DynamicResource Loc.Settings.Group.Entry}" Style="{StaticResource AfSettingsSubsectionTitleStyle}"/>
-                    <components:SettingsRow Description="{DynamicResource Loc.DisplayModes.Rest.Row.Entry.Description}" Icon="{ui:SymbolIcon ChevronUp24}" Title="{DynamicResource Loc.DisplayModes.Rest.Row.Entry.Title}">
+                    <components:SettingsRow Description="{DynamicResource Loc.DisplayModes.Rest.Row.Entry.Description}" Icon="{ui:SymbolIcon ChevronUp24}" Title="{DynamicResource Loc.DisplayModes.Rest.Row.Entry.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.FullPanelEntryVisible, Mode=TwoWay}"/>
                     </components:SettingsRow>
                     <components:SettingsRow Title="{DynamicResource Loc.DisplayModes.Full.Entry.Trigger}" Icon="{ui:SymbolIcon CursorClick24}">
@@ -79,23 +82,32 @@
                                     <ui:Button Margin="{StaticResource AfSettingsActionGap}" Command="{Binding ViewModel.Layers.ApplyFullFullPanelPresetCommand}" Content="{DynamicResource Loc.DisplayModes.Full.Preset.Full}" Style="{StaticResource AfSettingsButtonStyle}"/>
                                 </WrapPanel>
                             </components:SettingsRow>
-                            <components:SettingsRow Icon="{ui:SymbolIcon Info24}" IsNested="True" Title="{DynamicResource Loc.DisplayModes.Full.Row.MediaInfo.Title}">
+                            <components:SettingsRow Icon="{ui:SymbolIcon Info24}" IsNested="True" Title="{DynamicResource Loc.DisplayModes.Full.Row.MediaInfo.Title}" KeepControlInline="True">
                                 <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.FullPanelMediaInfoVisible, Mode=TwoWay}" IsEnabled="{Binding ViewModel.Layers.CanToggleFullPanelMediaInfo}"/>
                             </components:SettingsRow>
-                            <components:SettingsRow Icon="{ui:SymbolIcon Play24}" IsNested="True" Title="{DynamicResource Loc.DisplayModes.Full.Row.MediaControls.Title}">
+                            <components:SettingsRow Icon="{ui:SymbolIcon Play24}" IsNested="True" Title="{DynamicResource Loc.DisplayModes.Full.Row.MediaControls.Title}" KeepControlInline="True">
                                 <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.FullPanelMediaControlsVisible, Mode=TwoWay}" IsEnabled="{Binding ViewModel.Layers.CanToggleFullPanelMediaControls}"/>
                             </components:SettingsRow>
-                            <components:SettingsRow Icon="{ui:SymbolIcon Speaker124}" IsNested="True" Title="{DynamicResource Loc.Common.AudioControl}">
+                            <components:SettingsRow Icon="{ui:SymbolIcon Speaker124}" IsNested="True" Title="{DynamicResource Loc.Common.AudioControl}" KeepControlInline="True">
                                 <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.FullPanelAudioControlsVisible, Mode=TwoWay}" IsEnabled="{Binding ViewModel.Layers.CanToggleFullPanelAudioControls}"/>
                             </components:SettingsRow>
-                            <components:SettingsRow Icon="{ui:SymbolIcon Gauge24}" IsNested="True" Title="{DynamicResource Loc.DisplayModes.Full.Row.Performance.Title}">
+                            <components:SettingsRow Icon="{ui:SymbolIcon Gauge24}" IsNested="True" Title="{DynamicResource Loc.DisplayModes.Full.Row.Performance.Title}" KeepControlInline="True">
                                 <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.FullPanelPerformanceVisible, Mode=TwoWay}" IsEnabled="{Binding ViewModel.Layers.CanToggleFullPanelPerformance}"/>
                             </components:SettingsRow>
                         </StackPanel>
                     </ui:CardExpander>
                 </StackPanel>
             </components:SettingsGroup>
-<components:SettingsGroup GroupId="Integration.Panel.Scale" Header="{DynamicResource Loc.Integration.Panel.Scale}"><StackPanel><components:SettingsRow Title="{DynamicResource Loc.Integration.Panel.Scale}" Description="{DynamicResource Loc.Integration.Panel.Scale.Description}" Icon="{ui:SymbolIcon ArrowMaximize24}" ><StackPanel><components:SettingsNumericEditor Value="{Binding ViewModel.Layers.FullPanelScalePercent, Mode=TwoWay}" Minimum="{Binding ViewModel.Layers.MinimumFullPanelScalePercent}" Maximum="{Binding ViewModel.Layers.MaximumFullPanelScalePercent}" Step="5" Unit="%"/><ui:Button Content="{DynamicResource Loc.Integration.Panel.ResetSize}" Command="{Binding ViewModel.Layers.ResetFullPanelScaleCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,8,0,0"/></StackPanel></components:SettingsRow></StackPanel></components:SettingsGroup>            <ui:Button Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" Click="ResetButton_Click" HorizontalAlignment="Left" Margin="0,0,0,20"/>
+            <components:SettingsGroup GroupId="Integration.Panel.Scale" Header="{DynamicResource Loc.Integration.Panel.Scale}">
+                <StackPanel>
+                    <components:SettingsRow Title="{DynamicResource Loc.Integration.Panel.Scale}" Description="{DynamicResource Loc.Integration.Panel.Scale.Description}" Icon="{ui:SymbolIcon ArrowMaximize24}">
+                        <StackPanel>
+                            <components:SettingsNumericEditor Value="{Binding ViewModel.Layers.FullPanelScalePercent, Mode=TwoWay}" Minimum="{Binding ViewModel.Layers.MinimumFullPanelScalePercent}" Maximum="{Binding ViewModel.Layers.MaximumFullPanelScalePercent}" Step="5" Unit="%"/>
+                            <ui:Button Content="{DynamicResource Loc.Integration.Panel.ResetSize}" Command="{Binding ViewModel.Layers.ResetFullPanelScaleCommand}" Style="{StaticResource AfSettingsButtonStyle}" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </components:SettingsRow>
+                </StackPanel>
+            </components:SettingsGroup>
         </StackPanel>
     </components:SettingsPageLayout>
 </Page>

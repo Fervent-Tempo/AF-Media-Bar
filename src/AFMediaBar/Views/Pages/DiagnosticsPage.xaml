@@ -1,4 +1,4 @@
-<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:memory="clr-namespace:AFMediaBar.Classes.Settings" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:localization="clr-namespace:AFMediaBar.Classes.Services.Localization" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.DiagnosticsPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
+<?xml version="1.0" ?><Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:memory="clr-namespace:AFMediaBar.Classes.Settings" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:localization="clr-namespace:AFMediaBar.Classes.Services.Localization" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.DiagnosticsPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
     <Page.Resources>
         <Style TargetType="{x:Type components:SettingsRow}" BasedOn="{StaticResource AfSettingsPilotRowStyle}"/>
         <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/>
@@ -11,7 +11,7 @@
             <components:SettingsGroup GroupId="Common.Group.Diagnostics" Header="{DynamicResource Loc.Common.Group.Diagnostics}" Icon="{ui:SymbolIcon Bug24}">
                 <StackPanel>
                     <TextBlock Style="{StaticResource AfSettingsSubsectionTitleStyle}" Text="{DynamicResource Loc.Settings.Group.Developer}"/>
-                    <components:SettingsRow IsNested="False" Title="{DynamicResource Loc.Developer.Mode.Title}" Description="{DynamicResource Loc.Developer.Mode.Description}" Icon="{ui:SymbolIcon Bug24}">
+                    <components:SettingsRow IsNested="False" Title="{DynamicResource Loc.Developer.Mode.Title}" Description="{DynamicResource Loc.Developer.Mode.Description}" Icon="{ui:SymbolIcon Bug24}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.DeveloperModeEnabled, Mode=TwoWay}"/>
                     </components:SettingsRow>
                     <components:SettingsRow IsNested="False" Title="{DynamicResource Loc.Developer.Tools.Title}" Description="{DynamicResource Loc.Developer.Tools.Description}" Visibility="{Binding ViewModel.DeveloperModeEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}" Icon="{ui:SymbolIcon Bug24}">

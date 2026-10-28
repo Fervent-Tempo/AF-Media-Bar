@@ -1,9 +1,4 @@
-<Page x:Class="AFMediaBar.Views.Pages.QuickStartPage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:components="clr-namespace:AFMediaBar.Components"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False" Unloaded="OnPageUnloaded">
+<?xml version="1.0" ?><Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.QuickStartPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False" Unloaded="OnPageUnloaded">
     <Page.Resources>
         <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/>
         <Style x:Key="BodyText" TargetType="TextBlock">
@@ -19,38 +14,33 @@
     </Page.Resources>
     <components:SettingsPageLayout x:Name="PageLayout">
         <components:SettingsPageLayout.Header>
-            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Section.Start}"
-                Subtitle="{DynamicResource Loc.Start.Description}" PageIcon="{ui:SymbolIcon Sparkle24}"
-                Target="{Binding ScrollViewer, ElementName=PageLayout}"/>
+            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Section.Start}" Subtitle="{DynamicResource Loc.Start.Description}" PageIcon="{ui:SymbolIcon Sparkle24}" Target="{Binding ScrollViewer, ElementName=PageLayout}"/>
         </components:SettingsPageLayout.Header>
         <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded">
             <components:SettingsGroup GroupId="Start.Overview" Header="{DynamicResource Loc.Start.Overview}" Icon="{ui:SymbolIcon Layer24}">
                 <StackPanel Margin="16">
                     <TextBlock FontSize="26" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="AF Media Bar"/>
                     <TextBlock Margin="0,8,0,20" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Intro.Description}"/>
-                    <WrapPanel Margin="-6,0">
-                        <Border Width="276" Margin="6,0,6,12" Padding="18" CornerRadius="10"
-                            Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1">
+                    <Border xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:components="clr-namespace:AFMediaBar.Components" Margin="0,0,0,20" Padding="24" CornerRadius="12" Background="{DynamicResource AfTutorialSageSurfaceBrush}"><Viewbox Stretch="Uniform" StretchDirection="DownOnly" MaxHeight="140"><components:SettingsPreviewScene DataContext="{Binding ViewModel.Preview}"/></Viewbox></Border><WrapPanel Margin="-6,0">
+                        <Border Width="276" Margin="6,0,6,12" Padding="18" CornerRadius="10" Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1">
                             <StackPanel>
-                                <ui:SymbolIcon Symbol="Layer24" FontSize="32" HorizontalAlignment="Left" Margin="0,0,0,18" Foreground="{DynamicResource AfAccentBrush}"/>
+                                <Border Height="84" CornerRadius="8" Margin="0,0,0,16" Background="{DynamicResource AfTutorialSageSurfaceBrush}"><ui:SymbolIcon Symbol="Layer24" FontSize="32" HorizontalAlignment="Center" Margin="0" Foreground="{DynamicResource AfTutorialSageInkBrush}"/></Border>
                                 <TextBlock FontSize="16" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{DynamicResource Loc.Start.Rest}"/>
                                 <TextBlock Margin="0,8,0,16" MinHeight="80" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Rest.Description}"/>
                                 <components:SettingsNavigationButton HorizontalAlignment="Left" Destination="RestState" GroupId="Common.RestLayer" Content="{DynamicResource Loc.Settings.Component.Configure}"/>
                             </StackPanel>
                         </Border>
-                        <Border Width="276" Margin="6,0,6,12" Padding="18" CornerRadius="10"
-                            Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1">
+                        <Border Width="276" Margin="6,0,6,12" Padding="18" CornerRadius="10" Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1">
                             <StackPanel>
-                                <ui:SymbolIcon Symbol="Play24" FontSize="32" HorizontalAlignment="Left" Margin="0,0,0,18" Foreground="{DynamicResource AfAccentBrush}"/>
+                                <Border Height="84" CornerRadius="8" Margin="0,0,0,16" Background="{DynamicResource AfTutorialLavenderSurfaceBrush}"><ui:SymbolIcon Symbol="Play24" FontSize="32" HorizontalAlignment="Center" Margin="0" Foreground="{DynamicResource AfTutorialLavenderInkBrush}"/></Border>
                                 <TextBlock FontSize="16" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{DynamicResource Loc.Start.Hover}"/>
                                 <TextBlock Margin="0,8,0,16" MinHeight="80" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Hover.Description}"/>
                                 <components:SettingsNavigationButton HorizontalAlignment="Left" Destination="Components" GroupId="Common.HoverLayer" Content="{DynamicResource Loc.Settings.Component.Configure}"/>
                             </StackPanel>
                         </Border>
-                        <Border Width="276" Margin="6,0,6,12" Padding="18" CornerRadius="10"
-                            Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1">
+                        <Border Width="276" Margin="6,0,6,12" Padding="18" CornerRadius="10" Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1">
                             <StackPanel>
-                                <ui:SymbolIcon Symbol="WindowConsole20" FontSize="32" HorizontalAlignment="Left" Margin="0,0,0,18" Foreground="{DynamicResource AfAccentBrush}"/>
+                                <Border Height="84" CornerRadius="8" Margin="0,0,0,16" Background="{DynamicResource AfTutorialClaySurfaceBrush}"><ui:SymbolIcon Symbol="WindowConsole20" FontSize="32" HorizontalAlignment="Center" Margin="0" Foreground="{DynamicResource AfTutorialClayInkBrush}"/></Border>
                                 <TextBlock FontSize="16" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{DynamicResource Loc.Start.Full}"/>
                                 <TextBlock Margin="0,8,0,16" MinHeight="80" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Full.Description}"/>
                                 <components:SettingsNavigationButton HorizontalAlignment="Left" Destination="FullPanel" GroupId="Common.FullLayer" Content="{DynamicResource Loc.Settings.Component.Configure}"/>

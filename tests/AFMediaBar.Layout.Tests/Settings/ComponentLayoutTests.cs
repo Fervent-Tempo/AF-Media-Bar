@@ -83,8 +83,9 @@ public sealed class ComponentLayoutTests
                 SettingsManager.SetUserDefaults(null);
                 SettingsManager.ResetComponents();
                 Assert.IsFalse(ComponentLayoutPolicy.Resolve(SettingsManager.Current, BarLayoutState.Resident).Single(entry => entry.Component == TaskbarRestComponent.Spectrum).IsVisible);
-                SettingsManager.ResetContentLayout();
-                Assert.IsNull(SettingsManager.Current.TaskbarExperience.ComponentLayouts);
+                SettingsManager.ResetRestState();
+                Assert.IsNull(SettingsManager.Current.TaskbarExperience.ComponentLayouts!.Resident);
+                Assert.IsNull(SettingsManager.Current.TaskbarExperience.ComponentLayouts.Idle);
             }
             finally
             {

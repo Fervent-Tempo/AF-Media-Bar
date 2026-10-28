@@ -3260,8 +3260,8 @@ Dropped samples: {3}; events: {4}</value></data>
   <data name="Settings.Preview.Title" xml:space="preserve"><value>Preview</value></data>
   <data name="Settings.Preview.Track" xml:space="preserve"><value>Sample track</value></data>
   <data name="Settings.Preview.Artist" xml:space="preserve"><value>Sample artist</value></data>
-  <data name="Settings.Preview.Note" xml:space="preserve"><value>Uses current settings with fixed sample content. No live media or device data is read.</value></data>
-  <data name="Settings.Preview.Empty" xml:space="preserve"><value>No components retained. The bar is hidden without media.</value></data>
+  <data name="Settings.Preview.Note" xml:space="preserve"><value>Uses current settings and fixed sample data, fitted to the available space. It does not control players or devices.</value></data>
+<data name="Settings.Preview.Empty" xml:space="preserve"><value>No components retained. The bar is hidden without media.</value></data>
   <data name="Settings.Preview.Idle" xml:space="preserve"><value>Preview without media</value></data>
   <data name="Settings.Personalization.Subtitle" xml:space="preserve"><value>Set the application theme, window material, accent color, and fonts.</value></data>
   <data name="Settings.Personalization.Accent" xml:space="preserve"><value>Accent color</value></data>
@@ -3613,4 +3613,15 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
   <data name="Integration.Panel.Scale.Description" xml:space="preserve"><value>Scale the window and content together, from 75% to 200%. The edge next to the bar stays attached.</value></data>
   <data name="Integration.Panel.ResetSize" xml:space="preserve"><value>Restore default size</value></data>
   <data name="Settings.RestState.Description" xml:space="preserve"><value>Choose components, order and display details for rest and idle states.</value></data>
+
+  <data name="Integration.Back" xml:space="preserve"><value>Back</value></data>
+
+  <data name="Integration.Scope.Shared" xml:space="preserve"><value>Shared settings</value></data>
+
+  <data name="Integration.Mode.Taskbar" xml:space="preserve"><value>Taskbar mode</value></data>
+
+  <data name="Integration.Mode.Floating" xml:space="preserve"><value>Floating mode</value></data>
+
+  <data name="Integration.Preview.Scale" xml:space="preserve"><value>Panel scale {0}% · fitted preview</value></data>
+  <data name="Settings.Page.QuickControls.Description" xml:space="preserve"><value>Configure hover controls, component order and button sizes.</value></data>
 </root>

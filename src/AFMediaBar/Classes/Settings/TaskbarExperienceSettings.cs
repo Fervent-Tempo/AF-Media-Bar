@@ -118,12 +118,14 @@ public readonly record struct TaskbarFullPanelSettings(
     /// <summary>确保至少保留一个功能组。 / Ensures at least one feature group remains visible.</summary>
     public TaskbarFullPanelSettings Normalize()
     {
+        // 缺失整个子对象时得到结构体零值，不会执行新增属性的初始化。
+        var unconfigured = Equals(default(TaskbarFullPanelSettings));
         var result = MediaInfoVisible || MediaControlsVisible || AudioControlsVisible || PerformanceVisible
             ? this : this with { MediaInfoVisible = true, MediaControlsVisible = true };
         return result with
         {
-            ScalePercent = Math.Clamp(ScalePercent, MinimumScalePercent, MaximumScalePercent),
-            PerformanceVisuals = PerformanceVisuals.Normalize(MetricVisualSettings.PanelDefault)
+            ScalePercent = unconfigured ? 100 : Math.Clamp(ScalePercent, MinimumScalePercent, MaximumScalePercent),
+            PerformanceVisuals = (unconfigured ? MetricVisualSettings.PanelDefault : PerformanceVisuals).Normalize(MetricVisualSettings.PanelDefault)
         };
     }
 }

@@ -21,6 +21,10 @@ public sealed class SettingsPageLayout : HeaderedContentControl
         nameof(Preview), typeof(object), typeof(SettingsPageLayout), new PropertyMetadata(null, (sender, _) => ((SettingsPageLayout)sender).UpdateLayoutMode()));
     public static readonly DependencyProperty PreviewExpandedProperty = DependencyProperty.Register(
         nameof(PreviewExpanded), typeof(bool), typeof(SettingsPageLayout), new PropertyMetadata(false, OnExpandedChanged));
+    public static readonly DependencyProperty PreviewViewportHeightProperty = DependencyProperty.Register(
+        nameof(PreviewViewportHeight), typeof(double), typeof(SettingsPageLayout), new PropertyMetadata(360d));
+    public double PreviewViewportHeight => (double)GetValue(PreviewViewportHeightProperty);
+    private FrameworkElement? _body;
     private bool _wideExpanded = true;
     private bool _compactExpanded;
     private bool _changingLayout;
@@ -35,7 +39,10 @@ public sealed class SettingsPageLayout : HeaderedContentControl
 
     public override void OnApplyTemplate()
     {
+        if (_body is not null) _body.SizeChanged -= OnBodySizeChanged;
         base.OnApplyTemplate();
+        _body = GetTemplateChild("PART_Body") as FrameworkElement;
+        if (_body is not null) _body.SizeChanged += OnBodySizeChanged;
         SetValue(ScrollViewerPropertyKey, GetTemplateChild("PART_ScrollViewer") as ScrollViewer);
         UpdateLayoutMode();
     }
@@ -46,11 +53,14 @@ public sealed class SettingsPageLayout : HeaderedContentControl
         UpdateLayoutMode();
     }
 
+    private void OnBodySizeChanged(object sender, SizeChangedEventArgs args) => UpdateLayoutMode();
+
     private void UpdateLayoutMode()
     {
         var width = Math.Min(1680d, Math.Max(0d, ActualWidth - 64d));
         var wide = Preview is not null && width >= 1000d;
         SetValue(PreviewColumnPropertyKey, new GridLength(wide ? Math.Clamp(width * .32d, 360d, 520d) : 0d));
+        SetValue(PreviewViewportHeightProperty, Math.Clamp(wide ? (_body?.ActualHeight ?? ActualHeight) - 210 : (_body?.ActualHeight ?? ActualHeight) * .45 - 160, 24d, 480d));
         if (wide == IsWide) return;
         _changingLayout = true;
         SetValue(IsWidePropertyKey, wide);

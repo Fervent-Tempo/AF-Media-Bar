@@ -65,7 +65,14 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
         };
     });
     public void SetSpectrum(SpectrumComponentSettings settings) => Update(current => current.SpectrumComponent = settings.Normalize());
-    public void SetPerformance(PerformanceComponentSettings settings) => Update(current => current.PerformanceComponent = settings.Normalize());
+    public void SetPerformance(PerformanceComponentSettings settings) => Update(current =>
+    {
+        var next = settings.Normalize();
+        var previous = current.PerformanceComponent.Normalize();
+        if (!previous.Metrics!.SequenceEqual(next.Metrics!) || !previous.GetMetricOrder().SequenceEqual(next.GetMetricOrder()))
+            current.TaskbarExperience = ComponentLayoutPolicy.PreserveImplicitLayouts(current);
+        current.PerformanceComponent = next;
+    });
     public void SetExperiments(ExperimentalSettings settings)
     {
         if (!context.IsActive) return;
@@ -186,7 +193,6 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
         {
             next.TaskbarExperience = SettingsResetPolicy.Content(next.TaskbarExperience, defaults.TaskbarExperience) with
             { LengthMode = geometry.LengthMode, FixedLengthDip = geometry.FixedLengthDip, Arrangement = geometry.Arrangement };
-            next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
             if (scope == SettingsResetScope.DisplayModes)
             {
                 // 旧入口同时恢复组件参数；内容与布局只恢复显隐和顺序。

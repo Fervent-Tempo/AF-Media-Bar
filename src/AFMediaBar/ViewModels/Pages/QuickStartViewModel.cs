@@ -19,9 +19,11 @@ public sealed class QuickStartViewModel : IDisposable
 
     /// <summary>本地版本资料，按目录顺序呈现。</summary>
     public ObservableCollection<ReleaseHighlightsItem> History { get; } = [];
+    public SettingsPreviewViewModel Preview { get; }
 
-    public QuickStartViewModel(ReleaseHighlightsService releases, LocalizationService localization, AppLogService log)
+    public QuickStartViewModel(ReleaseHighlightsService releases, LocalizationService localization, AppLogService log, SettingsPreviewViewModel preview)
     {
+        Preview = preview;
         _releases = releases;
         _localization = localization;
         _log = log;

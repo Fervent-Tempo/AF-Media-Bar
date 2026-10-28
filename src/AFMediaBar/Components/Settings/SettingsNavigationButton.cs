@@ -7,7 +7,6 @@ namespace AFMediaBar.Components;
 /// <summary>跨设置页的相关配置入口，不直接创建页面或依赖服务容器。</summary>
 public sealed class SettingsNavigationButton : Wpf.Ui.Controls.Button
 {
-    public SettingsNavigationButton() => SetResourceReference(StyleProperty, "AfSettingsNavigationButtonStyle");
 
     public static readonly DependencyProperty DestinationProperty = DependencyProperty.Register(
         nameof(Destination), typeof(SettingsPageKey), typeof(SettingsNavigationButton), new PropertyMetadata(SettingsPageKey.Interaction));

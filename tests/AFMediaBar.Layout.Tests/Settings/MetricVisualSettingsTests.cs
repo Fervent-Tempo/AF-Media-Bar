@@ -16,6 +16,19 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class MetricVisualSettingsTests
 {
     [TestMethod]
+    public void MissingFullPanelObjectGetsNewDefaultsWithoutEnablingExtraRegions()
+    {
+        var settings = System.Text.Json.JsonSerializer.Deserialize<TaskbarExperienceSettings>("{\"hoverLayerEnabled\":true}").Normalize();
+        Assert.AreEqual(100, settings.FullPanel.ScalePercent);
+        Assert.AreEqual(MetricVisualStyle.Area, settings.FullPanel.PerformanceVisuals.SystemCpu);
+        Assert.AreEqual(MetricVisualStyle.Area, settings.FullPanel.PerformanceVisuals.SystemMemory);
+        Assert.IsTrue(settings.FullPanel.MediaInfoVisible);
+        Assert.IsTrue(settings.FullPanel.MediaControlsVisible);
+        Assert.IsFalse(settings.FullPanel.AudioControlsVisible);
+        Assert.IsFalse(settings.FullPanel.PerformanceVisible);
+    }
+
+    [TestMethod]
     public void OldEnvelopeKeepsMetricsAndSuppliesPanelScaleAndSeparateDefaults()
     {
         var directory = Path.Combine(Path.GetTempPath(), "afmb-visual-contract-" + Guid.NewGuid().ToString("N"));

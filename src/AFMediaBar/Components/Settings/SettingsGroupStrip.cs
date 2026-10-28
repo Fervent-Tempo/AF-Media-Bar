@@ -34,6 +34,16 @@ namespace AFMediaBar.Components;
 /// </summary>
 public class SettingsGroupStrip : Control
 {
+    public static readonly DependencyProperty HeaderActionsProperty = DependencyProperty.Register(
+        nameof(HeaderActions), typeof(object), typeof(SettingsGroupStrip), new PropertyMetadata(null));
+    public object? HeaderActions { get => GetValue(HeaderActionsProperty); set => SetValue(HeaderActionsProperty, value); }
+    public static readonly DependencyProperty BreadcrumbProperty = DependencyProperty.Register(
+        nameof(Breadcrumb), typeof(string), typeof(SettingsGroupStrip), new PropertyMetadata(string.Empty));
+    public string Breadcrumb { get => (string)GetValue(BreadcrumbProperty); set => SetValue(BreadcrumbProperty, value); }
+    public static readonly DependencyProperty BackCommandProperty = DependencyProperty.Register(
+        nameof(BackCommand), typeof(ICommand), typeof(SettingsGroupStrip), new PropertyMetadata(null));
+    public ICommand? BackCommand { get => (ICommand?)GetValue(BackCommandProperty); set => SetValue(BackCommandProperty, value); }
+
     /// <summary>页面标题。/ Page title.</summary>
     public static readonly DependencyProperty TitleProperty = DependencyProperty.Register(
         nameof(Title),
@@ -116,8 +126,13 @@ public class SettingsGroupStrip : Control
     private double _dividerOpacity = -1d;
 
     /// <summary>创建分组标签条并初始化跳转命令。/ Creates the group strip and its jump command.</summary>
+    public static readonly DependencyProperty IsCompactHeaderProperty = DependencyProperty.Register(
+        nameof(IsCompactHeader), typeof(bool), typeof(SettingsGroupStrip), new PropertyMetadata(false));
+    public bool IsCompactHeader => (bool)GetValue(IsCompactHeaderProperty);
+
     public SettingsGroupStrip()
     {
+        SizeChanged += (_, _) => SetValue(IsCompactHeaderProperty, ActualWidth < 700d);
         JumpCommand = new JumpToGroupCommand(this);
         SetValue(GroupsPropertyKey, _groups);
 
@@ -261,12 +276,13 @@ public class SettingsGroupStrip : Control
         if (optionId is not null)
         {
             var title = optionId.StartsWith('@') ? optionId[1..] : Translations.Get(optionId);
-            var row = LogicalDescendants(group).OfType<SettingsRow>().FirstOrDefault(candidate => (candidate.OptionId == optionId || candidate.Title == title) && candidate.IsVisible);
+            var row = VisualDescendants(group).Concat(LogicalDescendants(group)).OfType<SettingsRow>().Distinct().FirstOrDefault(candidate => (candidate.OptionId == optionId || candidate.Title == title) && candidate.IsVisible);
             if (row is not null)
             {
                 StopJump();
                 row.BringIntoView();
-                var input = VisualDescendants(row).OfType<Control>().FirstOrDefault(control => control.Focusable && control.IsEnabled && control.IsVisible);
+                var input = VisualDescendants(row).OfType<Control>().Where(control => control.Focusable && control.IsEnabled && control.IsVisible)
+                    .OrderBy(control => control is SettingsNavigationButton or SettingsReorderHandle ? 1 : 0).FirstOrDefault();
                 if (input is not null) input.Focus();
                 else { row.Focusable = true; row.Focus(); }
                 return;

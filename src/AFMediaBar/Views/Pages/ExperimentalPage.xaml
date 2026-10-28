@@ -1,4 +1,4 @@
-<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.ExperimentalPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
+<?xml version="1.0" ?><Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.ExperimentalPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
     <Page.Resources>
         <Style TargetType="{x:Type components:SettingsRow}" BasedOn="{StaticResource AfSettingsPilotRowStyle}"/>
         <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/>
@@ -11,7 +11,7 @@
             <ui:InfoBar x:Name="ExperimentalWarning" Message="{DynamicResource Loc.Experimental.Warning}" Severity="Warning" Style="{StaticResource AfSettingsInfoBarStyle}" Margin="0,0,0,16"/>
             <components:SettingsGroup GroupId="Battery.Title" Header="{DynamicResource Loc.Battery.Title}" Description="{DynamicResource Loc.Battery.SelectHint}" Icon="{ui:SymbolIcon Bluetooth24}">
                 <StackPanel>
-                    <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Experimental.Enable}">
+                    <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Experimental.Enable}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.BluetoothBattery, Mode=TwoWay}"/>
                     </components:SettingsRow>
                     <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
@@ -21,10 +21,10 @@
             </components:SettingsGroup>
             <components:SettingsGroup GroupId="Memory.Title" Header="{DynamicResource Loc.Memory.Title}" Description="{DynamicResource Loc.Memory.Explanation}" Icon="{ui:SymbolIcon ArrowMinimize24}">
                 <StackPanel>
-                    <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" Title="{DynamicResource Loc.Experimental.Enable}">
+                    <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" Title="{DynamicResource Loc.Experimental.Enable}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.MemoryTools, Mode=TwoWay}"/>
                     </components:SettingsRow>
-                    <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" Title="{DynamicResource Loc.Memory.System.Title}" Description="{DynamicResource Loc.Memory.System.Description}" Visibility="{Binding ViewModel.MemoryTools, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                    <components:SettingsRow Icon="{ui:SymbolIcon ArrowMinimize24}" Title="{DynamicResource Loc.Memory.System.Title}" Description="{DynamicResource Loc.Memory.System.Description}" Visibility="{Binding ViewModel.MemoryTools, Converter={StaticResource AfBooleanToVisibilityConverter}}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.SystemMemoryCleanup, Mode=TwoWay}"/>
                     </components:SettingsRow>
                     <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}" Visibility="{Binding ViewModel.MemoryTools, Converter={StaticResource AfBooleanToVisibilityConverter}}">

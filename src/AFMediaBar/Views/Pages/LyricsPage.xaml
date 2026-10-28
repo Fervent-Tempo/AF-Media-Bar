@@ -1,4 +1,4 @@
-<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:lyrics="clr-namespace:AFMediaBar.Classes.Services.Lyrics" xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.LyricsPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
+<?xml version="1.0" ?><Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:lyrics="clr-namespace:AFMediaBar.Classes.Services.Lyrics" xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.LyricsPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
     <Page.Resources>
         <Style x:Key="SourceOrderListStyle" TargetType="ItemsControl" BasedOn="{StaticResource AfSettingsSortableListStyle}">
             <Style.Triggers>
@@ -111,7 +111,7 @@
     </Page.Resources>
     <components:SettingsPageLayout x:Name="PageLayout">
         <components:SettingsPageLayout.Header>
-            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Page.TextAndLyrics}" Subtitle="{DynamicResource Loc.Settings.Page.Lyrics.Description}" PageIcon="{ui:SymbolIcon TextQuote24}" Target="{Binding ScrollViewer, ElementName=PageLayout}"/>
+            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Page.TextAndLyrics}" Subtitle="{DynamicResource Loc.Settings.Page.Lyrics.Description}" PageIcon="{ui:SymbolIcon TextQuote24}" Target="{Binding ScrollViewer, ElementName=PageLayout}"><components:SettingsGroupStrip.HeaderActions><ui:Button Click="ResetButton_Click" Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top"/></components:SettingsGroupStrip.HeaderActions></components:SettingsGroupStrip>
         </components:SettingsPageLayout.Header>
         <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded">
             <components:SettingsGroup GroupId="Common.Group.MediaBarText" Header="{DynamicResource Loc.Common.Group.MediaBarText}" Icon="{ui:SymbolIcon TextColor24}" Visibility="{Binding HasTaskbarSettings, Converter={StaticResource AfBooleanToVisibilityConverter}}" Description="{DynamicResource Loc.Appearance.Scope.Taskbar}">
@@ -187,10 +187,10 @@
             <components:SettingsGroup GroupId="Common.Group.LyricsDisplay" Header="{DynamicResource Loc.Common.Group.LyricsDisplay}" Icon="{ui:SymbolIcon TextQuote24}">
                 <StackPanel>
                     <components:SettingsCallout Margin="0,0,0,12" IsAccent="True" Symbol="TextQuote24" Text="{DynamicResource Loc.Lyrics.Callout.Display}"/>
-                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.ShowLyrics.Description}" Icon="{ui:SymbolIcon TextQuote24}" Title="{DynamicResource Loc.Lyrics.Row.ShowLyrics.Title}">
+                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.ShowLyrics.Description}" Icon="{ui:SymbolIcon TextQuote24}" Title="{DynamicResource Loc.Lyrics.Row.ShowLyrics.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.LyricsEnabled, Mode=TwoWay}"/>
                     </components:SettingsRow>
-                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.TwoLine.Description}" Icon="{ui:SymbolIcon TextAlignJustify24}" Style="{StaticResource TwoLineRowStyle}" Title="{DynamicResource Loc.Lyrics.Row.TwoLine.Title}">
+                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.TwoLine.Description}" Icon="{ui:SymbolIcon TextAlignJustify24}" Style="{StaticResource TwoLineRowStyle}" Title="{DynamicResource Loc.Lyrics.Row.TwoLine.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.TwoLineLyricsEnabled, Mode=TwoWay}" IsEnabled="{Binding ViewModel.CanConfigureTwoLine}"/>
                     </components:SettingsRow>
                     <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon TextBulletListSquare24}">
@@ -224,7 +224,7 @@
                     <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
                         <components:SettingsNavigationButton ToolTip="{DynamicResource Loc.ContentLayout.Text.Shortcut.Description}" Destination="Components" GroupId="Appearance.Group.RestLayout" Content="{DynamicResource Loc.ContentLayout.Text.Shortcut.Action}"/>
                     </WrapPanel>
-                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.SyllableHighlight.Description}" Icon="{ui:SymbolIcon TextColor24}" Title="{DynamicResource Loc.Lyrics.Row.SyllableHighlight.Title}">
+                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.SyllableHighlight.Description}" Icon="{ui:SymbolIcon TextColor24}" Title="{DynamicResource Loc.Lyrics.Row.SyllableHighlight.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.SyllableHighlightEnabled, Mode=TwoWay}"/>
                     </components:SettingsRow>
                     <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon TextParagraph24}">
@@ -244,7 +244,7 @@
                             <components:SettingsRow IsNested="True" Description="{DynamicResource Loc.Lyrics.Row.CharacterSpacing.Description}" Icon="{ui:SymbolIcon TextFont24}" Title="{DynamicResource Loc.Lyrics.Row.CharacterSpacing.Title}">
                                 <components:SettingsNumericEditor Value="{Binding ViewModel.CharacterSpacingPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="{Binding Source={x:Static settings:LyricsCharacterSpacing.MinimumPercent}}" Maximum="{Binding Source={x:Static settings:LyricsCharacterSpacing.MaximumPercent}}" Step="{Binding Source={x:Static settings:LyricsCharacterSpacing.StepPercent}}" Unit="{DynamicResource Loc.Settings.Numeric.Percent}"/>
                             </components:SettingsRow>
-                            <components:SettingsRow IsNested="True" Description="{DynamicResource Loc.Lyrics.Row.LongLineScroll.Description}" Icon="{ui:SymbolIcon ArrowAutofitWidth24}" Style="{StaticResource LongLineScrollRowStyle}" Title="{DynamicResource Loc.Lyrics.Row.LongLineScroll.Title}">
+                            <components:SettingsRow IsNested="True" Description="{DynamicResource Loc.Lyrics.Row.LongLineScroll.Description}" Icon="{ui:SymbolIcon ArrowAutofitWidth24}" Style="{StaticResource LongLineScrollRowStyle}" Title="{DynamicResource Loc.Lyrics.Row.LongLineScroll.Title}" KeepControlInline="True">
                                 <ui:ToggleSwitch IsChecked="{Binding ViewModel.LongLineScrollEnabled, Mode=TwoWay}" IsEnabled="{Binding ViewModel.CanConfigureLongLineScroll}"/>
                             </components:SettingsRow>
                         </StackPanel>
@@ -257,7 +257,7 @@
                             </StackPanel>
                         </ui:CardExpander.Header>
                         <StackPanel>
-                            <components:SettingsRow IsNested="True" Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Description}" Icon="{ui:SymbolIcon ResizeLarge24}" Style="{StaticResource FixedWidthRowStyle}" Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Title}">
+                            <components:SettingsRow IsNested="True" Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Description}" Icon="{ui:SymbolIcon ResizeLarge24}" Style="{StaticResource FixedWidthRowStyle}" Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Title}" KeepControlInline="True">
                                 <ui:ToggleSwitch IsChecked="{Binding LayoutEditor.Lyrics.FixedWidthEnabled, Mode=TwoWay}"/>
                             </components:SettingsRow>
                             <components:SettingsRow IsNested="True" Description="{DynamicResource Loc.Lyrics.Row.FixedWidth.Length.Description}" Icon="{ui:SymbolIcon ArrowAutofitWidth24}" Title="{DynamicResource Loc.Lyrics.Row.FixedWidth.Length.Title}" Visibility="{Binding LayoutEditor.Lyrics.FixedWidthEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
@@ -269,13 +269,13 @@
             </components:SettingsGroup>
             <components:SettingsGroup GroupId="Lyrics.Group.Presentation" Header="{DynamicResource Loc.Settings.Group.TextProcessing}" Icon="{ui:SymbolIcon TextColor24}">
                 <StackPanel>
-                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.InfoLines.Description}" Icon="{ui:SymbolIcon TextGrammarWand24}" Title="{DynamicResource Loc.Lyrics.Row.InfoLines.Title}">
+                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.InfoLines.Description}" Icon="{ui:SymbolIcon TextGrammarWand24}" Title="{DynamicResource Loc.Lyrics.Row.InfoLines.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.InfoLineFilterEnabled, Mode=TwoWay}"/>
                     </components:SettingsRow>
-                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.FuriganaFilter.Description}" Icon="{ui:SymbolIcon TextGrammarWand24}" Title="{DynamicResource Loc.Lyrics.Row.FuriganaFilter.Title}">
+                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.FuriganaFilter.Description}" Icon="{ui:SymbolIcon TextGrammarWand24}" Title="{DynamicResource Loc.Lyrics.Row.FuriganaFilter.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.FuriganaFilterEnabled, Mode=TwoWay}"/>
                     </components:SettingsRow>
-                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.BracketSymbols.Description}" Icon="{ui:SymbolIcon TextQuote24}" Title="{DynamicResource Loc.Lyrics.Row.BracketSymbols.Title}">
+                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.BracketSymbols.Description}" Icon="{ui:SymbolIcon TextQuote24}" Title="{DynamicResource Loc.Lyrics.Row.BracketSymbols.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.BracketSymbolsHidden, Mode=TwoWay}"/>
                     </components:SettingsRow>
                     <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon Translate24}">
@@ -304,7 +304,7 @@
             </components:SettingsGroup>
             <components:SettingsGroup GroupId="Common.Group.LyricsSources" Header="{DynamicResource Loc.Common.Group.LyricsSources}" Icon="{ui:SymbolIcon CloudArrowDown24}">
                 <StackPanel>
-                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Description}" Icon="{ui:SymbolIcon Video24}" Title="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Title}">
+                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Description}" Icon="{ui:SymbolIcon Video24}" Title="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.AllowBrowserAndVideoLyrics, Mode=TwoWay}"/>
                     </components:SettingsRow>
                     <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Description}" Icon="{ui:SymbolIcon TextFont24}" Title="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Title}">
@@ -377,7 +377,7 @@
                     </ui:CardExpander>
                 </StackPanel>
             </components:SettingsGroup>
-            <ui:Button Click="ResetButton_Click" Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="0,0,0,20"/>
+
         </StackPanel>
     </components:SettingsPageLayout>
 </Page>

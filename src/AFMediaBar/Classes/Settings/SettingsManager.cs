@@ -190,7 +190,6 @@ public static class SettingsManager
         var defaults = Defaults;
         next.TaskbarExperience = AFMediaBar.Classes.Services.Settings.SettingsResetPolicy.Content(next.TaskbarExperience,
             defaults.TaskbarExperience);
-        next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
         next.LyricsTextAlignment = defaults.LyricsTextAlignment;
         next.LyricsFixedWidthEnabled = defaults.LyricsFixedWidthEnabled;
         next.LyricsFixedWidthDip = defaults.LyricsFixedWidthDip;
@@ -268,6 +267,10 @@ public static class SettingsManager
         var next = Current.Clone(); var defaults = Defaults;
         next.QuickLaunch = defaults.QuickLaunch;
         next.SpectrumComponent = defaults.SpectrumComponent;
+        var previousMetrics = Current.PerformanceComponent.Normalize();
+        var targetMetrics = defaults.PerformanceComponent.Normalize();
+        if (!previousMetrics.Metrics!.SequenceEqual(targetMetrics.Metrics!) || !previousMetrics.GetMetricOrder().SequenceEqual(targetMetrics.GetMetricOrder()))
+            next.TaskbarExperience = ComponentLayoutPolicy.PreserveImplicitLayouts(Current);
         next.PerformanceComponent = defaults.PerformanceComponent;
         next.BluetoothBatteryWidget = defaults.BluetoothBatteryWidget with { Enabled = next.BluetoothBatteryWidget.Enabled };
         next.TaskbarExperience = next.TaskbarExperience with

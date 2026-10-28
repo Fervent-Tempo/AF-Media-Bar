@@ -1542,7 +1542,7 @@
       "prefixes": [
         "settings.taskbarExperience"
       ],
-      "text": "ResetContentLayout 恢复任务栏体验、三状态显隐及顺序但保留媒体字号；字号由 ResetTaskbarAppearance 恢复，ResetComponents 仅恢复组件参数，不覆盖布局显隐及顺序。旧 ResetDisplayModes 仍会恢复组件显隐等，不等于当前页面重置；两者均保留交互中的封面悬停模式。"
+      "text": "三状态组件布局由唯一列表编辑，未配置的状态沿用旧字段。常驻子页重置Resident和Idle及显示细节，保留Hover与组件参数；快捷控制子页仅重置Hover和按钮参数。旧ResetContentLayout兼容入口保留常驻和无媒体布局及显隐，不等于当前子页重置。共享设置与分模式几何保持既有投影，个人默认快照优先。"
     },
     {
       "id": "artwork-progress",
@@ -1702,7 +1702,7 @@
         "settings.performanceComponent",
         "settings.taskbarExperience.fullPanel.performanceVisuals"
       ],
-      "text": "小组件页 ResetComponents 恢复频谱、性能、蓝牙电量参数，以及媒体栏和完整面板的性能样式；保留完整面板缩放与分区显隐。ResetContentLayout 和 ResetDeviceManagement 保留这些小组件设置。性能 metrics 空或全无效回 SystemMemory；metricOrder 保存全部指标的顺序，运行时按此筛选已开启项；关闭再开启保留位置。读取旧列表时保留原有已开启顺序并将缺失指标补到末尾，不改变原来的选中项；缺失或 null 保留原有选中顺序后补齐未选项。枚举新增成员的发布状态独立核对。"
+      "text": "旧ResetComponents兼容入口恢复频谱、性能、蓝牙电量参数，以及媒体栏和完整面板的性能样式；保留完整面板缩放与分区显隐。当前性能子页只恢复性能主归属字段。轮换参与项或顺序改变前，固定未配置状态的有效布局，避免改变并排显隐。ResetContentLayout 和 ResetDeviceManagement 保留这些小组件设置。性能 metrics 空或全无效回 SystemMemory；metricOrder 保存全部指标的顺序，运行时按此筛选已开启项；关闭再开启保留位置。读取旧列表时保留原有已开启顺序并将缺失指标补到末尾，不改变原来的选中项；缺失或 null 保留原有选中顺序后补齐未选项。枚举新增成员的发布状态独立核对。"
     },
     {
       "id": "startup",
@@ -1792,7 +1792,7 @@
       "prefixes": [
         "settings.taskbarExperience.fullPanel"
       ],
-      "text": "窗口与内容共用缩放比例，缺省100%，持久化范围75%—200%；高度随内容自动适配，不保存独立窗口宽高。边缘拖动固定对侧与媒体栏贴合边；靠媒体栏的一侧锁定。恢复默认尺寸仅将比例恢复100%；已去掉未发布的独立宽高字段，开发中旧值不迁移，反序列化忽略。重开按原入口定位；工作区夹取不覆盖缩放偏好。完整面板缺少样式字段时百分比指标默认Area，其余Numeric；媒体栏缺少样式时均为Numeric。上下行共用SystemNetwork样式。缩放归内容布局页重置，性能样式归小组件页重置；均优先用户默认快照。"
+      "text": "窗口与内容共用缩放比例，缺省100%，范围75%—200%；不保存独立宽高。缺失整个fullPanel子对象时补100%与PanelDefault指标样式，区域继续沿用全关闭到Compact的旧回退。恢复默认尺寸仅恢复100%，工作区夹取不回写偏好。完整面板子页重置缩放、入口和区域显隐，保留性能样式；性能子页重置采样、轮换及媒体栏和面板的指标样式，保留三状态组件布局与面板缩放。均优先使用个人默认快照。未发布旧独立尺寸不迁移。"
     }
   ]
 }

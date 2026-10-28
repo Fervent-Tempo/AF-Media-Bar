@@ -1,65 +1,48 @@
-<UserControl x:Class="AFMediaBar.Components.SettingsPreview"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings">
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" x:Class="AFMediaBar.Components.SettingsPreview">
     <StackPanel>
-        <Border MinHeight="230" Padding="16,24" Background="{DynamicResource AfSettingsInputBrush}"
-            BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" CornerRadius="8">
-            <StackPanel VerticalAlignment="Center">
-                <Border Padding="12" CornerRadius="8" Background="{DynamicResource AfSettingsCardBrush}"
-                    BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1">
-                    <StackPanel>
-                        <ItemsControl ItemsSource="{Binding Items}">
-                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel VerticalAlignment="Center" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border x:Name="ItemSurface" Padding="7,6" Margin="{Binding DataContext.ItemMargin, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CornerRadius="5" VerticalAlignment="Center">
-                                        <StackPanel>
-                                            <TextBlock x:Name="ItemText" Text="{Binding Text}" FontSize="14" TextWrapping="Wrap" MaxWidth="180" />
-                                            <TextBlock x:Name="ItemDetail" Text="{Binding Detail}" FontSize="12" TextWrapping="Wrap" MaxWidth="180"
-                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                        </StackPanel>
-                                    </Border>
-                                    <DataTemplate.Triggers>
-                                        <DataTrigger Binding="{Binding Component}" Value="{x:Static settings:TaskbarRestComponent.MediaText}">
-                                            <Setter TargetName="ItemText" Property="FontSize" Value="{Binding DataContext.MediaFontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
-                                        </DataTrigger>
-                                        <Trigger SourceName="ItemDetail" Property="Text" Value=""><Setter TargetName="ItemDetail" Property="Visibility" Value="Collapsed" /></Trigger>
-                                        <DataTrigger Binding="{Binding Component}" Value="{x:Static settings:TaskbarRestComponent.Artwork}">
-                                            <Setter TargetName="ItemSurface" Property="Background" Value="{DynamicResource AfAccentTintBrush}" />
-                                            <Setter TargetName="ItemSurface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
-                                            <Setter TargetName="ItemSurface" Property="BorderThickness" Value="1" />
-                                            <Setter TargetName="ItemText" Property="FontSize" Value="28" />
-                                            <Setter TargetName="ItemText" Property="Foreground" Value="{DynamicResource AfAccentBrush}" />
-                                        </DataTrigger>
-                                        <MultiDataTrigger><MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding Component}" Value="{x:Static settings:TaskbarRestComponent.Artwork}" />
-                                            <Condition Binding="{Binding DataContext.SmallArtwork, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Value="True" />
-                                        </MultiDataTrigger.Conditions><Setter TargetName="ItemText" Property="FontSize" Value="22" /></MultiDataTrigger>
-                                        <MultiDataTrigger><MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding Component}" Value="{x:Static settings:TaskbarRestComponent.Artwork}" />
-                                            <Condition Binding="{Binding DataContext.ArtworkProgress, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Value="False" />
-                                        </MultiDataTrigger.Conditions><Setter TargetName="ItemSurface" Property="BorderThickness" Value="0" /></MultiDataTrigger>
-                                        <DataTrigger Binding="{Binding Component}" Value="{x:Static settings:TaskbarRestComponent.Spectrum}">
-                                            <Setter TargetName="ItemText" Property="Foreground" Value="{DynamicResource AfAccentBrush}" />
-                                            <Setter TargetName="ItemText" Property="FontSize" Value="22" />
-                                        </DataTrigger>
-                                    </DataTemplate.Triggers>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <Border Height="3" Margin="0,10,0,0" CornerRadius="1" Background="{DynamicResource AfAccentBrush}"
-                            Visibility="{Binding ShowProgress, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                        <TextBlock Text="{Binding EmptyText}" TextWrapping="Wrap" FontSize="13"
-                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                            Visibility="{Binding IsEmpty, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+        <Border Background="{DynamicResource AfSettingsPreviewSurfaceBrush}" CornerRadius="8">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="MinHeight" Value="120"/>
+                    <Setter Property="Padding" Value="12,20"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsWide, RelativeSource={RelativeSource AncestorType=components:SettingsPageLayout}}" Value="False">
+                            <Setter Property="MinHeight" Value="0"/>
+                            <Setter Property="Padding" Value="8"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Viewbox Stretch="Uniform" StretchDirection="DownOnly" MaxHeight="{Binding PreviewViewportHeight, RelativeSource={RelativeSource AncestorType=components:SettingsPageLayout}, FallbackValue=360}">
+                <components:SettingsPreviewScene/>
+            </Viewbox>
         </Border>
-        <CheckBox Margin="0,16,0,0" Content="{DynamicResource Loc.Settings.Preview.Idle}" IsChecked="{Binding ShowIdle, Mode=TwoWay}" FontSize="13"
-            Visibility="{Binding IsRest, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-        <TextBlock Margin="0,12,0,0" Text="{DynamicResource Loc.Settings.Preview.Note}" TextWrapping="Wrap" FontSize="13" LineHeight="20"
-            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        <TextBlock Text="{Binding ScaleLabel}" Margin="0,10,0,0" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsFull}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsWide, RelativeSource={RelativeSource AncestorType=components:SettingsPageLayout}}" Value="False">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+        <CheckBox Margin="0,14,0,0" Content="{DynamicResource Loc.Settings.Preview.Idle}" IsChecked="{Binding ShowIdle, Mode=TwoWay}" FontSize="13" Visibility="{Binding IsRest, Converter={StaticResource AfBooleanToVisibilityConverter}}"/>
+        <TextBlock Margin="0,12,0,0" Text="{DynamicResource Loc.Settings.Preview.Note}" TextWrapping="Wrap" FontSize="13" LineHeight="20" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsWide, RelativeSource={RelativeSource AncestorType=components:SettingsPageLayout}}" Value="False">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
     </StackPanel>
 </UserControl>

@@ -42,6 +42,7 @@
             Key="F"
             Command="{Binding FocusSearchCommand}"
             Modifiers="Control" />
+        <KeyBinding Key="Left" Modifiers="Alt" Command="{Binding GoBackCommand}"/>
     </ui:FluentWindow.InputBindings>
     <Grid>
         <ui:TitleBar

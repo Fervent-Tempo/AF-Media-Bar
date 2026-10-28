@@ -30,7 +30,7 @@ public partial class TaskbarFullPanelWindow
     private string _resizeEdge = string.Empty;
     private FullPanelPlacementSide _resolvedSide;
 
-    private IEnumerable<MetricPresenter> PanelPresenters() => [CpuPresenter, RamPresenter, GpuPresenter, ProcessPresenter, NetworkPresenter];
+    private IEnumerable<MetricPresenter> PanelPresenters() => PanelMetrics.Presenters;
 
     private void ApplyChartStyles(MetricVisualSettings visuals)
     {

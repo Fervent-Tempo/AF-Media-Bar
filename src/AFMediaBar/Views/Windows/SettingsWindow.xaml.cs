@@ -43,6 +43,9 @@ namespace AFMediaBar.Views.Windows
         private readonly Dictionary<string, SettingsPageKey> _lastSectionPages = new();
         private readonly Dictionary<string, NavigationViewItem> _sectionItems = new();
         private bool _closed;
+        private bool _returning;
+        private readonly Stack<SettingsPageKey> _history = new();
+        public RelayCommand GoBackCommand { get; }
 
         public SettingsWindowViewModel ViewModel { get; }
 
@@ -72,6 +75,7 @@ namespace AFMediaBar.Views.Windows
         {
             ViewModel = viewModel;
             FocusSearchCommand = new RelayCommand(FocusSearch);
+            GoBackCommand = new RelayCommand(GoBack, () => _history.Count > 0);
             _appIconService = appIconService;
             _log = log;
             _sessionScope = scopeFactory.CreateScope();
@@ -110,6 +114,7 @@ namespace AFMediaBar.Views.Windows
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;
             ApplyUpdateNotice();
             _appIconService.IconChanged += OnApplicationIconChanged;
+            Translations.LanguageChanged += OnHeaderLanguageChanged;
             Closed += SettingsWindow_ClosedForUpdateNotice;
         }
 
@@ -123,8 +128,12 @@ namespace AFMediaBar.Views.Windows
             var monitor = AFMediaBar.Classes.Interop.NativeMethods.MonitorFromWindow(handle, 2);
             if (!AFMediaBar.Classes.Interop.NativeMethods.GetMonitorInfo(monitor, ref info)) return;
             var dpi = VisualTreeHelper.GetDpi(this);
-            Width = Math.Max(MinWidth, Math.Min(Width, (info.rcWork.Right - info.rcWork.Left) / dpi.DpiScaleX - 32));
-            Height = Math.Max(MinHeight, Math.Min(Height, (info.rcWork.Bottom - info.rcWork.Top) / dpi.DpiScaleY - 32));
+            var availableWidth = Math.Max(1, (info.rcWork.Right - info.rcWork.Left) / dpi.DpiScaleX - 32);
+            var availableHeight = Math.Max(1, (info.rcWork.Bottom - info.rcWork.Top) / dpi.DpiScaleY - 32);
+            MinWidth = Math.Min(MinWidth, availableWidth);
+            MinHeight = Math.Min(MinHeight, availableHeight);
+            Width = Math.Clamp(Width, MinWidth, availableWidth);
+            Height = Math.Clamp(Height, MinHeight, availableHeight);
         }
 
         /// <summary>
@@ -315,6 +324,7 @@ namespace AFMediaBar.Views.Windows
             ViewModel.Unsubscribe();
             ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             _appIconService.IconChanged -= OnApplicationIconChanged;
+            Translations.LanguageChanged -= OnHeaderLanguageChanged;
             Closed -= SettingsWindow_ClosedForUpdateNotice;
         }
 
@@ -353,7 +363,11 @@ namespace AFMediaBar.Views.Windows
         {
             if (args.Page is Page destination)
             {
-                _currentPage = SettingsPageProvider.PageTypes.First(pair => pair.Value == destination.GetType()).Key;
+                var next = SettingsPageProvider.PageTypes.First(pair => pair.Value == destination.GetType()).Key;
+                if (next != _currentPage && !_returning) _history.Push(_currentPage);
+                _currentPage = next;
+                GoBackCommand.NotifyCanExecuteChanged();
+                Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(UpdatePageHeader));
                 if (SettingsNavigationCatalog.SectionFor(_currentPage) is { } section)
                     _lastSectionPages[section.Id] = _currentPage;
                 ExpandCurrentSection();
@@ -366,6 +380,39 @@ namespace AFMediaBar.Views.Windows
                 _transitionContent = content;
                 SettingsRevealAnimator.Replay(content);
             }
+        }
+
+        private void GoBack()
+        {
+            while (_history.TryPop(out var page))
+            {
+                if (SettingsPageCatalog.Find(page, _contexts.Current.Mode) is null) continue;
+                _returning = true;
+                try { Navigate(SettingsPageProvider.PageTypes[page]); }
+                finally { _returning = false; GoBackCommand.NotifyCanExecuteChanged(); }
+                return;
+            }
+            GoBackCommand.NotifyCanExecuteChanged();
+        }
+
+        private void OnHeaderLanguageChanged(object? sender, EventArgs args)
+        {
+            UpdatePageHeader();
+            AutoSuggestBox.IsSuggestionListOpen = false;
+            AutoSuggestBox.ItemsSource = null;
+        }
+        private void UpdatePageHeader()
+        {
+            if (_closed || FindDescendant<SettingsGroupStrip>(RootNavigation) is not { } strip) return;
+            var definition = SettingsPageCatalog.Find(_currentPage, _contexts.Current.Mode);
+            if (definition is null) return;
+            var section = SettingsNavigationCatalog.SectionFor(_currentPage);
+            var pageTitle = Translations.Get(definition.TitleKey);
+            strip.Breadcrumb = section is null || section.Pages.Count == 1 ? pageTitle : $"{Translations.Get(section.TitleKey)} › {pageTitle}";
+            strip.BackCommand = GoBackCommand;
+            strip.StatusText = _currentPage == SettingsPageKey.QuickStart || definition.IsFooter ? string.Empty :
+                Translations.Get(definition.IsGlobal && !definition.HasModeContent ? "Integration.Scope.Shared" :
+                    _contexts.Current.Mode == SettingsMode.FloatingBar ? "Integration.Mode.Floating" : "Integration.Mode.Taskbar");
         }
 
         private void FocusSearch()
@@ -517,6 +564,7 @@ namespace AFMediaBar.Views.Windows
                 if (!definition.IsGlobal || _currentPage == SettingsPageKey.ScreenAndPlacement) RootNavigation.ReplaceContent(content);
             }
             _displayedContext = _contexts.Current;
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(UpdatePageHeader));
             AutoSuggestBox.IsSuggestionListOpen = false;
             AutoSuggestBox.ItemsSource = null;
         }

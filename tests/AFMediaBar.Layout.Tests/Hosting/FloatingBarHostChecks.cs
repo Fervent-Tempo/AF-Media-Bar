@@ -38,8 +38,8 @@ internal static class FloatingBarHostChecks
                 Experiments = new() { FloatingBar = true },
                 TaskbarExperience = TaskbarExperienceSettings.Default with { SpectrumVisible = false, PerformanceVisible = false }
             };
-            var display = new DisplayMonitorInfo("test", "Test display", true,
-                new Rect(0, 0, 1200, 800), new Rect(0, 0, 1200, 760), 96, 96);
+            // 使用实际工作区与 DPI，避免 WPF 按桌面缩放提交尺寸后覆盖虚构的 96 DPI 边界。
+            var display = new DisplayMonitorService().GetMonitors().First(m => m.IsPrimary) with { DeviceId = "test" };
             var limits = new FloatingBarLengthConstraints();
             // 未触发的命令与业务服务不构造；若布局错误地要求采样，本回归会失败。
             window = new FloatingBarWindow(battery, "test", display, null!, null!, audio, null!, null!, null!, mouse,
@@ -55,6 +55,8 @@ internal static class FloatingBarHostChecks
             await window.ActivateAsync(CancellationToken.None);
             await Task.Delay(100);
             Assert.IsTrue(window.IsVisible);
+            Assert.AreEqual(display.DpiX, AFMediaBar.Classes.Interop.NativeMethods.GetDpiForWindow(new WindowInteropHelper(window).Handle),
+                "注入的显示器快照必须与真实 HWND 的 DPI 一致。");
             VerifyPureMoves(window);
             await VerifyContentResizePreservesPanelAsync(window);
             Assert.IsTrue(limits.Range.HasAvailableRange);
@@ -125,6 +127,10 @@ internal static class FloatingBarHostChecks
         var sizeTimer = (DispatcherTimer)typeof(FloatingBarWindow).GetField("_sizeTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
         var targetLength = typeof(FloatingBarWindow).GetField("_targetPrimary", BindingFlags.Instance | BindingFlags.NonPublic)!;
         var handle = new WindowInteropHelper(window).Handle;
+        var dpiScale = AFMediaBar.Classes.Interop.NativeMethods.GetDpiForWindow(handle) / 96d;
+        int ToPixels(double lengthDip) => (int)Math.Ceiling(lengthDip * dpiScale);
+        var availableDip = (window.IsVerticalPresentation ? window.Monitor.WorkArea.Height : window.Monitor.WorkArea.Width) / dpiScale;
+        var requestScale = Math.Min(1, availableDip / 700);
         var center = window.CenterPx;
         var edge = window.DockEdge;
         Assert.IsTrue(AFMediaBar.Classes.Interop.NativeMethods.GetWindowRect(handle, out var original));
@@ -151,18 +157,18 @@ internal static class FloatingBarHostChecks
                 apply.Invoke(window, [false]);
                 window.SetFullPanelOpen(true);
                 transitions = 0;
-                foreach (var length in new[] { 300, 630, 250 })
+                foreach (var length in new[] { 300, 630, 250 }.Select(value => value * requestScale))
                 {
                     Resize(length, immediate: true);
-                    Assert.AreEqual(length, NativeLength(), "歌词尺寸请求必须真正更新原生窗口。");
+                    Assert.AreEqual(ToPixels(length), NativeLength(), "歌词 DIP 尺寸请求必须按窗口 DPI 更新原生像素边界。");
                     Assert.AreEqual(0, transitions, $"{dock} 的内容伸缩不能触发关闭完整面板的位置迁移。");
                 }
-                Resize(430, immediate: false);
+                Resize(430 * requestScale, immediate: false);
                 var deadline = Stopwatch.StartNew();
                 while (sizeTimer.IsEnabled && deadline.Elapsed < TimeSpan.FromSeconds(3)) await Task.Delay(20);
                 Assert.IsFalse(sizeTimer.IsEnabled, "常规尺寸动画必须完成。");
                 // 竖排布局可以在过渡中重新申请长度，验证最终目标而不是中间请求。
-                Assert.AreEqual((int)Math.Ceiling((double)targetLength.GetValue(window)!), NativeLength());
+                Assert.AreEqual(ToPixels((double)targetLength.GetValue(window)!), NativeLength());
                 Assert.AreEqual(0, transitions, "尺寸动画的中间帧也不能关闭完整面板。");
             }
             window.SetFullPanelOpen(false);
@@ -179,7 +185,7 @@ internal static class FloatingBarHostChecks
             window.PlacementTransitionStarted -= PlacementChanged;
             window.SetFullPanelOpen(false);
             window.RestoreCenter(center, edge);
-            Resize(originalLength, immediate: true);
+            Resize(originalLength / dpiScale, immediate: true);
             apply.Invoke(window, [false]);
         }
     }
@@ -249,7 +255,10 @@ internal static class FloatingBarHostChecks
             Assert.AreEqual(normalCenter, window.CenterPx, "折叠帧不得覆盖正常中心。");
             Assert.AreNotEqual(0, AFMediaBar.Classes.Interop.NativeMethods.GetWindowRgnBox(handle, out var region));
             Assert.IsTrue(AFMediaBar.Classes.Interop.NativeMethods.GetWindowRect(handle, out var rect));
-            Assert.AreEqual(6, edge is FloatingBarDockEdge.Left or FloatingBarDockEdge.Right ? region.Right - region.Left : region.Bottom - region.Top);
+            var stripPx = edge is FloatingBarDockEdge.Left or FloatingBarDockEdge.Right ? region.Right - region.Left : region.Bottom - region.Top;
+            var expectedStripPx = 6 * window.Monitor.DpiX / 96d;
+            Assert.IsTrue(stripPx >= Math.Floor(expectedStripPx) && stripPx <= Math.Ceiling(expectedStripPx),
+                "6 DIP 折叠区域转换为整数像素时只允许取整差异。");
             Assert.IsTrue(rect.Left + region.Left >= window.Monitor.WorkArea.Left && rect.Left + region.Right <= window.Monitor.WorkArea.Right);
             Assert.IsTrue(rect.Top + region.Top >= window.Monitor.WorkArea.Top && rect.Top + region.Bottom <= window.Monitor.WorkArea.Bottom);
             using (window.KeepEdgeExpanded())
@@ -312,7 +321,7 @@ internal static class FloatingBarHostChecks
             fold.Invoke(window, [true, true]);
             var saved = SettingsManager.Current.FloatingBar.Positions.Single();
             Assert.AreEqual(FloatingBarDockEdge.Left, saved.DockEdge);
-            Assert.AreEqual(window.CenterPx.X, window.Monitor.WorkArea.Left + saved.CenterXDip);
+            Assert.AreEqual(window.CenterPx.X, window.Monitor.WorkArea.Left + saved.CenterXDip * window.Monitor.DpiX / 96d);
             Assert.IsTrue(saved.CenterXDip >= 0);
             fold.Invoke(window, [false, true]);
             fold.Invoke(window, [true, true]);

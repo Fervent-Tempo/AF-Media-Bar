@@ -3300,8 +3300,8 @@ Mẫu bị loại: {3}; sự kiện: {4}</value></data>
   <data name="Settings.Preview.Title" xml:space="preserve"><value>Xem trước</value></data>
   <data name="Settings.Preview.Track" xml:space="preserve"><value>Bài hát mẫu</value></data>
   <data name="Settings.Preview.Artist" xml:space="preserve"><value>Nghệ sĩ mẫu</value></data>
-  <data name="Settings.Preview.Note" xml:space="preserve"><value>Dùng cài đặt hiện tại với nội dung mẫu cố định, không đọc dữ liệu phát hay thiết bị thực tế.</value></data>
-  <data name="Settings.Preview.Empty" xml:space="preserve"><value>Không giữ lại thành phần nào. Thanh sẽ ẩn khi không có nội dung phát.</value></data>
+  <data name="Settings.Preview.Note" xml:space="preserve"><value>Dùng thiết lập hiện tại và dữ liệu mẫu cố định, vừa với vùng hiển thị. Không điều khiển trình phát hoặc thiết bị.</value></data>
+<data name="Settings.Preview.Empty" xml:space="preserve"><value>Không giữ lại thành phần nào. Thanh sẽ ẩn khi không có nội dung phát.</value></data>
   <data name="Settings.Preview.Idle" xml:space="preserve"><value>Xem trước khi không phát</value></data>
   <data name="Settings.Personalization.Subtitle" xml:space="preserve"><value>Đặt chủ đề, chất liệu cửa sổ, màu nhấn và phông chữ.</value></data>
   <data name="Settings.Personalization.Accent" xml:space="preserve"><value>Màu nhấn</value></data>
@@ -3650,4 +3650,15 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Integration.Panel.Scale.Description" xml:space="preserve"><value>Đổi tỷ lệ cửa sổ và nội dung cùng nhau từ 75% đến 200%. Cạnh sát thanh được giữ cố định.</value></data>
   <data name="Integration.Panel.ResetSize" xml:space="preserve"><value>Khôi phục kích thước mặc định</value></data>
   <data name="Settings.RestState.Description" xml:space="preserve"><value>Chọn thành phần, thứ tự và chi tiết cho trạng thái thường trực và không có phương tiện.</value></data>
+
+  <data name="Integration.Back" xml:space="preserve"><value>Quay lại</value></data>
+
+  <data name="Integration.Scope.Shared" xml:space="preserve"><value>Thiết lập chung</value></data>
+
+  <data name="Integration.Mode.Taskbar" xml:space="preserve"><value>Chế độ thanh tác vụ</value></data>
+
+  <data name="Integration.Mode.Floating" xml:space="preserve"><value>Chế độ nổi</value></data>
+
+  <data name="Integration.Preview.Scale" xml:space="preserve"><value>Tỷ lệ bảng {0}% · xem trước vừa khung</value></data>
+  <data name="Settings.Page.QuickControls.Description" xml:space="preserve"><value>Thiết lập điều khiển khi di chuột, thứ tự và kích thước nút.</value></data>
 </root>

@@ -49,6 +49,16 @@ public sealed class ApplicationAppearanceResources(ResourceDictionary resources)
             : TintSettingsSurface(dark ? Color.FromRgb(72, 72, 72) : Color.FromRgb(216, 216, 216), accent.Accent, 0.08));
         _resources["AfSettingsNavigationBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(navigationColor, acrylic ? (byte)(dark ? 160 : 184) : byte.MaxValue));
         _resources["AfSettingsPreviewSurfaceBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(groupColor, acrylic ? (byte)(dark ? 160 : 180) : byte.MaxValue));
+        foreach (var (name, tone) in new[]
+        {
+            ("Sage", dark ? Color.FromRgb(157, 183, 164) : Color.FromRgb(100, 133, 113)),
+            ("Clay", dark ? Color.FromRgb(210, 156, 131) : Color.FromRgb(182, 125, 101)),
+            ("Lavender", dark ? Color.FromRgb(184, 165, 205) : Color.FromRgb(138, 123, 159))
+        })
+        {
+            _resources[$"AfTutorial{name}InkBrush"] = highContrast ? SystemColors.WindowTextBrush : CreateFrozenBrush(tone);
+            _resources[$"AfTutorial{name}SurfaceBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(tone, dark ? (byte)28 : (byte)18));
+        }
         // 中性遮罩抑制亚克力后的强色背景；不改变系统材质或用户的浓度参数。
         _resources["AfWindowAcrylicOverlayBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(
             WithAlpha(dark ? Color.FromRgb(24, 24, 24) : Color.FromRgb(246, 246, 246), dark ? (byte)154 : (byte)170));

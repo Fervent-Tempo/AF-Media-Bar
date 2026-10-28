@@ -3260,8 +3260,8 @@
   <data name="Settings.Preview.Title" xml:space="preserve"><value>局部预览</value></data>
   <data name="Settings.Preview.Track" xml:space="preserve"><value>示例曲目</value></data>
   <data name="Settings.Preview.Artist" xml:space="preserve"><value>示例歌手</value></data>
-  <data name="Settings.Preview.Note" xml:space="preserve"><value>使用当前设置和固定示例，不读取实际媒体或设备数据。</value></data>
-  <data name="Settings.Preview.Empty" xml:space="preserve"><value>未保留组件，没有媒体时媒体栏隐藏。</value></data>
+  <data name="Settings.Preview.Note" xml:space="preserve"><value>使用当前设置和固定示例数据；预览按可用区域缩放，不操作播放器或设备。</value></data>
+<data name="Settings.Preview.Empty" xml:space="preserve"><value>未保留组件，没有媒体时媒体栏隐藏。</value></data>
   <data name="Settings.Preview.Idle" xml:space="preserve"><value>预览无媒体状态</value></data>
   <data name="Settings.Personalization.Subtitle" xml:space="preserve"><value>设置应用主题、窗口材质、强调色和字体。</value></data>
   <data name="Settings.Personalization.Accent" xml:space="preserve"><value>强调色</value></data>
@@ -3613,4 +3613,15 @@
   <data name="Integration.Panel.Scale.Description" xml:space="preserve"><value>同步缩放窗口与内容，范围为 75%–200%；靠近媒体栏的一侧保持贴合。</value></data>
   <data name="Integration.Panel.ResetSize" xml:space="preserve"><value>恢复默认尺寸</value></data>
   <data name="Settings.RestState.Description" xml:space="preserve"><value>设置常驻与无媒体状态的组件、顺序和显示细节。</value></data>
+
+  <data name="Integration.Back" xml:space="preserve"><value>返回上一页</value></data>
+
+  <data name="Integration.Scope.Shared" xml:space="preserve"><value>全局设置</value></data>
+
+  <data name="Integration.Mode.Taskbar" xml:space="preserve"><value>任务栏模式</value></data>
+
+  <data name="Integration.Mode.Floating" xml:space="preserve"><value>悬浮模式</value></data>
+
+  <data name="Integration.Preview.Scale" xml:space="preserve"><value>面板缩放 {0}% · 适配显示</value></data>
+  <data name="Settings.Page.QuickControls.Description" xml:space="preserve"><value>设置悬停控制、组件顺序及按钮尺寸。</value></data>
 </root>

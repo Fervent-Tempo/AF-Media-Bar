@@ -7,6 +7,18 @@ namespace AFMediaBar.Classes.Services;
 /// <summary>解析组件布局，旧设置只在新状态尚未配置时参与，不维护第二份可写顺序。</summary>
 public static class ComponentLayoutPolicy
 {
+    /// <summary>写入轮换参数前固定旧配置的有效布局，不在读取时迁移，也不覆盖已有状态。</summary>
+    public static TaskbarExperienceSettings PreserveImplicitLayouts(AppSettings settings)
+    {
+        var layouts = settings.TaskbarExperience.ComponentLayouts ?? new();
+        if (layouts.Resident is not null && layouts.Idle is not null) return settings.TaskbarExperience;
+        return settings.TaskbarExperience with { ComponentLayouts = layouts with
+        {
+            Resident = layouts.Resident ?? ResolveAll(settings, BarLayoutState.Resident).ToArray(),
+            Idle = layouts.Idle ?? ResolveAll(settings, BarLayoutState.Idle).ToArray()
+        } };
+    }
+
     public const double HandleLength = 12;
     public static IReadOnlyList<TaskbarRestComponent> MetricComponents { get; } =
         [TaskbarRestComponent.SystemMemory, TaskbarRestComponent.SystemCpu, TaskbarRestComponent.SystemGpu, TaskbarRestComponent.ProcessMemory, TaskbarRestComponent.SystemNetwork];

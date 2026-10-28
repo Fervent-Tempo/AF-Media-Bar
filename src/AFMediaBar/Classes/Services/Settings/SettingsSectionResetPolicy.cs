@@ -35,7 +35,7 @@ internal static class SettingsSectionResetPolicy
             case SettingsResetScope.QuickControls:
                 next.TaskbarExperience = rest with { HoverLayerEnabled = target.HoverLayerEnabled, HoverControls = target.HoverControls,
                     Density = target.Density, HoverButtonSpacingDip = target.HoverButtonSpacingDip,
-                    ComponentLayouts = (rest.ComponentLayouts ?? new()) with { Hover = target.ComponentLayouts?.Hover } };
+                    ComponentLayouts = rest.ComponentLayouts is null && target.ComponentLayouts?.Hover is null ? null : (rest.ComponentLayouts ?? new()) with { Hover = target.ComponentLayouts?.Hover } };
                 break;
             case SettingsResetScope.FullPanel:
                 next.TaskbarExperience = rest with { FullLayerEnabled = target.FullLayerEnabled, FullPanel = target.FullPanel with { PerformanceVisuals = rest.FullPanel.PerformanceVisuals },
@@ -71,6 +71,7 @@ internal static class SettingsSectionResetPolicy
                 break;
             case SettingsResetScope.Spectrum: next.SpectrumComponent = defaults.SpectrumComponent; break;
             case SettingsResetScope.Performance:
+                rest = ComponentLayoutPolicy.PreserveImplicitLayouts(current);
                 next.PerformanceComponent = defaults.PerformanceComponent;
                 next.TaskbarExperience = rest with { FullPanel = rest.FullPanel with { PerformanceVisuals = target.FullPanel.PerformanceVisuals } };
                 break;

@@ -12,7 +12,11 @@
  <components:SettingsPageLayout x:Name="PageLayout">
   <components:SettingsPageLayout.Header><components:SettingsGroupStrip
    Title="{DynamicResource Loc.Common.Page.ApplicationAppearance}" Subtitle="{DynamicResource Loc.Settings.Personalization.Subtitle}"
-   PageIcon="{ui:SymbolIcon Color24}" Target="{Binding ScrollViewer, ElementName=PageLayout}" /></components:SettingsPageLayout.Header>
+   PageIcon="{ui:SymbolIcon Color24}" Target="{Binding ScrollViewer, ElementName=PageLayout}" >
+                <components:SettingsGroupStrip.HeaderActions>
+                    <ui:Button Click="ResetButton_Click" Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top"/>
+                </components:SettingsGroupStrip.HeaderActions>
+            </components:SettingsGroupStrip></components:SettingsPageLayout.Header>
   <components:SettingsPageLayout.Preview><StackPanel>
    <Border Padding="18" Margin="0,0,0,16" CornerRadius="8" Background="{DynamicResource AfSettingsInputBrush}"
     BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1">
@@ -346,7 +350,6 @@
                         </Border>
                     </StackPanel>
                 </components:SettingsGroup>
-   <ui:Button Click="ResetButton_Click" Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Margin="0,0,0,20" />
   </StackPanel>
  </components:SettingsPageLayout>
 </Page>

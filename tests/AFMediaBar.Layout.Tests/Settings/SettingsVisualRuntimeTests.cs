@@ -37,6 +37,7 @@ public sealed class SettingsVisualRuntimeTests
         {
             VerifyNumericBinding(app);
             VerifyPageMarkup(app);
+            VerifyGeneratedRowSearch();
             VerifyMetricStylePicker();
             VerifyFullPanelMinimumSize();
             _ = new ExperimentalPage(null!);
@@ -206,7 +207,7 @@ public sealed class SettingsVisualRuntimeTests
         app.Resources["AppTextStrongFontWeight"] = FontWeights.SemiBold;
         var root = FindRepository();
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
-        var eventNames = new HashSet<string> { "Loaded", "Unloaded", "Click", "SelectionChanged", "Checked", "Unchecked", "SizeChanged", "MouseLeftButtonDown", "KeyDown", "IsVisibleChanged", "PreviewKeyDown", "LostKeyboardFocus" };
+        var eventNames = new HashSet<string> { "Loaded", "Unloaded", "Click", "SelectionChanged", "Checked", "Unchecked", "SizeChanged", "MouseLeftButtonDown", "KeyDown", "IsVisibleChanged", "PreviewKeyDown", "LostKeyboardFocus", "PreviewMouseWheel" };
         foreach (var name in new[] { "QuickStart", "DisplayModes", "ScreenAndPlacement", "Appearance", "ApplicationAppearance", "RestState", "Interaction", "Lyrics", "ComponentsSettings", "FullPanel", "WidgetsSettings", "Spectrum", "Performance", "BluetoothBattery", "ExtraFeatures", "TrackNotifications", "Application", "Configuration", "Diagnostics", "MemoryTools", "DeviceManagement", "Experimental", "ReleaseHighlights", "About" })
         {
             var document = XDocument.Load(Path.Combine(root, "src", "AFMediaBar", "Views", "Pages", name + "Page.xaml"));
@@ -230,8 +231,63 @@ public sealed class SettingsVisualRuntimeTests
                 layout.ApplyTemplate();
                 Assert.IsInstanceOfType<Panel>(layout.ScrollViewer?.Content,
                     name + " must expose its groups directly to the pinned group strip.");
+                if (name == "QuickStart") VerifyQuickStartScrolling(page, layout);
             }
         }
+    }
+
+    private static void VerifyGeneratedRowSearch()
+    {
+        var list = new ItemsControl { ItemsSource = Enumerable.Range(0, 18).Select(index => new { Id = "dynamic:" + index, Title = "Entry " + index }).ToArray() };
+        list.ItemTemplate = (DataTemplate)XamlReader.Parse("""
+            <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:components="clr-namespace:AFMediaBar.Components;assembly=AFMediaBar">
+                <components:SettingsRow Title="{Binding Title}" OptionId="{Binding Id}" Height="64"><CheckBox/></components:SettingsRow>
+            </DataTemplate>
+            """);
+        var group = new SettingsGroup { GroupId = "generated", Header = "Generated", Content = list };
+        var body = new StackPanel(); body.Children.Add(group);
+        var scroll = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        var strip = new SettingsGroupStrip { Target = scroll };
+        var grid = new Grid(); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); grid.RowDefinitions.Add(new RowDefinition());
+        grid.Children.Add(strip); Grid.SetRow(scroll, 1); grid.Children.Add(scroll);
+        var window = new Window { Content = grid, Width = 600, Height = 450, Left = -32000, Top = -32000, ShowActivated = false, ShowInTaskbar = false };
+        void Pump()
+        {
+            var frame = new DispatcherFrame();
+            window.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() => frame.Continue = false));
+            Dispatcher.PushFrame(frame);
+        }
+        try
+        {
+            window.Show(); Pump(); scroll.ScrollToTop(); Pump();
+            strip.RevealGroup("generated", "dynamic:17"); Pump();
+            Assert.IsTrue(scroll.VerticalOffset > 0, "搜索必须定位模板生成的目标行，而不是退回分组顶部。");
+        }
+        finally { window.Close(); }
+    }
+
+    private static void VerifyQuickStartScrolling(Page page, SettingsPageLayout layout)
+    {
+        var navigation = new NavigationView { IsPaneOpen = false, Transition = Wpf.Ui.Animations.Transition.None };
+        var window = new Window { Content = navigation, Width = 1200, Height = 420, Left = -32000, Top = -32000, ShowActivated = false, ShowInTaskbar = false };
+        void Pump()
+        {
+            var frame = new DispatcherFrame();
+            page.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() => frame.Continue = false));
+            Dispatcher.PushFrame(frame);
+        }
+        try
+        {
+            window.Show(); navigation.ReplaceContent(page); Pump();
+            var scroll = layout.ScrollViewer!;
+            Assert.IsTrue(scroll.ScrollableHeight > 0, "快速开始必须在导航宿主内获得有限视口。");
+            scroll.ScrollToTop(); Pump();
+            ((FrameworkElement)scroll.Content).RaiseEvent(new System.Windows.Input.MouseWheelEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, -120)
+            { RoutedEvent = System.Windows.Input.Mouse.MouseWheelEvent });
+            Pump();
+            Assert.IsTrue(scroll.VerticalOffset > 0, "内容空白处的滚轮应交给页面滚动。");
+        }
+        finally { window.Close(); }
     }
 
     private static void VerifyPreferredSourceIdentity()

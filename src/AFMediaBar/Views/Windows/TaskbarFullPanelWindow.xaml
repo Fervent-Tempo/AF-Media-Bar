@@ -12,7 +12,7 @@
         FontWeight="{DynamicResource AppTextFontWeight}"
         Foreground="{DynamicResource TextFillColorPrimaryBrush}"
         Deactivated="Window_Deactivated" PreviewKeyDown="Window_PreviewKeyDown">
-    <ui:FluentWindow.Resources>
+    <ui:FluentWindow.Resources><ResourceDictionary><ResourceDictionary.MergedDictionaries><ResourceDictionary Source="/AFMediaBar;component/Resources/MediaVisualResources.xaml"/></ResourceDictionary.MergedDictionaries>
         <Style TargetType="{x:Type ui:Button}" BasedOn="{StaticResource {x:Type ui:Button}}">
             <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
             <Setter Property="RenderTransform">
@@ -26,54 +26,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-        <Style x:Key="PanelPlayButtonStyle" TargetType="{x:Type ui:Button}" BasedOn="{StaticResource {x:Type ui:Button}}">
-            <Setter Property="Background" Value="{DynamicResource AfAccentBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource AfOnAccentBrush}" />
-            <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type ui:Button}">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="24">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{DynamicResource AfAccentHoverBrush}" /></Trigger>
-                <Trigger Property="IsPressed" Value="True"><Setter Property="Background" Value="{DynamicResource AfAccentPressedBrush}" /></Trigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="PanelCardStyle" TargetType="Border">
-            <Setter Property="Padding" Value="10" />
-            <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-        </Style>
-        <Style x:Key="PanelLabelStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-        </Style>
-        <Style x:Key="PanelMetricStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="15" />
-            <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
-            <Setter Property="Margin" Value="0,4,0,0" />
-            <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
-        </Style>
-        <Style x:Key="PanelDeviceStyle" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
-            <Setter Property="Popup.Placement" Value="Top" />
-            <Setter Property="MinHeight" Value="36" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="ItemTemplate">
-                <Setter.Value>
-                    <DataTemplate><TextBlock Text="{Binding MenuLabel}" TextWrapping="Wrap" MaxWidth="320" /></DataTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </ui:FluentWindow.Resources>
+    </ResourceDictionary></ui:FluentWindow.Resources>
     <Grid>
     <Grid x:Name="PanelSizingRoot" Width="424" Margin="8" HorizontalAlignment="Left">
         <Grid.LayoutTransform><ScaleTransform x:Name="ContentScale" /></Grid.LayoutTransform>
@@ -172,15 +125,7 @@
                 </Border>
 
                 <Border x:Name="PerformanceSection" Style="{StaticResource PanelCardStyle}">
-                    <Grid>
-                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-                        <components:MetricPresenter x:Name="CpuPresenter" Grid.Column="0" Metric="SystemCpu" Compact="False" Height="60" Margin="0,0,6,6" />
-                        <components:MetricPresenter x:Name="RamPresenter" Grid.Column="1" Metric="SystemMemory" Compact="False" Height="60" Margin="0,0,6,6" />
-                        <components:MetricPresenter x:Name="GpuPresenter" Grid.Column="2" Metric="SystemGpu" Compact="False" Height="60" Margin="0,0,0,6" />
-                        <components:MetricPresenter x:Name="ProcessPresenter" Grid.Row="1" Metric="ProcessMemory" Compact="False" Height="60" Margin="0,0,6,0" />
-                        <components:MetricPresenter x:Name="NetworkPresenter" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Metric="SystemNetwork" Compact="False" Height="60" />
-                    </Grid>
+                    <components:FullPanelMetricsView x:Name="PanelMetrics"/>
                 </Border>
             </StackPanel>
             </ScrollViewer>
