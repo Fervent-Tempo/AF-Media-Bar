@@ -29,7 +29,7 @@ public sealed class SingleWindowHostTests
                 current = new Window { Width = 40, Height = 40, Left = -20000, Top = -20000, Opacity = 0, ShowInTaskbar = false, ShowActivated = false };
                 current.SourceInitialized += (_, _) =>
                 {
-                    host.RequestOpen(_ => navigation = 2);
+                    host.RequestOpen(window => { Assert.IsTrue(window.IsLoaded); navigation = 2; });
                     dispatcher.Invoke(DispatcherPriority.Background, new Action(() => { }));
                 };
                 return current;
@@ -48,6 +48,10 @@ public sealed class SingleWindowHostTests
                 await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 Assert.AreEqual(WindowState.Normal, current.WindowState);
                 host.RequestOpen(_ => navigation = 3);
+                // UI 暂不泵消息，让后台生产者先投递请求，随后关闭窗口。
+                var trayRequest = new Thread(() => host.RequestOpen(_ => navigation = 3));
+                trayRequest.Start();
+                Assert.IsTrue(trayRequest.Join(TimeSpan.FromSeconds(2)));
                 current.Close();
                 await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 Assert.AreEqual(1, created);

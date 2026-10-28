@@ -13,7 +13,8 @@ public sealed class SingleWindowHost<TWindow>(Dispatcher dispatcher, Func<TWindo
     private DispatcherOperation? _navigationOperation;
     private Action<TWindow>? _navigation;
     private bool _opening;
-    private bool _disposed;
+    private volatile bool _disposed;
+    private int _windowVersion;
 
     public event EventHandler? WindowClosed;
 
@@ -22,7 +23,11 @@ public sealed class SingleWindowHost<TWindow>(Dispatcher dispatcher, Func<TWindo
         if (_disposed || dispatcher.HasShutdownStarted) return;
         if (!dispatcher.CheckAccess())
         {
-            dispatcher.BeginInvoke(() => RequestOpen(navigation));
+            var version = Volatile.Read(ref _windowVersion);
+            dispatcher.BeginInvoke(() =>
+            {
+                if (version == _windowVersion) RequestOpen(navigation);
+            });
             return;
         }
         if (navigation is not null) _navigation = navigation;
@@ -62,6 +67,7 @@ public sealed class SingleWindowHost<TWindow>(Dispatcher dispatcher, Func<TWindo
         catch (Exception exception)
         {
             reportError(exception);
+            Interlocked.Increment(ref _windowVersion);
             var failed = _window;
             _window = null;
             _navigation = null;
@@ -81,6 +87,7 @@ public sealed class SingleWindowHost<TWindow>(Dispatcher dispatcher, Func<TWindo
     {
         if (sender is TWindow window) window.Closed -= OnWindowClosed;
         if (!ReferenceEquals(sender, _window)) return;
+        Interlocked.Increment(ref _windowVersion);
         _window = null;
         _navigation = null;
         _navigationOperation?.Abort();
@@ -95,6 +102,7 @@ public sealed class SingleWindowHost<TWindow>(Dispatcher dispatcher, Func<TWindo
         if (_disposed) return;
         dispatcher.VerifyAccess();
         _disposed = true;
+        Interlocked.Increment(ref _windowVersion);
         _openOperation?.Abort();
         _navigationOperation?.Abort();
         _navigation = null;
