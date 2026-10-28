@@ -31,7 +31,8 @@ internal static class TaskbarHostActivationChecks
         var audio = new AudioInteractionService(null!, null!, null!, null!, switches, null!);
         var prune = new MemoryPruneCoordinator(null!, null!, null!, []);
         using var mouse = new NativeMouseInputMonitor(null!);
-        using var monitor = new AudioMonitorService(null!, null!);
+        using var deviceResolver = new AudioCaptureDeviceResolver((_, _) => (false, null));
+        using var monitor = new AudioMonitorService(deviceResolver, new SpectrumCaptureProcessResolver(new()));
         using var probe = new TaskbarOccupiedAreaProbe();
         using var builder = new MediaSnapshotBuilder(null!);
         var catalog = new MediaSessionCatalog();

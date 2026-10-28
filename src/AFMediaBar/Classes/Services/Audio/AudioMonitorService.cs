@@ -365,9 +365,12 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         var reader = new LoopbackSampleReader(format, PushSample);
         var stopped = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var deviceId = device?.ID;
+        string restartReason;
         lock (_gate)
         {
             if (!HasDemandCore(version)) return;
+            restartReason = _pendingRestartReason ?? _captureRestartReason;
+            _pendingRestartReason = null;
             _sampleRate = format.SampleRate;
             ConfigureFft(_sampleRate);
             ClearSamples();
@@ -391,7 +394,6 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         {
             capture.StartRecording();
             var signature = $"{source}|{processId}|{deviceId}|{format}";
-            var restartReason = Interlocked.Exchange(ref _pendingRestartReason, null) ?? _captureRestartReason;
             var message = $"频谱采集已启动: source={source} pid={processId?.ToString() ?? "none"} device={deviceId ?? "none"} format={format} reason={restartReason}";
             var recovered = _captureFailures.Recover(AppLogService.Current, "Audio", "capture", $"频谱采集已恢复: {message}");
             if (!recovered && (signature != _captureLogSignature || restartReason is "target-changed" or "environment-refreshed")) AppLogService.Current?.Info("Audio", message);

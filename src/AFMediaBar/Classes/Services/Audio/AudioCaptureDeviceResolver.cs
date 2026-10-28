@@ -139,7 +139,6 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
             if (_isDisposed || _mediaSource == source) return;
             _mediaSource = source;
             _sourceVersion++;
-
         }
         Refresh("media-source-changed");
     }
@@ -260,7 +259,7 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
             var message = $"频谱端点解析: generation={generation} reason={reason} pass={pass} target={result.Target ?? "none"} changed={update.TargetChanged}";
             if (pass == 0 || update.TargetChanged) AppLogService.Current?.Info("Audio", message);
             else AppLogService.Current?.Verbose("Audio", message);
-            if (!_isDisposed) Resolved?.Invoke(update);
+            if (!_isDisposed && generation == Volatile.Read(ref _refreshVersion)) Resolved?.Invoke(update);
         }
         catch (Exception ex)
         {
