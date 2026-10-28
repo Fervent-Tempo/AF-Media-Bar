@@ -236,7 +236,8 @@ public sealed class MediaSessionService : IDisposable
     /// 尝试激活当前媒体来源对应的前台窗口，不存在可用进程时保持无操作。
     /// Attempts to activate the foreground window for the selected media source and becomes a no-op when no process is available.
     /// </summary>
-    public void ActivateSelectedSource() => _sourceActivator.Activate(SelectedSourceId);
+    public Task ActivateSelectedSourceAsync() => _isDisposed
+        ? Task.CompletedTask : _sourceActivator.ActivateAsync(SelectedSourceId);
 
     /// <summary>
     /// 幂等停止来源提供器并解除所有目录、选择和补全事件，阻止释放后继续发布状态。

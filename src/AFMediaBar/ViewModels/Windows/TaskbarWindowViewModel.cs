@@ -100,7 +100,7 @@ namespace AFMediaBar.ViewModels.Windows
             TogglePlayPauseCommand = new AsyncRelayCommand(mediaSessionService.TogglePlayPauseAsync);
             SkipPreviousCommand = new AsyncRelayCommand(mediaSessionService.SkipPreviousAsync);
             SkipNextCommand = new AsyncRelayCommand(mediaSessionService.SkipNextAsync);
-            ActivateMediaSourceCommand = new RelayCommand(mediaSessionService.ActivateSelectedSource);
+            ActivateMediaSourceCommand = new AsyncRelayCommand(mediaSessionService.ActivateSelectedSourceAsync);
 
             // 视图模型与更新服务都是单例，订阅与进程同寿命；状态事件始终在 UI 线程上发布。
             // Both the view model and the update service are singletons, so the subscription lives as long as the
