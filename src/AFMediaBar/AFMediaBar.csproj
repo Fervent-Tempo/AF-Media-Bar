@@ -50,6 +50,7 @@
 
   <ItemGroup>
     <!-- 只读搜索元数据，与编译后的页面使用同一份设置标题与分组。 -->
+    <Resource Include="Assets\Home\*.png" />
     <EmbeddedResource Include="Views\Pages\*Page.xaml" LogicalName="AFMediaBar.SettingsSearch.%(Filename).xml" />
   </ItemGroup>
 

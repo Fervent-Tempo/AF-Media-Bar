@@ -3661,4 +3661,145 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
 
   <data name="Integration.Preview.Scale" xml:space="preserve"><value>Tỷ lệ bảng {0}% · xem trước vừa khung</value></data>
   <data name="Settings.Page.QuickControls.Description" xml:space="preserve"><value>Thiết lập điều khiển khi di chuột, thứ tự và kích thước nút.</value></data>
+  <data name="Home.Description" xml:space="preserve">
+    <value>Tin dự án, hỗ trợ trình phát và cài đặt thường dùng.</value>
+  </data>
+  <data name="Home.Refresh" xml:space="preserve">
+    <value>Làm mới tin</value>
+  </data>
+  <data name="Home.Rotation.Resume" xml:space="preserve">
+    <value>Tiếp tục trình chiếu</value>
+  </data>
+  <data name="Home.Rotation.Pause" xml:space="preserve">
+    <value>Tạm dừng trình chiếu</value>
+  </data>
+  <data name="Home.Previous" xml:space="preserve">
+    <value>Trước</value>
+  </data>
+  <data name="Home.Next" xml:space="preserve">
+    <value>Tiếp</value>
+  </data>
+  <data name="Home.ReadMore" xml:space="preserve">
+    <value>Xem chi tiết</value>
+  </data>
+<data name="Home.Kind.release" xml:space="preserve">
+    <value>Bản ổn định</value>
+  </data>
+  <data name="Home.Kind.feature" xml:space="preserve">
+    <value>Giới thiệu tính năng</value>
+  </data>
+<data name="Home.Kind.development" xml:space="preserve">
+    <value>Đang phát triển</value>
+  </data>
+  <data name="Home.Feature.Settings" xml:space="preserve">
+    <value>Trung tâm cài đặt gốc</value>
+  </data>
+  <data name="Home.Feature.Settings.Body" xml:space="preserve">
+    <value>Sắp xếp cài đặt theo tác vụ, chỉnh hiển thị và thứ tự thành phần cùng nhau, rồi xem trước thay đổi. Chưa phát hành chính thức.</value>
+  </data>
+  <data name="Home.Feature.Panel" xml:space="preserve">
+    <value>Bảng đầy đủ gọn hơn</value>
+  </data>
+  <data name="Home.Feature.Panel.Body" xml:space="preserve">
+    <value>Ba bố cục thành phần, kiểu chỉ số riêng và tỷ lệ bảng 75%–200%. Chưa phát hành chính thức.</value>
+  </data>
+  <data name="Home.Original" xml:space="preserve">
+    <value>Văn bản gốc</value>
+  </data>
+  <data name="Home.Cache" xml:space="preserve">
+    <value>Dữ liệu đã lưu</value>
+  </data>
+  <data name="Home.Updated" xml:space="preserve">
+    <value>Cập nhật</value>
+  </data>
+  <data name="Home.Unavailable" xml:space="preserve">
+    <value>Một số dữ liệu chưa có. Dấu gạch nghĩa là chưa biết, không phải số 0.</value>
+  </data>
+  <data name="Home.Players" xml:space="preserve">
+    <value>Trình phát hiện tại</value>
+  </data>
+  <data name="Home.Player.Empty" xml:space="preserve">
+    <value>Chưa có phiên phương tiện. Mở trình phát và phát một bài, hoặc xem danh sách hỗ trợ.</value>
+  </data>
+  <data name="Home.Player.Scope" xml:space="preserve">
+    <value>Kết quả chỉ áp dụng cho phiên này. Xem danh sách hỗ trợ để biết cách tích hợp và yêu cầu tiện ích.</value>
+  </data>
+  <data name="Home.AllPlayers" xml:space="preserve">
+    <value>Xem mọi trình phát</value>
+  </data>
+  <data name="Home.Player.Filter" xml:space="preserve">
+    <value>Lọc theo tên trình phát</value>
+  </data>
+  <data name="Home.Player.Smtc" xml:space="preserve">
+    <value>Dùng phiên phương tiện Windows. Thông tin, điều khiển và dòng thời gian tùy phiên bản; lời bài hát dùng chuỗi tìm hiện có. Cần xác minh độ tương thích từng phiên bản.</value>
+  </data>
+  <data name="Home.Player.NetEase" xml:space="preserve">
+    <value>Kết hợp kênh bộ nhớ NetEase tích hợp và SMTC. Bộ nhớ có thể bổ sung lời và dòng thời gian, tùy phiên bản trình phát.</value>
+  </data>
+  <data name="Home.Player.KuGou" xml:space="preserve">
+    <value>Dùng SMTC với bổ sung KuGou tích hợp. Điều khiển và dòng thời gian phụ thuộc phiên hiện tại.</value>
+  </data>
+  <data name="Home.Player.Plugin" xml:space="preserve">
+    <value>SMTC không tự yêu cầu tiện ích. Trình phát có thể cần tiện ích tích hợp tùy phiên bản. Phần mềm không kiểm tra việc cài tiện ích.</value>
+  </data>
+  <data name="Home.Player.Current" xml:space="preserve">
+    <value>Nguồn hiện tại</value>
+  </data>
+  <data name="Home.Player.Playing" xml:space="preserve">
+    <value>Đang phát</value>
+  </data>
+  <data name="Home.Player.Connected" xml:space="preserve">
+    <value>Phiên đã kết nối</value>
+  </data>
+  <data name="Home.Player.ControlAvailable" xml:space="preserve">
+    <value>Có thể phát/tạm dừng</value>
+  </data>
+  <data name="Home.Player.ControlUnavailable" xml:space="preserve">
+    <value>Không thể phát/tạm dừng</value>
+  </data>
+  <data name="Home.Player.SeekAvailable" xml:space="preserve">
+    <value>Có thể tua</value>
+  </data>
+  <data name="Home.Player.SeekUnavailable" xml:space="preserve">
+    <value>Không thể tua</value>
+  </data>
+  <data name="Home.Player.LyricsAvailable" xml:space="preserve">
+    <value>Đã có lời</value>
+  </data>
+  <data name="Home.Player.LyricsUnknown" xml:space="preserve">
+    <value>Chưa xác nhận lời</value>
+  </data>
+  <data name="Home.Player.NotSelected" xml:space="preserve">
+    <value>Phiên này chưa được chọn; không truy vấn riêng khả năng điều khiển.</value>
+  </data>
+  <data name="Home.Community" xml:space="preserve">
+    <value>Hoạt động dự án</value>
+  </data>
+  <data name="Home.Stars" xml:space="preserve">
+    <value>Star</value>
+  </data>
+  <data name="Home.OpenIssues" xml:space="preserve">
+    <value>Issue đang mở</value>
+  </data>
+  <data name="Home.RecentIssues" xml:space="preserve">
+    <value>Issue mới trong 7 ngày</value>
+  </data>
+  <data name="Home.OpenPullRequests" xml:space="preserve">
+    <value>PR đang mở</value>
+  </data>
+  <data name="Home.Issues" xml:space="preserve">
+    <value>Issue gần đây</value>
+  </data>
+  <data name="Home.Draft" xml:space="preserve">
+    <value>Bản nháp</value>
+  </data>
+  <data name="Home.NoEntries" xml:space="preserve">
+    <value>Chưa có mục hiển thị. Mở trang dự án để xem chi tiết.</value>
+  </data>
+  <data name="Home.ViewAll" xml:space="preserve">
+    <value>Xem tất cả</value>
+  </data>
+  <data name="Home.Bundled" xml:space="preserve">
+    <value>Dữ liệu tích hợp</value>
+  </data>
 </root>

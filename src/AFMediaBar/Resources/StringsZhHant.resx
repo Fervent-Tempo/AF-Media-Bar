@@ -3624,4 +3624,145 @@
 
   <data name="Integration.Preview.Scale" xml:space="preserve"><value>面板縮放 {0}% · 適配顯示</value></data>
   <data name="Settings.Page.QuickControls.Description" xml:space="preserve"><value>設定懸停控制、元件順序及按鈕尺寸。</value></data>
+  <data name="Home.Description" xml:space="preserve">
+    <value>專案動態、播放器支援與常用設定。</value>
+  </data>
+  <data name="Home.Refresh" xml:space="preserve">
+    <value>重新整理動態</value>
+  </data>
+  <data name="Home.Rotation.Resume" xml:space="preserve">
+    <value>繼續輪播</value>
+  </data>
+  <data name="Home.Rotation.Pause" xml:space="preserve">
+    <value>暫停輪播</value>
+  </data>
+  <data name="Home.Previous" xml:space="preserve">
+    <value>上一張</value>
+  </data>
+  <data name="Home.Next" xml:space="preserve">
+    <value>下一張</value>
+  </data>
+  <data name="Home.ReadMore" xml:space="preserve">
+    <value>檢視詳情</value>
+  </data>
+<data name="Home.Kind.release" xml:space="preserve">
+    <value>正式版本</value>
+  </data>
+  <data name="Home.Kind.feature" xml:space="preserve">
+    <value>功能介紹</value>
+  </data>
+<data name="Home.Kind.development" xml:space="preserve">
+    <value>開發中</value>
+  </data>
+  <data name="Home.Feature.Settings" xml:space="preserve">
+    <value>原生設定中心</value>
+  </data>
+  <data name="Home.Feature.Settings.Body" xml:space="preserve">
+    <value>依物件組織設定，合併元件顯示與排序；支援搜尋定位與局部預覽。此功能尚未正式發行。</value>
+  </data>
+  <data name="Home.Feature.Panel" xml:space="preserve">
+    <value>精簡完整面板</value>
+  </data>
+  <data name="Home.Feature.Panel.Body" xml:space="preserve">
+    <value>三狀態元件配置、獨立指標樣式與75%—200%面板縮放。此功能尚未正式發行。</value>
+  </data>
+  <data name="Home.Original" xml:space="preserve">
+    <value>原文</value>
+  </data>
+  <data name="Home.Cache" xml:space="preserve">
+    <value>快取資料</value>
+  </data>
+  <data name="Home.Updated" xml:space="preserve">
+    <value>更新時間</value>
+  </data>
+  <data name="Home.Unavailable" xml:space="preserve">
+    <value>部分資料暫時無法取得；首次載入或網路失敗時顯示「—」，不是0。</value>
+  </data>
+  <data name="Home.Players" xml:space="preserve">
+    <value>目前的播放器</value>
+  </data>
+  <data name="Home.Player.Empty" xml:space="preserve">
+    <value>尚無可用媒體工作階段。開啟播放器並播放歌曲，或檢視支援清單。</value>
+  </data>
+  <data name="Home.Player.Scope" xml:space="preserve">
+    <value>偵測結果僅適用本次工作階段。接入方式與外掛條件可在支援清單中檢視。</value>
+  </data>
+  <data name="Home.AllPlayers" xml:space="preserve">
+    <value>檢視所有播放器支援</value>
+  </data>
+  <data name="Home.Player.Filter" xml:space="preserve">
+    <value>依播放器名稱篩選</value>
+  </data>
+  <data name="Home.Player.Smtc" xml:space="preserve">
+    <value>透過Windows媒體工作階段接入；媒體資訊、控制與時間軸取決於播放器版本。歌詞由現有取詞流程處理，各版本相容性仍需核實。</value>
+  </data>
+  <data name="Home.Player.NetEase" xml:space="preserve">
+    <value>內建網易雲記憶體通道與SMTC合併；歌詞與時間軸可由記憶體通道補全，仍受播放器版本限制。</value>
+  </data>
+  <data name="Home.Player.KuGou" xml:space="preserve">
+    <value>透過SMTC接入並使用內建酷狗補全；實際控制與時間軸以本次工作階段為準。</value>
+  </data>
+  <data name="Home.Player.Plugin" xml:space="preserve">
+    <value>SMTC通道本身不要求外掛；播放器是否需要額外接入外掛，須依其版本確認。本軟體不偵測外掛安裝狀態。</value>
+  </data>
+  <data name="Home.Player.Current" xml:space="preserve">
+    <value>目前來源</value>
+  </data>
+  <data name="Home.Player.Playing" xml:space="preserve">
+    <value>正在播放</value>
+  </data>
+  <data name="Home.Player.Connected" xml:space="preserve">
+    <value>已連線工作階段</value>
+  </data>
+  <data name="Home.Player.ControlAvailable" xml:space="preserve">
+    <value>播放暫停可用</value>
+  </data>
+  <data name="Home.Player.ControlUnavailable" xml:space="preserve">
+    <value>播放暫停無法使用</value>
+  </data>
+  <data name="Home.Player.SeekAvailable" xml:space="preserve">
+    <value>可跳轉進度</value>
+  </data>
+  <data name="Home.Player.SeekUnavailable" xml:space="preserve">
+    <value>跳轉無法使用</value>
+  </data>
+  <data name="Home.Player.LyricsAvailable" xml:space="preserve">
+    <value>本次已有歌詞</value>
+  </data>
+  <data name="Home.Player.LyricsUnknown" xml:space="preserve">
+    <value>歌詞尚未確認</value>
+  </data>
+  <data name="Home.Player.NotSelected" xml:space="preserve">
+    <value>尚未選取此工作階段；不額外查詢其控制能力。</value>
+  </data>
+  <data name="Home.Community" xml:space="preserve">
+    <value>專案動態</value>
+  </data>
+  <data name="Home.Stars" xml:space="preserve">
+    <value>Star</value>
+  </data>
+  <data name="Home.OpenIssues" xml:space="preserve">
+    <value>未關閉Issue</value>
+  </data>
+  <data name="Home.RecentIssues" xml:space="preserve">
+    <value>近7天新增Issue</value>
+  </data>
+  <data name="Home.OpenPullRequests" xml:space="preserve">
+    <value>開放PR</value>
+  </data>
+  <data name="Home.Issues" xml:space="preserve">
+    <value>近期Issue</value>
+  </data>
+  <data name="Home.Draft" xml:space="preserve">
+    <value>草稿</value>
+  </data>
+  <data name="Home.NoEntries" xml:space="preserve">
+    <value>暫無可顯示的項目；可前往專案頁面檢視。</value>
+  </data>
+  <data name="Home.ViewAll" xml:space="preserve">
+    <value>檢視全部</value>
+  </data>
+  <data name="Home.Bundled" xml:space="preserve">
+    <value>內建資料</value>
+  </data>
 </root>

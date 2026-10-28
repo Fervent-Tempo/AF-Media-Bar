@@ -3624,4 +3624,145 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
 
   <data name="Integration.Preview.Scale" xml:space="preserve"><value>Panel scale {0}% · fitted preview</value></data>
   <data name="Settings.Page.QuickControls.Description" xml:space="preserve"><value>Configure hover controls, component order and button sizes.</value></data>
+  <data name="Home.Description" xml:space="preserve">
+    <value>Project news, player support and common settings.</value>
+  </data>
+  <data name="Home.Refresh" xml:space="preserve">
+    <value>Refresh news</value>
+  </data>
+  <data name="Home.Rotation.Resume" xml:space="preserve">
+    <value>Resume slideshow</value>
+  </data>
+  <data name="Home.Rotation.Pause" xml:space="preserve">
+    <value>Pause slideshow</value>
+  </data>
+  <data name="Home.Previous" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="Home.Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Home.ReadMore" xml:space="preserve">
+    <value>Read more</value>
+  </data>
+<data name="Home.Kind.release" xml:space="preserve">
+    <value>Stable release</value>
+  </data>
+  <data name="Home.Kind.feature" xml:space="preserve">
+    <value>Feature guide</value>
+  </data>
+<data name="Home.Kind.development" xml:space="preserve">
+    <value>In development</value>
+  </data>
+  <data name="Home.Feature.Settings" xml:space="preserve">
+    <value>Native settings centre</value>
+  </data>
+  <data name="Home.Feature.Settings.Body" xml:space="preserve">
+    <value>Organise settings by task, edit component visibility and order together, and preview changes. Not yet released.</value>
+  </data>
+  <data name="Home.Feature.Panel" xml:space="preserve">
+    <value>Compact full panel</value>
+  </data>
+  <data name="Home.Feature.Panel.Body" xml:space="preserve">
+    <value>Three component layouts, separate metric styles and 75%–200% panel scaling. Not yet released.</value>
+  </data>
+  <data name="Home.Original" xml:space="preserve">
+    <value>Original text</value>
+  </data>
+  <data name="Home.Cache" xml:space="preserve">
+    <value>Cached data</value>
+  </data>
+  <data name="Home.Updated" xml:space="preserve">
+    <value>Updated</value>
+  </data>
+  <data name="Home.Unavailable" xml:space="preserve">
+    <value>Some data is unavailable. A dash means unknown, not zero.</value>
+  </data>
+  <data name="Home.Players" xml:space="preserve">
+    <value>Your players</value>
+  </data>
+  <data name="Home.Player.Empty" xml:space="preserve">
+    <value>No media session is available. Open a player and play a track, or view the support list.</value>
+  </data>
+  <data name="Home.Player.Scope" xml:space="preserve">
+    <value>Detection applies to this session. See the support list for integration and plugin conditions.</value>
+  </data>
+  <data name="Home.AllPlayers" xml:space="preserve">
+    <value>View all supported players</value>
+  </data>
+  <data name="Home.Player.Filter" xml:space="preserve">
+    <value>Filter by player name</value>
+  </data>
+  <data name="Home.Player.Smtc" xml:space="preserve">
+    <value>Uses Windows media sessions. Metadata, controls and timeline depend on the player version; lyrics use the existing lookup chain. Version compatibility requires verification.</value>
+  </data>
+  <data name="Home.Player.NetEase" xml:space="preserve">
+    <value>Built-in NetEase memory and SMTC channels are combined. Memory data can supplement lyrics and timeline, subject to player-version support.</value>
+  </data>
+  <data name="Home.Player.KuGou" xml:space="preserve">
+    <value>Uses SMTC with built-in KuGou enrichment. Available controls and timeline follow the current session.</value>
+  </data>
+  <data name="Home.Player.Plugin" xml:space="preserve">
+    <value>SMTC itself needs no plugin. A player may need an integration plugin, depending on its version. Plugin installation is not detected.</value>
+  </data>
+  <data name="Home.Player.Current" xml:space="preserve">
+    <value>Current source</value>
+  </data>
+  <data name="Home.Player.Playing" xml:space="preserve">
+    <value>Playing</value>
+  </data>
+  <data name="Home.Player.Connected" xml:space="preserve">
+    <value>Connected session</value>
+  </data>
+  <data name="Home.Player.ControlAvailable" xml:space="preserve">
+    <value>Play/pause available</value>
+  </data>
+  <data name="Home.Player.ControlUnavailable" xml:space="preserve">
+    <value>Play/pause unavailable</value>
+  </data>
+  <data name="Home.Player.SeekAvailable" xml:space="preserve">
+    <value>Seeking available</value>
+  </data>
+  <data name="Home.Player.SeekUnavailable" xml:space="preserve">
+    <value>Seeking unavailable</value>
+  </data>
+  <data name="Home.Player.LyricsAvailable" xml:space="preserve">
+    <value>Lyrics received</value>
+  </data>
+  <data name="Home.Player.LyricsUnknown" xml:space="preserve">
+    <value>Lyrics not confirmed</value>
+  </data>
+  <data name="Home.Player.NotSelected" xml:space="preserve">
+    <value>This session is not selected; its controls are not queried separately.</value>
+  </data>
+  <data name="Home.Community" xml:space="preserve">
+    <value>Project activity</value>
+  </data>
+  <data name="Home.Stars" xml:space="preserve">
+    <value>Stars</value>
+  </data>
+  <data name="Home.OpenIssues" xml:space="preserve">
+    <value>Open issues</value>
+  </data>
+  <data name="Home.RecentIssues" xml:space="preserve">
+    <value>Issues created in 7 days</value>
+  </data>
+  <data name="Home.OpenPullRequests" xml:space="preserve">
+    <value>Open pull requests</value>
+  </data>
+  <data name="Home.Issues" xml:space="preserve">
+    <value>Recent issues</value>
+  </data>
+  <data name="Home.Draft" xml:space="preserve">
+    <value>Draft</value>
+  </data>
+  <data name="Home.NoEntries" xml:space="preserve">
+    <value>No entries to display. Open the project page for details.</value>
+  </data>
+  <data name="Home.ViewAll" xml:space="preserve">
+    <value>View all</value>
+  </data>
+  <data name="Home.Bundled" xml:space="preserve">
+    <value>Bundled data</value>
+  </data>
 </root>

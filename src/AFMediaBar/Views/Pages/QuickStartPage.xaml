@@ -1,54 +1,65 @@
-<?xml version="1.0" ?><Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.QuickStartPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False" Unloaded="OnPageUnloaded">
+<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.QuickStartPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False" Loaded="OnPageLoaded" Unloaded="OnPageUnloaded">
     <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="HomeVisibility"/>
         <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/>
-        <Style x:Key="BodyText" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="LineHeight" Value="20"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
-        </Style>
-        <Style x:Key="TableCell" TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
-            <Setter Property="Margin" Value="10,12"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
+        <Style x:Key="BodyText" TargetType="TextBlock"><Setter Property="FontSize" Value="13"/><Setter Property="LineHeight" Value="20"/><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/></Style>
+        <Style x:Key="HomeCard" TargetType="Border"><Setter Property="Padding" Value="20"/><Setter Property="CornerRadius" Value="12"/><Setter Property="Background" Value="{DynamicResource AfSettingsCardBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}"/><Setter Property="BorderThickness" Value="1"/></Style>
+        <Style x:Key="HomeHeading" TargetType="TextBlock"><Setter Property="FontSize" Value="20"/><Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}"/><Setter Property="Margin" Value="0,28,0,14"/><Setter Property="TextWrapping" Value="Wrap"/></Style>
+        <Style x:Key="HomeShortcut" TargetType="{x:Type components:SettingsNavigationButton}" BasedOn="{StaticResource AfSettingsButtonStyle}"><Setter Property="Margin" Value="0,0,10,10"/><Setter Property="Padding" Value="16"/><Setter Property="MinHeight" Value="66"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="HorizontalAlignment" Value="Stretch"/></Style>
+        <DataTemplate x:Key="HomeThread"><ui:Anchor NavigateUri="{Binding Url}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,0,0,12"><StackPanel><TextBlock Text="{Binding Title}" FontSize="14" TextWrapping="Wrap"/><TextBlock Style="{StaticResource BodyText}" Text="{Binding Detail}" Margin="0,4,0,0"/></StackPanel></ui:Anchor></DataTemplate>
     </Page.Resources>
-    <components:SettingsPageLayout x:Name="PageLayout">
+    <components:SettingsPageLayout x:Name="PageLayout" ContentMaximumWidth="1680">
         <components:SettingsPageLayout.Header>
-            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Section.Start}" Subtitle="{DynamicResource Loc.Start.Description}" PageIcon="{ui:SymbolIcon Sparkle24}" Target="{Binding ScrollViewer, ElementName=PageLayout}"/>
+            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Section.Start}" Subtitle="{DynamicResource Loc.Home.Description}" PageIcon="{ui:SymbolIcon Sparkle24}" ShowGroupTabs="False" Target="{Binding ScrollViewer, ElementName=PageLayout}">
+                <components:SettingsGroupStrip.HeaderActions><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding ViewModel.InstalledVersion}" VerticalAlignment="Center" Margin="0,0,16,0"/><ui:Button Command="{Binding ViewModel.RefreshCommand}" Content="{DynamicResource Loc.Home.Refresh}" Icon="{ui:SymbolIcon ArrowSync24}"/></StackPanel></components:SettingsGroupStrip.HeaderActions>
+            </components:SettingsGroupStrip>
         </components:SettingsPageLayout.Header>
-        <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded">
-            <components:SettingsGroup GroupId="Start.Overview" Header="{DynamicResource Loc.Start.Overview}" Icon="{ui:SymbolIcon Layer24}">
-                <StackPanel Margin="16">
-                    <TextBlock FontSize="26" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="AF Media Bar"/>
-                    <TextBlock Margin="0,8,0,20" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Intro.Description}"/>
-                    <Border xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:components="clr-namespace:AFMediaBar.Components" Margin="0,0,0,20" Padding="24" CornerRadius="12" Background="{DynamicResource AfTutorialSageSurfaceBrush}"><Viewbox Stretch="Uniform" StretchDirection="DownOnly" MaxHeight="140"><components:SettingsPreviewScene DataContext="{Binding ViewModel.Preview}"/></Viewbox></Border><WrapPanel Margin="-6,0">
-                        <Border Width="276" Margin="6,0,6,12" Padding="18" CornerRadius="10" Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1">
-                            <StackPanel>
-                                <Border Height="84" CornerRadius="8" Margin="0,0,0,16" Background="{DynamicResource AfTutorialSageSurfaceBrush}"><ui:SymbolIcon Symbol="Layer24" FontSize="32" HorizontalAlignment="Center" Margin="0" Foreground="{DynamicResource AfTutorialSageInkBrush}"/></Border>
-                                <TextBlock FontSize="16" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{DynamicResource Loc.Start.Rest}"/>
-                                <TextBlock Margin="0,8,0,16" MinHeight="80" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Rest.Description}"/>
-                                <components:SettingsNavigationButton HorizontalAlignment="Left" Destination="RestState" GroupId="Common.RestLayer" Content="{DynamicResource Loc.Settings.Component.Configure}"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Width="276" Margin="6,0,6,12" Padding="18" CornerRadius="10" Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1">
-                            <StackPanel>
-                                <Border Height="84" CornerRadius="8" Margin="0,0,0,16" Background="{DynamicResource AfTutorialLavenderSurfaceBrush}"><ui:SymbolIcon Symbol="Play24" FontSize="32" HorizontalAlignment="Center" Margin="0" Foreground="{DynamicResource AfTutorialLavenderInkBrush}"/></Border>
-                                <TextBlock FontSize="16" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{DynamicResource Loc.Start.Hover}"/>
-                                <TextBlock Margin="0,8,0,16" MinHeight="80" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Hover.Description}"/>
-                                <components:SettingsNavigationButton HorizontalAlignment="Left" Destination="Components" GroupId="Common.HoverLayer" Content="{DynamicResource Loc.Settings.Component.Configure}"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Width="276" Margin="6,0,6,12" Padding="18" CornerRadius="10" Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1">
-                            <StackPanel>
-                                <Border Height="84" CornerRadius="8" Margin="0,0,0,16" Background="{DynamicResource AfTutorialClaySurfaceBrush}"><ui:SymbolIcon Symbol="WindowConsole20" FontSize="32" HorizontalAlignment="Center" Margin="0" Foreground="{DynamicResource AfTutorialClayInkBrush}"/></Border>
-                                <TextBlock FontSize="16" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{DynamicResource Loc.Start.Full}"/>
-                                <TextBlock Margin="0,8,0,16" MinHeight="80" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Full.Description}"/>
-                                <components:SettingsNavigationButton HorizontalAlignment="Left" Destination="FullPanel" GroupId="Common.FullLayer" Content="{DynamicResource Loc.Settings.Component.Configure}"/>
-                            </StackPanel>
-                        </Border>
-                    </WrapPanel>
-                </StackPanel>
-            </components:SettingsGroup>
+        <StackPanel x:Name="PageRoot" SizeChanged="OnContentSizeChanged">
+            <Grid x:Name="HeroGrid"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition x:Name="HeroGap" Width="24"/><ColumnDefinition x:Name="PlayerColumn" Width="360"/></Grid.ColumnDefinitions>
+                <Border x:Name="Hero" Style="{StaticResource HomeCard}" MouseEnter="OnHeroPointerChanged" MouseLeave="OnHeroPointerChanged" PreviewGotKeyboardFocus="OnHeroFocus" PreviewKeyDown="OnHeroKeyDown">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,12"><TextBlock DockPanel.Dock="Right" Text="{Binding ViewModel.FeaturePosition}" FontSize="13" HorizontalAlignment="Right"/><TextBlock Text="{Binding ViewModel.SelectedFeature.Badge}" FontSize="13" Foreground="{DynamicResource AfAccentBrush}"/></DockPanel>
+                        <StackPanel x:Name="FeatureBody">
+                            <Border Background="{DynamicResource AfTutorialSageSurfaceBrush}" CornerRadius="8" Height="180" Margin="0,0,0,16" ClipToBounds="True">
+                                <Grid><Viewbox Stretch="Uniform" StretchDirection="DownOnly" Margin="20"><Viewbox.Style><Style TargetType="Viewbox"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding ViewModel.FeatureImage}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Viewbox.Style><components:SettingsPreviewScene DataContext="{Binding ViewModel.Preview}"/></Viewbox><Image Source="{Binding ViewModel.FeatureImage}" Stretch="Uniform" AutomationProperties.Name="{Binding ViewModel.SelectedFeature.Title}"/></Grid>
+                            </Border>
+                            <TextBlock FontSize="26" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{Binding ViewModel.SelectedFeature.Title}" TextWrapping="Wrap"/>
+                            <TextBlock Style="{StaticResource BodyText}" Margin="0,8,0,14" Text="{Binding ViewModel.SelectedFeature.Summary}"/>
+                        </StackPanel>
+                        <WrapPanel><ui:Button Command="{Binding ViewModel.ToggleRotationCommand}" Content="{Binding ViewModel.RotationText}" Click="OnRotationClicked" Margin="0,0,8,6" IsEnabled="{Binding ViewModel.HasMultipleFeatures}"/><ui:Button Command="{Binding ViewModel.PreviousFeatureCommand}" Content="{DynamicResource Loc.Home.Previous}" Margin="0,0,8,6" IsEnabled="{Binding ViewModel.HasMultipleFeatures}"/><ui:Button Command="{Binding ViewModel.NextFeatureCommand}" Content="{DynamicResource Loc.Home.Next}" Margin="0,0,12,6" IsEnabled="{Binding ViewModel.HasMultipleFeatures}"/><ui:Anchor Content="{DynamicResource Loc.Home.ReadMore}" NavigateUri="{Binding ViewModel.SelectedFeature.Url}" VerticalAlignment="Center" Margin="0,0,0,6"/></WrapPanel>
+                    </StackPanel>
+                </Border>
+                <Border x:Name="PlayerHost" Grid.Column="2" Style="{StaticResource HomeCard}" VerticalAlignment="Top"><StackPanel>
+                    <TextBlock FontSize="20" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{DynamicResource Loc.Home.Players}" Margin="0,0,0,12"/>
+                    <TextBlock Text="{DynamicResource Loc.Home.Player.Empty}"><TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource BodyText}"><Style.Triggers><DataTrigger Binding="{Binding ViewModel.HasPlayers}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
+                    <ItemsControl ItemsSource="{Binding ViewModel.Players}"><ItemsControl.ItemTemplate><DataTemplate><StackPanel Margin="0,0,0,18"><TextBlock Text="{Binding Status}" Foreground="{DynamicResource AfAccentBrush}" FontSize="12"/><TextBlock Text="{Binding Name}" FontSize="18" FontWeight="{DynamicResource AppTextStrongFontWeight}" Margin="0,4,0,8" TextWrapping="Wrap"/><TextBlock Text="{Binding Capabilities}" Style="{StaticResource BodyText}"/></StackPanel></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                    <TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Home.Player.Scope}" Margin="0,12,0,14"/>
+                    <components:SettingsNavigationButton Destination="MediaAndNotifications" GroupId="Common.MediaSource" Content="{DynamicResource Loc.Settings.Page.MediaSource}" HorizontalAlignment="Left"/>
+                    <CheckBox Content="{DynamicResource Loc.Home.AllPlayers}" IsChecked="{Binding ViewModel.ShowAllPlayers, Mode=TwoWay}" Margin="0,16,0,0"/>
+                </StackPanel></Border>
+            </Grid>
+            <Border Style="{StaticResource HomeCard}" Margin="0,20,0,0" Visibility="{Binding ViewModel.ShowAllPlayers, Converter={StaticResource HomeVisibility}}"><StackPanel>
+                <TextBlock Text="{DynamicResource Loc.Start.Players}" FontSize="20" FontWeight="{DynamicResource AppTextStrongFontWeight}"/><TextBlock Text="{DynamicResource Loc.Start.Players.Note}" Style="{StaticResource BodyText}" Margin="0,8,0,16"/>
+                <TextBox Text="{Binding ViewModel.PlayerFilter, UpdateSourceTrigger=PropertyChanged}" MaxWidth="420" HorizontalAlignment="Left" MinWidth="180" AutomationProperties.Name="{DynamicResource Loc.Home.Player.Filter}" ToolTip="{DynamicResource Loc.Home.Player.Filter}" Margin="0,0,0,16"/>
+                <ItemsControl ItemsSource="{Binding ViewModel.SupportedPlayers}"><ItemsControl.ItemTemplate><DataTemplate><Border BorderThickness="0,0,0,1" BorderBrush="{DynamicResource AfSettingsBorderBrush}" Padding="0,12"><StackPanel><TextBlock Text="{Binding Name}" FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"/><TextBlock Text="{Binding Notes}" Style="{StaticResource BodyText}" Margin="0,6,0,0"/><TextBlock Text="{Binding PluginCondition}" Style="{StaticResource BodyText}"/></StackPanel></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+            </StackPanel></Border>
+            <TextBlock Style="{StaticResource HomeHeading}" Text="{DynamicResource Loc.Start.Shortcuts}"/>
+            <UniformGrid x:Name="QuickLinks" Columns="3"><components:SettingsNavigationButton Destination="ScreenAndPlacement" GroupId="Common.Group.ScreenAndPlacement" Style="{StaticResource HomeShortcut}"><StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Desktop24" FontSize="20" Margin="0,0,12,0"/><TextBlock VerticalAlignment="Center" FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Common.Page.ScreenAndPlacement}"/></StackPanel></components:SettingsNavigationButton>
+<components:SettingsNavigationButton Destination="RestState" GroupId="Common.RestLayer" Style="{StaticResource HomeShortcut}"><StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Layer24" FontSize="20" Margin="0,0,12,0"/><TextBlock VerticalAlignment="Center" FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Common.Page.RestState}"/></StackPanel></components:SettingsNavigationButton>
+<components:SettingsNavigationButton Destination="Lyrics" GroupId="Common.Group.MediaBarText" Style="{StaticResource HomeShortcut}"><StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="TextQuote24" FontSize="20" Margin="0,0,12,0"/><TextBlock VerticalAlignment="Center" FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Settings.Page.TextAndLyrics}"/></StackPanel></components:SettingsNavigationButton>
+<components:SettingsNavigationButton Destination="DeviceManagement" GroupId="Common.OutputDevice" Style="{StaticResource HomeShortcut}"><StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Headphones24" FontSize="20" Margin="0,0,12,0"/><TextBlock VerticalAlignment="Center" FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Settings.Page.AudioDevices}"/></StackPanel></components:SettingsNavigationButton>
+<components:SettingsNavigationButton Destination="ApplicationAppearance" GroupId="Common.Group.ThemeAndBackdrop" Style="{StaticResource HomeShortcut}"><StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Color24" FontSize="20" Margin="0,0,12,0"/><TextBlock VerticalAlignment="Center" FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Common.Page.ApplicationAppearance}"/></StackPanel></components:SettingsNavigationButton>
+<components:SettingsNavigationButton Destination="Interaction" GroupId="Interaction.Group.Wheel" Style="{StaticResource HomeShortcut}"><StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="HandDraw24" FontSize="20" Margin="0,0,12,0"/><TextBlock VerticalAlignment="Center" FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Settings.Page.InteractionAndHotkeys}"/></StackPanel></components:SettingsNavigationButton></UniformGrid>
+            <TextBlock Style="{StaticResource HomeHeading}" Text="{DynamicResource Loc.Home.Community}"/>
+            <Border Style="{StaticResource HomeCard}" Padding="4"><UniformGrid x:Name="StatisticsGrid" Columns="4"><StackPanel Margin="16,14"><TextBlock FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{Binding ViewModel.Stars}"/><TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Home.Stars}"/></StackPanel>
+<StackPanel Margin="16,14"><TextBlock FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{Binding ViewModel.OpenIssues}"/><TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Home.OpenIssues}"/></StackPanel>
+<StackPanel Margin="16,14"><TextBlock FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{Binding ViewModel.RecentIssues}"/><TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Home.RecentIssues}"/></StackPanel>
+<StackPanel Margin="16,14"><TextBlock FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{Binding ViewModel.OpenPullRequests}"/><TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Home.OpenPullRequests}"/></StackPanel></UniformGrid></Border>
+            <TextBlock Text="{Binding ViewModel.ProjectStatus}" Style="{StaticResource BodyText}" Margin="0,10,0,16"/>
+            <Grid x:Name="CommunityGrid"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition x:Name="CommunityGap" Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <Border Style="{StaticResource HomeCard}"><StackPanel><TextBlock Text="{DynamicResource Loc.Home.Issues}" FontSize="18" Margin="0,0,0,16"/><ItemsControl ItemsSource="{Binding ViewModel.Issues}" ItemTemplate="{StaticResource HomeThread}"/><TextBlock Text="{DynamicResource Loc.Home.NoEntries}" Style="{StaticResource BodyText}" Visibility="{Binding ViewModel.HasNoIssues, Converter={StaticResource HomeVisibility}}"/><ui:Anchor NavigateUri="https://github.com/Fervent-Tempo/AF-Media-Bar/issues" Content="{DynamicResource Loc.Home.ViewAll}" Margin="0,8,0,0" HorizontalAlignment="Left"/></StackPanel></Border>
+                <Border x:Name="PullRequestsHost" Grid.Column="2" Style="{StaticResource HomeCard}"><StackPanel><TextBlock Text="{DynamicResource Loc.Home.OpenPullRequests}" FontSize="18" Margin="0,0,0,16"/><ItemsControl ItemsSource="{Binding ViewModel.PullRequests}" ItemTemplate="{StaticResource HomeThread}"/><TextBlock Text="{DynamicResource Loc.Home.NoEntries}" Style="{StaticResource BodyText}" Visibility="{Binding ViewModel.HasNoPullRequests, Converter={StaticResource HomeVisibility}}"/><ui:Anchor NavigateUri="https://github.com/Fervent-Tempo/AF-Media-Bar/pulls" Content="{DynamicResource Loc.Home.ViewAll}" Margin="0,8,0,0" HorizontalAlignment="Left"/></StackPanel></Border>
+            </Grid>
             <components:SettingsGroup GroupId="Start.Tutorials" Header="{DynamicResource Loc.Start.Tutorials}" Icon="{ui:SymbolIcon BookOpen24}">
                 <StackPanel>
                     <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Desktop24}"><ui:CardExpander.Header><StackPanel><TextBlock FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Mode}"/><TextBlock Style="{StaticResource BodyText}" Margin="0,4,0,0" Text="{DynamicResource Loc.Start.Tutorial.Mode.Short}"/></StackPanel></ui:CardExpander.Header>
@@ -83,97 +94,7 @@
                     </ui:CardExpander>
                 </StackPanel>
             </components:SettingsGroup>
-            <components:SettingsGroup GroupId="Start.Releases" Header="{DynamicResource Loc.Start.Releases}" Icon="{ui:SymbolIcon Sparkle24}">
-                <StackPanel Margin="16">
-                    <TextBlock FontSize="20" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{DynamicResource Loc.Start.Release16}"/>
-                    <TextBlock Margin="0,12,0,12" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Release16.Body}"/>
-                    <ui:Anchor HorizontalAlignment="Left" Content="{DynamicResource Loc.Start.ReleaseNotes}" NavigateUri="https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.6.0"/>
-                    <Border Margin="0,24,0,20" Padding="16" Background="{DynamicResource AfSettingsCardBrush}" CornerRadius="8" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{DynamicResource Loc.Start.Development}"/>
-                            <TextBlock Margin="0,8,0,0" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Development.Body}"/>
-                        </StackPanel>
-                    </Border>
-                    <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{DynamicResource Loc.Start.History}"/>
-                    <TextBlock Margin="0,8,0,12" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.History.Description}"/>
-                    <ItemsControl ItemsSource="{Binding ViewModel.History}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}"><ui:CardExpander.Header><StackPanel><TextBlock FontSize="15" TextWrapping="Wrap" Text="{Binding VersionLabel}"/><TextBlock Style="{StaticResource BodyText}" Margin="0,4,0,0" Text="{Binding DisplayTitle}"/></StackPanel></ui:CardExpander.Header>
-                                    <StackPanel Margin="12">
-                                        <TextBlock FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding OriginalNotice}" TextWrapping="Wrap"/>
-                                        <ItemsControl ItemsSource="{Binding Highlights}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate><TextBlock Style="{StaticResource BodyText}" Margin="0,4" Text="{Binding}"/></DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </StackPanel>
-                                </ui:CardExpander>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <components:SettingsNavigationButton Margin="0,16,0,0" HorizontalAlignment="Left" Destination="ReleaseHighlights" Content="{DynamicResource Loc.Common.Page.ReleaseHighlights}"/>
-                </StackPanel>
-            </components:SettingsGroup>
-            <components:SettingsGroup GroupId="Start.Players" Header="{DynamicResource Loc.Start.Players}" Icon="{ui:SymbolIcon MusicNote220}">
-                <StackPanel Margin="16">
-                    <TextBlock Margin="0,0,0,12" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Players.Note}"/>
-                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" PreviewMouseWheel="OnTableMouseWheel">
-                        <Grid MinWidth="860">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="1.4*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="0.7*"/>
-                                <ColumnDefinition Width="*"/><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1.5*"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
-                            <Border Grid.Row="0" Grid.ColumnSpan="6" Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="0,0,0,1"/>
-                            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.Player}" FontWeight="{DynamicResource AppTextStrongFontWeight}"/>
-                            <TextBlock Grid.Row="0" Grid.Column="1" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.Metadata}" FontWeight="{DynamicResource AppTextStrongFontWeight}"/>
-                            <TextBlock Grid.Row="0" Grid.Column="2" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.Control}" FontWeight="{DynamicResource AppTextStrongFontWeight}"/>
-                            <TextBlock Grid.Row="0" Grid.Column="3" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.Timeline}" FontWeight="{DynamicResource AppTextStrongFontWeight}"/>
-                            <TextBlock Grid.Row="0" Grid.Column="4" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.Lyrics}" FontWeight="{DynamicResource AppTextStrongFontWeight}"/>
-                            <TextBlock Grid.Row="0" Grid.Column="5" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.Plugins}" FontWeight="{DynamicResource AppTextStrongFontWeight}"/>
-                            <Border Grid.Row="1" Grid.ColumnSpan="6" Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="0,0,0,1"/>
-                            <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.NetEase}"/>
-                            <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.MemoryAndSmtc}"/>
-                            <TextBlock Grid.Row="1" Grid.Column="2" Style="{StaticResource TableCell}" Text="SMTC"/>
-                            <TextBlock Grid.Row="1" Grid.Column="3" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.MemoryTimeline}"/>
-                            <TextBlock Grid.Row="1" Grid.Column="4" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.NetEaseLyrics}"/>
-                            <TextBlock Grid.Row="1" Grid.Column="5" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.BuiltIn}"/>
-                            <Border Grid.Row="2" Grid.ColumnSpan="6" Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="0,0,0,1"/>
-                            <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.KuGou}"/>
-                            <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource TableCell}" Text="SMTC"/>
-                            <TextBlock Grid.Row="2" Grid.Column="2" Style="{StaticResource TableCell}" Text="SMTC"/>
-                            <TextBlock Grid.Row="2" Grid.Column="3" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.MemoryTimeline}"/>
-                            <TextBlock Grid.Row="2" Grid.Column="4" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.OnlineLyrics}"/>
-                            <TextBlock Grid.Row="2" Grid.Column="5" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.BuiltIn}"/>
-                            <Border Grid.Row="3" Grid.ColumnSpan="6" Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="0,0,0,1"/>
-                            <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.OtherSmtc}"/>
-                            <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource TableCell}" Text="SMTC"/>
-                            <TextBlock Grid.Row="3" Grid.Column="2" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.SessionDependent}"/>
-                            <TextBlock Grid.Row="3" Grid.Column="3" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.SessionDependent}"/>
-                            <TextBlock Grid.Row="3" Grid.Column="4" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.OnlineLyrics}"/>
-                            <TextBlock Grid.Row="3" Grid.Column="5" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.NoPlugin}"/>
-                            <Border Grid.Row="4" Grid.ColumnSpan="6" Background="{DynamicResource AfSettingsCardBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="0,0,0,1"/>
-                            <TextBlock Grid.Row="4" Grid.Column="0" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.NoSmtc}"/>
-                            <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.NotDetected}"/>
-                            <TextBlock Grid.Row="4" Grid.Column="2" Style="{StaticResource TableCell}" Text="—"/>
-                            <TextBlock Grid.Row="4" Grid.Column="3" Style="{StaticResource TableCell}" Text="—"/>
-                            <TextBlock Grid.Row="4" Grid.Column="4" Style="{StaticResource TableCell}" Text="—"/>
-                            <TextBlock Grid.Row="4" Grid.Column="5" Style="{StaticResource TableCell}" Text="{DynamicResource Loc.Start.UnverifiedPlugin}"/>
-                        </Grid>
-                    </ScrollViewer>
-                </StackPanel>
-            </components:SettingsGroup>
-            <components:SettingsGroup GroupId="Start.Shortcuts" Header="{DynamicResource Loc.Start.Shortcuts}" Icon="{ui:SymbolIcon ArrowRight24}">
-                <WrapPanel Margin="12">
-                    <components:SettingsNavigationButton Margin="4" Destination="ScreenAndPlacement" GroupId="Common.Group.ChooseDisplayMode" Content="{DynamicResource Loc.Common.Page.ScreenAndPlacement}"/>
-                    <components:SettingsNavigationButton Margin="4" Destination="ApplicationAppearance" GroupId="Settings.Personalization.Accent" Content="{DynamicResource Loc.Common.Page.ApplicationAppearance}"/>
-                    <components:SettingsNavigationButton Margin="4" Destination="RestState" GroupId="Common.RestLayer" Content="{DynamicResource Loc.Common.Page.RestState}"/>
-                    <components:SettingsNavigationButton Margin="4" Destination="Lyrics" GroupId="Common.Group.MediaBarText" Content="{DynamicResource Loc.Settings.Page.TextAndLyrics}"/>
-                    <components:SettingsNavigationButton Margin="4" Destination="DeviceManagement" GroupId="Common.OutputDevice" Content="{DynamicResource Loc.Settings.Page.AudioDevices}"/>
-                    <components:SettingsNavigationButton Margin="4" Destination="Configuration" GroupId="Common.Group.SettingsFile" Content="{DynamicResource Loc.Settings.Page.Configuration}"/>
-                </WrapPanel>
-            </components:SettingsGroup>
+            <components:SettingsNavigationButton Destination="ReleaseHighlights" Content="{DynamicResource Loc.Common.Page.ReleaseHighlights}" HorizontalAlignment="Left" Margin="0,16,0,0"/>
             <components:SettingsGroup GroupId="Start.Help" Header="{DynamicResource Loc.Start.Help}" Icon="{ui:SymbolIcon QuestionCircle24}">
                 <StackPanel>
                     <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon QuestionCircle24}"><ui:CardExpander.Header><StackPanel><TextBlock FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Faq.Source}"/></StackPanel></ui:CardExpander.Header>

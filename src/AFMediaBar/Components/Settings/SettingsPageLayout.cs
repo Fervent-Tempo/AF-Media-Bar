@@ -8,6 +8,9 @@ namespace AFMediaBar.Components;
 [TemplatePart(Name = "PART_ScrollViewer", Type = typeof(ScrollViewer))]
 public sealed class SettingsPageLayout : HeaderedContentControl
 {
+    public static readonly DependencyProperty ContentMaximumWidthProperty = DependencyProperty.Register(
+        nameof(ContentMaximumWidth), typeof(double), typeof(SettingsPageLayout), new PropertyMetadata(1120d));
+    public double ContentMaximumWidth { get => (double)GetValue(ContentMaximumWidthProperty); set => SetValue(ContentMaximumWidthProperty, value); }
     private static readonly DependencyPropertyKey ScrollViewerPropertyKey = DependencyProperty.RegisterReadOnly(
         nameof(ScrollViewer), typeof(ScrollViewer), typeof(SettingsPageLayout), new PropertyMetadata(null));
     public static readonly DependencyProperty ScrollViewerProperty = ScrollViewerPropertyKey.DependencyProperty;

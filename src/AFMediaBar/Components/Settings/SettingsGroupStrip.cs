@@ -34,6 +34,9 @@ namespace AFMediaBar.Components;
 /// </summary>
 public class SettingsGroupStrip : Control
 {
+    public static readonly DependencyProperty ShowGroupTabsProperty = DependencyProperty.Register(
+        nameof(ShowGroupTabs), typeof(bool), typeof(SettingsGroupStrip), new PropertyMetadata(true));
+    public bool ShowGroupTabs { get => (bool)GetValue(ShowGroupTabsProperty); set => SetValue(ShowGroupTabsProperty, value); }
     public static readonly DependencyProperty HeaderActionsProperty = DependencyProperty.Register(
         nameof(HeaderActions), typeof(object), typeof(SettingsGroupStrip), new PropertyMetadata(null));
     public object? HeaderActions { get => GetValue(HeaderActionsProperty); set => SetValue(HeaderActionsProperty, value); }

@@ -258,6 +258,8 @@ namespace AFMediaBar
                 });
                 services.AddSingleton<DeveloperToolsWindowHost>();
                 services.AddSingleton<ReleaseHighlightsService>();
+                services.AddSingleton<AFMediaBar.Classes.Services.Home.HomeContentService>();
+                services.AddSingleton<AFMediaBar.Classes.Abstractions.IHomeMediaState, AFMediaBar.Classes.Services.Home.HomeMediaState>();
                 services.AddSingleton<ReleaseHighlightsViewModel>();
                 services.AddScoped<ReleaseHighlightsPage>();
 

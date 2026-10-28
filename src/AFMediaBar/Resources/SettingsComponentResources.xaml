@@ -666,7 +666,7 @@
                         <ContentControl x:Name="PageStatus" Grid.Column="2" Margin="12,4,0,0" VerticalAlignment="Top" Style="{StaticResource AfSettingsChipAccentStyle}" Content="{TemplateBinding StatusText}"/>
                         <ContentPresenter Grid.Column="3" Content="{TemplateBinding HeaderActions}" Margin="12,0,0,0" VerticalAlignment="Top" x:Name="HeaderActions"/>
                     </Grid>
-                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <ScrollViewer x:Name="GroupTabsHost" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                         <Grid>
                             <ItemsControl x:Name="PART_Tabs" Focusable="False" ItemsSource="{Binding Groups, RelativeSource={RelativeSource TemplatedParent}}">
                                 <ItemsControl.ItemsPanel>
@@ -704,6 +704,9 @@
                 <ControlTemplate.Triggers>
                     <Trigger Property="Subtitle" Value="">
                         <Setter TargetName="PageSubtitle" Property="Visibility" Value="Collapsed"/>
+                    </Trigger>
+                    <Trigger Property="ShowGroupTabs" Value="False">
+                        <Setter TargetName="GroupTabsHost" Property="Visibility" Value="Collapsed"/>
                     </Trigger>
                     <Trigger Property="StatusText" Value="">
                         <Setter TargetName="PageStatus" Property="Visibility" Value="Collapsed"/>
@@ -1062,7 +1065,7 @@
                 </Grid>
                 <ControlTemplate.Triggers>
                     <Trigger Property="Preview" Value="{x:Null}">
-                        <Setter TargetName="PageFrame" Property="MaxWidth" Value="1120"/>
+                        <Setter TargetName="PageFrame" Property="MaxWidth" Value="{Binding ContentMaximumWidth, RelativeSource={RelativeSource TemplatedParent}}"/>
                         <Setter TargetName="PreviewHost" Property="Visibility" Value="Collapsed"/>
                     </Trigger>
                     <Trigger Property="IsWide" Value="False">
