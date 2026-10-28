@@ -43,6 +43,10 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     private bool _isLoadingDevices;
     private int _audioRefreshGeneration;
     private bool _isSeeking;
+    private MediaSnapshot? _seekSnapshot;
+    private double? _pendingSeekPosition;
+    private long _pendingSeekStarted;
+    private int _seekRequestVersion;
     private bool _audioControlsVisible;
     private bool _performanceVisible;
     private bool _isClosing;
@@ -61,6 +65,11 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         FullPanelPresentationViewModel presentation)
     {
         InitializeComponent();
+        // MoveToPoint 会先消费轨道点击；仍需暂停进度同步并保存这次定位意图。
+        ProgressSlider.AddHandler(PreviewMouseLeftButtonDownEvent,
+            new MouseButtonEventHandler(ProgressSlider_MouseLeftButtonDown), handledEventsToo: true);
+        ProgressSlider.AddHandler(PreviewMouseLeftButtonUpEvent,
+            new MouseButtonEventHandler(ProgressSlider_MouseLeftButtonUp), handledEventsToo: true);
         _presentation = presentation;
         InitializeResizeGrips();
         PanelRoot.SizeChanged += OnPanelContentSizeChanged;
@@ -125,6 +134,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
             return;
 
         _isClosing = true;
+        CancelProgressSeek();
         _audioInteractionService.CancelDeviceOwner(this);
         var motion = MotionPolicy.ResolveCurrent();
         if (!IsVisible || !motion.UseTransitions)
@@ -228,6 +238,8 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     private void ApplySnapshot(MediaSnapshot snapshot)
     {
         if (_isClosing) return;
+        if (_seekSnapshot is not null && !IsSameSeekTrack(_seekSnapshot, snapshot))
+            CancelProgressSeek();
         _snapshot = snapshot;
         TitleText.Text = string.IsNullOrWhiteSpace(snapshot.Title) ? Translations.Get("Panel.FullPanel.NoMedia") : snapshot.Title;
         ArtistText.Text = snapshot.Artist;
@@ -492,9 +504,16 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     private void UpdateProgress()
     {
         var position = TaskbarExperiencePolicy.GetPosition(_snapshot, DateTimeOffset.UtcNow);
+        if (!_isSeeking && _pendingSeekPosition is { } target &&
+            (Math.Abs(_snapshot.Position - target) <= 1 ||
+             Stopwatch.GetElapsedTime(_pendingSeekStarted) >= TimeSpan.FromSeconds(2)))
+        {
+            _pendingSeekPosition = null;
+            _seekSnapshot = null;
+        }
         if (!_isSeeking)
-            ProgressSlider.Value = position;
-        PositionText.Text = FormatTime(position);
+            ProgressSlider.Value = _pendingSeekPosition ?? position;
+        PositionText.Text = FormatTime(ProgressSlider.Value);
     }
 
     private static string FormatTime(double seconds)
@@ -525,15 +544,68 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         }
     }
 
-    private void ProgressSlider_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => _isSeeking = true;
-    private async void ProgressSlider_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    private void ProgressSlider_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        _isSeeking = false;
-        if (_snapshot.CanSeek)
-            await _mediaSessionService.SeekAsync(ProgressSlider.Value);
+        if (_isClosing || !_snapshot.CanSeek || e.ChangedButton != MouseButton.Left) return;
+        _seekRequestVersion++;
+        _pendingSeekPosition = null;
+        _seekSnapshot = _snapshot;
+        _isSeeking = true;
+        // 点击轨道时 Thumb 不会捕获鼠标，须保证移出轨道后松手也能结束交互。
+        if (e.Handled && !ProgressSlider.IsMouseCaptureWithin && !ProgressSlider.CaptureMouse())
+            CancelProgressSeek();
     }
 
-    private void ProgressSlider_LostMouseCapture(object sender, MouseEventArgs e) => _isSeeking = false;
+    private async void ProgressSlider_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isSeeking || e.ChangedButton != MouseButton.Left) return;
+        var target = ProgressSlider.Value;
+        var snapshot = _seekSnapshot;
+        _isSeeking = false;
+        if (Mouse.Captured == ProgressSlider) ProgressSlider.ReleaseMouseCapture();
+        if (snapshot is null || !IsSameSeekTrack(snapshot, _snapshot))
+        {
+            CancelProgressSeek();
+            return;
+        }
+
+        var version = ++_seekRequestVersion;
+        _pendingSeekPosition = target;
+        _pendingSeekStarted = Stopwatch.GetTimestamp();
+        try
+        {
+            await _mediaSessionService.SeekAsync(target);
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine($"[FullPanel] Seek failed: {exception}");
+            if (version == _seekRequestVersion) CancelProgressSeek();
+        }
+        finally
+        {
+            if (!_isClosing && version == _seekRequestVersion) UpdateProgress();
+        }
+    }
+
+    private void ProgressSlider_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (_isSeeking && !ProgressSlider.IsMouseCaptureWithin) CancelProgressSeek();
+    }
+
+    private void CancelProgressSeek()
+    {
+        _seekRequestVersion++;
+        _isSeeking = false;
+        _pendingSeekPosition = null;
+        _seekSnapshot = null;
+        if (ProgressSlider.IsMouseCaptureWithin) Mouse.Capture(null);
+    }
+
+    private static bool IsSameSeekTrack(MediaSnapshot expected, MediaSnapshot current) =>
+        current.IsConnected && current.CanSeek &&
+        string.Equals(expected.SourceId, current.SourceId, StringComparison.Ordinal) &&
+        string.Equals(expected.Title, current.Title, StringComparison.Ordinal) &&
+        string.Equals(expected.Artist, current.Artist, StringComparison.Ordinal);
 
 
     private async void DeviceCombo_DropDownOpened(object sender, EventArgs e) => await RefreshAudioAsync();
@@ -647,6 +719,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
         _isClosing = true;
+        CancelProgressSeek();
         _audioInteractionService.CancelDeviceOwner(this);
         base.OnClosing(e);
         if (e.Cancel)

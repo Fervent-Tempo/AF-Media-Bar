@@ -60,8 +60,6 @@
                             Style="{StaticResource AfAccentSliderStyle}"
                             FocusVisualStyle="{DynamicResource AfFocusVisualStyle}"
                             IsMoveToPointEnabled="True"
-                            PreviewMouseLeftButtonDown="ProgressSlider_MouseLeftButtonDown"
-                            PreviewMouseLeftButtonUp="ProgressSlider_MouseLeftButtonUp"
                             LostMouseCapture="ProgressSlider_LostMouseCapture"/>
                     <Grid Margin="1,2,1,8" Typography.NumeralAlignment="Tabular">
                         <TextBlock x:Name="PositionText" Style="{StaticResource PanelLabelStyle}"/>
