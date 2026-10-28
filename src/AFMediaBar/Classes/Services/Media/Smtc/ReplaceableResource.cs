@@ -39,6 +39,11 @@ internal sealed class ReplaceableResource<T> : IDisposable where T : class
         }
     }
 
+    internal bool IsCurrent(T value)
+    {
+        lock (_gate) return !_isDisposed && ReferenceEquals(_current?.Value, value);
+    }
+
     public bool TryReplace(T replacement)
     {
         T? retired;

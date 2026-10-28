@@ -303,15 +303,22 @@ public sealed class MediaSessionService : IDisposable
 
         try
         {
-            var accepted = await Task.Run(() => action(controlSession));
-            if (!accepted && selectionRevision == _controlSelectionRevision)
+            var accepted = await Task.Run(async () =>
+            {
+                using var lease = _catalog.TryAcquireSession(selected!);
+                if (lease is null) return (bool?)null;
+                return await action(controlSession).ConfigureAwait(false);
+            });
+            if (accepted is null) return;
+            if (_isDisposed || !_catalog.IsCurrentSession(selected!)) return;
+            if (accepted == false && selectionRevision == _controlSelectionRevision)
                 ReportControlUnavailable(sourceId, operation);
-            else if (accepted && selectionRevision == _controlSelectionRevision)
+            else if (accepted == true && selectionRevision == _controlSelectionRevision)
                 (_readFailures ??= new()).Recover(_log, "Media", $"control:{operation}:{sourceId}", "媒体控制已恢复");
         }
         catch (Exception ex) when (ex is COMException or InvalidOperationException or ObjectDisposedException)
         {
-            if (selectionRevision == _controlSelectionRevision)
+            if (!_isDisposed && _catalog.IsCurrentSession(selected!) && selectionRevision == _controlSelectionRevision)
                 ReportControlUnavailable(sourceId, operation, ex);
         }
     }
@@ -551,7 +558,7 @@ public sealed class MediaSessionService : IDisposable
             _snapshotBuildInFlight = true;
             var selectionRevision = _controlSelectionRevision;
             var mediaRevision = Volatile.Read(ref _mediaRevision);
-            var pendingSnapshot = _snapshotBuilder.BuildAsync(session, isStarted: true, _snapshotBuildCancellation.Token);
+            var pendingSnapshot = BuildLeasedSnapshotAsync(session, _snapshotBuildCancellation.Token);
             (_readFailures ??= new()).Recover(_log, "Media", "snapshot", "媒体快照调度已恢复");
             _ = BuildAndPublishSnapshotAsync(pendingSnapshot, session.Id, mediaRevision, selectionRevision);
         }
@@ -559,6 +566,12 @@ public sealed class MediaSessionService : IDisposable
         {
             (_readFailures ??= new()).Report(_log, "Media", "snapshot", "刷新媒体快照失败", ex);
         }
+    }
+
+    private async Task<MediaSnapshot?> BuildLeasedSnapshotAsync(MediaSession session, CancellationToken cancellationToken)
+    {
+        var snapshot = await _snapshotBuilder.BuildLeasedAsync(session, _catalog, cancellationToken);
+        return _isDisposed || !_catalog.IsCurrentSession(session) ? null : snapshot;
     }
 
     private async Task BuildAndPublishSnapshotAsync(Task<MediaSnapshot?> pendingSnapshot, string sessionKey, int mediaRevision, int selectionRevision)
@@ -831,7 +844,7 @@ public sealed class MediaSessionService : IDisposable
             $"prev={snapshot.CanSkipPrevious},next={snapshot.CanSkipNext},repeat={snapshot.CanChangeRepeat}) repeat={snapshot.RepeatMode}");
     }
 
-    private static bool IsPlaying(MediaSession session)
+    private bool IsPlaying(MediaSession session)
     {
         // 会话可能在本方法执行期间被第三方库关闭，读取失败一律按“未播放”处理。
         // The third-party library may close the session while this method runs, so every read failure means "not playing".
@@ -842,6 +855,8 @@ public sealed class MediaSessionService : IDisposable
 
         try
         {
+            using var lease = _catalog.TryAcquireSession(session);
+            if (lease is null) return false;
             return session.ControlSession.GetPlaybackInfo().PlaybackStatus ==
                 GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
         }

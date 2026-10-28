@@ -491,6 +491,8 @@ public sealed class MemoryPruneCoordinator : IDisposable
 
             try
             {
+                using var lease = _catalog.TryAcquireSession(session);
+                if (lease is null) continue;
                 if (session.ControlSession.GetPlaybackInfo().PlaybackStatus ==
                     GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
                 {
