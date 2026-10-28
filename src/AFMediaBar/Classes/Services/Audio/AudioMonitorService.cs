@@ -389,10 +389,12 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         EventHandler<StoppedEventArgs> onStopped = (_, args) => stopped.TrySetResult(args.Exception);
         capture.DataAvailable += onData;
         capture.RecordingStopped += onStopped;
+        var recordingStarted = false;
         var stopReason = "demand-or-environment-changed";
         try
         {
             capture.StartRecording();
+            recordingStarted = true;
             var signature = $"{source}|{processId}|{deviceId}|{format}";
             var message = $"频谱采集已启动: source={source} pid={processId?.ToString() ?? "none"} device={deviceId ?? "none"} format={format} reason={restartReason}";
             var recovered = _captureFailures.Recover(AppLogService.Current, "Audio", "capture", $"频谱采集已恢复: {message}");
@@ -439,9 +441,30 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
             }
             capture.DataAvailable -= onData;
             capture.RecordingStopped -= onStopped;
+            if (recordingStarted)
+                await StopCaptureAsync(() => capture.CaptureState, capture.StopRecording).ConfigureAwait(false);
             _captureRestartReason = token.IsCancellationRequested ? "cancelled" : stopReason;
             AppLogService.Current?.Verbose("Audio", $"频谱采集已停止: reason={_captureRestartReason} device={deviceId ?? "none"}");
             // Disposal joins NAudio's capture thread, outside the sample gate and off the UI thread.
+        }
+    }
+
+    /// <summary>等待录音线程退出后才允许 Dispose；NAudio 3.1 的启动线程可能覆盖一次停止请求。</summary>
+    internal static async Task StopCaptureAsync(Func<CaptureState> readState, Action requestStop)
+    {
+        var started = Environment.TickCount64;
+        var reportedSlowStop = false;
+        while (readState() != CaptureState.Stopped)
+        {
+            // 停止可能早于底层 AudioClient.Start 完成。重复请求覆盖迟到的 Capturing，
+            // 不在 Starting/Stopping 时直接 Join，也不因取消而遗弃仍在运行的原生线程。
+            requestStop();
+            if (!reportedSlowStop && Environment.TickCount64 - started >= 2_000)
+            {
+                reportedSlowStop = true;
+                AppLogService.Current?.Warn("Audio", "频谱采集停止超过两秒，继续等待录音线程退出");
+            }
+            await Task.Delay(20).ConfigureAwait(false);
         }
     }
 
