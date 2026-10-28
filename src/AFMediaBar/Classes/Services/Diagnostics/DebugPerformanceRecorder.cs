@@ -203,6 +203,7 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
         using var file = new PerformanceLogWriter(Path.Combine(DirectoryPath, "performance.jsonl"), MaximumFileBytes, 5,
             log.SessionId, run.Id, run.Started, environment);
         using var processes = new DebugProcessResourceSampler();
+        var gpuIdentities = new DebugGpuProcessIdentityResolver();
         long? previousSample = null;
         double previousGcPause = 0;
         var flush = Stopwatch.StartNew();
@@ -252,7 +253,7 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
                         mouse = new { hook.Installed, hook.PendingMs, hook.HeartbeatMaxMs, hook.CallbackMaxMs, hook.ForwardMaxMs },
                         debuggerAttached = Debugger.IsAttached, run.DroppedSamples, run.DroppedEvents,
                         sampleAgeMs = Stopwatch.GetElapsedTime(sample.Timestamp).TotalMilliseconds
-                    }, resources, sample.GlobalGpuEngine, engines, DescribeTopGpu(sample.Gpu, sample.Time), sample.Time, sample.Timestamp);
+                    }, resources, sample.GlobalGpuEngine, engines, gpuIdentities.DescribeTopGpu(sample.Gpu, sample.Time), sample.Time, sample.Timestamp);
                     if (!sample.ResetBaseline && interval > Math.Max(2000, sample.ExpectedIntervalMs * 2)) Mark("sample-gap", sample.Time, sample.Timestamp, new { actualIntervalMs = interval, sample.ExpectedIntervalMs });
                     if (Math.Max(uiPendingMs, uiMaximumMs) > 500) Mark("ui-delay", sample.Time, sample.Timestamp, new { uiPendingMs, uiMaximumMs });
                     if (Math.Max(hook.PendingMs, hook.HeartbeatMaxMs) > 500) Mark("hook-thread-delay", sample.Time, sample.Timestamp, new { hook.PendingMs, hook.HeartbeatMaxMs });
@@ -293,25 +294,6 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
             }
         }
     }
-
-    private static GpuProcessIdentityUsage[] DescribeTopGpu(GpuProcessEngineUsage[] entries, DateTimeOffset capturedAt) =>
-        entries.Where(item => item.Percent > 0).OrderByDescending(item => item.Percent).Take(5).Select(item =>
-    {
-        string? name = null;
-        DateTimeOffset? startedAt = null;
-        try
-        {
-            using var process = Process.GetProcessById(item.Pid);
-            var candidateStart = new DateTimeOffset(process.StartTime);
-            if (GpuProcessEngineUsage.CanAssociateProcess(candidateStart, capturedAt))
-            {
-                name = process.ProcessName;
-                startedAt = candidateStart;
-            }
-        }
-        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
-        return new GpuProcessIdentityUsage(item.Pid, name, startedAt, item.Adapter, item.Engine, item.Percent);
-    }).ToArray();
 
     private void RequestStop(Run run)
     {
