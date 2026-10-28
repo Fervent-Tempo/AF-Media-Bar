@@ -209,7 +209,7 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     {
         var snapshot = _media.Snapshot;
         var signature = Language + string.Join("|", _media.Sessions.Select(item => $"{item.Key}:{item.SourceId}:{item.IsSelected}:{item.IsPlaying}")) +
-            $"{snapshot?.SourceId}:{snapshot?.IsConnected}:{snapshot?.CanPlayPause}:{snapshot?.CanSeek}:{snapshot?.Lyrics is not null}";
+            $"{snapshot?.SourceId}:{snapshot?.IsConnected}:{snapshot?.IsStale}:{snapshot?.CanPlayPause}:{snapshot?.CanSeek}:{snapshot?.Lyrics is not null}";
         if (_playerSignature == signature) return;
         _playerSignature = signature;
         Players.Clear(); foreach (var item in PlayerSupportCatalog.Describe(_media.Sessions, _media.Snapshot)) Players.Add(item);

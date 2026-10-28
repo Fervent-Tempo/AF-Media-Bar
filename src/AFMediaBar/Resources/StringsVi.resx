@@ -3802,4 +3802,10 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Home.Bundled" xml:space="preserve">
     <value>Dữ liệu tích hợp</value>
   </data>
+  <data name="Home.Player.Pending" xml:space="preserve">
+    <value>Đang chờ cập nhật nguồn</value>
+  </data>
+  <data name="Home.Player.AwaitingCapabilities" xml:space="preserve">
+    <value>Đang chờ dữ liệu hợp lệ từ nguồn này; không dùng khả năng của nguồn trước.</value>
+  </data>
 </root>

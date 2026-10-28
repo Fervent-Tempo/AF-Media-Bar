@@ -3765,4 +3765,10 @@
   <data name="Home.Bundled" xml:space="preserve">
     <value>內建資料</value>
   </data>
+  <data name="Home.Player.Pending" xml:space="preserve">
+    <value>正在切換來源</value>
+  </data>
+  <data name="Home.Player.AwaitingCapabilities" xml:space="preserve">
+    <value>等待此來源的有效快照，不使用上一來源的能力。</value>
+  </data>
 </root>

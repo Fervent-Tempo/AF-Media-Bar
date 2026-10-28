@@ -148,6 +148,7 @@ public sealed class HomeContentService : IDisposable
     {
         if (!HomeContentPolicy.IsOfficialImage(url)) return null;
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetimeToken);
+        linked.CancelAfter(ReadTimeout);
         var token = linked.Token;
         await _imageGate.WaitAsync(token).ConfigureAwait(false);
         try
@@ -167,9 +168,13 @@ public sealed class HomeContentService : IDisposable
                 using var stream = new MemoryStream(bytes);
                 var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
                 if (decoder.Frames[0].PixelWidth > 4096 || decoder.Frames[0].PixelHeight > 4096) throw new FormatException("Home image dimensions exceed limit.");
+                var width = decoder.Frames[0].PixelWidth; var height = decoder.Frames[0].PixelHeight;
+                var scale = Math.Min(1d, Math.Min(1600d / width, 900d / height));
+                using var decodedStream = new MemoryStream(bytes);
                 var bitmap = new BitmapImage();
-                bitmap.BeginInit(); bitmap.CacheOption = BitmapCacheOption.OnLoad; bitmap.DecodePixelWidth = 1600;
-                bitmap.StreamSource = new MemoryStream(bytes); bitmap.EndInit(); bitmap.Freeze(); return bitmap;
+                bitmap.BeginInit(); bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.DecodePixelWidth = Math.Max(1, (int)(width * scale)); bitmap.DecodePixelHeight = Math.Max(1, (int)(height * scale));
+                bitmap.StreamSource = decodedStream; bitmap.EndInit(); bitmap.Freeze(); return bitmap;
             }, token).ConfigureAwait(false);
             Directory.CreateDirectory(_directory);
             if (!File.Exists(file)) await File.WriteAllBytesAsync(file, bytes, token).ConfigureAwait(false);
@@ -185,6 +190,9 @@ public sealed class HomeContentService : IDisposable
         exception is HttpRequestException or IOException or UnauthorizedAccessException or JsonException or FormatException or OperationCanceledException or InvalidOperationException;
     private async Task<string> ReadRemoteAsync(Uri uri, int maximum, CancellationToken token)
     {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
+        deadline.CancelAfter(ReadTimeout);
+        token = deadline.Token;
         using var request = new HttpRequestMessage(HttpMethod.Get, uri);
         request.Headers.UserAgent.ParseAdd("AFMediaBar-home/1.0");
         request.Headers.Accept.ParseAdd("application/json");
@@ -205,6 +213,7 @@ public sealed class HomeContentService : IDisposable
         _responses[uri.AbsoluteUri] = (json, response.Headers.ETag?.ToString());
         return json;
     }
+    private TimeSpan ReadTimeout => _client.Timeout == Timeout.InfiniteTimeSpan ? TimeSpan.FromSeconds(8) : TimeSpan.FromMilliseconds(Math.Min(8000, _client.Timeout.TotalMilliseconds));
     private static async Task<byte[]> ReadBytesAsync(HttpResponseMessage response, int maximum, CancellationToken token)
     {
         if (response.Content.Headers.ContentLength > maximum) throw new FormatException("Home response exceeds size limit.");

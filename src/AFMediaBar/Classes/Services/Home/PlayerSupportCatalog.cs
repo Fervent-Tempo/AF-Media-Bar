@@ -39,14 +39,17 @@ public static class PlayerSupportCatalog
             var session = group.First();
             var key = MediaSourceNameFormatter.GetKnownSourceKey(session.SourceId);
             var profile = All.FirstOrDefault(item => item.Key == key);
-            var isCurrent = current is { IsConnected: true } && (session.IsSelected || string.Equals(current.SourceId, session.SourceId, StringComparison.OrdinalIgnoreCase));
+            var matchesSnapshot = current is { IsConnected: true } && (string.Equals(current.SourceId, session.SourceId, StringComparison.OrdinalIgnoreCase) ||
+                key != "other" && key == MediaSourceNameFormatter.GetKnownSourceKey(current.SourceId));
+            var isCurrent = matchesSnapshot && current?.IsStale != true;
+            var isPending = !isCurrent && (session.IsSelected || matchesSnapshot);
             var capabilities = isCurrent ? string.Join(" · ", new[] {
                 Translations.Get("Start.Metadata"),
                 Translations.Get(current!.CanPlayPause ? "Home.Player.ControlAvailable" : "Home.Player.ControlUnavailable"),
                 Translations.Get(current.CanSeek ? "Home.Player.SeekAvailable" : "Home.Player.SeekUnavailable"),
-                Translations.Get(current.Lyrics is null ? "Home.Player.LyricsUnknown" : "Home.Player.LyricsAvailable") }) : Translations.Get("Home.Player.NotSelected");
+                Translations.Get(current.Lyrics is null ? "Home.Player.LyricsUnknown" : "Home.Player.LyricsAvailable") }) : Translations.Get(isPending ? "Home.Player.AwaitingCapabilities" : "Home.Player.NotSelected");
             result.Add(new(key, profile?.Name ?? MediaSourceNameFormatter.GetDisplayName(session.SourceId, Translations.Get("Start.OtherSmtc")),
-                Translations.Get(isCurrent ? "Home.Player.Current" : session.IsPlaying ? "Home.Player.Playing" : "Home.Player.Connected"), capabilities,
+                Translations.Get(isCurrent ? "Home.Player.Current" : isPending ? "Home.Player.Pending" : session.IsPlaying ? "Home.Player.Playing" : "Home.Player.Connected"), capabilities,
                 profile?.Notes ?? Translations.Get("Home.Player.Smtc")));
         }
         return result;

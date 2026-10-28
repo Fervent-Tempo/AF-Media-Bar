@@ -76,4 +76,61 @@ public sealed class HomeContentTests
             return Task.FromResult(respond(request));
         }
     }
+    [TestMethod]
+    public async Task HeadersWithoutBodyCannotKeepRefreshWaiting()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "AFMB-home-" + Guid.NewGuid().ToString("N"));
+        using var log = new AppLogService(Path.Combine(directory, "logs"));
+        var count = 0;
+        using var handler = new Responses(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        { Content = ++count == 1 ? new StreamContent(new NeverBody()) : new StringContent("{\"total_count\":2,\"items\":[]}") });
+        using var client = new HttpClient(handler) { Timeout = TimeSpan.FromMilliseconds(100) };
+        using var service = new HomeContentService(log, client, directory);
+        var result = await service.RefreshProjectAsync(true, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.IsNull(result.Stars);
+        Assert.AreEqual(4, handler.Requests.Count);
+    }
+    [TestMethod]
+    public void NewlySelectedSessionCannotBorrowPreviousPlayersCapabilities()
+    {
+        var snapshot = AFMediaBar.Classes.Models.MediaSnapshot.Disconnected with { IsConnected = true, SourceId = "Spotify.exe", CanPlayPause = true, CanSeek = true };
+        AFMediaBar.Classes.Models.MediaSessionOption[] sessions = [new("n", "cloudmusic.exe", "NetEase", true, true), new("s", "Spotify.exe", "Spotify", false, false)];
+        var cards = PlayerSupportCatalog.Describe(sessions, snapshot);
+        Assert.AreEqual(AFMediaBar.Resources.Translations.Get("Home.Player.AwaitingCapabilities"), cards.First().Capabilities);
+        Assert.AreEqual(1, cards.Count(card => card.Status == AFMediaBar.Resources.Translations.Get("Home.Player.Current")));
+        var stale = PlayerSupportCatalog.Describe(sessions, snapshot with { IsStale = true });
+        Assert.IsFalse(stale.Any(card => card.Status == AFMediaBar.Resources.Translations.Get("Home.Player.Current")));
+    }
+    [TestMethod]
+    public async Task NarrowImageDecodeIsBoundedAndSmallImagesAreNotUpscaled()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "AFMB-home-" + Guid.NewGuid().ToString("N"));
+        using var log = new AppLogService(Path.Combine(directory, "logs"));
+        foreach (var (width, height) in new[] { (1, 4096), (16, 16) })
+        {
+            var bitmap = System.Windows.Media.Imaging.BitmapSource.Create(width, height, 96, 96, System.Windows.Media.PixelFormats.Bgra32, null, new byte[width * height * 4], width * 4);
+            var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder(); encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+            using var encoded = new MemoryStream(); encoder.Save(encoded);
+            using var handler = new Responses(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(encoded.ToArray()) });
+            using var client = new HttpClient(handler);
+            using var service = new HomeContentService(log, client, directory);
+            var image = await service.ReadImageAsync($"https://raw.githubusercontent.com/Fervent-Tempo/AF-Media-Bar/main/{width}.png", CancellationToken.None);
+            Assert.IsNotNull(image);
+            Assert.IsTrue(image.PixelWidth <= Math.Min(width, 1600) && image.PixelHeight <= Math.Min(height, 900));
+        }
+    }
+    private sealed class NeverBody : Stream
+    {
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default) { await Task.Delay(Timeout.InfiniteTimeSpan, token); return 0; }
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override void Flush() => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
 }
