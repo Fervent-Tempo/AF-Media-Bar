@@ -3,6 +3,7 @@ description: 说明使用场景和期望的改进。 / Describe your use case an
 title: "[Feature]: "
 labels:
   - enhancement
+  - need-triage
 body:
   - type: markdown
     attributes:

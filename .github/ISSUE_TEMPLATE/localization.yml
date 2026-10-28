@@ -1,6 +1,9 @@
 name: 翻译贡献与反馈 / Translation contributions and feedback
 description: 提交任意语言的翻译，或反馈文案问题。 / Contribute translations in any language or report wording issues.
 title: "[I18N]: "
+labels:
+  - "area: localization"
+  - need-triage
 body:
   - type: markdown
     attributes:

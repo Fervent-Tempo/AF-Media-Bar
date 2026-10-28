@@ -3,6 +3,7 @@ description: 报告程序问题，包括偶发异常。 / Report app problems, i
 title: "[Bug]: "
 labels:
   - bug
+  - need-triage
 body:
   - type: markdown
     attributes:
