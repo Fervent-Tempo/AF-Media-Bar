@@ -308,7 +308,7 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     {
         if (_disposed || !_configuration.IsActive) return;
         if (args.PropertyName is null or nameof(AppSettings.PerformanceComponent)) RefreshMetricEntries();
-        if (args.PropertyName is null or nameof(AppSettings.SpectrumComponent)) RefreshCaptureDeviceOptions();
+        if (args.PropertyName is null or nameof(AppSettings.SpectrumComponent) or nameof(AppSettings.AudioDevices)) RefreshCaptureDeviceOptions();
         if (args.PropertyName == nameof(AppSettings.AudioDevices)) QueueCaptureDeviceRefresh();
         OnPropertyChanged(string.Empty);
     });

@@ -51,6 +51,8 @@ public sealed partial class ComponentsSettingsViewModel
             // 非指定设备模式保留已保存的设备标识与名称，切回「指定设备」时恢复原选择；
             // 该标识在这些模式下不参与设备选择，保留只是为了让用户的选择不丢失。
             var specific = value.Mode == SpectrumCaptureDeviceMode.SpecificDevice;
+            if (specific && (!_configuration.Current.AudioDevices.IsAllowed(AudioDeviceDirection.Output, value.DeviceId ?? string.Empty) ||
+                !_lastCaptureDevices.Any(device => device.IsActive && string.Equals(device.PolicyId, value.DeviceId, StringComparison.OrdinalIgnoreCase)))) return;
             _configuration.SetSpectrum(current with
             {
                 CaptureDeviceMode = value.Mode,
@@ -75,7 +77,7 @@ public sealed partial class ComponentsSettingsViewModel
         var token = _configuration.CancellationToken;
         try
         {
-            var devices = await _captureDevicesCatalog.GetDevicesAsync(AudioDeviceDirection.Output, includeHidden: true, token).ConfigureAwait(false);
+            var devices = await _captureDevicesCatalog.GetDevicesAsync(AudioDeviceDirection.Output, includeHidden: false, token).ConfigureAwait(false);
             await _dispatcher.InvokeAsync(() =>
             {
                 if (_disposed || token.IsCancellationRequested || !_configuration.IsActive || version != _captureDevicesVersion) return;
@@ -112,16 +114,25 @@ public sealed partial class ComponentsSettingsViewModel
                 new(null, Translations.Get("Media.Spectrum.CaptureDevice.Automatic"), string.Empty, SpectrumCaptureDeviceMode.FollowMediaSource),
                 new(null, Translations.Get("Media.Spectrum.CaptureDevice.SystemDefault"), string.Empty, SpectrumCaptureDeviceMode.SystemDefault)
             };
-            foreach (var device in _lastCaptureDevices.DistinctBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase))
-                options.Add(new(device.PolicyId, device.IsActive ? device.DisplayName :
-                    Translations.Format("Media.Spectrum.CaptureDevice.Offline", device.DisplayName), device.SystemName, SpectrumCaptureDeviceMode.SpecificDevice));
-            var settings = _configuration.Current.SpectrumComponent;
-            // 只有指定设备模式才需要把当前离线设备补回列表；其它模式下保存的设备标识不参与选择，
+            var current = _configuration.Current;
+            foreach (var device in _lastCaptureDevices.Where(device => device.IsActive &&
+                current.AudioDevices.IsAllowed(AudioDeviceDirection.Output, device.PolicyId))
+                .DistinctBy(device => device.PolicyId, StringComparer.OrdinalIgnoreCase))
+                options.Add(new(device.PolicyId, device.DisplayName, device.SystemName, SpectrumCaptureDeviceMode.SpecificDevice));
+            var settings = current.SpectrumComponent;
+            // 只有指定设备模式才需要把当前离线或隐藏设备补回列表；其它模式下保存的设备标识不参与选择，
             // 补回来只会多一个永远选不中的幽灵项。
             if (settings.ResolveCaptureDeviceMode() == SpectrumCaptureDeviceMode.SpecificDevice &&
                 settings.CaptureDeviceId is { } id && !options.Any(option => string.Equals(option.DeviceId, id, StringComparison.OrdinalIgnoreCase)))
-                options.Add(new(id, Translations.Format("Media.Spectrum.CaptureDevice.Offline",
-                    string.IsNullOrWhiteSpace(settings.CaptureDeviceName) ? id : settings.CaptureDeviceName), settings.CaptureDeviceName, SpectrumCaptureDeviceMode.SpecificDevice));
+            {
+                var alias = current.AudioDevices.FindPreference(AudioDeviceDirection.Output, id)?.Alias;
+                var name = !string.IsNullOrWhiteSpace(alias) ? alias :
+                    string.IsNullOrWhiteSpace(settings.CaptureDeviceName) ? id : settings.CaptureDeviceName;
+                var displayName = current.AudioDevices.IsAllowed(AudioDeviceDirection.Output, id)
+                    ? Translations.Format("Media.Spectrum.CaptureDevice.Offline", name)
+                    : $"{name} ({Translations.Get("Audio.Device.Hidden")})";
+                options.Add(new(id, displayName, settings.CaptureDeviceName, SpectrumCaptureDeviceMode.SpecificDevice));
+            }
             SpectrumCaptureDevices = options;
             OnPropertyChanged(nameof(SpectrumCaptureDevices));
             OnPropertyChanged(nameof(SelectedSpectrumCaptureDevice));
