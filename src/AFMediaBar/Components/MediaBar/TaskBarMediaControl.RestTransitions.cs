@@ -87,7 +87,7 @@ public partial class TaskBarMediaControl
             experience.ArtworkVisible,
             experience.InputDeviceVisible);
         var visuals = new Dictionary<TaskbarRestComponent, RestVisual>();
-        foreach (var component in TaskbarRestLayoutPolicy.DefaultOrder)
+        foreach (var component in TaskbarRestLayoutPolicy.DefaultOrder.Concat(ComponentLayoutPolicy.TransportComponents))
         {
             var element = GetRestElement(component);
             if (element.Visibility != Visibility.Visible || element.ActualWidth <= 0 || element.ActualHeight <= 0)
@@ -101,7 +101,10 @@ public partial class TaskBarMediaControl
             BitmapSource? bitmap = null;
             var needsBitmap = component == TaskbarRestComponent.Artwork ||
                 (component != TaskbarRestComponent.MediaText &&
-                 !TaskbarRestLayoutPolicy.IsVisible(component, targetVisibility));
+                 !(ComponentLayoutPolicy.TransportComponents.Contains(component)
+                     ? targetConnected && ComponentLayoutPolicy.Resolve(PresentationSettings, BarLayoutState.Resident)
+                         .Any(entry => entry.Component == component && entry.IsVisible)
+                     : TaskbarRestLayoutPolicy.IsVisible(component, targetVisibility)));
             if (needsBitmap && pixelWidth > 0 && pixelHeight > 0 && pixelWidth <= 4096 && pixelHeight <= 1024)
             {
                 try
@@ -139,6 +142,9 @@ public partial class TaskBarMediaControl
         TaskbarRestComponent.OutputDevice => TaskbarOutputDeviceHoverSurface,
         TaskbarRestComponent.InputDevice => TaskbarInputDeviceHoverSurface,
         TaskbarRestComponent.Volume => TaskbarVolumeHoverSurface,
+        TaskbarRestComponent.PreviousTrack => ResidentPreviousSurface,
+        TaskbarRestComponent.PlayPause => ResidentPlayPauseSurface,
+        TaskbarRestComponent.NextTrack => ResidentNextSurface,
         _ => throw new ArgumentOutOfRangeException(nameof(component))
     };
 
@@ -230,7 +236,7 @@ public partial class TaskBarMediaControl
         _restTransitionEase = MotionPolicy.CreateRestConnectionEase();
         InteractionSurface.UpdateLayout();
 
-        foreach (var component in TaskbarRestLayoutPolicy.DefaultOrder)
+        foreach (var component in TaskbarRestLayoutPolicy.DefaultOrder.Concat(ComponentLayoutPolicy.TransportComponents))
         {
             if (component == TaskbarRestComponent.MediaText)
                 continue;

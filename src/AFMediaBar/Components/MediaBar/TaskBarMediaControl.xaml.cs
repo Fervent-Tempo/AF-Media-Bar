@@ -1285,6 +1285,11 @@ namespace AFMediaBar.Components
             PlaceRestWidget(TaskbarOutputDeviceHoverSurface, layout.Find(TaskbarRestComponent.OutputDevice), hoverHeight);
             PlaceRestWidget(TaskbarInputDeviceHoverSurface, layout.Find(TaskbarRestComponent.InputDevice), hoverHeight);
             PlaceRestWidget(TaskbarVolumeHoverSurface, layout.Find(TaskbarRestComponent.Volume), hoverHeight);
+            PlaceRestWidget(ResidentPreviousSurface, layout.Find(TaskbarRestComponent.PreviousTrack), hoverHeight);
+            PlaceRestWidget(ResidentPlayPauseSurface, layout.Find(TaskbarRestComponent.PlayPause), hoverHeight);
+            PlaceRestWidget(ResidentNextSurface, layout.Find(TaskbarRestComponent.NextTrack), hoverHeight);
+            ResizeResidentTransportButtons(metrics.ButtonSize,
+                Math.Min(metrics.ButtonSize, Math.Max(1, hoverHeight - RestWidgetVerticalInset(ResidentPreviousSurface))));
             PlaceMetricSurfaces(layout, hoverHeight);
             PlaceBarMoveHandle(layout, hoverHeight);
             foreach (var surface in new[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface })
@@ -1349,6 +1354,9 @@ namespace AFMediaBar.Components
             SetRestComponentVisible(TaskbarPerformanceHoverSurface, performanceVisible);
             SetRestComponentVisible(TaskbarPerformanceSurface, performanceVisible);
             SetRestComponentVisible(TaskbarBatterySurface, Visible(TaskbarRestComponent.BluetoothBattery));
+            SetRestComponentVisible(ResidentPreviousSurface, Visible(TaskbarRestComponent.PreviousTrack));
+            SetRestComponentVisible(ResidentPlayPauseSurface, Visible(TaskbarRestComponent.PlayPause));
+            SetRestComponentVisible(ResidentNextSurface, Visible(TaskbarRestComponent.NextTrack));
             SetRestComponentVisible(TaskbarOutputDeviceHoverSurface, outputDeviceVisible);
             SetRestComponentVisible(TaskbarOutputDeviceSurface, outputDeviceVisible);
             SetRestComponentVisible(TaskbarInputDeviceHoverSurface, inputDeviceVisible);
@@ -1455,6 +1463,8 @@ namespace AFMediaBar.Components
             TaskbarRestComponent.OutputDevice => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.InputDevice => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.Volume => metrics.ButtonSize + TaskbarWidgetPadding * 2,
+            TaskbarRestComponent.PreviousTrack or TaskbarRestComponent.PlayPause or TaskbarRestComponent.NextTrack =>
+                metrics.ButtonSize + TaskbarWidgetPadding * 2,
             _ => 0
         };
 

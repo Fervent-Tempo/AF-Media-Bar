@@ -22,9 +22,10 @@ public static class ComponentLayoutPolicy
     public const double HandleLength = 12;
     public static IReadOnlyList<TaskbarRestComponent> MetricComponents { get; } =
         [TaskbarRestComponent.SystemMemory, TaskbarRestComponent.SystemCpu, TaskbarRestComponent.SystemGpu, TaskbarRestComponent.ProcessMemory, TaskbarRestComponent.SystemNetwork];
+    public static IReadOnlyList<TaskbarRestComponent> TransportComponents { get; } =
+        [TaskbarRestComponent.PreviousTrack, TaskbarRestComponent.PlayPause, TaskbarRestComponent.NextTrack];
     public static IReadOnlyList<TaskbarRestComponent> HoverComponents { get; } =
-        [TaskbarRestComponent.PreviousTrack, TaskbarRestComponent.PlayPause, TaskbarRestComponent.NextTrack,
-         TaskbarRestComponent.OutputDevice, TaskbarRestComponent.InputDevice, TaskbarRestComponent.Volume];
+        [.. TransportComponents, TaskbarRestComponent.OutputDevice, TaskbarRestComponent.InputDevice, TaskbarRestComponent.Volume];
     public static bool IsMetric(TaskbarRestComponent component) => MetricComponents.Contains(component);
     public static MetricKind Metric(TaskbarRestComponent component) => component switch
     {
@@ -150,6 +151,8 @@ public static class ComponentLayoutPolicy
             }
             else entries.Add(new(component, Visible(component)));
         }
+        if (state == BarLayoutState.Resident)
+            entries.AddRange(TransportComponents.Select(component => new ComponentLayoutEntry(component, false)));
         if (!entries.Any(entry => entry.Component == TaskbarRestComponent.Performance))
             entries.Add(new(TaskbarRestComponent.Performance, Visible(TaskbarRestComponent.Performance)));
         return entries;

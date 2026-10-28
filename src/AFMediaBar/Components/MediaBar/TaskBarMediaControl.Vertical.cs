@@ -62,7 +62,7 @@ public partial class TaskBarMediaControl
             HoverRevealHost.VerticalAlignment = VerticalAlignment.Center;
             TaskbarHoverContent.Margin = new Thickness(5, 0, 6, 0);
             TaskbarHoverActions.HorizontalAlignment = HorizontalAlignment.Left;
-            foreach (var surface in new FrameworkElement[] { TaskbarSpectrumHoverSurface, TaskbarPerformanceHoverSurface, TaskbarBatterySurface, TaskbarOutputDeviceHoverSurface, TaskbarInputDeviceHoverSurface, TaskbarVolumeHoverSurface })
+            foreach (var surface in new FrameworkElement[] { TaskbarSpectrumHoverSurface, TaskbarPerformanceHoverSurface, TaskbarBatterySurface, TaskbarOutputDeviceHoverSurface, TaskbarInputDeviceHoverSurface, TaskbarVolumeHoverSurface, ResidentPreviousSurface, ResidentPlayPauseSurface, ResidentNextSurface })
                 surface.VerticalAlignment = VerticalAlignment.Center;
         }
     }
@@ -107,6 +107,7 @@ public partial class TaskBarMediaControl
         TaskbarRestComponent.DragHandle => ComponentLayoutPolicy.HandleLength,
         _ when ComponentLayoutPolicy.IsMetric(component) => MetricPrimarySize(component, true),
         TaskbarRestComponent.BluetoothBattery => BatteryVerticalLength,
+        TaskbarRestComponent.PreviousTrack or TaskbarRestComponent.PlayPause or TaskbarRestComponent.NextTrack or
         TaskbarRestComponent.OutputDevice or TaskbarRestComponent.InputDevice or TaskbarRestComponent.Volume =>
             VerticalAudioButtonSize(metrics) + RestWidgetVerticalInset(TaskbarOutputDeviceHoverSurface),
         _ => 0
@@ -183,6 +184,9 @@ public partial class TaskBarMediaControl
         Place(TaskbarOutputDeviceHoverSurface, TaskbarRestComponent.OutputDevice);
         Place(TaskbarInputDeviceHoverSurface, TaskbarRestComponent.InputDevice);
         Place(TaskbarVolumeHoverSurface, TaskbarRestComponent.Volume);
+        Place(ResidentPreviousSurface, TaskbarRestComponent.PreviousTrack);
+        Place(ResidentPlayPauseSurface, TaskbarRestComponent.PlayPause);
+        Place(ResidentNextSurface, TaskbarRestComponent.NextTrack);
         var textLength = layout.TextWidth;
         SongLyricsPanel.Width = innerWidth;
         SongLyricsPanel.Height = textLength;
@@ -205,6 +209,7 @@ public partial class TaskBarMediaControl
             surface.Width = buttonSize;
             surface.Height = buttonSize;
         }
+        ResizeResidentTransportButtons(buttonSize, buttonSize);
         HoverRevealHost.HorizontalAlignment = HorizontalAlignment.Left;
         HoverRevealHost.VerticalAlignment = VerticalAlignment.Top;
         HoverRevealHost.Margin = new Thickness(2, layout.TextLeft, 0, 0);

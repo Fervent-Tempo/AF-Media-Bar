@@ -7,6 +7,15 @@ namespace AFMediaBar.Components;
 
 public partial class TaskBarMediaControl
 {
+    private void ResizeResidentTransportButtons(double width, double height)
+    {
+        foreach (var button in new[] { ResidentPreviousButton, ResidentPlayPauseButton, ResidentNextButton })
+        {
+            button.Width = width;
+            button.Height = height;
+        }
+    }
+
     private BarLayoutState RestLayoutState => _isConnected ? BarLayoutState.Resident : BarLayoutState.Idle;
     private IReadOnlyList<ComponentLayoutEntry> EffectiveRestEntries() => ComponentLayoutPolicy.Resolve(PresentationSettings, RestLayoutState);
     private TaskbarRestComponent[] EffectiveRestComponents() => PreviewRestEntries()

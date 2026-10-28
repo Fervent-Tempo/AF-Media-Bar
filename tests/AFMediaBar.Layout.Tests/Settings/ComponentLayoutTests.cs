@@ -12,6 +12,23 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class ComponentLayoutTests
 {
     [TestMethod]
+    public void ResidentTransportIsOptInAndEachButtonMovesIndependently()
+    {
+        var settings = new AppSettings();
+        foreach (var component in ComponentLayoutPolicy.TransportComponents)
+        {
+            Assert.IsFalse(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident).Single(entry => entry.Component == component).IsVisible);
+            Assert.IsFalse(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Idle).Any(entry => entry.Component == component));
+            settings.TaskbarExperience = ComponentLayoutPolicy.SetVisible(settings, BarLayoutState.Resident, component, true);
+            var order = ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident).Select(entry => entry.Component).ToArray();
+            Assert.IsTrue(ComponentLayoutPolicy.TryMove(settings, BarLayoutState.Resident, component, 2, order, out var moved));
+            settings.TaskbarExperience = moved;
+            Assert.AreEqual(component, ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident)[2].Component);
+            Assert.IsFalse(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Hover).Single(entry => entry.Component == component).IsVisible);
+        }
+    }
+
+    [TestMethod]
     public void LegacyGroupExpandsAtItsExplicitPositionAndUnconfiguredCycleIsLast()
     {
         var settings = new AppSettings();
@@ -73,6 +90,8 @@ public sealed class ComponentLayoutTests
                 {
                     store.Initialize();
                     SettingsManager.Current.TaskbarExperience = ComponentLayoutPolicy.SetVisible(SettingsManager.Current, BarLayoutState.Resident, TaskbarRestComponent.Spectrum, false);
+                    foreach (var component in ComponentLayoutPolicy.TransportComponents)
+                        SettingsManager.Current.TaskbarExperience = ComponentLayoutPolicy.SetVisible(SettingsManager.Current, BarLayoutState.Resident, component, true);
                     store.Flush();
                 }
                 using var loaded = new SettingsPersistenceService(directory);
@@ -80,6 +99,12 @@ public sealed class ComponentLayoutTests
                 var layout = SettingsManager.Current.TaskbarExperience.ComponentLayouts!;
                 Assert.IsFalse(ComponentLayoutPolicy.Resolve(SettingsManager.Current, BarLayoutState.Resident).Single(entry => entry.Component == TaskbarRestComponent.Spectrum).IsVisible);
                 Assert.AreNotSame(layout.Resident, SettingsManager.Current.Clone().TaskbarExperience.ComponentLayouts!.Resident);
+                foreach (var component in ComponentLayoutPolicy.TransportComponents)
+                    Assert.IsTrue(ComponentLayoutPolicy.Resolve(SettingsManager.Current, BarLayoutState.Resident).Single(entry => entry.Component == component).IsVisible);
+                SettingsManager.SetUserDefaults(SettingsManager.Current.Clone());
+                SettingsManager.Current.TaskbarExperience = ComponentLayoutPolicy.SetVisible(SettingsManager.Current, BarLayoutState.Resident, TaskbarRestComponent.PlayPause, false);
+                SettingsManager.ResetRestState();
+                Assert.IsTrue(ComponentLayoutPolicy.Resolve(SettingsManager.Current, BarLayoutState.Resident).Single(entry => entry.Component == TaskbarRestComponent.PlayPause).IsVisible);
                 SettingsManager.SetUserDefaults(null);
                 SettingsManager.ResetComponents();
                 Assert.IsFalse(ComponentLayoutPolicy.Resolve(SettingsManager.Current, BarLayoutState.Resident).Single(entry => entry.Component == TaskbarRestComponent.Spectrum).IsVisible);

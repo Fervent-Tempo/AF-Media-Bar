@@ -26,13 +26,15 @@ internal static class ComponentLayoutPresentationChecks
                 ComponentLayouts = new()
                 {
                     Resident = [new(TaskbarRestComponent.Artwork, true), new(TaskbarRestComponent.MediaText, true),
+                        new(TaskbarRestComponent.NextTrack, true), new(TaskbarRestComponent.PlayPause, true), new(TaskbarRestComponent.PreviousTrack, true),
                         new(TaskbarRestComponent.SystemGpu, true), new(TaskbarRestComponent.OutputDevice, true), new(TaskbarRestComponent.SystemCpu, true)],
                     Hover = [new(TaskbarRestComponent.NextTrack, false), new(TaskbarRestComponent.PreviousTrack, true),
                         new(TaskbarRestComponent.Volume, true), new(TaskbarRestComponent.PlayPause, true)],
                     Idle = []
                 }
             };
-            control.UpdateSongInfo(MediaSnapshot.Disconnected with { IsConnected = true, Title = "Layout" });
+            control.UpdateSongInfo(MediaSnapshot.Disconnected with
+            { IsConnected = true, Title = "Layout", IsPlaying = true, CanPlayPause = true, CanSkipPrevious = true });
             Assert.IsTrue(control.EffectivePerformanceSettings.Metrics!.Contains(MetricKind.SystemGpu), "独立 GPU 不能被轮换参与项关闭。");
             foreach (var mode in new[] { WindowMode.Taskbar, WindowMode.FloatingBar })
                 foreach (var vertical in new[] { false, true })
@@ -57,12 +59,28 @@ internal static class ComponentLayoutPresentationChecks
                         Assert.AreEqual(Visibility.Collapsed, ((FrameworkElement)control.FindName("TaskbarNextButton")).Visibility);
                         var actions = (StackPanel)control.FindName("TaskbarHoverActions");
                         Assert.AreEqual("TaskbarPreviousButton", ((FrameworkElement)actions.Children[1]).Name);
+                        var next = (FrameworkElement)control.FindName("ResidentNextSurface");
+                        var play = (FrameworkElement)control.FindName("ResidentPlayPauseSurface");
+                        var previousButton = (Button)control.FindName("ResidentPreviousButton");
+                        Assert.AreEqual(Visibility.Visible, next.Visibility);
+                        Assert.AreEqual(Visibility.Visible, play.Visibility);
+                        Assert.IsFalse(((Button)control.FindName("ResidentNextButton")).IsEnabled);
+                        Assert.IsTrue(previousButton.IsEnabled);
+                        Assert.IsTrue(((Button)control.FindName("ResidentPlayPauseButton")).IsEnabled);
+                        var nextPoint = next.TranslatePoint(new Point(), control);
+                        var playPoint = play.TranslatePoint(new Point(), control);
+                        if (vertical) Assert.IsTrue(nextPoint.Y + next.ActualHeight <= playPoint.Y);
+                        else Assert.IsTrue(arrangement == TaskbarContentArrangement.Left
+                            ? nextPoint.X + next.ActualWidth <= playPoint.X
+                            : playPoint.X + play.ActualWidth <= nextPoint.X);
+                        Assert.AreNotSame(previousButton, control.FindName("TaskbarPreviousButton"));
                     }
             control.UpdateSongInfo(MediaSnapshot.Disconnected);
             control.ApplyTaskbarExperienceSettings();
             Assert.IsTrue(control.IsRestLayerEmpty, "全关闭的无媒体布局必须隐藏媒体栏。");
             var hidden = (Border)MediaBarTestAccess.GetField("_barMoveHandle", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
             Assert.AreEqual(Visibility.Collapsed, hidden.Visibility);
+            Assert.AreEqual(Visibility.Collapsed, ((FrameworkElement)control.FindName("ResidentPlayPauseSurface")).Visibility);
         }
         finally { SettingsManager.Replace(previous); }
     }

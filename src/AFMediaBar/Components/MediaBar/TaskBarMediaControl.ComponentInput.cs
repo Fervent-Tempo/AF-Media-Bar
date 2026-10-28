@@ -48,7 +48,10 @@ public partial class TaskBarMediaControl
             [TaskbarRestComponent.BluetoothBattery] = TaskbarBatterySurface,
             [TaskbarRestComponent.OutputDevice] = TaskbarOutputDeviceHoverSurface,
             [TaskbarRestComponent.InputDevice] = TaskbarInputDeviceHoverSurface,
-            [TaskbarRestComponent.Volume] = TaskbarVolumeHoverSurface
+            [TaskbarRestComponent.Volume] = TaskbarVolumeHoverSurface,
+            [TaskbarRestComponent.PreviousTrack] = ResidentPreviousSurface,
+            [TaskbarRestComponent.PlayPause] = ResidentPlayPauseSurface,
+            [TaskbarRestComponent.NextTrack] = ResidentNextSurface
         };
         foreach (var surface in _metricSurfaces.Values)
             if (surface.Tag is TaskbarRestComponent component && surface.Visibility == Visibility.Visible) elements[component] = surface;
