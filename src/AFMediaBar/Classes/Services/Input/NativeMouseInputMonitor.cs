@@ -21,6 +21,9 @@ public sealed class NativeMouseInputMonitor : IDisposable
     private readonly ShellTrayIconService _trayIcon;
     private readonly NativeMethods.LowLevelMouseProc _callback;
     private readonly Dispatcher _dispatcher;
+    private readonly AppLogService? _log;
+    private readonly RepeatedFailureReporter _callbackFailures = new();
+    private int _failureReportQueued;
     private readonly object _lifecycleGate = new();
     private readonly ManualResetEventSlim _messageLoopReady = new(false);
     private Thread? _hookThread;
@@ -95,11 +98,12 @@ public sealed class NativeMouseInputMonitor : IDisposable
     private const int SuppressedClickWindowMilliseconds = 750;
 
     /// <summary>创建全局鼠标监听器。/ Creates the global mouse monitor.</summary>
-    public NativeMouseInputMonitor(ShellTrayIconService trayIcon)
+    public NativeMouseInputMonitor(ShellTrayIconService trayIcon, AppLogService? log = null)
     {
         _trayIcon = trayIcon;
         _callback = OnMouseEvent;
         _dispatcher = Application.Current.Dispatcher;
+        _log = log;
     }
 
     public event EventHandler<TrayWheelEventArgs>? WheelChanged;
@@ -310,7 +314,20 @@ public sealed class NativeMouseInputMonitor : IDisposable
         }
         catch (Exception exception)
         {
-            Debug.WriteLine($"[NativeMouseInputMonitor] Callback failed: {exception}");
+            // 异常格式化与日志也不能占用输入链；最多保留一项后台报告，不逐次积压任务。
+            if (Interlocked.CompareExchange(ref _failureReportQueued, 1, 0) == 0 &&
+                !ThreadPool.UnsafeQueueUserWorkItem(static state =>
+                {
+                    try
+                    {
+                        if (!state.Monitor._disposed)
+                            state.Monitor._callbackFailures.Report(state.Monitor._log, "Input", "mouse-hook",
+                                "全局鼠标监听回调失败", state.Exception);
+                    }
+                    catch { /* 故障报告不能引发新的后台未处理异常。 */ }
+                    finally { Interlocked.Exchange(ref state.Monitor._failureReportQueued, 0); }
+                }, (Monitor: this, Exception: exception), preferLocal: false))
+                Interlocked.Exchange(ref _failureReportQueued, 0);
         }
         finally
         {
