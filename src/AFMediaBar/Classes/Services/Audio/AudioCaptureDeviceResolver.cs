@@ -256,9 +256,8 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
                 update = new Resolution(result.Target, changed,
                     pass == 0 && reason is not ("demand-resumed" or "media-source-changed"), generation, reason);
             }
-            var message = $"频谱端点解析: generation={generation} reason={reason} pass={pass} target={result.Target ?? "none"} changed={update.TargetChanged}";
-            if (pass == 0 || update.TargetChanged) AppLogService.Current?.Info("Audio", message);
-            else AppLogService.Current?.Verbose("Audio", message);
+            if (pass == 0 || update.TargetChanged)
+                AppLogService.Current?.Info("Audio", $"频谱端点解析: generation={generation} reason={reason} pass={pass} target={result.Target ?? "none"} changed={update.TargetChanged}");
             if (!_isDisposed && generation == Volatile.Read(ref _refreshVersion)) Resolved?.Invoke(update);
         }
         catch (Exception ex)
