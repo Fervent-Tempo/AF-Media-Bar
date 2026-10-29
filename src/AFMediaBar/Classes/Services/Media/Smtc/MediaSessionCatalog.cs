@@ -20,7 +20,7 @@ public sealed class MediaSessionCatalog : IDisposable
     /// Reads and background updates lease the underlying manager; replacement or shutdown stops new leases and retires the old
     /// instance on a background thread after its final user exits.
     /// </summary>
-    private readonly ReplaceableResource<MediaManager> _managers;
+    private readonly ReplaceableResource<ManagerRegistration> _managers;
     private int _isDisposed;
 
     public bool IsStarted
@@ -28,7 +28,7 @@ public sealed class MediaSessionCatalog : IDisposable
         get
         {
             using var lease = _managers.TryAcquire();
-            return lease?.Value.IsStarted ?? false;
+            return lease?.Value.Manager.IsStarted ?? false;
         }
     }
 
@@ -45,40 +45,18 @@ public sealed class MediaSessionCatalog : IDisposable
     /// </summary>
     public MediaSessionCatalog()
     {
-        var manager = new MediaManager();
-        _managers = new ReplaceableResource<MediaManager>(manager, RetireManager);
+        var manager = new ManagerRegistration(this, new MediaManager());
+        _managers = new ReplaceableResource<ManagerRegistration>(manager, RetireManager);
         try
         {
-            AttachEvents(manager);
-            manager.Start();
+            manager.Attach();
+            manager.Manager.Start();
         }
         catch
         {
             _managers.Dispose();
             throw;
         }
-    }
-
-    /// <summary>订阅底层媒体管理器的目录事件；构造与重建共用同一份订阅清单。/ Attaches the catalog events of the underlying media manager; construction and a rebuild share this one list.</summary>
-    private void AttachEvents(MediaManager manager)
-    {
-        manager.OnAnyMediaPropertyChanged += OnAnyMediaPropertyChanged;
-        manager.OnAnyPlaybackStateChanged += OnAnyPlaybackStateChanged;
-        manager.OnAnySessionOpened += OnAnySessionOpened;
-        manager.OnAnySessionClosed += OnAnySessionClosed;
-        manager.OnFocusedSessionChanged += OnFocusedSessionChanged;
-        manager.OnAnyTimelinePropertyChanged += OnAnyTimelinePropertyChanged;
-    }
-
-    /// <summary>解除底层媒体管理器的目录事件，方向与 <see cref="AttachEvents"/> 严格对称。/ Detaches the catalog events in the exact reverse order of <see cref="AttachEvents"/>.</summary>
-    private void DetachEvents(MediaManager manager)
-    {
-        manager.OnAnyMediaPropertyChanged -= OnAnyMediaPropertyChanged;
-        manager.OnAnyPlaybackStateChanged -= OnAnyPlaybackStateChanged;
-        manager.OnAnySessionOpened -= OnAnySessionOpened;
-        manager.OnAnySessionClosed -= OnAnySessionClosed;
-        manager.OnFocusedSessionChanged -= OnFocusedSessionChanged;
-        manager.OnAnyTimelinePropertyChanged -= OnAnyTimelinePropertyChanged;
     }
 
     /// <summary>
@@ -103,11 +81,11 @@ public sealed class MediaSessionCatalog : IDisposable
             return;
         }
 
-        var replacement = new MediaManager();
+        var replacement = new ManagerRegistration(this, new MediaManager());
         try
         {
-            AttachEvents(replacement);
-            replacement.Start();
+            replacement.Attach();
+            replacement.Manager.Start();
         }
         catch
         {
@@ -139,7 +117,7 @@ public sealed class MediaSessionCatalog : IDisposable
 
         try
         {
-            return lease.Value.WindowsSessionManager?.GetSessions().Count ?? -1;
+            return lease.Value.Manager.WindowsSessionManager?.GetSessions().Count ?? -1;
         }
         catch
         {
@@ -165,7 +143,7 @@ public sealed class MediaSessionCatalog : IDisposable
             return false;
         }
 
-        var manager = lease.Value;
+        var manager = lease.Value.Manager;
         for (var attempt = 0; attempt < SnapshotRetryCount; attempt++)
         {
             try
@@ -189,6 +167,31 @@ public sealed class MediaSessionCatalog : IDisposable
         return false;
     }
 
+    /// <summary>保持当前会话所属的管理器存活到实际读取结束；不接管库内会话关闭和异步事件的生命周期。</summary>
+    internal IDisposable? TryAcquireSession(MediaSession session)
+    {
+        var lease = _managers.TryAcquire();
+        if (lease is null) return null;
+        try
+        {
+            if (lease.Value.Manager.CurrentMediaSessions.TryGetValue(session.Id, out var current) &&
+                ReferenceEquals(current, session) && MediaSessionGuard.IsUsable(session))
+                return lease;
+        }
+        catch (InvalidOperationException)
+        {
+            // 第三方集合仍由其事件线程修改；本轮失败交由下一次刷新恢复。
+        }
+        lease.Dispose();
+        return null;
+    }
+
+    internal bool IsCurrentSession(MediaSession session)
+    {
+        using var lease = TryAcquireSession(session);
+        return lease is not null;
+    }
+
     /// <summary>
     /// 获取当前由 Windows 判定为焦点的媒体会话，底层目录异常时返回空值。
     /// Gets the media session currently focused by Windows, returning null if the underlying catalog is unavailable.
@@ -203,7 +206,7 @@ public sealed class MediaSessionCatalog : IDisposable
 
         try
         {
-            return lease.Value.GetFocusedSession();
+            return lease.Value.Manager.GetFocusedSession();
         }
         catch (InvalidOperationException ex)
         {
@@ -220,7 +223,7 @@ public sealed class MediaSessionCatalog : IDisposable
     public void ForceUpdate()
     {
         using var lease = _managers.TryAcquire();
-        lease?.Value.ForceUpdate();
+        lease?.Value.Manager.ForceUpdate();
     }
 
     /// <summary>
@@ -237,14 +240,14 @@ public sealed class MediaSessionCatalog : IDisposable
         _managers.Dispose();
     }
 
-    private void RetireManager(MediaManager manager)
+    private void RetireManager(ManagerRegistration registration)
     {
         // MediaManager.Dispose can block on third-party work; never run it under the ownership gate or on the UI read path.
         _ = Task.Run(() =>
         {
             try
             {
-                DetachEvents(manager);
+                registration.Detach();
             }
             catch (Exception ex)
             {
@@ -253,7 +256,7 @@ public sealed class MediaSessionCatalog : IDisposable
 
             try
             {
-                manager.Dispose();
+                registration.Manager.Dispose();
             }
             catch (Exception ex)
             {
@@ -326,6 +329,50 @@ public sealed class MediaSessionCatalog : IDisposable
         if (Volatile.Read(ref _isDisposed) == 0)
         {
             AnyTimelinePropertyChanged?.Invoke(session, timelineProperties);
+        }
+    }
+
+    // 每一代独占订阅委托；旧管理器等待读租约或后台退订期间，不再转发其迟到事件。
+    internal sealed class ManagerRegistration
+    {
+        internal MediaManager Manager { get; }
+        private readonly SongChangeDelegate _media;
+        private readonly PlaybackChangeDelegate _playback;
+        private readonly SessionChangeDelegate _opened;
+        private readonly SessionChangeDelegate _closed;
+        private readonly SessionChangeDelegate _focused;
+        private readonly TimelineChangeDelegate _timeline;
+
+        internal ManagerRegistration(MediaSessionCatalog owner, MediaManager manager)
+        {
+            Manager = manager;
+            bool IsCurrent() => Volatile.Read(ref owner._isDisposed) == 0 && owner._managers.IsCurrent(this);
+            _media = (session, properties) => { if (IsCurrent()) owner.OnAnyMediaPropertyChanged(session, properties); };
+            _playback = (session, info) => { if (IsCurrent()) owner.OnAnyPlaybackStateChanged(session, info); };
+            _opened = session => { if (IsCurrent()) owner.OnAnySessionOpened(session); };
+            _closed = session => { if (IsCurrent()) owner.OnAnySessionClosed(session); };
+            _focused = session => { if (IsCurrent()) owner.OnFocusedSessionChanged(session); };
+            _timeline = (session, properties) => { if (IsCurrent()) owner.OnAnyTimelinePropertyChanged(session, properties); };
+        }
+
+        internal void Attach()
+        {
+            Manager.OnAnyMediaPropertyChanged += _media;
+            Manager.OnAnyPlaybackStateChanged += _playback;
+            Manager.OnAnySessionOpened += _opened;
+            Manager.OnAnySessionClosed += _closed;
+            Manager.OnFocusedSessionChanged += _focused;
+            Manager.OnAnyTimelinePropertyChanged += _timeline;
+        }
+
+        internal void Detach()
+        {
+            Manager.OnAnyMediaPropertyChanged -= _media;
+            Manager.OnAnyPlaybackStateChanged -= _playback;
+            Manager.OnAnySessionOpened -= _opened;
+            Manager.OnAnySessionClosed -= _closed;
+            Manager.OnFocusedSessionChanged -= _focused;
+            Manager.OnAnyTimelinePropertyChanged -= _timeline;
         }
     }
 }

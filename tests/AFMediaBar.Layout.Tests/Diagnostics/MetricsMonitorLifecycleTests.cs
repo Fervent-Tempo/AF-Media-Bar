@@ -11,6 +11,28 @@ namespace AFMediaBar.Layout.Tests;
 [TestClass]
 public sealed class MetricsMonitorLifecycleTests
 {
+#if DEBUG
+    [TestMethod]
+    public void DiagnosticLeaseContinuesWhileDispatcherIsBlocked()
+    {
+        StaTest.Run(async dispatcher =>
+        {
+            using var monitor = new SystemMetricsMonitorService(new Sampler());
+            using var received = new ManualResetEventSlim();
+            var callbackThread = 0;
+            var uiThread = Environment.CurrentManagedThreadId;
+            using var lease = monitor.SubscribeDiagnostics(TimeSpan.FromSeconds(1), _ =>
+            {
+                callbackThread = Environment.CurrentManagedThreadId;
+                received.Set();
+            });
+            using (dispatcher.DisableProcessing()) Assert.IsTrue(received.Wait(TimeSpan.FromSeconds(5)));
+            Assert.AreNotEqual(uiThread, callbackThread);
+            await monitor.StopAsync(CancellationToken.None);
+        });
+    }
+#endif
+
     [TestMethod]
     public void BusyDispatcherOnlyPublishesTheLatestSampleForEachLease()
     {

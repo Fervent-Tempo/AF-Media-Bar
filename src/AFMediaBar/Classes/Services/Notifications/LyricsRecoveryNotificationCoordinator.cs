@@ -50,7 +50,7 @@ public sealed class LyricsRecoveryNotificationCoordinator : IDisposable
         try
         {
             return _notifications.TryShowNotification(Translations.Get("Lyrics.Recovery.Notification.Title"),
-                Translations.Get("Lyrics.Recovery.Notification.Body"), ShellNotificationTarget.LyricsRecovery);
+                Translations.Get("Lyrics.Recovery.Notification.Body"), ShellNotificationTarget.LyricsRecovery, "Lyrics.Recovery");
         }
         catch (Exception ex)
         {
@@ -67,7 +67,7 @@ public sealed class LyricsRecoveryNotificationCoordinator : IDisposable
         try
         {
             _notifications.TryShowNotification(Translations.Get("Restart.Dialog.Title"),
-                Translations.Get(result == ApplicationRestartResult.Busy ? "Restart.Busy" : "Restart.Failed"));
+                Translations.Get(result == ApplicationRestartResult.Busy ? "Restart.Busy" : "Restart.Failed"), ShellNotificationTarget.None, "Restart.Result");
         }
         catch (Exception ex) { _log?.Warn("Restart", "重启结果提示失败", ex); }
     }

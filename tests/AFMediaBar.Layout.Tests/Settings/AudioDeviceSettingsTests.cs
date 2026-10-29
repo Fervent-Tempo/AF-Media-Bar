@@ -104,6 +104,8 @@ public sealed class AudioDeviceSettingsTests
             Assert.AreEqual(AudioDeviceSwitchTarget.ForegroundApplication, SettingsManager.Current.Interaction.OutputDeviceClickTarget);
             Assert.IsTrue(SettingsManager.Current.TaskbarExperience.InputDeviceVisible);
             SettingsManager.ResetContentLayout();
+            Assert.IsTrue(SettingsManager.Current.TaskbarExperience.InputDeviceVisible);
+            SettingsManager.ResetRestState();
             Assert.IsFalse(SettingsManager.Current.TaskbarExperience.InputDeviceVisible);
             Assert.IsFalse(SettingsManager.Current.AudioDevices.IsAllowed(AudioDeviceDirection.Output, "speaker"));
         }

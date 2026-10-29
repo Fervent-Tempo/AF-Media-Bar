@@ -2,11 +2,13 @@
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.ComponentModel;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Data;
 using System.Windows.Markup;
+using System.Windows.Threading;
 using System.Xml.Linq;
 using AFMediaBar.Resources;
 using AFMediaBar.Classes.Models;
@@ -36,9 +38,12 @@ public sealed class SettingsVisualRuntimeTests
         {
             VerifyNumericBinding(app);
             VerifyPageMarkup(app);
+            VerifyPluginCards();
+            VerifyGeneratedRowSearch();
+            VerifyMetricStylePicker();
+            VerifyFullPanelMinimumSize();
             _ = new ExperimentalPage(null!);
             DeveloperToolsMarkupChecks.Verify(app, FindRepository());
-            VerifyPluginCards();
         });
 
     [TestMethod]
@@ -52,6 +57,10 @@ public sealed class SettingsVisualRuntimeTests
     [TestMethod]
     public Task PreferredSourceRefreshKeepsOfflineSelectionWithoutRewritingIdentity() =>
         RunIsolatedAsync(nameof(PreferredSourceRefreshKeepsOfflineSelectionWithoutRewritingIdentity), _ => VerifyPreferredSourceIdentity());
+
+    [TestMethod]
+    public Task QuickLaunchStatusLineClearsItselfAfterTheCountdown() =>
+        RunIsolatedAsync(nameof(QuickLaunchStatusLineClearsItselfAfterTheCountdown), _ => VerifyQuickLaunchStatusCountdown());
 
     private static async Task RunIsolatedAsync(string testName, Action<Application> verify)
     {
@@ -123,6 +132,72 @@ public sealed class SettingsVisualRuntimeTests
         finally { if (Directory.Exists(results)) Directory.Delete(results, recursive: true); }
     }
 
+    private static void VerifyMetricStylePicker()
+    {
+        var picker = new MetricStylePicker();
+        var combo = picker.Children.OfType<ComboBox>().Single();
+        var preview = picker.Children.OfType<MetricPresenter>().Single();
+        double? previousLeft = null;
+        double? previousWidth = null;
+        foreach (var style in Enum.GetValues<MetricVisualStyle>())
+        {
+            picker.VisualStyle = style;
+            picker.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            picker.Arrange(new Rect(new Point(), picker.DesiredSize));
+            picker.UpdateLayout();
+            var left = combo.TranslatePoint(new Point(), picker).X;
+            if (previousLeft is double expected) Assert.AreEqual(expected, left, 0.01, "切换样式不能移动选择框。");
+            if (previousWidth is double width) Assert.AreEqual(width, picker.ActualWidth, 0.01);
+            Assert.IsTrue(preview.TranslatePoint(new Point(), picker).X < left, "预览应位于选择框左侧。");
+            previousLeft = left;
+            previousWidth = picker.ActualWidth;
+        }
+    }
+
+    private static void VerifyFullPanelMinimumSize()
+    {
+        var document = XDocument.Load(Path.Combine(FindRepository(), "src", "AFMediaBar", "Views", "Windows", "TaskbarFullPanelWindow.xaml"));
+        XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+        document.Root!.Attribute(x + "Class")!.Remove();
+        var events = new HashSet<string> { "Deactivated", "PreviewKeyDown", "MouseLeftButtonUp", "Click", "PreviewMouseLeftButtonDown", "PreviewMouseLeftButtonUp", "LostMouseCapture", "DropDownOpened", "SelectionChanged", "PreviewMouseWheel" };
+        foreach (var element in document.Root.DescendantsAndSelf())
+            foreach (var attribute in element.Attributes().ToArray())
+                if (events.Contains(attribute.Name.LocalName)) attribute.Remove();
+        var markup = Regex.Replace(document.ToString(), "clr-namespace:AFMediaBar[.A-Za-z]+", match => match.Value + ";assembly=AFMediaBar");
+        var window = (Window)XamlReader.Parse(markup);
+        try
+        {
+            window.ApplyTemplate();
+            var minimumWidth = AFMediaBar.Classes.Services.Layout.FullPanelScalePolicy.ContentWidthDip * TaskbarFullPanelSettings.MinimumScalePercent / 100d
+                + AFMediaBar.Classes.Services.Layout.FullPanelScalePolicy.ShadowInsetDip * 2;
+            Assert.IsTrue(window.MinWidth <= minimumWidth, "隐式窗口样式的最小宽度不能撑大已缩小的面板。");
+            Assert.AreEqual(0d, window.MinHeight, "内容高度应能随缩放和区段折叠收缩。");
+            var section = (Border)window.FindName("PerformanceSection");
+            var cards = ((Grid)section.Child).Children.OfType<MetricPresenter>().ToArray();
+            Assert.AreEqual(5, cards.Length, "网速应合并成一张双向卡片。");
+            foreach (var scale in new[] { .75, 1d, 2d })
+                foreach (var style in Enum.GetValues<MetricVisualStyle>())
+                {
+                    section.LayoutTransform = new ScaleTransform(scale, scale);
+                    foreach (var card in cards)
+                    {
+                        card.VisualStyle = style;
+                        card.ApplySnapshot(new(100, 99, 88, 9999999, 1024 * 1024 * 1024d, 99999999999));
+                    }
+                    section.Measure(new Size(400 * scale, double.PositiveInfinity));
+                    section.Arrange(new Rect(new Point(), section.DesiredSize)); section.UpdateLayout();
+                    Assert.IsTrue(cards.All(card => card.ActualWidth > 0 && card.ActualHeight >= 60));
+                    var network = cards.Single(card => card.Metric == MetricKind.SystemNetwork);
+                    Assert.AreEqual(2, network.Charts.Count);
+                    Assert.IsTrue(network.ToolTip.ToString()!.Contains("↑") && network.ToolTip.ToString()!.Contains("↓"));
+                    var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)Math.Ceiling(section.ActualWidth * scale),
+                        (int)Math.Ceiling(section.ActualHeight * scale), 96, 96, PixelFormats.Pbgra32);
+                    bitmap.Render(section);
+                }
+        }
+        finally { window.Close(); }
+    }
+
     private static void VerifyPageMarkup(Application app)
     {
         foreach (var key in Translations.Keys) app.Resources["Loc." + key] = Translations.Get(key);
@@ -134,8 +209,8 @@ public sealed class SettingsVisualRuntimeTests
         app.Resources["AppTextStrongFontWeight"] = FontWeights.SemiBold;
         var root = FindRepository();
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
-        var eventNames = new HashSet<string> { "Loaded", "Unloaded", "Click", "SelectionChanged", "Checked", "Unchecked", "SizeChanged", "MouseLeftButtonDown", "KeyDown", "IsVisibleChanged", "PreviewKeyDown", "LostKeyboardFocus" };
-        foreach (var name in new[] { "DisplayModes", "ScreenAndPlacement", "Appearance", "ApplicationAppearance", "Interaction", "Lyrics", "ComponentsSettings", "WidgetsSettings", "ExtraFeatures", "PluginCenter", "QuickStart", "Application", "DeviceManagement", "Experimental", "ReleaseHighlights", "About" })
+        var eventNames = new HashSet<string> { "Loaded", "Unloaded", "Click", "SelectionChanged", "Checked", "Unchecked", "SizeChanged", "MouseLeftButtonDown", "KeyDown", "IsVisibleChanged", "PreviewKeyDown", "LostKeyboardFocus", "PreviewMouseWheel", "MouseEnter", "MouseLeave", "PreviewGotKeyboardFocus" };
+        foreach (var name in new[] { "QuickStart", "DisplayModes", "ScreenAndPlacement", "Appearance", "ApplicationAppearance", "RestState", "Interaction", "Lyrics", "ComponentsSettings", "FullPanel", "WidgetsSettings", "Spectrum", "Performance", "BluetoothBattery", "ExtraFeatures", "PluginCenter", "TrackNotifications", "Application", "Configuration", "Diagnostics", "MemoryTools", "DeviceManagement", "Experimental", "ReleaseHighlights", "About" })
         {
             var document = XDocument.Load(Path.Combine(root, "src", "AFMediaBar", "Views", "Pages", name + "Page.xaml"));
             document.Root!.Attribute(x + "Class")!.Remove();
@@ -153,7 +228,68 @@ public sealed class SettingsVisualRuntimeTests
             page.Measure(new Size(800, 550));
             page.ApplyTemplate();
             Assert.IsNotNull(page.Content, name + " page must load its content.");
+            if (page.Content is SettingsPageLayout layout)
+            {
+                layout.ApplyTemplate();
+                Assert.IsInstanceOfType<Panel>(layout.ScrollViewer?.Content,
+                    name + " must expose its groups directly to the pinned group strip.");
+                if (name == "QuickStart") VerifyQuickStartScrolling(page, layout);
+            }
         }
+    }
+
+    private static void VerifyGeneratedRowSearch()
+    {
+        var list = new ItemsControl { ItemsSource = Enumerable.Range(0, 18).Select(index => new { Id = "dynamic:" + index, Title = "Entry " + index }).ToArray() };
+        list.ItemTemplate = (DataTemplate)XamlReader.Parse("""
+            <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:components="clr-namespace:AFMediaBar.Components;assembly=AFMediaBar">
+                <components:SettingsRow Title="{Binding Title}" OptionId="{Binding Id}" Height="64"><CheckBox/></components:SettingsRow>
+            </DataTemplate>
+            """);
+        var group = new SettingsGroup { GroupId = "generated", Header = "Generated", Content = list };
+        var body = new StackPanel(); body.Children.Add(group);
+        var scroll = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        var strip = new SettingsGroupStrip { Target = scroll };
+        var grid = new Grid(); grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); grid.RowDefinitions.Add(new RowDefinition());
+        grid.Children.Add(strip); Grid.SetRow(scroll, 1); grid.Children.Add(scroll);
+        var window = new Window { Content = grid, Width = 600, Height = 450, Left = -32000, Top = -32000, ShowActivated = false, ShowInTaskbar = false };
+        void Pump()
+        {
+            var frame = new DispatcherFrame();
+            window.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() => frame.Continue = false));
+            Dispatcher.PushFrame(frame);
+        }
+        try
+        {
+            window.Show(); Pump(); scroll.ScrollToTop(); Pump();
+            strip.RevealGroup("generated", "dynamic:17"); Pump();
+            Assert.IsTrue(scroll.VerticalOffset > 0, "搜索必须定位模板生成的目标行，而不是退回分组顶部。");
+        }
+        finally { window.Close(); }
+    }
+
+    private static void VerifyQuickStartScrolling(Page page, SettingsPageLayout layout)
+    {
+        var navigation = new NavigationView { IsPaneOpen = false, Transition = Wpf.Ui.Animations.Transition.None };
+        var window = new Window { Content = navigation, Width = 1200, Height = 420, Left = -32000, Top = -32000, ShowActivated = false, ShowInTaskbar = false };
+        void Pump()
+        {
+            var frame = new DispatcherFrame();
+            page.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() => frame.Continue = false));
+            Dispatcher.PushFrame(frame);
+        }
+        try
+        {
+            window.Show(); navigation.ReplaceContent(page); Pump();
+            var scroll = layout.ScrollViewer!;
+            Assert.IsTrue(scroll.ScrollableHeight > 0, "快速开始必须在导航宿主内获得有限视口。");
+            scroll.ScrollToTop(); Pump();
+            ((FrameworkElement)scroll.Content).RaiseEvent(new System.Windows.Input.MouseWheelEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, -120)
+            { RoutedEvent = System.Windows.Input.Mouse.MouseWheelEvent });
+            Pump();
+            Assert.IsTrue(scroll.VerticalOffset > 0, "内容空白处的滚轮应交给页面滚动。");
+        }
+        finally { window.Close(); }
     }
 
     private static void VerifyPluginCards()
@@ -233,6 +369,57 @@ public sealed class SettingsVisualRuntimeTests
                 "候选来源刷新不能重写用户保存的来源身份。");
         }
         finally { SettingsManager.Current = previous; }
+    }
+
+    /// <summary>
+    /// 快速启动状态行是瞬态反馈：写上去之后必须在倒计时结束时自行清空，不能一直挂在那儿。
+    /// The quick-launch status line is transient feedback: it must clear itself once the countdown elapses
+    /// instead of staying there for good.
+    /// </summary>
+    private static void VerifyQuickLaunchStatusCountdown()
+    {
+        var previous = SettingsManager.Current;
+        using var builder = new MediaSnapshotBuilder(null!);
+        var registry = new MediaSourceRegistry([]);
+        var catalog = new MediaSessionCatalog();
+        using var selection = new MediaSessionSelectionService(catalog, registry);
+        using var media = new MediaSessionService(registry, catalog, selection, builder, [], null!,
+            new MemoryPruneCoordinator(null!, null!, null!, []), null!);
+        using var localization = new LocalizationService();
+        using var quickLaunch = new QuickLaunchService();
+        try
+        {
+            SettingsManager.Current = new AppSettings();
+            var model = new ExtraFeaturesViewModel(registry, media, new NoMonitors(), localization, quickLaunch);
+            // 走真实入口写状态行：AddDetectedSource → AddQuickLaunch → SetStatus（“已添加到快速启动”）。
+            // Write the status line through the real entry: AddDetectedSource -> AddQuickLaunch -> SetStatus ("added to quick launch").
+            typeof(ExtraFeaturesViewModel).GetMethod("AddDetectedSource", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(model, [new MediaSourceSettingItem(
+                    new MediaSourceDescriptor("test-player", "Test Player", QuickLaunchTargetKind.Executable, "C:\\test-player.exe"), false)]);
+            Assert.IsFalse(string.IsNullOrEmpty(model.StatusText), "添加之后状态行必须立即显示反馈。");
+            // 缩短倒计时并驱动调度器到计时器触发：状态行必须自行清空。
+            // Shorten the countdown and pump the dispatcher until the timer fires: the line must clear itself.
+            var timer = (DispatcherTimer)typeof(ExtraFeaturesViewModel).GetField("_statusTimer", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(model)!;
+            timer.Interval = TimeSpan.FromMilliseconds(20);
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(5);
+            while (model.StatusText.Length > 0 && DateTime.UtcNow < deadline)
+                Pump(TimeSpan.FromMilliseconds(20));
+            Assert.AreEqual(string.Empty, model.StatusText, "状态行必须在倒计时结束后自动清空。");
+            Assert.IsFalse(timer.IsEnabled, "清空之后计时器不能继续空跑。");
+        }
+        finally { SettingsManager.Current = previous; }
+    }
+
+    /// <summary>驱动调度器运行一段时间，让排队中的定时器与回调跑完。/ Runs the dispatcher for a while so queued timers and callbacks get to run.</summary>
+    private static void Pump(TimeSpan duration)
+    {
+        var frame = new DispatcherFrame();
+        var timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = duration };
+        timer.Tick += (_, _) => { timer.Stop(); frame.Continue = false; };
+        timer.Start();
+        try { Dispatcher.PushFrame(frame); }
+        finally { timer.Stop(); }
     }
 
     private sealed class NoMonitors : IDisplayMonitorService

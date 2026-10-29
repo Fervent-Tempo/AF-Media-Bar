@@ -144,7 +144,14 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
     /// 从一个稳定会话读取不可变媒体快照；异步封面或歌词结果通过补全事件另行发布。
     /// Builds an immutable media snapshot from a stable session; asynchronous artwork or lyrics results are published separately.
     /// </summary>
-    public async Task<MediaSnapshot?> BuildAsync(MediaSession? session, bool isStarted, CancellationToken cancellationToken = default)
+    public Task<MediaSnapshot?> BuildAsync(MediaSession? session, bool isStarted, CancellationToken cancellationToken = default) =>
+        BuildCoreAsync(session, isStarted, null, cancellationToken);
+
+    internal Task<MediaSnapshot?> BuildLeasedAsync(MediaSession session, MediaSessionCatalog catalog, CancellationToken cancellationToken) =>
+        BuildCoreAsync(session, true, catalog, cancellationToken);
+
+    private async Task<MediaSnapshot?> BuildCoreAsync(MediaSession? session, bool isStarted,
+        MediaSessionCatalog? catalog, CancellationToken cancellationToken)
     {
         if (_disposed || session is null || !isStarted)
         {
@@ -168,6 +175,9 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
             // Frozen artwork can safely cross back to the UI thread; color brushes and lyric caches stay UI-owned.
             read = await Task.Run(async () =>
             {
+                // 租约覆盖实际 WinRT 读取，结束后在后台释放，不依赖 UI 续体或取消结果发布。
+                using var lease = catalog?.TryAcquireSession(session);
+                if (catalog is not null && lease is null) return null;
                 var songInfo = await controlSession.TryGetMediaPropertiesAsync();
                 if (songInfo is null) return null;
                 var playbackInfo = controlSession.GetPlaybackInfo();
@@ -204,7 +214,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        if (read is null)
+        if (_disposed || read is null)
         {
             return null;
         }

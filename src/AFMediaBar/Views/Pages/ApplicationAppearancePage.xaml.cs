@@ -16,10 +16,12 @@ namespace AFMediaBar.Views.Pages
         private CancellationTokenSource? _fontRefresh;
 
         public AppearanceViewModel ViewModel { get; }
+        public SettingsPreviewViewModel? Preview { get; }
 
-        public ApplicationAppearancePage(AppearanceViewModel viewModel, AppLogService log)
+        public ApplicationAppearancePage(AppearanceViewModel viewModel, AppLogService log, SettingsPreviewViewModel? preview = null)
         {
             ViewModel = viewModel;
+            Preview = preview;
             _log = log;
             DataContext = this;
 
@@ -62,7 +64,9 @@ namespace AFMediaBar.Views.Pages
 
         private async void ResetButton_Click(object sender, RoutedEventArgs e)
         {
-            if (await SettingsResetDialog.ConfirmAsync("Common.Page.ApplicationAppearance")) ViewModel.ResetAppearance();
+            var cancellation = ViewModel.ContextCancellationToken;
+            if (await SettingsResetDialog.ConfirmAsync("Common.Page.ApplicationAppearance", cancellationToken: cancellation) && !cancellation.IsCancellationRequested)
+                ViewModel.ResetAppearance();
         }
     }
 }

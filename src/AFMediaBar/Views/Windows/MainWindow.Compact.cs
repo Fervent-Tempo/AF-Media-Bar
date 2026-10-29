@@ -20,6 +20,6 @@ public partial class MainWindow
         if (_isClosing || _runtime.IsSwitching || _runtime.RunningMode != WindowMode.Taskbar) return;
         _smallTaskbarNotification.TryNotify(_taskbarWindows.Any(window => window.HasAutomaticallyHiddenInformation),
             () => _systemNotifications.TryShowNotification(Translations.Get("Taskbar.Compact.Notification.Title"),
-                Translations.Get("Taskbar.Compact.Notification.Body"), ShellNotificationTarget.FloatingBarExperiment));
+                Translations.Get("Taskbar.Compact.Notification.Body"), ShellNotificationTarget.FloatingBarExperiment, "Taskbar.Compact"));
     }
 }

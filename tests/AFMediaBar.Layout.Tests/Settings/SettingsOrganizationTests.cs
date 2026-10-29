@@ -4,6 +4,7 @@ using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Services.Localization;
 using System.Text.Json;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -14,6 +15,99 @@ namespace AFMediaBar.Layout.Tests;
 [DoNotParallelize]
 public sealed class SettingsOrganizationTests
 {
+    [TestMethod]
+    public void EditingAndResettingCyclingPreservesImplicitParallelLayouts()
+    {
+        SettingsManager.Current.PerformanceComponent = SettingsManager.Current.PerformanceComponent with
+        { DisplayMode = PerformanceDisplayMode.Parallel, Metrics = [AFMediaBar.Classes.Models.MetricKind.SystemMemory, AFMediaBar.Classes.Models.MetricKind.SystemCpu] };
+        var resident = ComponentLayoutPolicy.ResolveAll(SettingsManager.Current, BarLayoutState.Resident).ToArray();
+        var idle = ComponentLayoutPolicy.ResolveAll(SettingsManager.Current, BarLayoutState.Idle).ToArray();
+        using var context = new SettingsPageContext();
+        var configuration = new LegacySettingsConfiguration(context);
+        configuration.SetPerformance(SettingsManager.Current.PerformanceComponent with { Metrics = [AFMediaBar.Classes.Models.MetricKind.SystemMemory],
+            MetricOrder = [AFMediaBar.Classes.Models.MetricKind.SystemCpu, AFMediaBar.Classes.Models.MetricKind.SystemMemory] });
+        CollectionAssert.AreEqual(resident, ComponentLayoutPolicy.ResolveAll(SettingsManager.Current, BarLayoutState.Resident).ToArray());
+        CollectionAssert.AreEqual(idle, ComponentLayoutPolicy.ResolveAll(SettingsManager.Current, BarLayoutState.Idle).ToArray());
+        configuration.Reset(SettingsResetScope.Performance);
+        CollectionAssert.AreEqual(resident, ComponentLayoutPolicy.ResolveAll(SettingsManager.Current, BarLayoutState.Resident).ToArray());
+        CollectionAssert.AreEqual(idle, ComponentLayoutPolicy.ResolveAll(SettingsManager.Current, BarLayoutState.Idle).ToArray());
+    }
+
+    [TestMethod]
+    public void ThreeStatePageResetsPreserveTheOtherStateAndComponentParameters()
+    {
+        var resident = new[] { new ComponentLayoutEntry(TaskbarRestComponent.SystemCpu, true) };
+        var hover = new[] { new ComponentLayoutEntry(TaskbarRestComponent.Volume, true) };
+        SettingsManager.SetUserDefaults(new AppSettings { TaskbarExperience = TaskbarExperienceSettings.Default with
+        { ComponentLayouts = new() { Resident = [], Idle = [], Hover = hover } } });
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+        { ComponentLayouts = new() { Resident = resident, Idle = [], Hover = [] } };
+        SettingsManager.Current.SpectrumComponent = SettingsManager.Current.SpectrumComponent with { BandCount = 22 };
+        using var context = new SettingsPageContext();
+        var configuration = new LegacySettingsConfiguration(context);
+        configuration.Reset(SettingsResetScope.QuickControls);
+        CollectionAssert.AreEqual(resident, SettingsManager.Current.TaskbarExperience.ComponentLayouts!.Resident!.ToArray());
+        CollectionAssert.AreEqual(hover, SettingsManager.Current.TaskbarExperience.ComponentLayouts.Hover!.ToArray());
+        configuration.Reset(SettingsResetScope.RestState);
+        Assert.AreEqual(0, SettingsManager.Current.TaskbarExperience.ComponentLayouts!.Resident!.Count);
+        Assert.AreEqual(0, SettingsManager.Current.TaskbarExperience.ComponentLayouts.Idle!.Count);
+        CollectionAssert.AreEqual(hover, SettingsManager.Current.TaskbarExperience.ComponentLayouts.Hover!.ToArray());
+        Assert.AreEqual(22, SettingsManager.Current.SpectrumComponent.BandCount);
+    }
+
+    [TestMethod]
+    public void PanelAndPerformanceResetsRespectScaleAndStyleOwnership()
+    {
+        SettingsManager.SetUserDefaults(new AppSettings { TaskbarExperience = TaskbarExperienceSettings.Default with
+        { FullPanel = TaskbarFullPanelSettings.Default with { ScalePercent = 125, PerformanceVisuals = new() { SystemCpu = MetricVisualStyle.Line } } } });
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+        { FullPanel = TaskbarFullPanelSettings.Default with { ScalePercent = 175, PerformanceVisuals = new() { SystemCpu = MetricVisualStyle.Ring } } };
+        using var context = new SettingsPageContext();
+        var configuration = new LegacySettingsConfiguration(context);
+        configuration.Reset(SettingsResetScope.FullPanel);
+        Assert.AreEqual(125, SettingsManager.Current.TaskbarExperience.FullPanel.ScalePercent);
+        Assert.AreEqual(MetricVisualStyle.Ring, SettingsManager.Current.TaskbarExperience.FullPanel.PerformanceVisuals.SystemCpu);
+        configuration.Reset(SettingsResetScope.Performance);
+        Assert.AreEqual(125, SettingsManager.Current.TaskbarExperience.FullPanel.ScalePercent);
+        Assert.AreEqual(MetricVisualStyle.Line, SettingsManager.Current.TaskbarExperience.FullPanel.PerformanceVisuals.SystemCpu);
+    }
+
+    [TestMethod]
+    public void DynamicSearchUsesTheSameComponentIdentityAsTheList()
+    {
+        SettingsManager.Current.PerformanceComponent = SettingsManager.Current.PerformanceComponent with { DisplayMode = PerformanceDisplayMode.Parallel };
+        var entries = SettingsDynamicSearchCatalog.Entries(SettingsContext.Initial).ToArray();
+        var cpu = entries.Single(entry => entry.OptionId == "component:Resident:SystemCpu");
+        Assert.AreEqual(SettingsPageKey.RestState, cpu.Page);
+        Assert.AreEqual("Common.RestLayer", cpu.GroupId);
+        Assert.IsTrue(entries.Any(entry => entry.OptionId == "metric:bar:SystemCpu"));
+        Assert.IsTrue(entries.Any(entry => entry.OptionId == "metric:panel:SystemCpu"));
+    }
+
+    [TestMethod]
+    public void NavigationAssignsEveryNonFooterPageToOneSection()
+    {
+        var assigned = SettingsNavigationCatalog.Sections.SelectMany(section => section.Pages).ToArray();
+        Assert.AreEqual(assigned.Length, assigned.Distinct().Count(), "A page must not have two sidebar editing entries.");
+        CollectionAssert.AreEquivalent(SettingsPageCatalog.ForMode(SettingsMode.Taskbar).Where(page => !page.IsFooter)
+            .Select(page => page.Key).ToArray(), assigned);
+        Assert.AreEqual(SettingsPageKey.QuickStart, SettingsNavigationCatalog.Sections[0].Pages[0]);
+    }
+
+    [TestMethod]
+    public void SpecificOptionSearchKeepsItsIdentityAndUniqueEditingDestination()
+    {
+        var entries = SettingsOptionSearchCatalog.ForLanguage(LocalizationLanguage.SimplifiedChinese).ToArray();
+        var font = entries.Single(entry => entry.OptionId == "Appearance.Row.MediaFontSize.Title");
+        Assert.AreEqual(SettingsPageKey.Lyrics, font.Page);
+        Assert.AreEqual("Common.Group.MediaBarText", font.GroupId);
+        var hit = SettingsSearchPolicy.Search(font.Title, entries).First();
+        Assert.AreEqual(font.OptionId, hit.OptionId);
+        Assert.AreEqual(font.Page, hit.Page);
+        Assert.IsTrue(entries.Any(entry => entry.Page == SettingsPageKey.BluetoothBattery));
+        Assert.IsTrue(entries.Any(entry => entry.Page == SettingsPageKey.MemoryTools));
+    }
+
     private AppSettings _previous = null!;
     private AppSettings? _previousDefaults;
 
@@ -67,14 +161,15 @@ public sealed class SettingsOrganizationTests
         var spectrum = current.SpectrumComponent;
         var performance = current.PerformanceComponent;
         current.BluetoothBatteryWidget = current.BluetoothBatteryWidget with { LastKnownName = "Keep me" };
+        current.BluetoothBatteryWidget = current.BluetoothBatteryWidget with { Enabled = true };
         var battery = current.BluetoothBatteryWidget;
 
         SettingsManager.ResetContentLayout();
 
         current = SettingsManager.Current;
-        Assert.AreEqual(saved.TaskbarExperience.Normalize() with { MediaFontSizePercent = 120, RestComponentOrder = null, SpectrumVisible = true, PerformanceVisible = true },
-            current.TaskbarExperience with { RestComponentOrder = null });
-        CollectionAssert.AreEqual(saved.TaskbarExperience.RestComponentOrder!.ToArray(), current.TaskbarExperience.RestComponentOrder!.ToArray());
+        Assert.AreEqual(JsonSerializer.Serialize(saved.TaskbarExperience.Normalize() with { MediaFontSizePercent = 120, RestComponentOrder = null, SpectrumVisible = true, PerformanceVisible = true, ArtworkProgressVisible = true }),
+            JsonSerializer.Serialize(current.TaskbarExperience with { RestComponentOrder = null }));
+        Assert.IsNull(current.TaskbarExperience.RestComponentOrder);
         Assert.AreEqual(spectrum, current.SpectrumComponent);
         Assert.AreEqual(JsonSerializer.Serialize(performance), JsonSerializer.Serialize(current.PerformanceComponent));
         Assert.AreEqual(battery, current.BluetoothBatteryWidget);
@@ -111,11 +206,126 @@ public sealed class SettingsOrganizationTests
 
         Assert.AreEqual(saved.SpectrumComponent, SettingsManager.Current.SpectrumComponent);
         Assert.AreEqual(JsonSerializer.Serialize(saved.PerformanceComponent.Normalize()), JsonSerializer.Serialize(SettingsManager.Current.PerformanceComponent));
-        Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize(), SettingsManager.Current.BluetoothBatteryWidget);
-        Assert.AreEqual(layout with { SpectrumVisible = false, PerformanceVisible = false }, SettingsManager.Current.TaskbarExperience);
+        Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize() with { Enabled = false }, SettingsManager.Current.BluetoothBatteryWidget);
+        Assert.AreEqual(layout, SettingsManager.Current.TaskbarExperience);
         Assert.AreEqual(JsonSerializer.Serialize(devices), JsonSerializer.Serialize(SettingsManager.Current.AudioDevices));
         SettingsManager.ResetDeviceManagement();
-        Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize(), SettingsManager.Current.BluetoothBatteryWidget);
+        Assert.AreEqual(saved.BluetoothBatteryWidget.Normalize() with { Enabled = false }, SettingsManager.Current.BluetoothBatteryWidget);
+    }
+
+    [TestMethod]
+    public void RestResetUsesSnapshotWithoutResettingGeometryOrComponentParameters()
+    {
+        var saved = new AppSettings
+        {
+            TaskbarExperience = TaskbarExperienceSettings.Default with
+            {
+                ArtworkVisible = false,
+                SmallArtwork = true,
+                RestComponentOrder = [TaskbarRestComponent.Volume, TaskbarRestComponent.Spectrum],
+                IdleComponents = []
+            },
+            BluetoothBatteryWidget = new() { Enabled = true }
+        };
+        SettingsManager.SetUserDefaults(saved);
+        var current = SettingsManager.Current;
+        current.TaskbarExperience = current.TaskbarExperience with
+        {
+            FixedLengthDip = 620,
+            ComponentSpacingDip = 20,
+            HoverLayerEnabled = false,
+            FullPanelEntryVisible = false
+        };
+        current.SpectrumComponent = current.SpectrumComponent with { BandCount = 22 };
+        current.BluetoothBatteryWidget = current.BluetoothBatteryWidget with { DeviceId = "keep-device", LowThreshold = 35 };
+        current.LyricsEnabled = false;
+        var spectrum = current.SpectrumComponent;
+        var appearance = current.Appearance;
+        var floating = JsonSerializer.Serialize(current.FloatingBar);
+
+        SettingsManager.ResetRestState();
+
+        current = SettingsManager.Current;
+        Assert.IsFalse(current.TaskbarExperience.ArtworkVisible);
+        Assert.IsTrue(current.TaskbarExperience.SmallArtwork);
+        Assert.AreEqual(0, current.TaskbarExperience.IdleComponents!.Count);
+        CollectionAssert.AreEqual(new[] { TaskbarRestComponent.Volume, TaskbarRestComponent.Spectrum }, current.TaskbarExperience.RestComponentOrder!.ToArray());
+        Assert.AreEqual(620d, current.TaskbarExperience.FixedLengthDip);
+        Assert.AreEqual(20d, current.TaskbarExperience.ComponentSpacingDip);
+        Assert.IsFalse(current.TaskbarExperience.HoverLayerEnabled);
+        Assert.IsFalse(current.TaskbarExperience.FullPanelEntryVisible);
+        Assert.AreEqual(spectrum, current.SpectrumComponent);
+        Assert.AreEqual(appearance, current.Appearance);
+        Assert.AreEqual(floating, JsonSerializer.Serialize(current.FloatingBar));
+        Assert.IsFalse(current.LyricsEnabled);
+        Assert.IsTrue(current.BluetoothBatteryWidget.Enabled);
+        Assert.AreEqual("keep-device", current.BluetoothBatteryWidget.DeviceId);
+        Assert.AreEqual(35, current.BluetoothBatteryWidget.LowThreshold);
+    }
+
+    [TestMethod]
+    public void MovedGroupsResolveToTheirOnlyEditor()
+    {
+        Assert.AreEqual((SettingsPageKey.RestState, "Common.RestLayer"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Components, "Common.RestLayer"));
+        Assert.AreEqual((SettingsPageKey.RestState, "Common.RestLayer"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Components, "Common.Group.ComponentOrder"));
+        Assert.AreEqual((SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Appearance, "Common.Group.Fonts"));
+        Assert.AreEqual((SettingsPageKey.ApplicationAppearance, "Common.Group.ThemeAndBackdrop"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Appearance, "Common.Group.ThemeAndBackdrop"));
+        Assert.AreEqual((SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground"));
+        Assert.AreEqual((SettingsPageKey.Spectrum, "Widgets.Spectrum"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Widgets, "Widgets.Spectrum"));
+        Assert.AreEqual((SettingsPageKey.TrackNotifications, "Common.Group.TrackChangeNotification"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.MediaAndNotifications, "Common.Group.TrackChangeNotification"));
+        Assert.AreEqual((SettingsPageKey.Lyrics, "Common.Group.MediaBarText"), SettingsPageCatalog.ResolveDestination(SettingsPageKey.Components, "Appearance.Group.RestLayout"));
+    }
+
+    [TestMethod]
+    public void QuickControlsResetPreservesRestFullPanelAndText()
+    {
+        var saved = new AppSettings { TaskbarExperience = TaskbarExperienceSettings.Default with { HoverLayerEnabled = false, HoverButtonSpacingDip = 7 } };
+        SettingsManager.SetUserDefaults(saved);
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+        { ArtworkVisible = false, FullPanelEntryVisible = false, MediaFontSizePercent = 120, ComponentSpacingDip = 24, HoverButtonSpacingDip = 2 };
+        using var context = new SettingsPageContext();
+        new LegacySettingsConfiguration(context).Reset(SettingsResetScope.QuickControls);
+        var result = SettingsManager.Current.TaskbarExperience;
+        Assert.IsFalse(result.HoverLayerEnabled);
+        Assert.AreEqual(7d, result.HoverButtonSpacingDip);
+        Assert.IsFalse(result.ArtworkVisible);
+        Assert.IsFalse(result.FullPanelEntryVisible);
+        Assert.AreEqual(120, result.MediaFontSizePercent);
+        Assert.AreEqual(24d, result.ComponentSpacingDip);
+    }
+
+    [TestMethod]
+    public void ComponentDetailsResetPreservesVisibilityAndOtherComponentParameters()
+    {
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { SpectrumVisible = false };
+        SettingsManager.Current.SpectrumComponent = SettingsManager.Current.SpectrumComponent with { BandCount = 22 };
+        SettingsManager.Current.BluetoothBatteryWidget = new() { Enabled = true, DeviceId = "keep-device" };
+        var battery = SettingsManager.Current.BluetoothBatteryWidget;
+        using var context = new SettingsPageContext();
+        new LegacySettingsConfiguration(context).Reset(SettingsResetScope.Spectrum);
+        Assert.AreEqual(new AppSettings().SpectrumComponent, SettingsManager.Current.SpectrumComponent);
+        Assert.IsFalse(SettingsManager.Current.TaskbarExperience.SpectrumVisible);
+        Assert.AreEqual(battery, SettingsManager.Current.BluetoothBatteryWidget);
+    }
+
+    [TestMethod]
+    public void FloatingAppearanceResetUsesItsDefaultGeometryWithoutChangingTaskbarOrLyrics()
+    {
+        var defaults = new AppSettings { FloatingBar = new() { Profile = new() { FixedLengthDip = 640, LengthMode = TaskbarLengthMode.Fixed } } };
+        SettingsManager.SetUserDefaults(defaults);
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { FixedLengthDip = 410, MediaFontSizePercent = 115 };
+        SettingsManager.Current.LyricsFixedWidthEnabled = true;
+        SettingsManager.Current.LyricsFixedWidthDip = 350;
+        SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { Profile = new() { FixedLengthDip = 720, LyricsFixedWidthDip = 280 } };
+        using var context = new SettingsPageContext();
+        context.Initialize(SettingsContext.Initial with { Mode = SettingsMode.FloatingBar });
+        new LegacySettingsConfiguration(context).Reset(SettingsResetScope.BarAppearance);
+        Assert.AreEqual(640d, SettingsManager.Current.FloatingBar.Profile!.FixedLengthDip);
+        Assert.AreEqual(280, SettingsManager.Current.FloatingBar.Profile.LyricsFixedWidthDip);
+        Assert.AreEqual(410d, SettingsManager.Current.TaskbarExperience.FixedLengthDip);
+        Assert.AreEqual(115, SettingsManager.Current.TaskbarExperience.MediaFontSizePercent);
+        Assert.IsTrue(SettingsManager.Current.LyricsFixedWidthEnabled);
+        Assert.AreEqual(350, SettingsManager.Current.LyricsFixedWidthDip);
     }
 
     [TestMethod]
@@ -216,5 +426,15 @@ public sealed class SettingsOrganizationTests
 
         Assert.AreEqual(defaults.Interaction.ArtworkHoverMode, SettingsManager.Current.Interaction.ArtworkHoverMode);
         Assert.IsFalse(SettingsManager.Current.TaskbarExperience.ArtworkVisible);
+    }
+
+    [TestMethod]
+    public void ArtworkHoverModeKeepsNoZoomAndDefaultsToSlightZoom()
+    {
+        // 旧设置缺字段时仍是轻微放大（1.1×），新增选项不能改掉这个默认语义。
+        Assert.AreEqual(ArtworkHoverMode.Off, new AppSettings().Interaction.ArtworkHoverMode);
+        // 「不放大」要能通过保存前的归一化，不能被枚举校验打回默认。
+        var settings = new AppSettings().Interaction with { ArtworkHoverMode = ArtworkHoverMode.None };
+        Assert.AreEqual(ArtworkHoverMode.None, settings.Normalize().ArtworkHoverMode);
     }
 }

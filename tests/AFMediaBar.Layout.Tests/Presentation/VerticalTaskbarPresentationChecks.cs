@@ -14,6 +14,16 @@ namespace AFMediaBar.Layout.Tests;
 
 internal static class VerticalTaskbarPresentationChecks
 {
+    private static IEnumerable<MetricPresenter> Cards(DependencyObject node)
+    {
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(node); index++)
+        {
+            var child = VisualTreeHelper.GetChild(node, index);
+            if (child is MetricPresenter card) yield return card;
+            foreach (var descendant in Cards(child)) yield return descendant;
+        }
+    }
+
     internal static void Verify(TaskBarMediaControl control)
     {
         var settings = SettingsManager.Current.Clone();
@@ -44,26 +54,15 @@ internal static class VerticalTaskbarPresentationChecks
                 Assert.AreEqual(width - 4, artwork.Width, 0.01);
                 Assert.AreEqual(width - 4, text.Width, 0.01);
                 Assert.AreEqual(Orientation.Vertical, items.Orientation);
-                var performance = (FrameworkElement)control.FindName("TaskbarPerformanceHoverSurface");
-                var height = performance.Height;
-                control.ApplyPerformanceSnapshot(new(100, 100, 100, 99999), 0, false);
+                var cards = Cards(control).Where(card => ((Border)card.Parent).Visibility == Visibility.Visible).ToArray();
+                Assert.AreEqual(3, cards.Length);
+                var lengths = cards.Select(card => ((Border)card.Parent).Height).ToArray();
+                control.ApplyPerformanceSnapshot(new(100, 100, 100, 99999, 1024, 2048), 0, false);
                 control.ApplyPrimaryLength(600);
-                Assert.AreEqual(height, performance.Height, 0.01, "Sampling must not move surrounding components.");
-                Assert.IsTrue(items.Children.Cast<TextBlock>().All(cell => cell.Width <= width - 4));
-                Assert.AreEqual(Orientation.Vertical, ((StackPanel)control.FindName("TaskbarHoverActions")).Orientation);
-                var card = (Border)control.FindName("TaskbarPerformanceSurface");
-                Assert.IsTrue(card.Height >= items.Children.Cast<TextBlock>().Sum(cell => cell.Height),
-                    "The inner card must expose both metric rows, not retain the horizontal 24 DIP height.");
-                foreach (var cell in items.Children.Cast<TextBlock>())
-                    Assert.AreEqual(1, cell.Inlines.OfType<LineBreak>().Count(), "Each metric uses two readable rows.");
-                control.ApplyPerformanceSnapshot(new(40, 7, 3, 123, 1024, 2048), 0, false);
-                var cells = items.Children.Cast<TextBlock>().ToArray();
-                Assert.IsTrue(cells[2].Inlines.OfType<Run>().First().Text.StartsWith("↑ "));
-                Assert.IsTrue(cells[2].Inlines.OfType<Run>().Last().Text.StartsWith("↓ "));
+                CollectionAssert.AreEqual(lengths, cards.Select(card => ((Border)card.Parent).Height).ToArray());
+                Assert.IsTrue(cards.All(card => ((Border)card.Parent).Width <= width));
                 control.ApplyPerformanceSnapshot(default, 0, false);
-                Assert.AreEqual("—", cells[0].Inlines.OfType<Run>().Last().Text, "Unavailable readings must replace the previous value.");
-                Assert.AreEqual("—", cells[1].Inlines.OfType<Run>().Last().Text);
-                Assert.IsTrue(cells.All(cell => cell.Inlines.OfType<Run>().All(run => run.FontSize is >= 1 and <= 14)));
+                Assert.IsTrue(cards.All(card => card.ToolTip.ToString()!.Contains("—")));
                 foreach (var onLeft in new[] { true, false })
                 {
                     control.ApplyVerticalTaskbarSide(onLeft);
@@ -100,7 +99,7 @@ internal static class VerticalTaskbarPresentationChecks
             control.ApplyPrimaryLength(600);
             Assert.AreEqual(Orientation.Horizontal, ((StackPanel)control.FindName("TaskbarHoverActions")).Orientation);
             Assert.AreEqual(Orientation.Horizontal, ((StackPanel)control.FindName("TaskbarPerformanceItems")).Orientation);
-            Assert.AreEqual(26d, ((Border)control.FindName("TaskbarPerformanceSurface")).Height);
+
             Assert.AreEqual(0d, ((RotateTransform)((FrameworkElement)control.FindName("TaskbarSpectrum")).LayoutTransform).Angle);
         }
         finally { SettingsManager.Replace(settings); }

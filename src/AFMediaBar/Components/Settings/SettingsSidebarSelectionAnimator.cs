@@ -133,7 +133,7 @@ public sealed class SettingsSidebarSelectionAnimator : IDisposable
         Stop();
         _target = item;
         _targetBounds = bounds;
-        foreach (var candidate in _navigation.MenuItems.OfType<NavigationViewItem>().Concat(_navigation.FooterMenuItems.OfType<NavigationViewItem>()))
+        foreach (var candidate in EnumerateItems(_navigation.MenuItems.OfType<NavigationViewItem>()).Concat(_navigation.FooterMenuItems.OfType<NavigationViewItem>()))
         {
             candidate.SetResourceReference(Control.ForegroundProperty, ReferenceEquals(candidate, item) ? "AfAccentBrush" : "TextFillColorPrimaryBrush");
             candidate.SetResourceReference(Control.FontWeightProperty, ReferenceEquals(candidate, item) ? "AppTextStrongFontWeight" : "AppTextFontWeight");
@@ -159,6 +159,15 @@ public sealed class SettingsSidebarSelectionAnimator : IDisposable
         var generation = _generation;
         end.Completed += (_, _) => { if (generation == _generation) Stop(); };
         _scale.BeginAnimation(ScaleTransform.ScaleYProperty, end, HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private static IEnumerable<NavigationViewItem> EnumerateItems(IEnumerable<NavigationViewItem> items)
+    {
+        foreach (var item in items)
+        {
+            yield return item;
+            foreach (var child in EnumerateItems(item.MenuItems.OfType<NavigationViewItem>())) yield return child;
+        }
     }
 
     private static DoubleAnimationUsingKeyFrames Create(double from, double to, TimeSpan duration, KeySpline spline)

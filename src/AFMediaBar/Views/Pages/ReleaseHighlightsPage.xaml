@@ -1,54 +1,49 @@
-<!-- Native WPF release reading surface; release bodies are plain text, never executable HTML. -->
-<Page x:Class="AFMediaBar.Views.Pages.ReleaseHighlightsPage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" xmlns:components="clr-namespace:AFMediaBar.Components"
-    Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontFamily="{DynamicResource AppTextFontFamily}" TextElement.FontWeight="{DynamicResource AppTextFontWeight}"
-    Loaded="OnPageLoaded" Unloaded="OnPageUnloaded" ScrollViewer.CanContentScroll="False">
+<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" x:Class="AFMediaBar.Views.Pages.ReleaseHighlightsPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontFamily="{DynamicResource AppTextFontFamily}" TextElement.FontWeight="{DynamicResource AppTextFontWeight}" Loaded="OnPageLoaded" Unloaded="OnPageUnloaded" ScrollViewer.CanContentScroll="False">
     <Page.Resources>
         <Style x:Key="ReleaseBodyTextStyle" TargetType="TextBlock" BasedOn="{StaticResource AfSettingsRowTitleStyle}">
-            <Setter Property="FontWeight" Value="{DynamicResource AppTextFontWeight}" />
-            <Setter Property="VerticalAlignment" Value="Top" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-            <Setter Property="LineHeight" Value="23" />
+            <Setter Property="FontWeight" Value="{DynamicResource AppTextFontWeight}"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="LineHeight" Value="23"/>
         </Style>
         <Style x:Key="ReleaseEntryStyle" TargetType="Expander">
-            <Setter Property="IsExpanded" Value="False" />
-            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-            <Setter Property="Background" Value="{DynamicResource AfSettingsCardBrush}" />
-            <Setter Property="Margin" Value="0,0,0,6" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="IsExpanded" Value="False"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource AfSettingsCardBrush}"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Expander">
                         <Grid Background="Transparent">
-                            <Border x:Name="CardSurface" Background="{TemplateBinding Background}" BorderBrush="{DynamicResource AfSettingsBorderBrush}"
-                                    BorderThickness="1" CornerRadius="8" IsHitTestVisible="False" components:SettingsHoverShadow.IsEnabled="True" />
-                            <Border x:Name="HoverTint" Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Opacity="0" IsHitTestVisible="False" />
+                            <Border x:Name="CardSurface" Background="{TemplateBinding Background}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" CornerRadius="8" IsHitTestVisible="False" components:SettingsHoverShadow.IsEnabled="True"/>
+                            <Border x:Name="HoverTint" Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Opacity="0" IsHitTestVisible="False"/>
                             <StackPanel>
-                                <ToggleButton x:Name="HeaderSite" Content="{TemplateBinding Header}" Template="{StaticResource AfSettingsExpanderToggleTemplate}" Padding="14,8"
-                                              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                                              Foreground="{TemplateBinding Foreground}" MinHeight="44" Cursor="Hand" FocusVisualStyle="{x:Null}"
-                                              AutomationProperties.Name="{Binding Title}"
-                                              IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" />
+                                <ToggleButton x:Name="HeaderSite" Content="{TemplateBinding Header}" Template="{StaticResource AfSettingsExpanderToggleTemplate}" Padding="14,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Foreground="{TemplateBinding Foreground}" MinHeight="44" Cursor="Hand" FocusVisualStyle="{x:Null}" AutomationProperties.Name="{Binding Title}" IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
                                 <Border x:Name="Details" Visibility="Collapsed" Margin="14,0,14,14">
                                     <StackPanel>
-                                        <Border Height="1" Background="{DynamicResource AfSettingsBorderBrush}" Margin="0,0,0,10" />
-                                        <ContentPresenter ContentSource="Content" />
+                                        <Border Height="1" Background="{DynamicResource AfSettingsBorderBrush}" Margin="0,0,0,10"/>
+                                        <ContentPresenter ContentSource="Content"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsExpanded" Value="True">
-                                <Setter TargetName="Details" Property="Visibility" Value="Visible" />
-                                <Setter TargetName="CardSurface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
+                                <Setter TargetName="Details" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="CardSurface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}"/>
                             </Trigger>
                             <MultiTrigger>
-                                <MultiTrigger.Conditions><Condition Property="IsMouseOver" Value="True" /><Condition Property="IsStylusOver" Value="False" /></MultiTrigger.Conditions>
-                                <Setter TargetName="CardSurface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
-                                <Setter TargetName="HoverTint" Property="Opacity" Value="1" />
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsStylusOver" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="CardSurface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}"/>
+                                <Setter TargetName="HoverTint" Property="Opacity" Value="1"/>
                             </MultiTrigger>
-                            <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="CardSurface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" /></Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="CardSurface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}"/>
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -56,106 +51,151 @@
         </Style>
         <DataTemplate x:Key="ReleaseBody">
             <StackPanel>
-                <TextBlock Text="{Binding OriginalNotice}" Style="{StaticResource AfSettingsRowDescriptionStyle}" />
+                <TextBlock Text="{Binding OriginalNotice}" Style="{StaticResource AfSettingsRowDescriptionStyle}"/>
                 <TextBlock Text="{DynamicResource Loc.ReleaseHighlights.NoHighlights}" TextWrapping="Wrap">
-                    <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource AfSettingsRowDescriptionStyle}">
-                        <Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Highlights.Count}" Value="0"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
-                    </Style></TextBlock.Style>
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource AfSettingsRowDescriptionStyle}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Highlights.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
                 </TextBlock>
                 <ItemsControl ItemsSource="{Binding Highlights}">
-                    <ItemsControl.Style><Style TargetType="ItemsControl"><Style.Triggers>
-                        <DataTrigger Binding="{Binding HasStructuredContent}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
-                    </Style.Triggers></Style></ItemsControl.Style>
-                    <ItemsControl.ItemTemplate><DataTemplate>
-                        <Grid Margin="0,6"><Grid.ColumnDefinitions><ColumnDefinition Width="16" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                            <Ellipse Width="4" Height="4" Fill="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Top" Margin="0,8,0,0" />
-                            <TextBlock Grid.Column="1" Text="{Binding}" Style="{StaticResource ReleaseBodyTextStyle}" />
-                        </Grid>
-                    </DataTemplate></ItemsControl.ItemTemplate>
+                    <ItemsControl.Style>
+                        <Style TargetType="ItemsControl">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasStructuredContent}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ItemsControl.Style>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse Width="4" Height="4" Fill="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Top" Margin="0,8,0,0"/>
+                                <TextBlock Grid.Column="1" Text="{Binding}" Style="{StaticResource ReleaseBodyTextStyle}"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <StackPanel>
-                    <StackPanel.Style><Style TargetType="StackPanel">
-                        <Setter Property="Visibility" Value="Collapsed" />
-                        <Style.Triggers><DataTrigger Binding="{Binding HasStructuredContent}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
-                    </Style></StackPanel.Style>
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasStructuredContent}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
                     <TextBlock Text="{Binding Content.Summary}" Margin="0,0,0,4">
-                        <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource ReleaseBodyTextStyle}"><Style.Triggers>
-                            <DataTrigger Binding="{Binding Content.Summary}" Value=""><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
-                        </Style.Triggers></Style></TextBlock.Style>
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource ReleaseBodyTextStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Content.Summary}" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
                     </TextBlock>
                     <ItemsControl ItemsSource="{Binding Content.Sections}">
-                        <ItemsControl.ItemTemplate><DataTemplate>
-                            <StackPanel Margin="0,18,0,0">
-                                <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="{DynamicResource AppTextStrongFontWeight}" TextWrapping="Wrap" Margin="0,0,0,8" />
-                                <ItemsControl ItemsSource="{Binding Items}">
-                                    <ItemsControl.ItemTemplate><DataTemplate>
-                                        <Expander Style="{StaticResource ReleaseEntryStyle}" AutomationProperties.Name="{Binding Title}">
-                                            <Expander.Header><TextBlock Text="{Binding Title}" Style="{StaticResource AfSettingsRowTitleStyle}" LineHeight="23" TextWrapping="Wrap" /></Expander.Header>
-                                            <TextBlock Text="{Binding Description}" Style="{StaticResource ReleaseBodyTextStyle}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                        </Expander>
-                                    </DataTemplate></ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </DataTemplate></ItemsControl.ItemTemplate>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,18,0,0">
+                                    <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="{DynamicResource AppTextStrongFontWeight}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                    <ItemsControl ItemsSource="{Binding Items}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Expander Style="{StaticResource ReleaseEntryStyle}" AutomationProperties.Name="{Binding Title}">
+                                                    <Expander.Header>
+                                                        <TextBlock Text="{Binding Title}" Style="{StaticResource AfSettingsRowTitleStyle}" LineHeight="23" TextWrapping="Wrap"/>
+                                                    </Expander.Header>
+                                                    <TextBlock Text="{Binding Description}" Style="{StaticResource ReleaseBodyTextStyle}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                </Expander>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
-                <ui:Button Content="{DynamicResource Loc.ReleaseHighlights.FullNotes}" Click="OnOpenReleaseNotes" Margin="0,12,0,0"
-                           Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Visibility="{Binding HasReleaseNotes, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
+                <ui:Button Content="{DynamicResource Loc.ReleaseHighlights.FullNotes}" Click="OnOpenReleaseNotes" Margin="0,12,0,0" Style="{StaticResource AfSettingsButtonStyle}" HorizontalAlignment="Left" Visibility="{Binding HasReleaseNotes, Converter={StaticResource AfBooleanToVisibilityConverter}}"/>
             </StackPanel>
         </DataTemplate>
         <DataTemplate x:Key="ReleaseHeader">
             <StackPanel>
                 <WrapPanel>
-                    <TextBlock Text="{Binding VersionLabel}" Foreground="{DynamicResource AfAccentBrush}" FontWeight="{DynamicResource AppTextStrongFontWeight}" FontSize="26" Margin="0,0,16,0" />
-                    <TextBlock Text="{Binding DateText}" FontSize="16" FontWeight="{DynamicResource AppTextMediumFontWeight}" Margin="0,0,12,0" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding Badge}" Foreground="{DynamicResource AfAccentBrush}" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding VersionLabel}" Foreground="{DynamicResource AfAccentBrush}" FontWeight="{DynamicResource AppTextStrongFontWeight}" FontSize="26" Margin="0,0,16,0"/>
+                    <TextBlock Text="{Binding DateText}" FontSize="16" FontWeight="{DynamicResource AppTextMediumFontWeight}" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Badge}" Foreground="{DynamicResource AfAccentBrush}" FontSize="12" VerticalAlignment="Center"/>
                 </WrapPanel>
-                <TextBlock Text="{Binding DisplayTitle}" FontSize="15" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding DisplayTitle}" FontSize="15" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
             </StackPanel>
         </DataTemplate>
+        <Style TargetType="{x:Type components:SettingsRow}" BasedOn="{StaticResource AfSettingsPilotRowStyle}"/>
+        <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/>
     </Page.Resources>
-    <Grid>
-        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-        <StackPanel Margin="{StaticResource AfSettingsHeaderMargin}">
-            <ui:Button Content="{DynamicResource Loc.QuickStart.Back}" Click="OnBackRequested" HorizontalAlignment="Left"
-                Style="{StaticResource AfSettingsButtonStyle}" Margin="0,0,0,8" />
-            <components:SettingsGroupStrip MaxWidth="{StaticResource AfSettingsContentMaxWidth}" Target="{Binding ElementName=PageScroll}" Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}" />
-        </StackPanel>
-        <ScrollViewer x:Name="PageScroll" Grid.Row="1" Margin="{StaticResource AfSettingsScrollMargin}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <StackPanel MaxWidth="{StaticResource AfSettingsContentMaxWidth}">
-
-                <TextBlock Text="{Binding ViewModel.StatusText}" Style="{StaticResource AfSettingsRowDescriptionStyle}" Margin="0,8,0,8" />
-                <ProgressBar IsIndeterminate="True" Height="2" Margin="0,0,0,12"
-                             Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource AfBooleanToVisibilityConverter}}" />
-                <components:SettingsGroup GroupId="ReleaseHighlights.Latest" Header="{DynamicResource Loc.ReleaseHighlights.Latest}" Icon="{ui:SymbolIcon Sparkle24}">
-                    <Border>
-                        <Border.Style><Style TargetType="Border">
-                            <Setter Property="Background" Value="{DynamicResource AfSettingsInfoSurfaceBrush}" />
-                            <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
-                            <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="8" />
-                            <Style.Triggers><DataTrigger Binding="{Binding ViewModel.Latest.HasStructuredContent}" Value="True">
-                                <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
-                            </DataTrigger></Style.Triggers>
-                        </Style></Border.Style>
-                        <StackPanel DataContext="{Binding ViewModel.Latest}">
-                            <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ReleaseHeader}" Margin="20,20,20,0" />
-                            <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ReleaseBody}" Margin="20,8,20,16" />
-                        </StackPanel>
-                    </Border>
-                </components:SettingsGroup>
-                <components:SettingsGroup GroupId="ReleaseHighlights.History" Header="{DynamicResource Loc.ReleaseHighlights.History}" Icon="{ui:SymbolIcon History24}">
-                    <ItemsControl ItemsSource="{Binding ViewModel.History}">
-                        <ItemsControl.ItemTemplate><DataTemplate>
+    <components:SettingsPageLayout x:Name="PageLayout">
+        <components:SettingsPageLayout.Header>
+            <components:SettingsGroupStrip Title="{DynamicResource Loc.Common.Page.ReleaseHighlights}" Subtitle="{DynamicResource Loc.Settings.Page.ReleaseHighlights.Description}" PageIcon="{ui:SymbolIcon Sparkle24}" Target="{Binding ScrollViewer, ElementName=PageLayout}"/>
+        </components:SettingsPageLayout.Header>
+        <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded" Unloaded="OnPageUnloaded">
+            <components:SettingsGroup GroupId="ReleaseHighlights.Latest" Header="{DynamicResource Loc.ReleaseHighlights.Latest}" Icon="{ui:SymbolIcon Sparkle24}">
+                <Border>
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="{DynamicResource AfSettingsInfoSurfaceBrush}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Setter Property="CornerRadius" Value="8"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ViewModel.Latest.HasStructuredContent}" Value="True">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel DataContext="{Binding ViewModel.Latest}">
+                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ReleaseHeader}" Margin="20,20,20,0"/>
+                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ReleaseBody}" Margin="20,8,20,16"/>
+                    </StackPanel>
+                </Border>
+            </components:SettingsGroup>
+            <components:SettingsGroup GroupId="ReleaseHighlights.History" Header="{DynamicResource Loc.ReleaseHighlights.History}" Icon="{ui:SymbolIcon History24}">
+                <ItemsControl ItemsSource="{Binding ViewModel.History}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
                             <ui:CardExpander Content="{Binding}">
-                                <ui:CardExpander.Header><ContentControl Content="{Binding}" ContentTemplate="{StaticResource ReleaseHeader}" /></ui:CardExpander.Header>
-                                <ui:CardExpander.Style><Style TargetType="{x:Type ui:CardExpander}" BasedOn="{StaticResource AfSettingsExpanderStyle}">
-                                    <Style.Triggers><Trigger Property="IsExpanded" Value="True"><Setter Property="ContentTemplate" Value="{StaticResource ReleaseBody}" /></Trigger></Style.Triggers>
-                                </Style></ui:CardExpander.Style>
+                                <ui:CardExpander.Header>
+                                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ReleaseHeader}"/>
+                                </ui:CardExpander.Header>
+                                <ui:CardExpander.Style>
+                                    <Style TargetType="{x:Type ui:CardExpander}" BasedOn="{StaticResource AfSettingsExpanderStyle}">
+                                        <Style.Triggers>
+                                            <Trigger Property="IsExpanded" Value="True">
+                                                <Setter Property="ContentTemplate" Value="{StaticResource ReleaseBody}"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ui:CardExpander.Style>
                             </ui:CardExpander>
-                        </DataTemplate></ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </components:SettingsGroup>
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </components:SettingsGroup>
+        </StackPanel>
+    </components:SettingsPageLayout>
 </Page>

@@ -58,6 +58,7 @@ public sealed class SettingsPersistenceService : IDisposable
         _backupPath = _settingsPath + ".bak";
         _userDefaultsPath = Path.Combine(_directoryPath, "user-defaults.json");
         _debounce = debounce ?? TimeSpan.FromMilliseconds(300);
+        _jsonOptions.Converters.Add(new SpectrumCaptureDeviceModeConverter());
         _jsonOptions.Converters.Add(new LenientEnumConverterFactory());
     }
 
@@ -307,6 +308,28 @@ public sealed class SettingsPersistenceService : IDisposable
 
     private sealed record SettingsEnvelope(int SchemaVersion, AppSettings? Settings);
     private sealed class UnsupportedSettingsSchemaException(int version) : Exception($"Unsupported settings schema {version}.");
+
+    // 无效策略必须保留为 null，才能按已存设备 ID 回退；通用枚举转换器会把它变成 FollowMediaSource。
+    private sealed class SpectrumCaptureDeviceModeConverter : JsonConverter<SpectrumCaptureDeviceMode?>
+    {
+        public override SpectrumCaptureDeviceMode? Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.String &&
+                Enum.TryParse<SpectrumCaptureDeviceMode>(reader.GetString(), true, out var parsed) && Enum.IsDefined(parsed))
+                return parsed;
+            if (reader.TokenType == JsonTokenType.Number && reader.TryGetInt32(out var number) &&
+                Enum.IsDefined(typeof(SpectrumCaptureDeviceMode), number))
+                return (SpectrumCaptureDeviceMode)number;
+            reader.Skip();
+            return null;
+        }
+
+        public override void Write(Utf8JsonWriter writer, SpectrumCaptureDeviceMode? value, JsonSerializerOptions options)
+        {
+            if (value is { } mode) writer.WriteStringValue(mode.ToString());
+            else writer.WriteNullValue();
+        }
+    }
 
     private sealed class LenientEnumConverterFactory : JsonConverterFactory
     {

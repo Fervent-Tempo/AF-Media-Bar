@@ -70,6 +70,13 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         get => SettingsManager.Current.FloatingBar.Layer == FloatingBarLayer.Topmost ? 1 : 0;
         set { if (IsFloatingBarMode && !_isRefreshing) _configuration.SetFloatingBar(SettingsManager.Current.FloatingBar with { Layer = value == 1 ? FloatingBarLayer.Topmost : FloatingBarLayer.Desktop }); }
     }
+
+    /// <summary>覆盖任务栏与窗口层级相互独立；开启后即使选桌面层，悬浮条也按置顶处理。</summary>
+    public bool FloatingOverlayTaskbar
+    {
+        get => SettingsManager.Current.FloatingBar.OverlayTaskbar;
+        set { if (IsFloatingBarMode && !_isRefreshing) _configuration.SetFloatingBar(SettingsManager.Current.FloatingBar with { OverlayTaskbar = value }); }
+    }
     public bool FloatingEdgeCollapseEnabled
     {
         get => SettingsManager.Current.FloatingBar.EdgeCollapseEnabled;
@@ -108,6 +115,24 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         });
     }
 
+    public bool UsesFullPanelEntryHover => _configuration.Current.TaskbarExperience.FullPanelEntryTrigger == FullPanelHandleTrigger.Hover;
+
+    /// <summary>界面使用秒，持久化与入口计时使用整数毫秒。</summary>
+    public double FullPanelEntryHoverDelaySeconds
+    {
+        get => _configuration.Current.TaskbarExperience.FullPanelEntryHoverDelayMilliseconds / 1000d;
+        set
+        {
+            if (!double.IsFinite(value)) return;
+            var seconds = Math.Clamp(value, TaskbarExperienceSettings.MinimumFullPanelEntryHoverDelaySeconds,
+                TaskbarExperienceSettings.MaximumFullPanelEntryHoverDelaySeconds);
+            UpdateExperience(_configuration.Current.TaskbarExperience with
+            {
+                FullPanelEntryHoverDelayMilliseconds = (int)Math.Round(seconds * 1000, MidpointRounding.AwayFromZero)
+            });
+        }
+    }
+
     /// <summary>只控制外侧横杆，不限制其它交互打开完整面板。</summary>
     public bool FullPanelEntryVisible
     {
@@ -133,6 +158,13 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     {
         get => _configuration.Current.TaskbarExperience.ArtworkVisible;
         set => UpdateExperience(_configuration.Current.TaskbarExperience with { ArtworkVisible = value });
+    }
+
+    /// <summary>封面缩到八成并减少布局占位；显示封面关闭时设置页会把这个开关置灰。</summary>
+    public bool SmallArtwork
+    {
+        get => _configuration.Current.TaskbarExperience.SmallArtwork;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { SmallArtwork = value });
     }
 
     /// <summary>静置层是否显示频谱组件。 / Whether the rest layer shows the spectrum component.</summary>
@@ -288,6 +320,15 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     private TaskbarHoverControlsSettings HoverControls =>
         _configuration.Current.TaskbarExperience.HoverControls;
 
+    public int FullPanelScalePercent
+    {
+        get => FullPanelSettings.ScalePercent;
+        set { if (!_isRefreshing) UpdateFullPanel(FullPanelSettings with { ScalePercent = value }); }
+    }
+    public int MinimumFullPanelScalePercent => TaskbarFullPanelSettings.MinimumScalePercent;
+    public int MaximumFullPanelScalePercent => TaskbarFullPanelSettings.MaximumScalePercent;
+    [RelayCommand] private void ResetFullPanelScale() => FullPanelScalePercent = 100;
+
     public bool FullPanelMediaInfoVisible
     {
         get => FullPanelSettings.MediaInfoVisible;
@@ -322,9 +363,9 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     /// The section combination the full panel currently uses, shown as a status text. The three names come from the
     /// same keys as the captions on the "apply a preset" buttons.
     /// </summary>
-    public string FullPanelLayoutStatus => FullPanelSettings == TaskbarFullPanelSettings.Compact
+    public string FullPanelLayoutStatus => FullPanelSettings with { ScalePercent = 100, PerformanceVisuals = MetricVisualSettings.PanelDefault } == TaskbarFullPanelSettings.Compact
         ? Translations.Get("DisplayModes.Full.Preset.Compact")
-        : FullPanelSettings == TaskbarFullPanelSettings.Full
+        : FullPanelSettings with { ScalePercent = 100, PerformanceVisuals = MetricVisualSettings.PanelDefault } == TaskbarFullPanelSettings.Full
             ? Translations.Get("DisplayModes.Full.Preset.Full")
             : Translations.Get("DisplayModes.Full.Preset.Custom");
 
@@ -452,6 +493,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         // 无媒体时保留组件列表由代码构建，首次打开页面前必须填充。
         // The idle-component list is built in code and must be populated before the page first opens.
         RefreshIdleComponentEntries();
+        RefreshComponentLayouts();
     }
 
     /// <summary>
@@ -470,6 +512,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         // notification on their own (the list instance is unchanged and so are the items' properties), so this has to refresh explicitly;
         // otherwise the column would keep the previous language after a switch.
         RefreshIdleComponentEntries();
+        RefreshComponentLayouts();
         OnPropertyChanged(string.Empty);
     }
 
@@ -477,8 +520,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     [RelayCommand] private void SwitchToDynamicIslandMode() => SelectMode(DisplayModeSelection.DynamicIsland);
     [RelayCommand] private void SwitchToDesktopCardMode() => SelectMode(DisplayModeSelection.DesktopCard);
     [RelayCommand] private void SwitchToFloatingBallMode() => SelectMode(DisplayModeSelection.FloatingBall);
-    [RelayCommand] private void ApplyCompactFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Compact);
-    [RelayCommand] private void ApplyFullFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Full);
+    [RelayCommand] private void ApplyCompactFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Compact with { ScalePercent = FullPanelSettings.ScalePercent, PerformanceVisuals = FullPanelSettings.PerformanceVisuals });
+    [RelayCommand] private void ApplyFullFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Full with { ScalePercent = FullPanelSettings.ScalePercent, PerformanceVisuals = FullPanelSettings.PerformanceVisuals });
 
     [RelayCommand]
     private void ResetTaskbarPosition()
@@ -549,8 +592,9 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         if (_disposed || !_configuration.IsActive) return;
         if (!_dispatcher.CheckAccess()) { DispatcherHelper.Run(_dispatcher, () => OnSettingsChanged(sender, e)); return; }
         if (e.PropertyName is nameof(AppSettings.Experiments) or nameof(AppSettings.FloatingBar) ||
-            e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.Components or SettingsResetScope.All)
+            e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.Components or SettingsResetScope.RestState or SettingsResetScope.QuickControls or SettingsResetScope.FullPanel or SettingsResetScope.BarAppearance or SettingsResetScope.All)
             RaiseAll();
+        else if (e.PropertyName == nameof(AppSettings.PerformanceComponent)) RefreshComponentLayouts();
         else if (!_isRefreshing && (e.PropertyName is nameof(AppSettings.Position) or nameof(AppSettings.TaskbarExperience)))
         {
             // Arrangement is derived from both properties. Publish their effective values while
@@ -683,6 +727,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(IsFloatingBarMode));
             OnPropertyChanged(nameof(CanChangeMode)); OnPropertyChanged(nameof(RuntimeModeSelection));
             OnPropertyChanged(nameof(FloatingOrientation)); OnPropertyChanged(nameof(FloatingLayer)); OnPropertyChanged(nameof(RuntimeStatus));
+            OnPropertyChanged(nameof(FloatingOverlayTaskbar));
             OnPropertyChanged(nameof(FloatingEdgeCollapseEnabled));
             OnPropertyChanged(nameof(TaskbarPosition));
             RaiseExperience(); OnPropertyChanged(nameof(Orientation)); OnPropertyChanged(nameof(IsTaskbarPositionLocked));
@@ -702,15 +747,19 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(HoverLayerEnabled));
         OnPropertyChanged(nameof(FullPanelEntryVisible));
         OnPropertyChanged(nameof(FullPanelEntryTriggerIndex));
+        OnPropertyChanged(nameof(UsesFullPanelEntryHover));
+        OnPropertyChanged(nameof(FullPanelEntryHoverDelaySeconds));
         OnPropertyChanged(nameof(RestProgressVisible));
         OnPropertyChanged(nameof(ArtworkProgressVisible));
         OnPropertyChanged(nameof(RestArtworkVisible));
+        OnPropertyChanged(nameof(SmallArtwork));
         OnPropertyChanged(nameof(SpectrumVisible)); OnPropertyChanged(nameof(PerformanceVisible));
         OnPropertyChanged(nameof(HoverPlayPauseVisible)); OnPropertyChanged(nameof(HoverPreviousNextVisible));
         OnPropertyChanged(nameof(HoverOutputDeviceVisible)); OnPropertyChanged(nameof(HoverAudioControlVisible));
         OnPropertyChanged(nameof(RestInputDeviceVisible)); OnPropertyChanged(nameof(HoverInputDeviceVisible));
         OnPropertyChanged(nameof(RestOutputDeviceVisible)); OnPropertyChanged(nameof(RestVolumeVisible));
         RefreshIdleComponentEntries();
+        RefreshComponentLayouts();
         RaiseFullPanel();
     }
 
@@ -725,6 +774,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CanToggleFullPanelAudioControls));
         OnPropertyChanged(nameof(CanToggleFullPanelPerformance));
         OnPropertyChanged(nameof(FullPanelLayoutStatus));
+        OnPropertyChanged(nameof(FullPanelScalePercent));
     }
 
     private enum FullPanelGroup

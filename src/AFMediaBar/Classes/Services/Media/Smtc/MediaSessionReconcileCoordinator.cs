@@ -243,6 +243,7 @@ internal sealed class MediaSessionReconcileCoordinator : IDisposable
 
         if (action == MediaSessionReconcileAction.RestartCatalog)
         {
+            var afterCooldown = _consecutiveCatalogRestarts >= MediaSessionReconcilePolicy.CatalogRestartLimit;
             _consecutiveCatalogRestarts = Math.Min(_consecutiveCatalogRestarts + 1, MediaSessionReconcilePolicy.CatalogRestartLimit);
             _lastCatalogRestartTimestamp = Stopwatch.GetTimestamp();
             // 系统有会话而目录怎么都读不到：这是 ForceUpdate 救不回的库失效状态（字典里残留了失效条目），整只重建。
@@ -252,7 +253,7 @@ internal sealed class MediaSessionReconcileCoordinator : IDisposable
             // of rebuilding the catalog every few seconds (this looped forever while a fullscreen game blocked the OS query).
             AppLogService.Current?.Info(
                 "Media",
-                $"[看门狗] 系统有会话但目录读不到，已重建媒体目录（连续第 {_consecutiveCatalogRestarts} 次，上限 {MediaSessionReconcilePolicy.CatalogRestartLimit}）");
+                $"[看门狗] 系统有会话但目录读不到，已重建媒体目录（{(afterCooldown ? "冷却后重试" : $"快速重试 {_consecutiveCatalogRestarts}/{MediaSessionReconcilePolicy.CatalogRestartLimit}")}）");
         }
 
         try

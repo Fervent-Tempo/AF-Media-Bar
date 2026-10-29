@@ -2,6 +2,49 @@
   "schemaVersion": 1,
   "releases": [
     {
+      "version": "1.5.0",
+      "releaseDate": "2026-10-17",
+      "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.5.0",
+      "localizations": {
+        "zh-Hans": {
+          "title": "桌面悬浮、竖向任务栏与音频控制",
+          "highlights": [
+            "新增桌面悬浮、竖向任务栏与新版音频控制实验，均默认关闭，可在实验性功能页开启，尚未经充分测试。",
+            "支持输入与输出设备切换、应用设备路由和紧凑音量合成器。",
+            "歌词来源可自定义优先级，组件、歌词来源与快速启动等列表支持拖动排序。",
+            "改善小任务栏信息显示、横竖切换、封面播放反馈与自动隐藏任务栏下的菜单。"
+          ]
+        },
+        "zh-Hant": {
+          "title": "桌面浮動、直向工作列與音訊控制",
+          "highlights": [
+            "新增桌面浮動、直向工作列與新版音訊控制實驗，均預設關閉，可在實驗性功能頁啟用，尚未經充分測試。",
+            "支援輸入與輸出裝置切換、應用程式裝置路由與精簡音量混音器。",
+            "歌詞來源可自訂優先順序，元件、歌詞來源與快速啟動等清單支援拖曳排序。",
+            "改善小型工作列資訊顯示、橫直切換、封面播放回饋與自動隱藏工作列下的選單。"
+          ]
+        },
+        "en": {
+          "title": "Desktop floating mode, vertical taskbars and audio controls",
+          "highlights": [
+            "Add desktop floating, vertical taskbar and new audio-control experiments; all default to off and can be enabled in Experimental features. They have not been thoroughly tested.",
+            "Support input and output switching, per-application device routing and a compact volume mixer.",
+            "Allow custom lyric-source priority and drag ordering for components, lyric sources and quick-launch entries.",
+            "Improve narrow-taskbar information, orientation changes, artwork playback feedback and menus with auto-hidden taskbars."
+          ]
+        },
+        "vi": {
+          "title": "Thanh nổi trên màn hình, thanh tác vụ dọc và điều khiển âm thanh",
+          "highlights": [
+            "Thêm thử nghiệm thanh nổi, thanh tác vụ dọc và điều khiển âm thanh mới; mặc định đều tắt, có thể bật trong Tính năng thử nghiệm và chưa được kiểm thử đầy đủ.",
+            "Hỗ trợ chuyển thiết bị đầu vào và đầu ra, định tuyến thiết bị cho từng ứng dụng và bộ trộn âm lượng gọn.",
+            "Cho phép đặt thứ tự ưu tiên nguồn lời và kéo thả để sắp xếp thành phần, nguồn lời và mục khởi chạy nhanh.",
+            "Cải thiện hiển thị trên thanh tác vụ nhỏ, đổi hướng, phản hồi phát trên ảnh bìa và menu khi thanh tác vụ tự ẩn."
+          ]
+        }
+      }
+    },
+    {
       "version": "1.4.0",
       "releaseDate": "2026-10-12",
       "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.4.0",

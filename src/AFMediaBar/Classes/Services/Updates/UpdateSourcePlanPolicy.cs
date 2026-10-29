@@ -34,8 +34,13 @@ public static class UpdateSourcePlanPolicy
     public static string DefaultManualReleasePage { get; } = "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/latest";
 
     /// <summary>
-    /// 优先尝试清单中的非 GitHub 来源和加速候选，GitHub 官方直链统一兜底；组内保持清单顺序。
-    /// 清单显式提供空加速列表时，不展开加速地址。
+    /// 按清单顺序展开完整尝试序列：每条直链后面紧跟它自己的加速候选。
+    ///
+    /// 顺序即优先级，发布侧把国内可用的镜像放前面就生效，不需要改代码。
+    /// Expands the full attempt sequence in manifest order, with each direct link followed by its own accelerator
+    /// candidates.
+    ///
+    /// Order is priority: putting a China-reachable mirror first is enough, with no code change.
     /// </summary>
     /// <param name="manifest">清单；为 null 时没有可尝试来源。/ Manifest; null means nothing can be tried.</param>
     /// <returns>去重后的尝试序列。/ Deduplicated attempt sequence.</returns>
@@ -50,7 +55,7 @@ public static class UpdateSourcePlanPolicy
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var package in manifest.Packages)
         {
-            if (!IsGitHubUrl(package.Url)) AddSource(plan, seen, package.Url, isAccelerated: false);
+            AddSource(plan, seen, package.Url, isAccelerated: false);
 
             foreach (var accelerated in GitHubAcceleratorPolicy.Expand(package.Url, manifest.Accelerators))
             {
@@ -58,16 +63,8 @@ public static class UpdateSourcePlanPolicy
             }
         }
 
-        foreach (var package in manifest.Packages)
-        {
-            if (IsGitHubUrl(package.Url)) AddSource(plan, seen, package.Url, isAccelerated: false);
-        }
-
         return plan;
     }
-
-    private static bool IsGitHubUrl(string url) => Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
-        string.Equals(uri.Host, GitHubAcceleratorPolicy.GitHubHost, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// 选择下一个尚未尝试的来源。

@@ -34,6 +34,19 @@ namespace AFMediaBar.Components;
 /// </summary>
 public class SettingsGroupStrip : Control
 {
+    public static readonly DependencyProperty ShowGroupTabsProperty = DependencyProperty.Register(
+        nameof(ShowGroupTabs), typeof(bool), typeof(SettingsGroupStrip), new PropertyMetadata(true));
+    public bool ShowGroupTabs { get => (bool)GetValue(ShowGroupTabsProperty); set => SetValue(ShowGroupTabsProperty, value); }
+    public static readonly DependencyProperty HeaderActionsProperty = DependencyProperty.Register(
+        nameof(HeaderActions), typeof(object), typeof(SettingsGroupStrip), new PropertyMetadata(null));
+    public object? HeaderActions { get => GetValue(HeaderActionsProperty); set => SetValue(HeaderActionsProperty, value); }
+    public static readonly DependencyProperty BreadcrumbProperty = DependencyProperty.Register(
+        nameof(Breadcrumb), typeof(string), typeof(SettingsGroupStrip), new PropertyMetadata(string.Empty));
+    public string Breadcrumb { get => (string)GetValue(BreadcrumbProperty); set => SetValue(BreadcrumbProperty, value); }
+    public static readonly DependencyProperty BackCommandProperty = DependencyProperty.Register(
+        nameof(BackCommand), typeof(ICommand), typeof(SettingsGroupStrip), new PropertyMetadata(null));
+    public ICommand? BackCommand { get => (ICommand?)GetValue(BackCommandProperty); set => SetValue(BackCommandProperty, value); }
+
     /// <summary>页面标题。/ Page title.</summary>
     public static readonly DependencyProperty TitleProperty = DependencyProperty.Register(
         nameof(Title),
@@ -116,8 +129,13 @@ public class SettingsGroupStrip : Control
     private double _dividerOpacity = -1d;
 
     /// <summary>创建分组标签条并初始化跳转命令。/ Creates the group strip and its jump command.</summary>
+    public static readonly DependencyProperty IsCompactHeaderProperty = DependencyProperty.Register(
+        nameof(IsCompactHeader), typeof(bool), typeof(SettingsGroupStrip), new PropertyMetadata(false));
+    public bool IsCompactHeader => (bool)GetValue(IsCompactHeaderProperty);
+
     public SettingsGroupStrip()
     {
+        SizeChanged += (_, _) => SetValue(IsCompactHeaderProperty, ActualWidth < 700d);
         JumpCommand = new JumpToGroupCommand(this);
         SetValue(GroupsPropertyKey, _groups);
 
@@ -249,7 +267,7 @@ public class SettingsGroupStrip : Control
     /// never be left sitting at an intermediate opacity.
     /// </summary>
     /// <param name="groupId">Stable group identity.</param>
-    public void RevealGroup(string groupId)
+    public void RevealGroup(string groupId, string? optionId = null)
     {
         var groups = ResolveGroups();
         var group = groups.FirstOrDefault(candidate => candidate.GroupId == groupId);
@@ -258,6 +276,21 @@ public class SettingsGroupStrip : Control
         // Search resolves a group, so reveal its details before measuring the scroll target.
         ExpandDetails(group);
         group.UpdateLayout();
+        if (optionId is not null)
+        {
+            var title = optionId.StartsWith('@') ? optionId[1..] : Translations.Get(optionId);
+            var row = VisualDescendants(group).Concat(LogicalDescendants(group)).OfType<SettingsRow>().Distinct().FirstOrDefault(candidate => (candidate.OptionId == optionId || candidate.Title == title) && candidate.IsVisible);
+            if (row is not null)
+            {
+                StopJump();
+                row.BringIntoView();
+                var input = VisualDescendants(row).OfType<Control>().Where(control => control.Focusable && control.IsEnabled && control.IsVisible)
+                    .OrderBy(control => control is SettingsNavigationButton or SettingsReorderHandle ? 1 : 0).FirstOrDefault();
+                if (input is not null) input.Focus();
+                else { row.Focusable = true; row.Focus(); }
+                return;
+            }
+        }
         JumpTo(groupIndex);
         if (MotionPolicy.ResolveCurrent().Mode == MotionMode.Instant ||
             InputManager.Current.MostRecentInputDevice is KeyboardDevice) return;
@@ -280,6 +313,25 @@ public class SettingsGroupStrip : Control
         };
 
         group.BeginAnimation(UIElement.OpacityProperty, animation, HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private static IEnumerable<DependencyObject> LogicalDescendants(DependencyObject parent)
+    {
+        foreach (var child in LogicalTreeHelper.GetChildren(parent).OfType<DependencyObject>())
+        {
+            yield return child;
+            foreach (var descendant in LogicalDescendants(child)) yield return descendant;
+        }
+    }
+
+    private static IEnumerable<DependencyObject> VisualDescendants(DependencyObject parent)
+    {
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, index);
+            yield return child;
+            foreach (var descendant in VisualDescendants(child)) yield return descendant;
+        }
     }
 
     private static void ExpandDetails(DependencyObject element)

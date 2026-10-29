@@ -9,7 +9,7 @@ using Wpf.Ui.Abstractions.Controls;
 
 namespace AFMediaBar.Views.Pages;
 
-/// <summary>输入输出设备、别名、顺序与通信角色的全局配置。</summary>
+/// <summary>呈现音频设备设置，编辑器与服务由既有作用域拥有。</summary>
 public partial class DeviceManagementPage : INavigableView<AudioDeviceSettingsViewModel>
 {
     public AudioDeviceSettingsViewModel ViewModel { get; }

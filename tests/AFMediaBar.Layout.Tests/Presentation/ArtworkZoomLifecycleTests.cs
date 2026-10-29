@@ -1,5 +1,6 @@
 // 在隔离进程中验证真实封面 Popup 的换树、提示来源与强制收回；不操纵系统鼠标或 Explorer。
 // 测试拥有窗口和 Application，结束时关闭窗口并恢复设置；反射只用于控制动画入口和检查 WPF 缓存。
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
@@ -332,6 +333,74 @@ public sealed class ArtworkZoomLifecycleTests
         Assert.AreEqual(240d, host.Width);
         return Task.CompletedTask;
     });
+
+    [TestMethod]
+    public void FullPanelEntryAnchorHoldsStillWhileTheZoomPushesTheLayout() => RunIsolated(nameof(FullPanelEntryAnchorHoldsStillWhileTheZoomPushesTheLayout), (control, dispatcher) =>
+    {
+        SettingsManager.Current.Interaction = SettingsManager.Current.Interaction with { ArtworkHoverMode = ArtworkHoverMode.Zoom };
+        var rest = FullPanelEntryCenter(control);
+        // 立即路径的悬停放大：Popup 打开、推挤同步落到目标量，无需等待动画。
+        // Immediate-path hover zoom: the Popup opens and the push lands on its target synchronously, no animation wait.
+        Invoke(control, "AnimateArtworkHover", true, true);
+        Assert.IsTrue(GetPopup(control).IsOpen, "放大必须真的进入 Popup 态，推挤才会挂上。");
+        var pushOffset = (double)MediaBarTestAccess.GetField("_artworkZoomPushOffset", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+        Assert.IsTrue(pushOffset > 0, "放大必须真的推挤文字区，否则锚点断言是空转。");
+        // 反证：旧实现读取的正是这个被推走的元素——两者此时必须不同，锚点不变才有意义。
+        // Counter-proof: the old implementation read exactly this pushed element — the two must differ here,
+        // otherwise an unchanged anchor proves nothing.
+        var songInfo = (FrameworkElement)control.FindName("SongInfoStackPanel");
+        var pushedPanelCenter = songInfo.PointToScreen(new Point(songInfo.ActualWidth / 2, songInfo.ActualHeight / 2));
+        Assert.AreNotEqual(rest, pushedPanelCenter, "文字区中心必须已被推挤带离原位。");
+        Assert.AreEqual(rest, FullPanelEntryCenter(control), "放大推挤不得带动完整面板入口锚点（外侧拉杆）。");
+        Invoke(control, "HideArtworkHoverZoom", true);
+        AssertRestored(control);
+        return Task.CompletedTask;
+    });
+
+    [TestMethod]
+    public void ZoomPushTakesTheSignOfTheResolvedExpansionDirection() => RunIsolated(nameof(ZoomPushTakesTheSignOfTheResolvedExpansionDirection), (control, dispatcher) =>
+    {
+        SettingsManager.Current.Interaction = SettingsManager.Current.Interaction with { ArtworkHoverMode = ArtworkHoverMode.Zoom };
+
+        // 从左侧展开（默认语义）：封面在主轴首端、内容在尾端，推挤取正，把内容带离放大的封面。
+        // Left-side expansion (the default): the artwork sits at the leading end and the content behind it, so the
+        // push takes the positive side, carrying the content away from the enlarged cover.
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { Arrangement = TaskbarContentArrangement.Left };
+        control.ApplyTaskbarExperienceSettings();
+        Invoke(control, "AnimateArtworkHover", true, true);
+        Assert.IsTrue(GetPopup(control).IsOpen, "放大必须真的进入 Popup 态，推挤才会挂上。");
+        var pushOffset = (double)MediaBarTestAccess.GetField("_artworkZoomPushOffset", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+        Assert.IsTrue(pushOffset > 0, "推挤量必须是无符号的正量。");
+        AssertZoomPush(control, +pushOffset, "从左侧展开");
+        Invoke(control, "HideArtworkHoverZoom", true);
+        AssertRestored(control);
+
+        // 从右侧展开：Arrange 的 fromRight 把封面镜像到尾端、内容全部排在它另一侧，推挤必须取负——
+        // 曾恒写正值，把内容推向放大的封面（issue #236）。量不变，只翻方向。
+        // Right-side expansion: Arrange's fromRight mirrors the artwork to the trailing end with all content on its
+        // other side, so the push must take the negative side — it once always wrote a positive value, driving the
+        // content under the enlarged cover (issue #236). The amount stays; only the direction flips.
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { Arrangement = TaskbarContentArrangement.Right };
+        control.ApplyTaskbarExperienceSettings();
+        Invoke(control, "AnimateArtworkHover", true, true);
+        Assert.IsTrue(GetPopup(control).IsOpen, "右侧展开下放大也必须真的进入 Popup 态。");
+        AssertZoomPush(control, -pushOffset, "从右侧展开");
+        Invoke(control, "HideArtworkHoverZoom", true);
+        AssertRestored(control);
+        return Task.CompletedTask;
+    });
+
+    private static Point FullPanelEntryCenter(TaskBarMediaControl control) =>
+        (Point)MediaBarTestAccess.GetMethod("GetFullPanelEntryScreenCenter", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(control, null)!;
+
+    /// <summary>断言所有推挤变换都落到目标量（含符号）：内容避让方向必须与展开排布一致。</summary>
+    private static void AssertZoomPush(TaskBarMediaControl control, double target, string context)
+    {
+        var transforms = (List<TranslateTransform>)MediaBarTestAccess.GetField("_artworkZoomPushTransforms", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+        Assert.IsTrue(transforms.Count > 0, $"{context}：放大必须挂上推挤变换，否则符号断言是空转。");
+        foreach (var transform in transforms)
+            Assert.AreEqual(target, transform.X, 0.001, $"{context}：推挤必须沿内容避让方向落到目标量。");
+    }
 
     private static void RunIsolated(string name, Func<TaskBarMediaControl, Dispatcher, Task> verify)
     {

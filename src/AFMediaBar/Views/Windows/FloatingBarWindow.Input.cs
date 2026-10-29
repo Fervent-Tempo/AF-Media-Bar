@@ -142,10 +142,11 @@ public sealed partial class FloatingBarWindow
     });
     private async Task RefreshOpenDeviceMenuAsync()
     {
-        using var edgeHold = KeepEdgeExpanded();
         var environmentVersion = _menuEnvironmentVersion;
         if (_deviceMenuTarget is not { } target || !_compactFlyout.IsVisible ||
             !_compactFlyout.IsShowing(target.Direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice)) return;
+        // 菜单真的开着才需要保持展开：设备刷新事件可能每秒都来，先申请再判断会把折叠条反复叫醒。
+        using var edgeHold = KeepEdgeExpanded();
         try
         {
             var devices = await _audioInteractionService.DeviceSwitches.GetChoicesAsync(target);
@@ -399,6 +400,7 @@ public sealed partial class FloatingBarWindow
 
     private void SynchronizeMetricsSubscription(PerformanceComponentSettings performance)
     {
+        performance = _mediaControl.EffectivePerformanceSettings.Normalize();
         var metrics = performance.GetOrderedMetrics().ToArray();
         var interval = TimeSpan.FromMilliseconds(performance.RefreshIntervalMilliseconds);
         var shouldSubscribe = IsOperational && !IsEdgeFullyCollapsed && _mediaControl.IsPerformanceComponentVisible;
@@ -435,7 +437,7 @@ public sealed partial class FloatingBarWindow
     {
         if (generation != _metricsSubscriptionGeneration || !IsOperational || IsEdgeFullyCollapsed)
             return;
-        var settings = PresentationSettings.PerformanceComponent.Normalize();
+        var settings = _mediaControl.EffectivePerformanceSettings.Normalize();
         var metrics = settings.GetOrderedMetrics();
         if (metrics.Count == 0)
             return;

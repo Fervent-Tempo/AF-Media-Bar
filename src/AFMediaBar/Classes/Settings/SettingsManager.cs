@@ -1,4 +1,4 @@
-﻿// 维护当前设置、变更通知与重置门面；持久化由设置服务负责。
+// 维护当前设置、变更通知与重置门面；持久化由设置服务负责。
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
@@ -221,13 +221,12 @@ public static class SettingsManager
             HoverLayerEnabled = defaults.TaskbarExperience.HoverLayerEnabled,
             FullLayerEnabled = defaults.TaskbarExperience.FullLayerEnabled,
             FullPanel = defaults.TaskbarExperience.FullPanel,
-            SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible,
-            PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible,
             RestProgressVisible = defaults.TaskbarExperience.RestProgressVisible,
             ArtworkProgressVisible = defaults.TaskbarExperience.ArtworkProgressVisible,
             ArtworkVisible = defaults.TaskbarExperience.ArtworkVisible,
             FullPanelEntryVisible = defaults.TaskbarExperience.FullPanelEntryVisible,
             FullPanelEntryTrigger = defaults.TaskbarExperience.FullPanelEntryTrigger,
+            FullPanelEntryHoverDelayMilliseconds = defaults.TaskbarExperience.FullPanelEntryHoverDelayMilliseconds,
             HoverControls = defaults.TaskbarExperience.HoverControls,
             OutputDeviceVisible = defaults.TaskbarExperience.OutputDeviceVisible,
             InputDeviceVisible = defaults.TaskbarExperience.InputDeviceVisible,
@@ -258,16 +257,37 @@ public static class SettingsManager
         next.MediaSelection = defaults.MediaSelection;
         Replace(next, SettingsResetScope.ExtraFeatures);
     }
+
+    public static void ResetMediaSource() => Replace(AFMediaBar.Classes.Services.Settings.SettingsSectionResetPolicy.Apply(
+        Current, Defaults, SettingsResetScope.MediaSource), SettingsResetScope.MediaSource);
+    public static void ResetTrackNotifications() => Replace(AFMediaBar.Classes.Services.Settings.SettingsSectionResetPolicy.Apply(
+        Current, Defaults, SettingsResetScope.TrackNotifications), SettingsResetScope.TrackNotifications);
     public static void ResetComponents()
     {
         var next = Current.Clone(); var defaults = Defaults;
         next.QuickLaunch = defaults.QuickLaunch;
         next.SpectrumComponent = defaults.SpectrumComponent;
+        var previousMetrics = Current.PerformanceComponent.Normalize();
+        var targetMetrics = defaults.PerformanceComponent.Normalize();
+        if (!previousMetrics.Metrics!.SequenceEqual(targetMetrics.Metrics!) || !previousMetrics.GetMetricOrder().SequenceEqual(targetMetrics.GetMetricOrder()))
+            next.TaskbarExperience = ComponentLayoutPolicy.PreserveImplicitLayouts(Current);
         next.PerformanceComponent = defaults.PerformanceComponent;
-        next.BluetoothBatteryWidget = defaults.BluetoothBatteryWidget;
+        next.BluetoothBatteryWidget = defaults.BluetoothBatteryWidget with { Enabled = next.BluetoothBatteryWidget.Enabled };
         next.TaskbarExperience = next.TaskbarExperience with
-        { SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible, PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible };
+        {
+            FullPanel = next.TaskbarExperience.FullPanel with { PerformanceVisuals = defaults.TaskbarExperience.FullPanel.PerformanceVisuals }
+        };
         Replace(next, SettingsResetScope.Components);
+    }
+
+    /// <summary>恢复常驻页的显隐与排序，详细参数和两种模式的几何保持原值。</summary>
+    public static void ResetRestState()
+    {
+        var next = Current.Clone();
+        var defaults = Defaults;
+        next.TaskbarExperience = AFMediaBar.Classes.Services.Settings.SettingsResetPolicy.Rest(next.TaskbarExperience, defaults.TaskbarExperience);
+        next.BluetoothBatteryWidget = next.BluetoothBatteryWidget with { Enabled = defaults.BluetoothBatteryWidget.Enabled };
+        Replace(next, SettingsResetScope.RestState);
     }
     public static void ResetDeviceManagement()
     {

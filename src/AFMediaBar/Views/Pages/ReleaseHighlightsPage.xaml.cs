@@ -7,7 +7,7 @@ using Wpf.Ui.Abstractions.Controls;
 
 namespace AFMediaBar.Views.Pages;
 
-/// <summary>Read-only latest and historical version highlights.</summary>
+/// <summary>呈现更新亮点设置，编辑器与服务由既有作用域拥有。</summary>
 public partial class ReleaseHighlightsPage : INavigableView<ReleaseHighlightsViewModel>
 {
     /// <summary>Injected bindable page state.</summary>
@@ -20,12 +20,6 @@ public partial class ReleaseHighlightsPage : INavigableView<ReleaseHighlightsVie
         DataContext = this;
         InitializeComponent();
     }
-
-    /// <summary>由设置宿主处理返回，不让页面依赖窗口。</summary>
-    public static readonly RoutedEvent BackRequestedEvent = EventManager.RegisterRoutedEvent(
-        "BackRequested", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ReleaseHighlightsPage));
-
-    private void OnBackRequested(object sender, RoutedEventArgs e) => RaiseEvent(new RoutedEventArgs(BackRequestedEvent));
 
     private async void OnPageLoaded(object sender, RoutedEventArgs e) => await ViewModel.ActivateAsync();
     private void OnPageUnloaded(object sender, RoutedEventArgs e) => ViewModel.Deactivate();

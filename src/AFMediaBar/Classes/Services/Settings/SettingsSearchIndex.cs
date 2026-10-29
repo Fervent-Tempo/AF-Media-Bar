@@ -47,7 +47,7 @@ public static class SettingsSearchIndex
                 var entries = _cachedEntries;
                 if (entries is null || _cachedLanguage != language)
                 {
-                    entries = Build(language);
+                    entries = Build(language).Concat(SettingsOptionSearchCatalog.ForLanguage(language)).ToArray();
                     _cachedLanguage = language;
                     _cachedEntries = entries;
                 }
@@ -58,10 +58,10 @@ public static class SettingsSearchIndex
     }
 
     /// <summary>搜索唯一设置页面；未开启实验的专属选项不加入结果。</summary>
-    public static IReadOnlyList<SettingsSearchEntry> ForContext(SettingsContext context) => Entries.Where(entry =>
+    public static IReadOnlyList<SettingsSearchEntry> ForContext(SettingsContext context) => Entries.Concat(SettingsDynamicSearchCatalog.Entries(context)).Where(entry =>
         SettingsPageCatalog.Find(entry.Page, context.Mode) is not null &&
-        (entry.Page != SettingsPageKey.Application || entry.GroupId != "Memory.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.MemoryTools) &&
-        (entry.Page != SettingsPageKey.Widgets || entry.GroupId != "Battery.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.BluetoothBattery) &&
+        (entry.Page != SettingsPageKey.MemoryTools || entry.GroupId != "Memory.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.MemoryTools) &&
+        (entry.Page != SettingsPageKey.BluetoothBattery || entry.GroupId != "Battery.Title" || AFMediaBar.Classes.Settings.SettingsManager.Current.Experiments.BluetoothBattery) &&
         (entry.Page != SettingsPageKey.ScreenAndPlacement || entry.GroupId == "Common.Group.ChooseDisplayMode" ||
             entry.GroupId == "Common.Group.ScreenAndPlacement" && context.Mode == SettingsMode.Taskbar ||
             entry.GroupId == "Placement.Floating.Title" && context.Mode == SettingsMode.FloatingBar) &&
@@ -79,14 +79,18 @@ public static class SettingsSearchIndex
         string titleKey,
         string descriptionKey,
         LocalizationLanguage language,
-        string[] keywords) =>
-        new(
-            page,
-            titleKey,
-            Translations.Get(PageTitleKey(page), language),
+        string[] keywords,
+        string? groupId = null)
+    {
+        var destination = SettingsPageCatalog.ResolveDestination(page, groupId ?? titleKey);
+        return new(
+            destination.Page,
+            destination.GroupId,
+            Translations.Get(PageTitleKey(destination.Page), language),
             Translations.Get(titleKey, language),
             Translations.Get(descriptionKey, language),
             ComposeKeywords(titleKey, descriptionKey, keywords));
+    }
 
     /// <summary>
     /// 关键词表：手工同义词在前，三种语言的分组标题与说明在后。
@@ -143,12 +147,6 @@ public static class SettingsSearchIndex
     /// <summary>Builds localized labels while keeping page and group identities stable.</summary>
     private static SettingsSearchEntry[] Build(LocalizationLanguage language) =>
     [
-        Create(SettingsPageKey.QuickStart, "QuickStart.Basics", "QuickStart.Basics.Description", language,
-            ["教程", "入门", "quick start", "tutorial", "来源", "显示", "歌词"]),
-        Create(SettingsPageKey.QuickStart, "QuickStart.Players", "QuickStart.Players.Description", language,
-            ["兼容", "播放器", "SMTC", "网易云", "酷狗", "汽水", "酷我", "咪咕", "千千", "波点", "洛雪", "LX Music", "YesPlayMusic", "MoeKoeMusic", "Listen 1", "MusicFree", "SPlayer", "AlgerMusicPlayer", "Spotify", "Apple Music", "AIMP", "PotPlayer", "mpv", "TIDAL"]),
-        Create(SettingsPageKey.QuickStart, "QuickStart.Latest", "QuickStart.Latest.Description", language,
-            ["新功能", "版本", "what's new", "版本亮点"]),
         Create(SettingsPageKey.PluginCenter, "Plugins.Catalog", "Plugins.Subtitle", language,
             ["插件", "plugin", "SMTC", "下载", "download", "foobar2000", "MusicBee", "VLC", "iTunes", "QQ音乐"]),
         Create(SettingsPageKey.ScreenAndPlacement, "Placement.Floating.Title", "Placement.Floating.Description", language, ["桌面悬浮模式", "floating", "置顶", "锁定", "拖动", "边缘折叠", "贴边", "auto-hide", "edge collapse"]),
@@ -177,12 +175,14 @@ public static class SettingsSearchIndex
             language,
             ["显示器", "屏幕", "monitor", "display", "朝向", "横向", "纵向", "竖向", "vertical", "orientation", "避让", "图标", "锁定", "位置", "偏移", "厚度方向偏移", "offset", "重置", "承载", "承载显示器", "承载与位置", "边缘偏移", "靠左", "靠右", "居中", "置中", "对齐", "對齊", "alignment", "left", "right", "center"]),
         Create(
-            SettingsPageKey.Components,
-            "Common.RestLayer",
+            SettingsPageKey.RestState,
+            "Settings.RestState.Visible",
             "Search.DisplayModes.RestLayer.Description",
             language,
-            ["静置", "静置层", "靜置層", "常驻", "常驻状态", "常駐狀態", "rest", "rest layer", "always-on view", "进度", "播放进度", "progress", "设备按钮", "输出设备", "音量按钮", "没有媒体", "无媒体", "空闲", "idle", "隐藏", "保留组件", "小音符", "封面放大", "artwork zoom"]),
-        Create(SettingsPageKey.Components, "Common.Group.ComponentOrder", "Common.ComponentOrder.Description", language,
+            ["静置", "静置层", "靜置層", "常驻", "常驻状态", "常駐狀態", "rest", "rest layer", "always-on view", "进度", "播放进度", "progress", "设备按钮", "输出设备", "音量按钮", "显示频谱", "显示性能", "显示电量", "小封面", "封面边缘进度", "small artwork"], "Common.RestLayer"),
+        Create(SettingsPageKey.RestState, "Settings.RestState.Idle", "Settings.RestState.IdleDescription", language,
+            ["没有媒体", "无媒体", "空闲", "idle", "隐藏", "保留组件", "小音符", "without media"]),
+        Create(SettingsPageKey.RestState, "Common.Group.ComponentOrder", "Common.ComponentOrder.Description", language,
             ["组件顺序", "順序", "排序", "order", "上移", "下移", "layout", "组件位置"]),
         Create(SettingsPageKey.Widgets, "Widgets.Spectrum", "Widgets.Spectrum.Description", language,
             ["小组件", "小元件", "组件设置", "widgets", "频谱", "spectrum", "音频采集范围", "采集设备", "前台程序音频", "audio capture scope", "current media application", "all applications", "音訊擷取範圍", "phạm vi thu âm thanh", "柱数", "刷新率", "灵敏度", "波形", "像素", "上下对称"]),
@@ -273,7 +273,7 @@ public static class SettingsSearchIndex
         Create(SettingsPageKey.Appearance, "Appearance.Group.TaskbarBackground", "Appearance.Row.TaskbarBackground.Description", language,
             ["背景层", "磨砂", "透明任务栏", "frost", "background", "TranslucentTB", "浓度", "opacity", "无媒体", "無媒體", "idle", "底色", "tint", "边框", "邊框", "border", "封面纹理", "封面紋理", "texture", "không có nội dung", "màu nền", "đường viền", "họa tiết"]),
         Create(
-            SettingsPageKey.Appearance,
+            SettingsPageKey.ApplicationAppearance,
             "Common.Group.ThemeAndBackdrop",
             "Search.Appearance.ThemeAndBackdrop.Description",
             language,
@@ -303,7 +303,9 @@ public static class SettingsSearchIndex
             language,
             ["交互按钮大小", "按钮尺寸", "小", "中", "大", "hover button size", "button spacing", "悬停层间距", "静置层按钮", "图标大小"]),
 
-        Create(SettingsPageKey.Appearance, "Common.Group.Fonts", "Search.Appearance.Fonts.Description", language,
+        Create(SettingsPageKey.ApplicationAppearance, "Settings.Personalization.Accent", "Appearance.Accent.Hint", language,
+            ["强调色", "強調色", "accent", "取色", "色板", "hex", "调色", "picker"]),
+        Create(SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts", "Search.Appearance.Fonts.Description", language,
             ["字体", "font", "字重", "weight", "西文", "中文", "预览", "segoe", "雅黑"]),
         // ---- 应用 / Application ----
         //

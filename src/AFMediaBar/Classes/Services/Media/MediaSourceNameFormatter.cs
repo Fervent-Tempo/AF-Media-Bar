@@ -72,4 +72,14 @@ public static class MediaSourceNameFormatter
 
         return string.IsNullOrWhiteSpace(value) ? unknownSourceName : value;
     }
+
+    /// <summary>返回已知来源的固定类别；未知来源不携带原始应用标识。</summary>
+    public static string GetKnownSourceKey(string? sourceId)
+    {
+        var value = sourceId?.Trim() ?? string.Empty;
+        foreach (var mapping in SourceNames)
+            if (mapping.Tokens.Any(token => value.Contains(token, StringComparison.OrdinalIgnoreCase)))
+                return mapping.Key ?? mapping.Name;
+        return "other";
+    }
 }

@@ -4,9 +4,10 @@ using AFMediaBar.ViewModels.Pages;
 
 namespace AFMediaBar.Views.Pages;
 
-/// <summary>实验开关、风险提示及唯一设置页面的跳转入口。</summary>
+/// <summary>呈现实验功能设置，编辑器与服务由既有作用域拥有。</summary>
 public partial class ExperimentalPage : Page
 {
+    private void OnPageLoaded(object sender, RoutedEventArgs e) => AFMediaBar.Classes.Utils.SettingsRevealAnimator.Play(sender as Panel);
     public ExperimentalViewModel ViewModel { get; }
     public ExperimentalPage(ExperimentalViewModel viewModel)
     {

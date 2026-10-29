@@ -14,65 +14,11 @@
              UseLayoutRounding="True"
              SnapsToDevicePixels="True">
 
-    <UserControl.Resources>
+    <UserControl.Resources><ResourceDictionary><ResourceDictionary.MergedDictionaries><ResourceDictionary Source="/AFMediaBar;component/Resources/MediaVisualResources.xaml"/></ResourceDictionary.MergedDictionaries>
         <SolidColorBrush x:Key="TaskbarHoverForegroundBrush" Color="White" />
         <SolidColorBrush x:Key="TaskbarHoverButtonOverBrush" Color="#20FFFFFF" />
         <SolidColorBrush x:Key="TaskbarHoverButtonPressedBrush" Color="#38FFFFFF" />
         <SolidColorBrush x:Key="TaskbarHoverHandleBrush" Color="#B8FFFFFF" />
-        <Style x:Key="TaskbarHoverButton" TargetType="Button">
-            <Setter Property="Width" Value="24" />
-            <Setter Property="Height" Value="24" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Margin" Value="1,0" />
-            <Setter Property="Foreground" Value="{DynamicResource TaskbarHoverForegroundBrush}" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Tag" Value="MediaAction" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonSurface"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="4"
-                                RenderTransformOrigin="0.5,0.5"
-                                SnapsToDevicePixels="True">
-                            <Border.RenderTransform>
-                                <ScaleTransform ScaleX="1" ScaleY="1" />
-                            </Border.RenderTransform>
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"
-                                              RecognizesAccessKey="True" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonSurface" Property="Background" Value="{DynamicResource TaskbarHoverButtonOverBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonSurface" Property="Background" Value="{DynamicResource TaskbarHoverButtonPressedBrush}" />
-                                <Setter TargetName="ButtonSurface" Property="RenderTransform">
-                                    <Setter.Value>
-                                        <ScaleTransform ScaleX="0.97" ScaleY="0.97" />
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="ButtonSurface" Property="Background" Value="Transparent" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Opacity" Value="0.32" />
-                    <Setter Property="Background" Value="Transparent" />
-                    <Setter Property="BorderBrush" Value="Transparent" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
         <!--
             频谱颜色的默认值。窗口初始化后由 ApplyAppearanceSettings 换成与媒体文字相同的自动前景，
             因此这里只需要一个与旧观感一致的回退色；四种样式共用同一支画刷，改颜色不会出现某一种样式没跟上。
@@ -89,7 +35,7 @@
             <Setter Property="Background" Value="{StaticResource TaskbarSpectrumBrush}" />
             <Setter Property="CornerRadius" Value="0.5" />
         </Style>
-    </UserControl.Resources>
+    </ResourceDictionary></UserControl.Resources>
 
     <Border Name="MainBorder" CornerRadius="6"
             ClipToBounds="True">
@@ -422,6 +368,42 @@
                 for the same buttons, so the menu, the tooltips, and the wheel semantics have one implementation each. Tag="MediaAction" makes
                 the host's drag logic pass the press through, otherwise the drag path marks it handled and the inner MouseLeftButtonUp never runs.
             -->
+            <Border x:Name="ResidentPreviousSurface" Panel.ZIndex="4" Width="26" Height="32"
+                    Padding="1,1,1,2.25" BorderThickness="0,1.25,0,0"
+                    HorizontalAlignment="Left" VerticalAlignment="Center" Background="Transparent"
+                    Visibility="Collapsed" Tag="MediaAction">
+                <Button x:Name="ResidentPreviousButton" Style="{StaticResource TaskbarHoverButton}" Margin="0"
+                        Foreground="{Binding Foreground, ElementName=SongTitle}"
+                        IsEnabled="{Binding IsEnabled, ElementName=TaskbarPreviousButton}"
+                        ToolTip="{DynamicResource Loc.Common.PreviousTrack}" Click="TaskbarPreviousButton_Click">
+                    <ui:SymbolIcon Symbol="{Binding Symbol, ElementName=TaskbarPreviousIcon}"
+                                   FontSize="{Binding FontSize, ElementName=TaskbarPreviousIcon}" />
+                </Button>
+            </Border>
+            <Border x:Name="ResidentPlayPauseSurface" Panel.ZIndex="4" Width="26" Height="32"
+                    Padding="1,1,1,2.25" BorderThickness="0,1.25,0,0"
+                    HorizontalAlignment="Left" VerticalAlignment="Center" Background="Transparent"
+                    Visibility="Collapsed" Tag="MediaAction">
+                <Button x:Name="ResidentPlayPauseButton" Style="{StaticResource TaskbarHoverButton}" Margin="0"
+                        Foreground="{Binding Foreground, ElementName=SongTitle}"
+                        IsEnabled="{Binding IsEnabled, ElementName=TaskbarPlayPauseButton}"
+                        ToolTip="{DynamicResource Loc.Common.PlayPause}" Click="TaskbarPlayPauseButton_Click">
+                    <ui:SymbolIcon Symbol="{Binding Symbol, ElementName=TaskbarPlayPauseIcon}"
+                                   FontSize="{Binding FontSize, ElementName=TaskbarPlayPauseIcon}" />
+                </Button>
+            </Border>
+            <Border x:Name="ResidentNextSurface" Panel.ZIndex="4" Width="26" Height="32"
+                    Padding="1,1,1,2.25" BorderThickness="0,1.25,0,0"
+                    HorizontalAlignment="Left" VerticalAlignment="Center" Background="Transparent"
+                    Visibility="Collapsed" Tag="MediaAction">
+                <Button x:Name="ResidentNextButton" Style="{StaticResource TaskbarHoverButton}" Margin="0"
+                        Foreground="{Binding Foreground, ElementName=SongTitle}"
+                        IsEnabled="{Binding IsEnabled, ElementName=TaskbarNextButton}"
+                        ToolTip="{DynamicResource Loc.Common.NextTrack}" Click="TaskbarNextButton_Click">
+                    <ui:SymbolIcon Symbol="{Binding Symbol, ElementName=TaskbarNextIcon}"
+                                   FontSize="{Binding FontSize, ElementName=TaskbarNextIcon}" />
+                </Button>
+            </Border>
             <Border x:Name="TaskbarBatterySurface" Panel.ZIndex="4" Width="66" Height="32" Padding="4" CornerRadius="5"
                 HorizontalAlignment="Left" VerticalAlignment="Center" Background="Transparent" Visibility="Collapsed" Tag="MediaAction"
                 MouseEnter="TaskbarBatterySurface_MouseEnter" MouseLeave="TaskbarBatterySurface_MouseLeave">

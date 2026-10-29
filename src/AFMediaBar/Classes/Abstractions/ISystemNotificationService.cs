@@ -10,4 +10,8 @@ public interface ISystemNotificationService
 
     /// <summary>尝试发送一次通知；返回 Shell 是否接受，不保证系统实际显示。</summary>
     bool TryShowNotification(string title, string message, ShellNotificationTarget target = ShellNotificationTarget.None);
+
+    /// <summary>类别使用固定标识；不把可能含用户内容的标题或正文写入诊断。</summary>
+    bool TryShowNotification(string title, string message, ShellNotificationTarget target, string category) =>
+        TryShowNotification(title, message, target);
 }

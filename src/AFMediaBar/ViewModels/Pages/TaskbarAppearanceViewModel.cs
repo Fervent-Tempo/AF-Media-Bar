@@ -215,25 +215,31 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
     }
 
     public bool UsesFixedTaskbarLength => !FollowMediaTextLength;
+    private bool UsesStoredFixedLengthRange => !_taskbarLengthConstraints.HasSources;
     private bool HasFixedTaskbarLengthRange => (_configuration.Target == BarConfigurationTarget.Taskbar || _hasFloatingBudget) &&
-        _taskbarLengthConstraints.HasAvailableRange &&
-        Math.Ceiling(_taskbarLengthConstraints.MinimumLengthDip) <= Math.Floor(_taskbarLengthConstraints.MaximumLengthDip);
+        (UsesStoredFixedLengthRange || _taskbarLengthConstraints.HasAvailableRange) &&
+        FixedTaskbarLengthMinimum <= FixedTaskbarLengthMaximum;
     public bool CanEditFixedTaskbarLength => UsesFixedTaskbarLength && HasFixedTaskbarLengthRange;
-    public double FixedTaskbarLengthMinimum => HasFixedTaskbarLengthRange ? Math.Ceiling(_taskbarLengthConstraints.MinimumLengthDip) : 0;
-    public double FixedTaskbarLengthMaximum => HasFixedTaskbarLengthRange ? Math.Floor(_taskbarLengthConstraints.MaximumLengthDip) : 0;
+    public double FixedTaskbarLengthMinimum => UsesStoredFixedLengthRange
+        ? TaskbarExperienceSettings.MinimumStoredFixedLengthDip
+        : Math.Ceiling(Math.Max(TaskbarExperienceSettings.MinimumStoredFixedLengthDip, _taskbarLengthConstraints.MinimumLengthDip));
+    public double FixedTaskbarLengthMaximum => UsesStoredFixedLengthRange
+        ? TaskbarExperienceSettings.MaximumStoredFixedLengthDip
+        : Math.Floor(Math.Min(TaskbarExperienceSettings.MaximumStoredFixedLengthDip, _taskbarLengthConstraints.MaximumLengthDip));
 
     public double FixedTaskbarLengthDip
     {
-        get => Math.Clamp(_configuration.Current.TaskbarExperience.FixedLengthDip,
-            FixedTaskbarLengthMinimum, FixedTaskbarLengthMaximum);
+        get => HasFixedTaskbarLengthRange
+            ? Math.Clamp(_configuration.Current.TaskbarExperience.FixedLengthDip, FixedTaskbarLengthMinimum, FixedTaskbarLengthMaximum)
+            : _configuration.Current.TaskbarExperience.FixedLengthDip;
         set
         {
             // Binding coercion after an environment change is presentation, not a new user preference.
-            if (_isRefreshing || !HasFixedTaskbarLengthRange || value == FixedTaskbarLengthDip)
+            if (_isRefreshing || !HasFixedTaskbarLengthRange || !double.IsFinite(value) || value == FixedTaskbarLengthDip)
                 return;
             UpdateTaskbarExperience(_configuration.Current.TaskbarExperience with
             {
-                FixedLengthDip = Math.Clamp(value, FixedTaskbarLengthMinimum, FixedTaskbarLengthMaximum)
+                FixedLengthDip = Math.Clamp(Math.Round(value, MidpointRounding.AwayFromZero), FixedTaskbarLengthMinimum, FixedTaskbarLengthMaximum)
             });
         }
     }
@@ -367,7 +373,7 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
         _isRefreshing = true;
         try
         {
-            if (args.PropertyName == nameof(AppSettings.Appearance) || args.ResetScope is SettingsResetScope.Appearance or SettingsResetScope.All)
+            if (args.PropertyName == nameof(AppSettings.Appearance) || args.ResetScope is SettingsResetScope.Appearance or SettingsResetScope.BarAppearance or SettingsResetScope.TextAndLyrics or SettingsResetScope.QuickLaunch or SettingsResetScope.All)
                 RefreshIdleNoteColor();
             RaiseTaskbarAppearance();
             OnPropertyChanged(nameof(PlayerForegroundMode));

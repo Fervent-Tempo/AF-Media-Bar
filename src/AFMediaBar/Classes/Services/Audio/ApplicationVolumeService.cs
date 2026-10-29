@@ -83,21 +83,13 @@ public sealed class ApplicationVolumeService : IApplicationAudioControl
                     includeIcons ? _iconService.GetIconData(processId, iconPath) : null);
             });
 
+            var matches = _processResolver.ResolveMatches(sourceId, sourceName,
+                aggregates.Values.Select(value => (value.ProcessName, value.DisplayName)));
             var snapshots = aggregates.Values
-                .Select(value => value.Create(_processResolver.Matches(
-                    sourceId,
-                    sourceName,
-                    value.ProcessName,
-                    value.DisplayName)))
+                .Select(value => value.Create(matches.Contains(value.ProcessName)))
                 .OrderByDescending(value => value.IsCurrentMedia)
                 .ThenBy(value => value.DisplayName, StringComparer.CurrentCultureIgnoreCase)
                 .ToArray();
-
-            var current = snapshots.FirstOrDefault(value => value.IsCurrentMedia);
-            if (current is not null)
-            {
-                _processResolver.Remember(sourceId, sourceName, current.ProcessName);
-            }
 
             return snapshots;
         }

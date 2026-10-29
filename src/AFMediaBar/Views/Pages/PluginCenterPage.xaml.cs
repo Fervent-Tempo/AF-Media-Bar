@@ -23,7 +23,7 @@ public partial class PluginCenterPage : INavigableView<PluginCenterViewModel>
     {
         if (sender is not System.Windows.Controls.Grid { Children.Count: 2 } grid ||
             grid.Children[1] is not FrameworkElement actions) return;
-        var compact = e.NewSize.Width < 640;
+        var compact = e.NewSize.Width < 600;
         System.Windows.Controls.Grid.SetColumn(actions, compact ? 0 : 1);
         System.Windows.Controls.Grid.SetRow(actions, compact ? 1 : 0);
         actions.HorizontalAlignment = compact ? HorizontalAlignment.Left : HorizontalAlignment.Right;

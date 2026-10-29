@@ -9,11 +9,13 @@ public sealed class WidgetsSettingsViewModel(
     ComponentsSettingsViewModel components,
     BluetoothBatterySettingsViewModel battery,
     QuickLaunchSettingsViewModel note,
-    ISettingsConfiguration configuration)
+    ISettingsConfiguration configuration,
+    TaskbarAppearanceViewModel layout)
 {
     public QuickLaunchSettingsViewModel Note { get; } = note;
     public ComponentsSettingsViewModel Components { get; } = components;
     public BluetoothBatterySettingsViewModel Battery { get; } = battery;
+    public TaskbarAppearanceViewModel Layout { get; } = layout;
     public CancellationToken ContextCancellationToken => configuration.CancellationToken;
 
     public async Task RefreshAsync()
@@ -26,5 +28,10 @@ public sealed class WidgetsSettingsViewModel(
     public void Reset()
     {
         if (configuration.IsActive) configuration.Reset(SettingsResetScope.Components);
+    }
+
+    public void ResetSection(SettingsResetScope scope)
+    {
+        if (configuration.IsActive) configuration.Reset(scope);
     }
 }

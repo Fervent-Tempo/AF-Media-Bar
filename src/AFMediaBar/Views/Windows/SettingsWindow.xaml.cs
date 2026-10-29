@@ -1,5 +1,3 @@
-using AFMediaBar.Classes.Interop;
-using System.Runtime.InteropServices;
 using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Classes.Settings;
@@ -42,7 +40,12 @@ namespace AFMediaBar.Views.Windows
         private SettingsContext _displayedContext = SettingsContext.Initial;
         private SettingsMode? _navigationMode;
         private SettingsPageKey _currentPage = SettingsPageKey.QuickStart;
+        private readonly Dictionary<string, SettingsPageKey> _lastSectionPages = new();
+        private readonly Dictionary<string, NavigationViewItem> _sectionItems = new();
         private bool _closed;
+        private bool _returning;
+        private readonly Stack<SettingsPageKey> _history = new();
+        public RelayCommand GoBackCommand { get; }
 
         public SettingsWindowViewModel ViewModel { get; }
 
@@ -72,6 +75,7 @@ namespace AFMediaBar.Views.Windows
         {
             ViewModel = viewModel;
             FocusSearchCommand = new RelayCommand(FocusSearch);
+            GoBackCommand = new RelayCommand(GoBack, () => _history.Count > 0);
             _appIconService = appIconService;
             _log = log;
             _sessionScope = scopeFactory.CreateScope();
@@ -80,6 +84,7 @@ namespace AFMediaBar.Views.Windows
             DataContext = this;
 
             InitializeComponent();
+            SourceInitialized += OnInitialWindowSize;
             _sidebarSelection = new SettingsSidebarSelectionAnimator(RootNavigation, SidebarSelectionOverlay);
             SettingsResetDialog.SetHost(RootContentDialog, _contexts.CancellationToken);
             ArtistSeparatorsEditor.SetHost(RootContentDialog, _contexts.CancellationToken);
@@ -94,12 +99,11 @@ namespace AFMediaBar.Views.Windows
             RootNavigation.Transition = Transition.None;
             RootNavigation.TransitionDuration = 0;
 
-            AddHandler(ReleaseHighlightsPage.BackRequestedEvent, new RoutedEventHandler(OnReleaseBackRequested));
             AddHandler(AppearancePage.OpenApplicationFontsEvent, new RoutedEventHandler(OnOpenApplicationFontsRequested));
             AddHandler(AFMediaBar.Components.SettingsNavigationButton.NavigateEvent, new RoutedEventHandler(OnRelatedSettingsRequested));
             RootNavigation.Navigated += OnNavigated;
 
-            // 普通打开进入快速开始；由打开方排队的更新或搜索跳转仍决定最终页面。
+            // 默认首页等待内容宿主就绪；调用方排在其后的显式导航仍然优先。
             IsVisibleChanged += OnVisibilityChangedForLandingPage;
 
             // 更新提示的订阅与显示放在窗口构造的最后：它依赖 InitializeComponent 创建好的导航项。
@@ -110,10 +114,27 @@ namespace AFMediaBar.Views.Windows
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;
             ApplyUpdateNotice();
             _appIconService.IconChanged += OnApplicationIconChanged;
+            Translations.LanguageChanged += OnHeaderLanguageChanged;
             Closed += SettingsWindow_ClosedForUpdateNotice;
         }
 
         #region Landing page
+
+        private void OnInitialWindowSize(object? sender, EventArgs args)
+        {
+            var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            var info = new AFMediaBar.Classes.Interop.NativeMethods.MONITORINFOEX();
+            info.cbSize = System.Runtime.InteropServices.Marshal.SizeOf<AFMediaBar.Classes.Interop.NativeMethods.MONITORINFOEX>();
+            var monitor = AFMediaBar.Classes.Interop.NativeMethods.MonitorFromWindow(handle, 2);
+            if (!AFMediaBar.Classes.Interop.NativeMethods.GetMonitorInfo(monitor, ref info)) return;
+            var dpi = VisualTreeHelper.GetDpi(this);
+            var availableWidth = Math.Max(1, (info.rcWork.Right - info.rcWork.Left) / dpi.DpiScaleX - 32);
+            var availableHeight = Math.Max(1, (info.rcWork.Bottom - info.rcWork.Top) / dpi.DpiScaleY - 32);
+            MinWidth = Math.Min(MinWidth, availableWidth);
+            MinHeight = Math.Min(MinHeight, availableHeight);
+            Width = Math.Clamp(Width, MinWidth, availableWidth);
+            Height = Math.Clamp(Height, MinHeight, availableHeight);
+        }
 
         /// <summary>
         /// 窗口从隐藏变为可见时导航到落地页；排到 Loaded 优先级等待导航视图的内容宿主就绪。
@@ -185,21 +206,15 @@ namespace AFMediaBar.Views.Windows
             args.Handled = true;
         }
 
-        /// <summary>
-        /// 选中候选后先导航到目标页面，再让该页的分组标签条滚到命中的分组并脉冲一次。
-        /// 跳转必须等到新页面完成布局，否则分组位置还是上一次的。
-        /// Selecting a suggestion navigates to the page and then asks that page's group strip to scroll to the
-        /// matching group and pulse it. The jump waits for the new page to finish layout, because group positions
-        /// would otherwise still belong to the previous page.
-        /// </summary>
+        /// <summary>导航到命中的唯一编辑位置，完成布局后展开分组并聚焦具体选项。</summary>
         private void OnSearchSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
         {
             if (args.SelectedItem is SettingsSearchSuggestion suggestion)
-                NavigateToGroup(suggestion.Hit.Page, suggestion.Hit.GroupId);
+                NavigateToGroup(suggestion.Hit.Page, suggestion.Hit.GroupId, suggestion.Hit.OptionId);
         }
 
         /// <summary>通过稳定页面与分组标识定位设置，供搜索、快捷入口和系统通知复用。</summary>
-        public void NavigateToGroup(SettingsPageKey page, string groupId)
+        public void NavigateToGroup(SettingsPageKey page, string groupId, string? optionId = null)
         {
             if (_closed) return;
             (page, groupId) = SettingsPageCatalog.ResolveDestination(page, groupId);
@@ -207,21 +222,11 @@ namespace AFMediaBar.Views.Windows
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
             {
                 if (_closed || _currentPage != page) return;
-                FindDescendant<SettingsGroupStrip>(RootNavigation)?.RevealGroup(groupId);
+                FindDescendant<SettingsGroupStrip>(RootNavigation)?.RevealGroup(groupId, optionId);
             }));
         }
 
-        /// <summary>
-        /// 搜索候选项：主文案是「页面 › 分组」，副文案说明该分组能改什么。
-        ///
-        /// 主文案的拼装样式（分隔符与两侧顺序）取自语言文件，两个名称则已经分别是当前
-        /// 语言的页面名与分组名，因此候选行不会拼出半句旧语言。
-        /// Search suggestion: the primary line is "page › group" and the secondary line says what it changes.
-        ///
-        /// The pattern of the primary line, its separator and the order of its two sides, comes from the language file,
-        /// while each name is already a page name and a group name in the active language, so a suggestion line can
-        /// never be composed half in the old language.
-        /// </summary>
+        /// <summary>使用当前语言呈现页面路径、选项名称与说明。</summary>
         private sealed class SettingsSearchSuggestion
         {
             public SettingsSearchSuggestion(SettingsSearchHit hit) => Hit = hit;
@@ -282,7 +287,8 @@ namespace AFMediaBar.Views.Windows
 
         private void UpdateNoticeNavItem_Click(object sender, RoutedEventArgs e)
         {
-            Navigate(typeof(QuickStartPage));
+            // 更新入口只展示版本亮点；下载和安装仍由应用页负责。
+            Navigate(typeof(ReleaseHighlightsPage));
         }
 
         private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -298,7 +304,7 @@ namespace AFMediaBar.Views.Windows
             UpdateNoticeDot.Visibility = ViewModel.HasUpdateAvailable ? Visibility.Visible : Visibility.Collapsed;
             UpdateNoticeNavItem.ToolTip = ViewModel.HasUpdateAvailable
                 ? ViewModel.UpdateNoticeText
-                : Translations.Get("QuickStart.Subtitle");
+                : Translations.Get("ReleaseHighlights.Header.Subtitle");
         }
 
         private void SettingsWindow_ClosedForUpdateNotice(object? sender, EventArgs e)
@@ -318,6 +324,7 @@ namespace AFMediaBar.Views.Windows
             ViewModel.Unsubscribe();
             ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             _appIconService.IconChanged -= OnApplicationIconChanged;
+            Translations.LanguageChanged -= OnHeaderLanguageChanged;
             Closed -= SettingsWindow_ClosedForUpdateNotice;
         }
 
@@ -332,7 +339,9 @@ namespace AFMediaBar.Views.Windows
         public bool Navigate(Type pageType)
         {
             var resolved = SettingsPageProvider.ResolvePageType(pageType);
-            return RootNavigation.Navigate(resolved);
+            if (!RootNavigation.Navigate(resolved)) return false;
+            HighlightSidebarItem(resolved);
+            return true;
         }
 
         /// <summary>
@@ -344,7 +353,7 @@ namespace AFMediaBar.Views.Windows
         /// </summary>
         private void HighlightSidebarItem(Type pageType)
         {
-            var item = RootNavigation.MenuItems.OfType<NavigationViewItem>()
+            var item = EnumerateNavigationItems(RootNavigation.MenuItems.OfType<NavigationViewItem>())
                 .Concat(RootNavigation.FooterMenuItems.OfType<NavigationViewItem>())
                 .FirstOrDefault(candidate => candidate.TargetPageType == pageType);
             _sidebarSelection.Highlight(item);
@@ -354,16 +363,56 @@ namespace AFMediaBar.Views.Windows
         {
             if (args.Page is Page destination)
             {
-                _currentPage = SettingsPageProvider.PageTypes.First(pair => pair.Value == destination.GetType()).Key;
-                HighlightSidebarItem(destination.GetType());
+                var next = SettingsPageProvider.PageTypes.First(pair => pair.Value == destination.GetType()).Key;
+                if (next != _currentPage && !_returning) _history.Push(_currentPage);
+                _currentPage = next;
+                GoBackCommand.NotifyCanExecuteChanged();
+                Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(UpdatePageHeader));
+                if (SettingsNavigationCatalog.SectionFor(_currentPage) is { } section)
+                    _lastSectionPages[section.Id] = _currentPage;
+                ExpandCurrentSection();
             }
             SettingsRevealAnimator.Cancel(_transitionContent);
             _transitionContent = null;
-            if (args.Page is Page page && page.FindName("PageScroll") is ScrollViewer { Content: Panel content })
+            if (args.Page is Page page &&
+                (page.FindName("PageScroll") as ScrollViewer ?? (page.FindName("PageLayout") as SettingsPageLayout)?.ScrollViewer) is { Content: Panel content })
             {
                 _transitionContent = content;
                 SettingsRevealAnimator.Replay(content);
             }
+        }
+
+        private void GoBack()
+        {
+            while (_history.TryPop(out var page))
+            {
+                if (SettingsPageCatalog.Find(page, _contexts.Current.Mode) is null) continue;
+                _returning = true;
+                try { Navigate(SettingsPageProvider.PageTypes[page]); }
+                finally { _returning = false; GoBackCommand.NotifyCanExecuteChanged(); }
+                return;
+            }
+            GoBackCommand.NotifyCanExecuteChanged();
+        }
+
+        private void OnHeaderLanguageChanged(object? sender, EventArgs args)
+        {
+            UpdatePageHeader();
+            AutoSuggestBox.IsSuggestionListOpen = false;
+            AutoSuggestBox.ItemsSource = null;
+        }
+        private void UpdatePageHeader()
+        {
+            if (_closed || FindDescendant<SettingsGroupStrip>(RootNavigation) is not { } strip) return;
+            var definition = SettingsPageCatalog.Find(_currentPage, _contexts.Current.Mode);
+            if (definition is null) return;
+            var section = SettingsNavigationCatalog.SectionFor(_currentPage);
+            var pageTitle = Translations.Get(definition.TitleKey);
+            strip.Breadcrumb = section is null || section.Pages.Count == 1 ? pageTitle : $"{Translations.Get(section.TitleKey)} › {pageTitle}";
+            strip.BackCommand = GoBackCommand;
+            strip.StatusText = _currentPage == SettingsPageKey.QuickStart || definition.IsFooter ? string.Empty :
+                Translations.Get(definition.IsGlobal && !definition.HasModeContent ? "Integration.Scope.Shared" :
+                    _contexts.Current.Mode == SettingsMode.FloatingBar ? "Integration.Mode.Floating" : "Integration.Mode.Taskbar");
         }
 
         private void FocusSearch()
@@ -400,42 +449,8 @@ namespace AFMediaBar.Views.Windows
 
         private async void SettingsWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
-            FitToWorkArea();
             Navigate(typeof(QuickStartPage));
             await _contexts.StartAsync();
-        }
-
-        private void OnReleaseBackRequested(object sender, RoutedEventArgs e)
-        {
-            e.Handled = true;
-            if (!_closed && !RootNavigation.GoBack()) Navigate(typeof(QuickStartPage));
-        }
-
-        // HWND 所属窗口只负责工作区与 DPI 换算，不保存新的窗口设置。
-        private void FitToWorkArea()
-        {
-            var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
-            var monitor = NativeMethods.MonitorFromWindow(handle, (int)NativeMethods.MonitorFromWindowFlags.DEFAULTTONEAREST);
-            var info = new NativeMethods.MONITORINFOEX
-            {
-                cbSize = Marshal.SizeOf<NativeMethods.MONITORINFOEX>(),
-                szDevice = string.Empty
-            };
-            if (!NativeMethods.GetMonitorInfo(monitor, ref info) || !NativeMethods.GetWindowRect(handle, out var bounds)) return;
-            var scale = VisualTreeHelper.GetDpi(this).DpiScaleY;
-            var available = Math.Max(1, (info.rcWork.Bottom - info.rcWork.Top) / scale - 32);
-            MinHeight = Math.Min(MinHeight, available);
-            Height = Math.Min(Height, available);
-            var heightPx = Math.Min(bounds.Bottom - bounds.Top, (int)Math.Round(Height * scale));
-            var topPx = Math.Clamp(bounds.Top, info.rcWork.Top, Math.Max(info.rcWork.Top, info.rcWork.Bottom - heightPx));
-            NativeMethods.SetWindowPos(handle, 0, bounds.Left, topPx, bounds.Right - bounds.Left, heightPx,
-                NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
-        }
-
-        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
-        {
-            base.OnDpiChanged(oldDpi, newDpi);
-            if (IsLoaded) FitToWorkArea();
         }
 
         private void RebuildNavigation()
@@ -448,17 +463,70 @@ namespace AFMediaBar.Views.Windows
             // The items are rebuilt, so the one named by an earlier programmatic navigation is gone; hand the
             // highlight back to SelectedItem.
             _sidebarSelection.Highlight(null);
-            foreach (var definition in SettingsPageCatalog.ForMode(_contexts.Current.Mode).Where(page => page.ShowInNavigation))
+            _sectionItems.Clear();
+            var definitions = SettingsPageCatalog.ForMode(_contexts.Current.Mode);
+            foreach (var section in SettingsNavigationCatalog.Sections)
             {
-                var item = definition.Key == SettingsPageKey.QuickStart ? UpdateNoticeNavItem : new NavigationViewItem
+                var pages = section.Pages.Select(key => definitions.FirstOrDefault(page => page.Key == key))
+                    .OfType<SettingsPageDefinition>().ToArray();
+                if (pages.Length == 0) continue;
+                if (pages.Length == 1 && section.Id == "start")
                 {
-                    TargetPageType = SettingsPageProvider.PageTypes[definition.Key],
-                    Icon = new SymbolIcon(Enum.Parse<SymbolRegular>(definition.IconName))
+                    RootNavigation.MenuItems.Add(CreateNavigationItem(pages[0]));
+                    continue;
+                }
+                var sectionItem = new NavigationViewItem
+                {
+                    Icon = new SymbolIcon(Enum.Parse<SymbolRegular>(section.IconName))
                 };
-                if (definition.Key != SettingsPageKey.QuickStart) item.SetResourceReference(ContentControl.ContentProperty, "Loc." + definition.TitleKey);
-                item.NavigationCacheMode = NavigationCacheMode.Disabled;
-                if (definition.IsFooter) RootNavigation.FooterMenuItems.Add(item);
-                else RootNavigation.MenuItems.Add(item);
+                sectionItem.SetResourceReference(ContentControl.ContentProperty, "Loc." + section.TitleKey);
+                foreach (var page in pages) sectionItem.MenuItems.Add(CreateNavigationItem(page, includeIcon: false));
+                sectionItem.Click += (_, args) =>
+                {
+                    if (!ReferenceEquals(args.Source, sectionItem)) return;
+                    var destination = _lastSectionPages.TryGetValue(section.Id, out var last) && pages.Any(page => page.Key == last)
+                        ? last : pages[0].Key;
+                    Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+                    {
+                        if (_closed) return;
+                        Navigate(SettingsPageProvider.PageTypes[destination]);
+                        ExpandCurrentSection();
+                    }));
+                };
+                _sectionItems[section.Id] = sectionItem;
+                RootNavigation.MenuItems.Add(sectionItem);
+            }
+            foreach (var definition in definitions.Where(page => page.IsFooter))
+                RootNavigation.FooterMenuItems.Add(definition.Key == SettingsPageKey.ReleaseHighlights
+                    ? UpdateNoticeNavItem : CreateNavigationItem(definition));
+            ExpandCurrentSection();
+            HighlightSidebarItem(SettingsPageProvider.PageTypes[_currentPage]);
+        }
+
+        private static NavigationViewItem CreateNavigationItem(SettingsPageDefinition definition, bool includeIcon = true)
+        {
+            var item = new NavigationViewItem
+            {
+                TargetPageType = SettingsPageProvider.PageTypes[definition.Key],
+                NavigationCacheMode = NavigationCacheMode.Disabled
+            };
+            if (includeIcon) item.Icon = new SymbolIcon(Enum.Parse<SymbolRegular>(definition.IconName));
+            item.SetResourceReference(ContentControl.ContentProperty, "Loc." + definition.TitleKey);
+            return item;
+        }
+
+        private void ExpandCurrentSection()
+        {
+            var current = SettingsNavigationCatalog.SectionFor(_currentPage)?.Id;
+            foreach (var (id, item) in _sectionItems) item.IsExpanded = id == current;
+        }
+
+        private static IEnumerable<NavigationViewItem> EnumerateNavigationItems(IEnumerable<NavigationViewItem> items)
+        {
+            foreach (var item in items)
+            {
+                yield return item;
+                foreach (var child in EnumerateNavigationItems(item.MenuItems.OfType<NavigationViewItem>())) yield return child;
             }
         }
 
@@ -496,6 +564,7 @@ namespace AFMediaBar.Views.Windows
                 if (!definition.IsGlobal || _currentPage == SettingsPageKey.ScreenAndPlacement) RootNavigation.ReplaceContent(content);
             }
             _displayedContext = _contexts.Current;
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(UpdatePageHeader));
             AutoSuggestBox.IsSuggestionListOpen = false;
             AutoSuggestBox.ItemsSource = null;
         }

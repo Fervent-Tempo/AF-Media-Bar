@@ -1,0 +1,46 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "AF Media Bar: 预览本地更新亮点",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/AFMediaBar/bin/Debug/net10.0-windows10.0.19041.0/AFMediaBar.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/AFMediaBar",
+            "env": {
+                "AFMEDIABAR_RELEASE_HIGHLIGHTS_URL": "${workspaceFolder}/artifacts/release-highlights-1.5.0/highlights.json"
+            },
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": ".NET Core Launch (Debug)",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/src/AFMediaBar/AFMediaBar.csproj"
+        },
+        {
+            "name": "AF Media Bar: 调试现有程序（不构建）",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/AFMediaBar/bin/Debug/net10.0-windows10.0.19041.0/AFMediaBar.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/AFMediaBar",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": "AF Media Bar: 构建后调试",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/AFMediaBar/bin/Debug/net10.0-windows10.0.19041.0/AFMediaBar.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/AFMediaBar",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        }
+    ]
+}

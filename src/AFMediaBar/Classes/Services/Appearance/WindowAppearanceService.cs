@@ -320,6 +320,10 @@ public sealed class WindowAppearanceService : IDisposable
             // window instead of a window that is not there.
             if (applied)
             {
+                // 普通亚克力窗口以中性表面控制背景色干扰；非激活通知继续使用既有浓度。
+                if (mode == ApplicationBackdropMode.Acrylic && !_nonActivatingTransientWindows.Contains(window) &&
+                    window.TryFindResource("AfWindowAcrylicOverlayBrush") is Brush)
+                    window.SetResourceReference(Control.BackgroundProperty, "AfWindowAcrylicOverlayBrush");
                 _nativeBackdropAdapter.SetNonClientColors(source.Handle, transparent: true);
                 _nativeBackdropAdapter.SetThemeAttributes(source.Handle, dark);
                 return;

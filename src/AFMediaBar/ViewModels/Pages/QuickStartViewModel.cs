@@ -1,143 +1,240 @@
-// 页面仅投影本地教程和播放器资料；版本资料由应用服务读取，离页取消并拒绝迟到结果。
+// 首页协调只读资料和已有会话；离页取消请求，不拥有媒体或网络资源。
 using System.Collections.ObjectModel;
-using System.Windows.Threading;
-using AFMediaBar.Classes.Models.Plugins;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using AFMediaBar.Classes.Abstractions;
+using AFMediaBar.Classes.Models.Home;
 using AFMediaBar.Classes.Models.Updates;
+using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Home;
 using AFMediaBar.Classes.Services.Localization;
-using AFMediaBar.Classes.Services.Plugins;
 using AFMediaBar.Classes.Services.Updates;
-using AFMediaBar.Classes.Utils;
 using AFMediaBar.Resources;
-
 namespace AFMediaBar.ViewModels.Pages;
 
-/// <summary>播放器兼容性参考的当前语言投影，不检测或修改播放器。</summary>
-public sealed partial class PlayerSupportItem(PlayerSupportProfile profile) : ObservableObject
-{
-    public PlayerSupportProfile Profile { get; } = profile;
-    public string Name => Translations.Get($"QuickStart.Player.{Profile.Id}.Name");
-    public string Capabilities => Translations.Format("QuickStart.Capabilities", Capability(Profile.Information),
-        Capability(Profile.Timeline), Capability(Profile.Controls));
-    public string Note => Translations.Get("QuickStart.Note." + Profile.NoteKey);
-    public string AfNote => Translations.Get(Profile.AfNoteKey);
-    public bool HasPlugin => Profile.PluginId is not null;
-    public string Recommendation => Translations.Get(HasPlugin ? "QuickStart.PluginAvailable"
-        : Profile.Information == PlayerCapability.Implemented && Profile.Timeline == PlayerCapability.Implemented &&
-            Profile.Controls == PlayerCapability.Implemented ? "QuickStart.UseBuiltIn" : "QuickStart.NoRecommendation");
-    private static string Capability(PlayerCapability capability) => Translations.Get("QuickStart.Capability." + capability);
+public sealed record HomeFeatureCard(string Id, string Badge, string Title, string Summary, string Url, string? ImageUrl);
+public sealed record HomeThreadCard(string Title, string Detail, string Url);
 
-    [RelayCommand]
-    private void OpenSource() => ExternalLinkLauncher.TryOpen(Profile.SourceUrl);
-}
-
-/// <summary>快速开始的筛选、语言与可见期；进入首页不发起联网请求。</summary>
-public sealed partial class QuickStartViewModel : ObservableObject, IDisposable
+/// <summary>先显示本地内容，再刷新公开动态；不上传任何使用资料。</summary>
+public partial class QuickStartViewModel : ObservableObject, IDisposable
 {
     private readonly ReleaseHighlightsService _releases;
+    private readonly HomeContentService _home;
+    private readonly IHomeMediaState _media;
     private readonly LocalizationService _localization;
-    private readonly Dispatcher _dispatcher;
-    private ReleaseHighlightsResult? _result;
+    private readonly AppLogService _log;
+    private readonly System.Windows.Threading.Dispatcher _dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
     private CancellationTokenSource? _request;
-    private bool _active;
-    private bool _disposed;
+    private IReadOnlyList<ReleaseHighlights> _releaseData = [];
+    private bool _releaseIsCached = true;
+    private DateTimeOffset? _releaseFetchedAt;
+    private HomeCatalogue _catalogue = new(1, []);
+    private ProjectActivitySnapshot _project = HomeContentService.EmptyProject;
     private int _generation;
-
-    [ObservableProperty] private string _searchText = string.Empty;
-    [ObservableProperty] private string _latestVersion = string.Empty;
-    [ObservableProperty] private string _latestTitle = string.Empty;
-    [ObservableProperty] private IReadOnlyList<string> _highlights = [];
-    public ObservableCollection<PlayerSupportItem> Players { get; } = [];
-    public bool IsEmpty => Players.Count == 0;
-
-    public QuickStartViewModel(ReleaseHighlightsService releases, LocalizationService localization, Dispatcher dispatcher)
+    private DateTimeOffset _lastManualRefresh, _lastReleaseAttempt;
+    private bool _active, _disposed;
+    private bool _hasShownLatest, _featureWasChosen;
+    private string _playerFilter = string.Empty;
+    private string _playerSignature = string.Empty;
+    private readonly Dictionary<string, ImageSource> _images = new();
+    [ObservableProperty] private HomeFeatureCard? _selectedFeature;
+    [ObservableProperty] private ImageSource? _featureImage;
+    [ObservableProperty] private bool _isLoading;
+    [ObservableProperty] private bool _isRotationPaused;
+    [ObservableProperty] private bool _showAllPlayers;
+    public ObservableCollection<HomeFeatureCard> Features { get; } = [];
+    public ObservableCollection<HomePlayerCard> Players { get; } = [];
+    public ObservableCollection<PlayerSupportProfile> SupportedPlayers { get; } = [];
+    public ObservableCollection<HomeThreadCard> Issues { get; } = [];
+    public ObservableCollection<HomeThreadCard> PullRequests { get; } = [];
+    public SettingsPreviewViewModel Preview { get; }
+    public string InstalledVersion => "v" + (typeof(QuickStartViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.6.0");
+    public string Stars => FormatCount(_project.Stars);
+    public string OpenIssues => FormatCount(_project.OpenIssues);
+    public string RecentIssues => FormatCount(_project.RecentIssues);
+    public string OpenPullRequests => FormatCount(_project.OpenPullRequests);
+    public bool HasPlayers => Players.Count != 0;
+    public bool HasNoIssues => Issues.Count == 0;
+    public bool HasNoPullRequests => PullRequests.Count == 0;
+    public bool HasMultipleFeatures => Features.Count > 1;
+    public string FeaturePosition => $"{Math.Max(1, Features.IndexOf(SelectedFeature!)+1)} / {Features.Count}";
+    public string RotationText => Translations.Get(IsRotationPaused ? "Home.Rotation.Resume" : "Home.Rotation.Pause");
+    public string ProjectStatus => _project.FetchedAt is { } time
+        ? Translations.Get(_project.IsCached ? "Home.Cache" : "Home.Updated") + " · " + time.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+        : Translations.Get("Home.Unavailable");
+    public string PlayerFilter { get => _playerFilter; set { if (SetProperty(ref _playerFilter, value)) ProjectSupport(); } }
+    public QuickStartViewModel(ReleaseHighlightsService releases, HomeContentService home, IHomeMediaState media,
+        LocalizationService localization, AppLogService log, SettingsPreviewViewModel preview)
     {
-        _releases = releases;
-        _localization = localization;
-        _dispatcher = dispatcher;
-        Filter();
+        _releases = releases; _home = home; _media = media; _localization = localization; _log = log; Preview = preview;
+        ProjectFeatures(); ProjectPlayers(); ProjectSupport();
     }
-
     public async Task ActivateAsync()
     {
-        if (_active || _disposed) return;
+        Deactivate();
+        if (_disposed) return;
         _active = true;
+        _media.Changed += OnMediaChanged;
         _localization.LanguageChanged += OnLanguageChanged;
-        using var request = new CancellationTokenSource();
-        _request = request;
-        var generation = ++_generation;
-        Project();
-        try
-        {
-            var result = await _releases.ReadInitialAsync(request.Token);
-            if (!_active || _disposed || request.IsCancellationRequested || generation != _generation) return;
-            _result = result;
-            Project();
-        }
-        catch (OperationCanceledException) when (request.IsCancellationRequested) { }
-        catch (Exception)
-        {
-            if (_active && !_disposed && generation == _generation)
-                LatestTitle = Translations.Get("QuickStart.Latest.Unavailable");
-        }
-        finally { if (ReferenceEquals(_request, request)) _request = null; }
+        ProjectPlayers();
+        await LoadAsync(false);
     }
-
     public void Deactivate()
     {
-        _active = false;
-        _generation++;
-        _request?.Cancel();
+        _active = false; _generation++;
+        _media.Changed -= OnMediaChanged;
         _localization.LanguageChanged -= OnLanguageChanged;
+        _request?.Cancel(); _request?.Dispose(); _request = null;
+        IsLoading = false;
     }
-
-    partial void OnSearchTextChanged(string value) => Filter();
-
-    private void OnLanguageChanged(object? sender, EventArgs e)
+    [RelayCommand] private Task RefreshAsync()
     {
-        var generation = _generation;
-        if (!_active || _disposed || _dispatcher.HasShutdownStarted) return;
-        _ = _dispatcher.BeginInvoke(() =>
-        {
-            if (_active && !_disposed && generation == _generation) Project();
-        });
+        if (DateTimeOffset.UtcNow - _lastManualRefresh < TimeSpan.FromMinutes(5)) return Task.CompletedTask;
+        _lastManualRefresh = DateTimeOffset.UtcNow;
+        return LoadAsync(true);
     }
-
-    private void Project()
+    private async Task LoadAsync(bool force)
     {
-        var language = _localization.CurrentLanguage switch
+        if (!_active) return;
+        _request?.Cancel(); _request?.Dispose();
+        var request = _request = new CancellationTokenSource();
+        var token = request.Token;
+        var generation = ++_generation;
+        bool IsCurrent() => _active && !_disposed && !token.IsCancellationRequested && generation == _generation;
+        IsLoading = true;
+        try
         {
-            LocalizationLanguage.TraditionalChinese => "zh-Hant",
-            LocalizationLanguage.English => "en",
-            LocalizationLanguage.Vietnamese => "vi",
-            _ => "zh-Hans"
-        };
-        if (_result?.Releases.FirstOrDefault() is { } latest)
-        {
-            var (text, _) = ReleaseHighlightsPolicy.ResolveText(latest, language);
-            LatestVersion = "v" + latest.Version;
-            LatestTitle = text.Title;
-            Highlights = text.Highlights;
+            var initialRelease = await _releases.ReadInitialAsync(token);
+            _releaseData = initialRelease.Releases;
+            _releaseIsCached = initialRelease.IsCached; _releaseFetchedAt = initialRelease.FetchedAt;
+            if (!IsCurrent()) return;
+            _catalogue = (await _home.ReadCatalogueAsync(token)).Catalogue;
+            if (!IsCurrent()) return;
+            _project = await _home.ReadProjectAsync(token);
+            if (!IsCurrent()) return;
+            ProjectFeatures(); ProjectActivity();
+            async Task CatalogueAsync()
+            {
+                var result = await _home.RefreshCatalogueAsync(force, token);
+                if (IsCurrent()) { _catalogue = result.Catalogue; ProjectFeatures(); ProjectSupport(); ProjectPlayers(); }
+            }
+            async Task ProjectAsync()
+            {
+                var result = await _home.RefreshProjectAsync(force, token);
+                if (IsCurrent()) { _project = result; ProjectActivity(); }
+            }
+            async Task ReleasesAsync()
+            {
+                if (DateTimeOffset.UtcNow - _lastReleaseAttempt < TimeSpan.FromMinutes(5)) return;
+                _lastReleaseAttempt = DateTimeOffset.UtcNow;
+                var expired = initialRelease.FetchedAt is not { } fetched || DateTimeOffset.UtcNow - fetched >= TimeSpan.FromHours(6);
+                var result = await _releases.LoadAsync(force || expired, token);
+                if (IsCurrent()) { _releaseData = result.Releases; _releaseIsCached = result.IsCached; _releaseFetchedAt = result.FetchedAt; ProjectFeatures(); }
+            }
+            await Task.WhenAll(CatalogueAsync(), ProjectAsync(), ReleasesAsync());
         }
-        Filter();
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception exception) { if (IsCurrent()) _log.Warn("Home", "首页刷新失败，保留可用内容", exception); }
+        finally { if (IsCurrent()) IsLoading = false; }
     }
-
-    private void Filter()
+    [RelayCommand] private void NextFeature() { _featureWasChosen = true; IsRotationPaused = true; Advance(1); }
+    [RelayCommand] private void PreviousFeature() { _featureWasChosen = true; IsRotationPaused = true; Advance(-1); }
+    [RelayCommand] private void ToggleRotation() => IsRotationPaused = !IsRotationPaused;
+    public void AdvanceAutomatically() { if (!IsRotationPaused) Advance(1); }
+    private void Advance(int direction)
     {
-        var query = SearchText.Trim();
-        Players.Clear();
-        foreach (var profile in PlayerSupportCatalog.Entries)
+        if (Features.Count > 1) SelectedFeature = Features[(Features.IndexOf(SelectedFeature!) + direction + Features.Count) % Features.Count];
+    }
+    partial void OnIsRotationPausedChanged(bool value) => OnPropertyChanged(nameof(RotationText));
+    partial void OnSelectedFeatureChanged(HomeFeatureCard? value)
+    {
+        OnPropertyChanged(nameof(FeaturePosition));
+        FeatureImage = null;
+        if (value?.ImageUrl is not { } url) return;
+        if (_images.TryGetValue(url, out var image)) { FeatureImage = image; return; }
+        if (url.StartsWith("pack://application:,,,/AFMediaBar;component/Assets/Home/", StringComparison.Ordinal))
         {
-            var item = new PlayerSupportItem(profile);
-            if (query.Length == 0 || $"{item.Name} {profile.Name} {profile.Id}".Contains(query, StringComparison.OrdinalIgnoreCase))
-                Players.Add(item);
+            try { var bitmap = new BitmapImage(new Uri(url)); bitmap.Freeze(); _images[url] = FeatureImage = bitmap; }
+            catch (Exception exception) { _log.Warn("Home", "内置首页图片不可用", exception); }
         }
-        OnPropertyChanged(nameof(IsEmpty));
+        else if (_request is { } request) _ = LoadImageAsync(value, request.Token);
     }
-
-    public void Dispose()
+    private async Task LoadImageAsync(HomeFeatureCard card, CancellationToken token)
     {
-        if (_disposed) return;
-        _disposed = true;
-        Deactivate();
+        try
+        {
+            var image = await _home.ReadImageAsync(card.ImageUrl, token);
+            if (!_active || _disposed || token.IsCancellationRequested || image is null) return;
+            if (_images.Count >= 8) _images.Clear();
+            _images[card.ImageUrl!] = image;
+            if (SelectedFeature == card) FeatureImage = image;
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception exception) { _log.Warn("Home", "读取首页示例图片失败", exception); }
     }
+    private void ProjectFeatures()
+    {
+        var oldId = SelectedFeature?.Id;
+        var items = new List<HomeFeatureCard>();
+        if (_releaseData.FirstOrDefault() is { } latest)
+        {
+            var (copy, original) = ReleaseHighlightsPolicy.ResolveText(latest, Language);
+            items.Add(new("latest", Translations.Get("Home.Kind.release") + " · v" + latest.Version + (original ? " · " + Translations.Get("Home.Original") : "") +
+                (_releaseIsCached ? " · " + Translations.Get(_releaseFetchedAt is null ? "Home.Bundled" : "Home.Cache") : ""),
+                copy.Title, string.Join(" ", copy.Highlights.Take(2)), latest.ReleaseNotesUrl ?? HomeContentPolicy.RepositoryUrl + "/releases", null));
+        }
+        foreach (var item in _catalogue.Items.Take(5))
+        {
+            var original = !item.Localizations.TryGetValue(Language, out var copy);
+            copy ??= item.Localizations.GetValueOrDefault("zh-Hans") ?? item.Localizations.Values.First();
+            items.Add(new(item.Id, Translations.Get("Home.Kind." + item.Kind) + (item.Version is null ? "" : " · v" + item.Version) +
+                (original ? " · " + Translations.Get("Home.Original") : ""), copy.Title, copy.Summary, item.Url ?? HomeContentPolicy.RepositoryUrl, item.Image));
+        }
+        items.Add(new("settings", Translations.Get("Home.Kind.development"), Translations.Get("Home.Feature.Settings"),
+            Translations.Get("Home.Feature.Settings.Body"), HomeContentPolicy.RepositoryUrl, "pack://application:,,,/AFMediaBar;component/Assets/Home/settings.png"));
+        items.Add(new("panel", Translations.Get("Home.Kind.development"), Translations.Get("Home.Feature.Panel"),
+            Translations.Get("Home.Feature.Panel.Body"), HomeContentPolicy.RepositoryUrl, "pack://application:,,,/AFMediaBar;component/Assets/Home/panel.png"));
+        items.Add(new("layers", Translations.Get("Home.Kind.feature"), Translations.Get("Start.Overview"),
+            Translations.Get("Start.Intro.Description"), HomeContentPolicy.RepositoryUrl, null));
+        Features.Clear(); foreach (var item in items.DistinctBy(item => item.Id).Take(5)) Features.Add(item);
+        SelectedFeature = !_hasShownLatest && !_featureWasChosen && _releaseData.Count > 0 ? Features.First() : Features.FirstOrDefault(item => item.Id == oldId) ?? Features.First();
+        if (_releaseData.Count > 0) _hasShownLatest = true;
+        OnPropertyChanged(nameof(HasMultipleFeatures)); OnPropertyChanged(nameof(FeaturePosition));
+    }
+    private string Language => _localization.CurrentLanguage switch
+    {
+        LocalizationLanguage.TraditionalChinese => "zh-Hant", LocalizationLanguage.English => "en", LocalizationLanguage.Vietnamese => "vi", _ => "zh-Hans"
+    };
+    private void ProjectPlayers()
+    {
+        var snapshot = _media.Snapshot;
+        var signature = Language + string.Join("|", _media.Sessions.Select(item => $"{item.Key}:{item.SourceId}:{item.IsSelected}:{item.IsPlaying}")) +
+            $"{snapshot?.SourceId}:{snapshot?.IsConnected}:{snapshot?.IsStale}:{snapshot?.CanPlayPause}:{snapshot?.CanSeek}:{snapshot?.Lyrics is not null}";
+        if (_playerSignature == signature) return;
+        _playerSignature = signature;
+        Players.Clear(); foreach (var item in PlayerSupportCatalog.Describe(_media.Sessions, _media.Snapshot)) Players.Add(item);
+        OnPropertyChanged(nameof(HasPlayers));
+    }
+    private void ProjectSupport()
+    {
+        SupportedPlayers.Clear();
+        foreach (var profile in PlayerSupportCatalog.Resolve(_catalogue, Language).Where(profile => profile.Name.Contains(PlayerFilter, StringComparison.CurrentCultureIgnoreCase))) SupportedPlayers.Add(profile);
+    }
+    private void ProjectActivity()
+    {
+        Issues.Clear(); PullRequests.Clear();
+        foreach (var issue in _project.Issues) Issues.Add(Thread(issue));
+        foreach (var pr in _project.PullRequests) PullRequests.Add(Thread(pr));
+        foreach (var property in new[] { nameof(Stars), nameof(OpenIssues), nameof(RecentIssues), nameof(OpenPullRequests), nameof(ProjectStatus), nameof(HasNoIssues), nameof(HasNoPullRequests) }) OnPropertyChanged(property);
+    }
+    private static HomeThreadCard Thread(ProjectThread item) => new($"#{item.Number}  {item.Title}",
+        (item.IsDraft ? Translations.Get("Home.Draft") + " · " : "") + (item.UpdatedAt == DateTimeOffset.MinValue ? "" : item.UpdatedAt.ToLocalTime().ToString("yyyy-MM-dd")), item.Url);
+    private static string FormatCount(int? value) => value?.ToString("N0") ?? "—";
+    private void OnMediaChanged(object? sender, EventArgs args)
+    {
+        if (!_dispatcher.CheckAccess()) { _dispatcher.BeginInvoke(() => { if (_active && !_disposed) ProjectPlayers(); }); return; }
+        if (_active && !_disposed) ProjectPlayers();
+    }
+    private void OnLanguageChanged(object? sender, EventArgs args) { if (_active && !_disposed) { ProjectFeatures(); ProjectPlayers(); ProjectSupport(); ProjectActivity(); OnPropertyChanged(nameof(RotationText)); } }
+    public void Dispose() { if (_disposed) return; _disposed = true; Deactivate(); _images.Clear(); }
 }

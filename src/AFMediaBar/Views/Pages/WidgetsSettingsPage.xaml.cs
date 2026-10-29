@@ -2,15 +2,18 @@
 using System.Windows;
 using System.Windows.Controls;
 using AFMediaBar.Classes.Utils;
+using AFMediaBar.Classes.Settings;
 using AFMediaBar.ViewModels.Pages;
 using Wpf.Ui.Abstractions.Controls;
 
 namespace AFMediaBar.Views.Pages;
 
-/// <summary>呈现小组件参数、快速启动列表与返回布局的入口。</summary>
+/// <summary>呈现小音符与快速启动设置，编辑器与服务由既有作用域拥有。</summary>
 public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewModel>
 {
     public WidgetsSettingsViewModel ViewModel { get; }
+    public TaskbarAppearanceViewModel Taskbar => ViewModel.Layout;
+    public bool HasTaskbarSettings => true;
 
     public WidgetsSettingsPage(WidgetsSettingsViewModel viewModel)
     {
@@ -19,10 +22,10 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
         InitializeComponent();
     }
 
-    private async void OnPageLoaded(object sender, RoutedEventArgs args)
+    private void OnPageLoaded(object sender, RoutedEventArgs args)
     {
         SettingsRevealAnimator.Play(sender as Panel);
-        await ViewModel.RefreshAsync();
+
     }
 
     private async void BrowseQuickLaunch_Click(object sender, RoutedEventArgs args)
@@ -38,7 +41,7 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
 
     private async void ResetButton_Click(object sender, RoutedEventArgs args)
     {
-        if (await SettingsResetDialog.ConfirmAsync("Common.Page.Widgets", cancellationToken: ViewModel.ContextCancellationToken))
-            ViewModel.Reset();
+        if (await SettingsResetDialog.ConfirmAsync("Settings.Page.NoteAndLaunch", cancellationToken: ViewModel.ContextCancellationToken))
+            ViewModel.ResetSection(SettingsResetScope.QuickLaunch);
     }
 }

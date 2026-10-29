@@ -3,7 +3,7 @@ using AFMediaBar.Classes.Utils;
 using AFMediaBar.ViewModels.Pages;
 using Wpf.Ui.Abstractions.Controls;
 namespace AFMediaBar.Views.Pages;
-/// <summary>全局交互设置页面。 / Global interaction settings page.</summary>
+/// <summary>呈现交互与快捷键设置，编辑器与服务由既有作用域拥有。</summary>
 public partial class InteractionPage : INavigableView<InteractionViewModel>
 {
     public InteractionViewModel ViewModel { get; }

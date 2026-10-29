@@ -611,7 +611,7 @@
     <value>赞助我</value>
   </data>
   <data name="Common.Group.ThemeAndBackdrop" xml:space="preserve">
-    <value>所有窗口</value>
+    <value>主题与材质</value>
   </data>
   <data name="Common.Group.TrackChangeNotification" xml:space="preserve">
     <value>曲目切换通知</value>
@@ -662,7 +662,7 @@
     <value>应用</value>
   </data>
   <data name="Common.Page.Appearance" xml:space="preserve">
-    <value>外观</value>
+    <value>媒体栏外观</value>
   </data>
   <data name="Common.Page.Components" xml:space="preserve">
     <value>组件设置</value>
@@ -1004,7 +1004,7 @@
     <value>显示标题和歌手；启用歌词时显示歌词。</value>
   </data>
   <data name="DisplayModes.Rest.Component.OutputDevice" xml:space="preserve">
-    <value>输出设备按钮</value>
+    <value>输出设备</value>
   </data>
   <data name="DisplayModes.Rest.Component.OutputDevice.Description" xml:space="preserve">
     <value>点击选择输出设备，滚动切换设备。</value>
@@ -1028,7 +1028,7 @@
     <value>显示当前输出设备所有声音的实时频谱。</value>
   </data>
   <data name="DisplayModes.Rest.Component.Volume" xml:space="preserve">
-    <value>音量按钮</value>
+    <value>音量</value>
   </data>
   <data name="DisplayModes.Rest.Component.Volume.Description" xml:space="preserve">
     <value>点击打开音量菜单，滚动调节当前来源的音量。</value>
@@ -1126,6 +1126,15 @@
   <data name="DisplayModes.Rest.Row.Artwork.Title" xml:space="preserve">
     <value>显示封面</value>
   </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Title" xml:space="preserve">
+    <value>小封面</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Description" xml:space="preserve">
+    <value>以原尺寸的 80% 居中显示封面。</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Badge" xml:space="preserve">
+    <value>需先开启显示封面</value>
+  </data>
   <data name="DisplayModes.Rest.Row.Progress.Title" xml:space="preserve">
     <value>显示播放进度</value>
   </data>
@@ -1184,13 +1193,16 @@
     <value>点击封面</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Description" xml:space="preserve">
-    <value>鼠标放到封面上时的放大方式。原地放大让封面顶出任务栏上方，大图预览弹出一张独立的大图，关闭则只在栏内轻微放大。</value>
+    <value>鼠标放到封面上时的放大方式。轻微放大大约 1.1 倍，只在本栏内变化；原地放大让封面顶出任务栏上方；大图预览弹出独立大图；不放大则保持原样。</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Title" xml:space="preserve">
     <value>悬停封面放大</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Mode.Off" xml:space="preserve">
-    <value>关闭（1.1×）</value>
+    <value>轻微放大（1.1×）</value>
+  </data>
+  <data name="Interaction.Row.ArtworkHover.Mode.None" xml:space="preserve">
+    <value>不放大</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Mode.Zoom" xml:space="preserve">
     <value>原地放大（2×）</value>
@@ -1636,12 +1648,10 @@
   <data name="Media.Notification.TargetMode.ForegroundWindow" xml:space="preserve">
     <value>跟随前台窗口所在显示器</value>
   </data>
-  <data name="Media.Performance.Metrics.Description" xml:space="preserve">
-    <value>选择要显示的指标；多选时轮流显示。</value>
+<data name="Media.Performance.Metrics.Description" xml:space="preserve">
+    <value>统一设置指标的显示、样式和顺序；关闭的指标也可预设。</value>
   </data>
-  <data name="Media.Performance.Metrics.Title" xml:space="preserve">
-    <value>显示哪些指标</value>
-  </data>
+
   <data name="Media.Performance.OpenTaskManager.Description" xml:space="preserve">
     <value>点击性能组件时打开任务管理器。</value>
   </data>
@@ -2313,7 +2323,7 @@
     <value>选择显示模式，配置显示器与媒体栏位置。</value>
   </data>
   <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
-    <value>应用外观</value>
+    <value>个性化</value>
   </data>
   <data name="Common.Page.TaskbarAppearance" xml:space="preserve">
     <value>媒体栏外观</value>
@@ -2645,10 +2655,10 @@
   <data name="Media.Performance.DisplayMode.Parallel" xml:space="preserve">
     <value>并排显示</value>
   </data>
-  <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>拖动调整已选指标顺序；两种显示方式共用顺序，至少保留一个指标。</value>
+<data name="Media.Performance.Order.Description" xml:space="preserve">
+    <value>拖动可调整全部指标的顺序，按顺序轮换或并排显示已开启项；关闭再开启会保留位置和样式，至少保留一项。</value>
   </data>
-  <data name="Panel.Performance.Upload" xml:space="preserve">
+<data name="Panel.Performance.Upload" xml:space="preserve">
     <value>上传</value>
   </data>
   <data name="Panel.Performance.Download" xml:space="preserve">
@@ -2897,7 +2907,7 @@
   <data name="Lyrics.Sources.Order.Reset" xml:space="preserve">
     <value>恢复默认顺序</value>
   </data>
-  <data name="Common.Page.Experimental" xml:space="preserve"><value>实验性功能</value></data>
+  <data name="Common.Page.Experimental" xml:space="preserve"><value>实验功能</value></data>
   <data name="Experimental.Warning" xml:space="preserve"><value>实验性功能未经充分测试，如遇问题，请通过任意现有反馈渠道反馈。</value></data>
   <data name="Experimental.Enable" xml:space="preserve"><value>启用此实验</value></data>
   <data name="Experimental.Vertical.Title" xml:space="preserve"><value>竖向任务栏</value></data>
@@ -2961,7 +2971,13 @@
     <value>点击打开</value>
   </data>
   <data name="DisplayModes.Full.Entry.Hover" xml:space="preserve">
-    <value>悬停 0.5 秒</value>
+    <value>悬停打开</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Title" xml:space="preserve">
+    <value>悬停等待时间</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Description" xml:space="preserve">
+    <value>指针在入口连续停留达到此时间后打开完整面板。</value>
   </data>
   <data name="Memory.Title" xml:space="preserve"><value>内存工具</value></data>
   <data name="Memory.Open" xml:space="preserve"><value>打开内存工具</value></data>
@@ -3125,10 +3141,10 @@
   <data name="Settings.Related.WidgetsSpectrum" xml:space="preserve"><value>频谱与性能参数</value></data>
   <data name="Settings.Related.TextSize" xml:space="preserve"><value>文字大小</value></data>
   <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>内存优化策略</value></data>
-  <data name="Common.Page.Widgets" xml:space="preserve">
-    <value>小组件</value>
+<data name="Common.Page.Widgets" xml:space="preserve">
+    <value>组件设置</value>
   </data>
-  <data name="Widgets.Header.Subtitle" xml:space="preserve">
+<data name="Widgets.Header.Subtitle" xml:space="preserve">
     <value>配置小音符、频谱、性能和蓝牙电量；组件顺序在内容与布局中调整。</value>
   </data>
   <data name="Widgets.Spectrum" xml:space="preserve">
@@ -3150,10 +3166,13 @@
     <value>采集设备</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Description" xml:space="preserve">
-    <value>默认跟随 AF 当前媒体来源的输出设备；无法识别时使用系统默认设备。手动设备离线时暂停采集并保留选择。</value>
+    <value>可跟随当前媒体来源、始终采集系统默认输出设备，或固定指定某个设备。手动设备离线时暂停采集并保留选择。</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Automatic" xml:space="preserve">
     <value>跟随当前媒体来源</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.SystemDefault" xml:space="preserve">
+    <value>系统默认输出设备</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Offline" xml:space="preserve">
     <value>{0}（离线）</value>
@@ -3204,10 +3223,555 @@
   <data name="Lyrics.Row.BracketSymbols.Title" xml:space="preserve"><value>净化译文格式</value></data>
   <data name="Lyrics.Row.BracketSymbols.Description" xml:space="preserve"><value>默认开启。清理部分翻译来源多余的行首斜杠与括号，使译文显示更加简洁。</value></data>
   <data name="Settings.Numeric.Minutes" xml:space="preserve"><value>分钟</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Title" xml:space="preserve"><value>覆盖任务栏</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Description" xml:space="preserve"><value>开启后悬浮媒体栏显示在任务栏上方，可以拖到任务栏区域使用。</value></data>
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>边缘自动折叠</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>默认开启。拖到工作区边缘后，移开鼠标收起，靠近时展开；支持四边。</value></data>
-  <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展开桌面媒体栏</value></data>
-  <data name="Common.Page.PluginCenter" xml:space="preserve"><value>插件中心</value></data>
+<data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>展开桌面媒体栏</value></data>
+<data name="Developer.Action.PerformanceStatus" xml:space="preserve"><value>性能记录状态</value></data>
+  <data name="Developer.Description.PerformanceStatus" xml:space="preserve"><value>显示 Debug 持续记录状态、目录、最近采样和丢弃数量。</value></data>
+  <data name="Developer.Action.PerformanceStart" xml:space="preserve"><value>开启性能记录</value></data>
+  <data name="Developer.Description.PerformanceStart" xml:space="preserve"><value>开启本次进程的后台记录；Debug 启动时默认开启。</value></data>
+  <data name="Developer.Action.PerformanceStop" xml:space="preserve"><value>停止性能记录</value></data>
+  <data name="Developer.Description.PerformanceStop" xml:space="preserve"><value>停止采样并在后台保存剩余记录；下次启动默认恢复。</value></data>
+  <data name="Developer.Action.PerformanceMark" xml:space="preserve"><value>标记刚才的异常</value></data>
+  <data name="Developer.Description.PerformanceMark" xml:space="preserve"><value>添加时间标记并请求刷新文件。</value></data>
+  <data name="Developer.Action.PerformanceOpen" xml:space="preserve"><value>打开性能记录目录</value></data>
+  <data name="Developer.Description.PerformanceOpen" xml:space="preserve"><value>打开独立的性能记录目录。</value></data>
+  <data name="Developer.Performance.State.Running" xml:space="preserve"><value>记录中</value></data>
+  <data name="Developer.Performance.State.Stopping" xml:space="preserve"><value>停止中</value></data>
+  <data name="Developer.Performance.State.Stopped" xml:space="preserve"><value>已停止</value></data>
+  <data name="Developer.Performance.State.Failed" xml:space="preserve"><value>记录失败</value></data>
+  <data name="Developer.Performance.Status" xml:space="preserve"><value>状态：{0}
+采样：活动时 1 秒，空闲时 4 秒；熄屏、锁屏或睡眠暂停。
+目录：{1}
+最近采样：{2}
+已丢弃采样：{3}；事件：{4}</value></data>
+  <data name="Common.Page.RestState" xml:space="preserve"><value>常驻状态</value></data>
+  <data name="Settings.RestState.Subtitle" xml:space="preserve"><value>设置常驻组件的显隐、顺序和无媒体状态。</value></data>
+  <data name="Settings.RestState.Visible" xml:space="preserve"><value>显示内容</value></data>
+  <data name="Settings.RestState.Idle" xml:space="preserve"><value>没有媒体时</value></data>
+  <data name="Settings.RestState.IdleDescription" xml:space="preserve"><value>可全部关闭；没有媒体时将隐藏媒体栏。</value></data>
+  <data name="Settings.RestState.OrderHint" xml:space="preserve"><value>封面和媒体文字固定在起始侧，其余组件可排序。</value></data>
+  <data name="Settings.RestState.Fixed" xml:space="preserve"><value>固定</value></data>
+  <data name="Settings.RestState.BatteryHint" xml:space="preserve"><value>需启用蓝牙电量实验并选择追踪设备。</value></data>
+  <data name="Settings.RestState.VisibilityLink" xml:space="preserve"><value>调整常驻显示</value></data>
+  <data name="Settings.Component.Configure" xml:space="preserve"><value>前往配置</value></data>
+  <data name="Settings.Preview.Title" xml:space="preserve"><value>局部预览</value></data>
+  <data name="Settings.Preview.Track" xml:space="preserve"><value>示例曲目</value></data>
+  <data name="Settings.Preview.Artist" xml:space="preserve"><value>示例歌手</value></data>
+  <data name="Settings.Preview.Note" xml:space="preserve"><value>使用当前设置和固定示例数据；预览按可用区域缩放，不操作播放器或设备。</value></data>
+<data name="Settings.Preview.Empty" xml:space="preserve"><value>未保留组件，没有媒体时媒体栏隐藏。</value></data>
+  <data name="Settings.Preview.Idle" xml:space="preserve"><value>预览无媒体状态</value></data>
+  <data name="Settings.Personalization.Subtitle" xml:space="preserve"><value>设置应用主题、窗口材质、强调色和字体。</value></data>
+  <data name="Settings.Personalization.Accent" xml:space="preserve"><value>强调色</value></data>
+  <data name="Settings.Personalization.Sample" xml:space="preserve"><value>界面示例</value></data>
+  <data name="Settings.Personalization.SampleDescription" xml:space="preserve"><value>检查当前主题、字体和强调色的显示效果。</value></data>
+  <data name="Settings.RestState.ArtworkAndProgress" xml:space="preserve"><value>封面与进度</value></data>
+  <data name="Settings.RestState.ArtworkDetails" xml:space="preserve"><value>封面细节</value></data>
+  <data name="Settings.RestState.ArtworkHint" xml:space="preserve"><value>无媒体时的小音符单独设置。</value></data>
+  <data name="Settings.RestState.ProgressHint" xml:space="preserve"><value>显示只读进度；无时长时隐藏。</value></data>
+  <data name="Settings.RestState.DevicesAndVolume" xml:space="preserve"><value>设备与音量</value></data>
+  <data name="Settings.RestState.SpaceHint" xml:space="preserve"><value>显示这些控件会占用媒体栏空间。</value></data>
+  <data name="Settings.RestState.Extensions" xml:space="preserve"><value>扩展组件</value></data>
+  <data name="Settings.RestState.Volume" xml:space="preserve"><value>音量</value></data>
+  <data name="Settings.Group.TextProcessing" xml:space="preserve"><value>文本处理</value></data>
+  <data name="Settings.Group.Capture" xml:space="preserve"><value>采集</value></data>
+  <data name="Settings.Group.Presentation" xml:space="preserve"><value>样式与尺寸</value></data>
+  <data name="Settings.Group.Metrics" xml:space="preserve"><value>指标与采样</value></data>
+  <data name="Settings.Group.DisplayAndOrder" xml:space="preserve"><value>显示与顺序</value></data>
+  <data name="Settings.Group.LaunchActions" xml:space="preserve"><value>启动操作</value></data>
+  <data name="Settings.Group.ApplicationList" xml:space="preserve"><value>程序列表</value></data>
+  <data name="Settings.Group.Entry" xml:space="preserve"><value>入口与打开方式</value></data>
+  <data name="Settings.Group.PanelSections" xml:space="preserve"><value>面板区域</value></data>
+  <data name="Settings.Group.Files" xml:space="preserve"><value>设置文件</value></data>
+  <data name="Settings.Group.Defaults" xml:space="preserve"><value>个人默认与重置</value></data>
+  <data name="Settings.Group.Logs" xml:space="preserve"><value>日志</value></data>
+  <data name="Settings.Group.Developer" xml:space="preserve"><value>开发工具</value></data>
+  <data name="Settings.Experiment.Required" xml:space="preserve"><value>此功能需先在实验功能中启用。</value></data>
+  <data name="Settings.Page.QuickControls" xml:space="preserve"><value>快捷控制</value></data>
+  <data name="Settings.Page.ComponentsSettings.Description" xml:space="preserve"><value>设置悬停控制、按钮显隐与尺寸。</value></data>
+  <data name="Settings.Page.FullPanel" xml:space="preserve"><value>完整面板</value></data>
+  <data name="Settings.Page.FullPanel.Description" xml:space="preserve"><value>设置入口、打开方式和面板区域。</value></data>
+  <data name="Settings.Page.BarAppearance" xml:space="preserve"><value>外观与布局</value></data>
+  <data name="Settings.Page.Appearance.Description" xml:space="preserve"><value>设置媒体栏背景、长度、间距与展开方向。</value></data>
+  <data name="Settings.Page.TextAndLyrics" xml:space="preserve"><value>文字与歌词</value></data>
+  <data name="Settings.Page.Lyrics.Description" xml:space="preserve"><value>设置媒体文字、歌词显示、文本处理和取词来源。</value></data>
+  <data name="Settings.Page.NoteAndLaunch" xml:space="preserve"><value>小音符与快速启动</value></data>
+  <data name="Settings.Page.WidgetsSettings.Description" xml:space="preserve"><value>设置音符颜色、启动操作和程序列表。</value></data>
+  <data name="Settings.Page.Spectrum" xml:space="preserve"><value>频谱</value></data>
+  <data name="Settings.Page.Spectrum.Description" xml:space="preserve"><value>设置采集范围、设备与频谱样式。</value></data>
+  <data name="Settings.Page.Performance" xml:space="preserve"><value>性能</value></data>
+  <data name="Settings.Page.Performance.Description" xml:space="preserve"><value>选择指标、显示方式和采样间隔。</value></data>
+  <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>蓝牙电量</value></data>
+  <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>选择追踪设备、显示方式与低电量提醒。</value></data>
+  <data name="Settings.Page.MediaSource" xml:space="preserve"><value>媒体来源</value></data>
+  <data name="Settings.Page.ExtraFeatures.Description" xml:space="preserve"><value>选择播放器、自动切换策略与允许列表。</value></data>
+  <data name="Settings.Page.TrackNotifications" xml:space="preserve"><value>曲目通知</value></data>
+  <data name="Settings.Page.TrackNotifications.Description" xml:space="preserve"><value>设置曲目通知的位置、时间与显示器。</value></data>
+  <data name="Settings.Page.GeneralAndUpdates" xml:space="preserve"><value>常规与更新</value></data>
+  <data name="Settings.Page.Application.Description" xml:space="preserve"><value>设置语言、开机启动与更新。</value></data>
+  <data name="Settings.Page.Configuration" xml:space="preserve"><value>配置与默认</value></data>
+  <data name="Settings.Page.Configuration.Description" xml:space="preserve"><value>打开设置文件夹、管理个人默认值与重置。</value></data>
+  <data name="Settings.Page.Diagnostics" xml:space="preserve"><value>诊断与日志</value></data>
+  <data name="Settings.Page.Diagnostics.Description" xml:space="preserve"><value>查看日志并管理开发工具。</value></data>
+  <data name="Settings.Page.MemoryTools" xml:space="preserve"><value>内存工具</value></data>
+  <data name="Settings.Page.MemoryTools.Description" xml:space="preserve"><value>查看内存读数，管理手动操作与自动策略。</value></data>
+  <data name="Settings.Page.ScreenAndPlacement.Description" xml:space="preserve"><value>选择显示模式、显示器与位置。</value></data>
+  <data name="Settings.Page.InteractionAndHotkeys" xml:space="preserve"><value>交互与快捷键</value></data>
+  <data name="Settings.Page.Interaction.Description" xml:space="preserve"><value>设置点击、滚轮、快捷键与托盘操作。</value></data>
+  <data name="Settings.Page.AudioDevices" xml:space="preserve"><value>音频设备</value></data>
+  <data name="Settings.Page.DeviceManagement.Description" xml:space="preserve"><value>管理输入输出设备、别名、顺序与通信策略。</value></data>
+  <data name="Settings.Page.Experimental.Description" xml:space="preserve"><value>管理实验开关并前往对应配置。</value></data>
+  <data name="Settings.Page.About.Description" xml:space="preserve"><value>项目信息、开发者、赞助与许可。</value></data>
+  <data name="Settings.Page.ReleaseHighlights.Description" xml:space="preserve"><value>查看正式版本的新功能与历史介绍。</value></data>
+  <data name="Settings.Preview.LayerDisabled" xml:space="preserve"><value>当前没有可显示的内容。</value></data>
+  <data name="Settings.Section.Start" xml:space="preserve">
+    <value>快速开始</value>
+  </data>
+  <data name="Settings.Section.Bar" xml:space="preserve">
+    <value>媒体栏</value>
+  </data>
+  <data name="Settings.Section.Content" xml:space="preserve">
+    <value>内容与组件</value>
+  </data>
+  <data name="Settings.Section.Playback" xml:space="preserve">
+    <value>播放与设备</value>
+  </data>
+  <data name="Settings.Section.Interaction" xml:space="preserve">
+    <value>交互与通知</value>
+  </data>
+  <data name="Settings.Section.App" xml:space="preserve">
+    <value>应用</value>
+  </data>
+  <data name="Start.Description" xml:space="preserve">
+    <value>了解媒体栏的基本操作，按任务找到常用设置。</value>
+  </data>
+  <data name="Start.Overview" xml:space="preserve">
+    <value>三层体验</value>
+  </data>
+  <data name="Start.Intro" xml:space="preserve">
+    <value>AF Media Bar</value>
+  </data>
+  <data name="Start.Intro.Description" xml:space="preserve">
+    <value>常驻状态显示正在播放的内容，悬停时使用快捷控制，打开完整面板查看更多信息。各层共享外观与功能设置。</value>
+  </data>
+  <data name="Start.Rest" xml:space="preserve">
+    <value>常驻状态</value>
+  </data>
+  <data name="Start.Rest.Description" xml:space="preserve">
+    <value>选择封面、文字与扩展组件，调整排列及无媒体时的保留内容。</value>
+  </data>
+  <data name="Start.Hover" xml:space="preserve">
+    <value>快捷控制</value>
+  </data>
+  <data name="Start.Hover.Description" xml:space="preserve">
+    <value>将指针移到媒体栏上，显示播放按钮。按钮显隐、大小和间距可单独调整。</value>
+  </data>
+  <data name="Start.Full" xml:space="preserve">
+    <value>完整面板</value>
+  </data>
+  <data name="Start.Full.Description" xml:space="preserve">
+    <value>通过展开入口打开完整面板，查看封面、歌词和其他区域。</value>
+  </data>
+  <data name="Start.Tutorials" xml:space="preserve">
+    <value>基础教程</value>
+  </data>
+  <data name="Start.Tutorial.Mode" xml:space="preserve">
+    <value>选择模式与位置</value>
+  </data>
+  <data name="Start.Tutorial.Mode.Short" xml:space="preserve">
+    <value>先选择任务栏或悬浮模式，再调整位置。</value>
+  </data>
+  <data name="Start.Tutorial.Mode.Body" xml:space="preserve">
+    <value>1. 在“显示与位置”选择当前模式和显示器。
+2. 任务栏模式跟随系统任务栏；竖向显示需要系统任务栏位于屏幕左侧或右侧。
+3. 悬浮模式可调整位置、方向与贴边收起。两种模式的几何设置分别保留。</value>
+  </data>
+  <data name="Start.Tutorial.Playback" xml:space="preserve">
+    <value>开始播放与选择来源</value>
+  </data>
+  <data name="Start.Tutorial.Playback.Short" xml:space="preserve">
+    <value>在播放器中开始播放，再从媒体栏选择来源。</value>
+  </data>
+  <data name="Start.Tutorial.Playback.Body" xml:space="preserve">
+    <value>1. 打开受支持的播放器并播放曲目。
+2. 如果有多个来源，在媒体来源菜单中选择需要的应用。
+3. 自动切换、优先应用与允许列表在“媒体来源”设置。按钮和时间轴是否可用取决于播放器提供的能力。</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics" xml:space="preserve">
+    <value>设置文字与歌词</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics.Short" xml:space="preserve">
+    <value>调整媒体文字、歌词显示与取词来源。</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics.Body" xml:space="preserve">
+    <value>1. 在“文字与歌词”调整标题、歌手和歌词的布局。
+2. 在“歌词显示”设置双行、副行与逐字效果。
+3. 在“取词来源”启用需要的来源并调整顺序。在线检索会发送曲名、歌手等信息；不需要时可以关闭。</value>
+  </data>
+  <data name="Start.Tutorial.Devices" xml:space="preserve">
+    <value>切换音频设备</value>
+  </data>
+  <data name="Start.Tutorial.Devices.Short" xml:space="preserve">
+    <value>管理输入输出设备，再选择媒体栏中的入口。</value>
+  </data>
+  <data name="Start.Tutorial.Devices.Body" xml:space="preserve">
+    <value>1. 在“音频设备”启用需要的设备，设置别名与排列顺序。
+2. 在“常驻状态”显示输入或输出设备按钮。
+3. 设备切换快捷键与操作目标在“交互与快捷键”。蓝牙电量需要先启用对应实验功能，且依赖 Windows 和驱动提供的数据。</value>
+  </data>
+  <data name="Start.Tutorial.Daily" xml:space="preserve">
+    <value>日常操作与排序</value>
+  </data>
+  <data name="Start.Tutorial.Daily.Short" xml:space="preserve">
+    <value>点击、滚轮、快捷键和拖动排序。</value>
+  </data>
+  <data name="Start.Tutorial.Daily.Body" xml:space="preserve">
+    <value>点击与滚轮的行为在“交互与快捷键”统一设置。
+可排序列表使用最右侧手柄；聚焦手柄后按 Alt＋↑／↓ 也可排序，拖动中按 Esc 取消。
+使用 Ctrl＋F 搜索设置。关联入口在指针悬停或键盘焦点进入该行时显示。</value>
+  </data>
+  <data name="Start.Releases" xml:space="preserve">
+    <value>版本功能</value>
+  </data>
+  <data name="Start.Release16" xml:space="preserve">
+    <value>正式版 1.6</value>
+  </data>
+  <data name="Start.Release16.Body" xml:space="preserve">
+    <value>音频设备管理与切换快捷键正式可用，支持设备别名与排序。
+提供悬浮模式、四边贴边收起，以及与系统任务栏方向一致的竖向显示。
+完整面板入口支持点击或悬停打开；蓝牙电量仍为默认关闭的实验功能。</value>
+  </data>
+  <data name="Start.ReleaseNotes" xml:space="preserve">
+    <value>查看正式版说明</value>
+  </data>
+  <data name="Start.Development" xml:space="preserve">
+    <value>开发中的设置中心</value>
+  </data>
+  <data name="Start.Development.Body" xml:space="preserve">
+    <value>本次本地构建包含新的分区导航、快速开始和按任务组织的设置页面。这些界面改动不属于正式版 1.6 的更新说明。</value>
+  </data>
+  <data name="Start.History" xml:space="preserve">
+    <value>历史版本资料</value>
+  </data>
+  <data name="Start.History.Description" xml:space="preserve">
+    <value>以下内容来自本地缓存或内置版本目录；完整内容可在“更新亮点”查看。</value>
+  </data>
+  <data name="Start.Players" xml:space="preserve">
+    <value>播放器支持</value>
+  </data>
+  <data name="Start.Players.Note" xml:space="preserve">
+    <value>能力取决于播放器版本和当前会话。SMTC 是 Windows 系统媒体会话；未提供的控制或时间轴会不可用。表中描述现有接入方式，不代表所有版本均已验证。</value>
+  </data>
+  <data name="Start.Player" xml:space="preserve">
+    <value>播放器／通道</value>
+  </data>
+  <data name="Start.Metadata" xml:space="preserve">
+    <value>媒体信息</value>
+  </data>
+  <data name="Start.Control" xml:space="preserve">
+    <value>播放控制</value>
+  </data>
+  <data name="Start.Timeline" xml:space="preserve">
+    <value>时间轴</value>
+  </data>
+  <data name="Start.Lyrics" xml:space="preserve">
+    <value>歌词</value>
+  </data>
+  <data name="Start.Plugins" xml:space="preserve">
+    <value>插件条件</value>
+  </data>
+  <data name="Start.NetEase" xml:space="preserve">
+    <value>网易云音乐</value>
+  </data>
+  <data name="Start.KuGou" xml:space="preserve">
+    <value>酷狗音乐</value>
+  </data>
+  <data name="Start.OtherSmtc" xml:space="preserve">
+    <value>其它 SMTC 播放器</value>
+  </data>
+  <data name="Start.NoSmtc" xml:space="preserve">
+    <value>未接入 SMTC 的其它播放器</value>
+  </data>
+  <data name="Start.BuiltIn" xml:space="preserve">
+    <value>内置适配，无需另装</value>
+  </data>
+  <data name="Start.MemoryAndSmtc" xml:space="preserve">
+    <value>内存通道／SMTC</value>
+  </data>
+  <data name="Start.MemoryTimeline" xml:space="preserve">
+    <value>内存通道补全</value>
+  </data>
+  <data name="Start.NetEaseLyrics" xml:space="preserve">
+    <value>内存／在线取词</value>
+  </data>
+  <data name="Start.OnlineLyrics" xml:space="preserve">
+    <value>来源歌词／在线匹配</value>
+  </data>
+  <data name="Start.SessionDependent" xml:space="preserve">
+    <value>取决于会话</value>
+  </data>
+  <data name="Start.NoPlugin" xml:space="preserve">
+    <value>SMTC 本身无需插件</value>
+  </data>
+  <data name="Start.NotDetected" xml:space="preserve">
+    <value>尚无通用发现能力</value>
+  </data>
+  <data name="Start.UnverifiedPlugin" xml:space="preserve">
+    <value>如需第三方插件，要求待核实</value>
+  </data>
+  <data name="Start.Shortcuts" xml:space="preserve">
+    <value>常用设置</value>
+  </data>
+  <data name="Start.Help" xml:space="preserve">
+    <value>常见问题与帮助</value>
+  </data>
+  <data name="Start.Faq.Source" xml:space="preserve">
+    <value>没有显示正在播放的内容？</value>
+  </data>
+  <data name="Start.Faq.Source.Body" xml:space="preserve">
+    <value>先在播放器中开始播放，再检查“媒体来源”的允许列表和当前选择。未提供系统媒体会话、也没有专用适配的播放器可能无法被发现。</value>
+  </data>
+  <data name="Start.Faq.Lyrics" xml:space="preserve">
+    <value>有曲目但没有歌词？</value>
+  </data>
+  <data name="Start.Faq.Lyrics.Body" xml:space="preserve">
+    <value>检查取词来源是否启用、网络是否可用，以及曲名和歌手是否正确。部分曲目没有可用歌词；关闭在线来源后不会继续联网检索。</value>
+  </data>
+  <data name="Start.Runtime" xml:space="preserve">
+    <value>运行组件要求</value>
+  </data>
+  <data name="Start.Runtime.Body" xml:space="preserve">
+    <value>需要 Windows 10 1809 或更新的 x64 系统，以及 Microsoft Edge WebView2 Evergreen Runtime。正式发布包包含 .NET 运行时；普通构建输出可能需要单独安装运行时。</value>
+  </data>
+  <data name="Start.ProjectHelp" xml:space="preserve">
+    <value>项目帮助</value>
+  </data>
+  <data name="Start.Report" xml:space="preserve">
+    <value>反馈问题</value>
+  </data>
+  <data name="Start.WebView" xml:space="preserve">
+    <value>WebView2 下载</value>
+  </data>
+<data name="Media.Performance.Metrics.Title" xml:space="preserve">
+    <value>显示指标</value>
+  </data>
+<data name="Performance.Visual.Numeric" xml:space="preserve">
+    <value>纯数值</value>
+  </data>
+<data name="Performance.Visual.Bar" xml:space="preserve">
+    <value>条形</value>
+  </data>
+<data name="Performance.Visual.Ring" xml:space="preserve">
+    <value>环形</value>
+  </data>
+<data name="Performance.Visual.Line" xml:space="preserve">
+    <value>趋势折线</value>
+  </data>
+<data name="Performance.Visual.Area" xml:space="preserve">
+    <value>趋势面积图</value>
+  </data>
+<data name="Performance.Visual.Style" xml:space="preserve">
+    <value>展示样式</value>
+  </data>
+<data name="Performance.Visual.BarSurface" xml:space="preserve">
+    <value>媒体栏样式</value>
+  </data>
+<data name="Performance.Visual.Panel" xml:space="preserve">
+    <value>完整面板样式</value>
+  </data>
+<data name="Performance.Visual.Description" xml:space="preserve">
+    <value>每项可单独选择，图形保留实时数值。网络上下行共用样式；预览使用示例数据。程序内存和网络仅支持纯数值、趋势线和面积图；趋势图以最近一分钟峰值为相对刻度。</value>
+  </data>
+<data name="Performance.Visual.Relative" xml:space="preserve">
+    <value>相对于最近一分钟的峰值，不代表容量或带宽使用率。</value>
+  </data>
+<data name="Panel.Scale.Title" xml:space="preserve">
+    <value>完整面板缩放</value>
+  </data>
+<data name="Panel.Scale.Description" xml:space="preserve">
+    <value>窗口与内容一起等比缩放（75%—200%），重启后保留。拖动外侧边缘时固定对侧，靠近媒体栏的一侧不可调整。恢复默认尺寸将回到 100%。</value>
+  </data>
+<data name="Panel.Scale.Reset" xml:space="preserve">
+    <value>恢复默认尺寸</value>
+  </data>
+<data name="ComponentLayout.Resident" xml:space="preserve"><value>常驻显示</value></data>
+<data name="ComponentLayout.Idle" xml:space="preserve"><value>无媒体显示</value></data>
+<data name="ComponentLayout.Hover" xml:space="preserve"><value>悬停控制</value></data>
+<data name="ComponentLayout.Description" xml:space="preserve"><value>在此调整显隐和顺序；关闭项仍可排序。也可直接拖动栏上组件排序。</value></data>
+<data name="ComponentLayout.FixedHead" xml:space="preserve"><value>固定在媒体栏头部</value></data>
+<data name="ComponentLayout.Move" xml:space="preserve"><value>拖动此处移动媒体栏</value></data>
+<data name="ComponentLayout.Locked" xml:space="preserve"><value>位置已锁定</value></data>
+<data name="ComponentLayout.Cycle" xml:space="preserve"><value>轮换指标与顺序</value></data>
+  <data name="ComponentLayout.CycleDescription" xml:space="preserve"><value>仅控制轮换参与项及顺序；并排组件的显隐和顺序在“常驻状态”调整。图表样式适用于对应指标。</value></data>
+<data name="Settings.RestState.Details" xml:space="preserve"><value>封面与进度</value></data>
+  <data name="Integration.Performance.Sampling" xml:space="preserve"><value>采样与行为</value></data>
+  <data name="Integration.Performance.Bar" xml:space="preserve"><value>媒体栏样式与轮换</value></data>
+  <data name="Integration.Performance.Panel" xml:space="preserve"><value>完整面板样式</value></data>
+  <data name="Integration.Panel.Scale" xml:space="preserve"><value>面板缩放</value></data>
+  <data name="Integration.Panel.Scale.Description" xml:space="preserve"><value>同步缩放窗口与内容，范围为 75%–200%；靠近媒体栏的一侧保持贴合。</value></data>
+  <data name="Integration.Panel.ResetSize" xml:space="preserve"><value>恢复默认尺寸</value></data>
+  <data name="Settings.RestState.Description" xml:space="preserve"><value>设置常驻与无媒体状态的组件、顺序和显示细节。</value></data>
+
+  <data name="Integration.Back" xml:space="preserve"><value>返回上一页</value></data>
+
+  <data name="Integration.Scope.Shared" xml:space="preserve"><value>全局设置</value></data>
+
+  <data name="Integration.Mode.Taskbar" xml:space="preserve"><value>任务栏模式</value></data>
+
+  <data name="Integration.Mode.Floating" xml:space="preserve"><value>悬浮模式</value></data>
+
+  <data name="Integration.Preview.Scale" xml:space="preserve"><value>面板缩放 {0}% · 适配显示</value></data>
+  <data name="Settings.Page.QuickControls.Description" xml:space="preserve"><value>设置悬停控制、组件顺序及按钮尺寸。</value></data>
+  <data name="Home.Description" xml:space="preserve">
+    <value>项目动态、播放器支持与常用设置。</value>
+  </data>
+  <data name="Home.Refresh" xml:space="preserve">
+    <value>刷新动态</value>
+  </data>
+  <data name="Home.Rotation.Resume" xml:space="preserve">
+    <value>继续轮播</value>
+  </data>
+  <data name="Home.Rotation.Pause" xml:space="preserve">
+    <value>暂停轮播</value>
+  </data>
+  <data name="Home.Previous" xml:space="preserve">
+    <value>上一张</value>
+  </data>
+  <data name="Home.Next" xml:space="preserve">
+    <value>下一张</value>
+  </data>
+  <data name="Home.ReadMore" xml:space="preserve">
+    <value>查看详情</value>
+  </data>
+<data name="Home.Kind.release" xml:space="preserve">
+    <value>正式版本</value>
+  </data>
+  <data name="Home.Kind.feature" xml:space="preserve">
+    <value>功能介绍</value>
+  </data>
+<data name="Home.Kind.development" xml:space="preserve">
+    <value>开发中</value>
+  </data>
+  <data name="Home.Feature.Settings" xml:space="preserve">
+    <value>原生设置中心</value>
+  </data>
+  <data name="Home.Feature.Settings.Body" xml:space="preserve">
+    <value>按对象组织设置，合并组件显隐与排序；支持搜索定位和局部预览。此功能尚未正式发布。</value>
+  </data>
+  <data name="Home.Feature.Panel" xml:space="preserve">
+    <value>紧凑完整面板</value>
+  </data>
+  <data name="Home.Feature.Panel.Body" xml:space="preserve">
+    <value>三状态组件布局、独立指标样式和75%—200%面板缩放。此功能尚未正式发布。</value>
+  </data>
+  <data name="Home.Original" xml:space="preserve">
+    <value>原文</value>
+  </data>
+  <data name="Home.Cache" xml:space="preserve">
+    <value>缓存资料</value>
+  </data>
+  <data name="Home.Updated" xml:space="preserve">
+    <value>更新时间</value>
+  </data>
+  <data name="Home.Unavailable" xml:space="preserve">
+    <value>部分资料暂不可用；首次加载或网络失败时显示“—”，不是0。</value>
+  </data>
+  <data name="Home.Players" xml:space="preserve">
+    <value>当前播放器</value>
+  </data>
+  <data name="Home.Player.Empty" xml:space="preserve">
+    <value>尚无可用媒体会话。打开播放器并播放一首歌曲，或查看支持列表。</value>
+  </data>
+  <data name="Home.Player.Scope" xml:space="preserve">
+    <value>检测结果仅适用本次会话。接入方式与插件条件可在支持列表中查看。</value>
+  </data>
+  <data name="Home.AllPlayers" xml:space="preserve">
+    <value>查看所有播放器支持</value>
+  </data>
+  <data name="Home.Player.Filter" xml:space="preserve">
+    <value>按播放器名称筛选</value>
+  </data>
+  <data name="Home.Player.Smtc" xml:space="preserve">
+    <value>通过Windows媒体会话接入；媒体信息、控制和时间轴取决于播放器版本。歌词由现有取词链处理，各版本兼容情况仍需核实。</value>
+  </data>
+  <data name="Home.Player.NetEase" xml:space="preserve">
+    <value>内置网易云内存通道与SMTC合并；歌词和时间轴可由内存通道补全，仍受播放器版本限制。</value>
+  </data>
+  <data name="Home.Player.KuGou" xml:space="preserve">
+    <value>通过SMTC接入并使用内置酷狗补全；实际控制与时间轴以本次会话为准。</value>
+  </data>
+  <data name="Home.Player.Plugin" xml:space="preserve">
+    <value>SMTC通道本身不要求插件；播放器是否需要额外接入插件，需按其版本确认。本软件不检测插件安装情况。</value>
+  </data>
+  <data name="Home.Player.Current" xml:space="preserve">
+    <value>当前来源</value>
+  </data>
+  <data name="Home.Player.Playing" xml:space="preserve">
+    <value>正在播放</value>
+  </data>
+  <data name="Home.Player.Connected" xml:space="preserve">
+    <value>已连接会话</value>
+  </data>
+  <data name="Home.Player.ControlAvailable" xml:space="preserve">
+    <value>播放暂停可用</value>
+  </data>
+  <data name="Home.Player.ControlUnavailable" xml:space="preserve">
+    <value>播放暂停不可用</value>
+  </data>
+  <data name="Home.Player.SeekAvailable" xml:space="preserve">
+    <value>可跳转进度</value>
+  </data>
+  <data name="Home.Player.SeekUnavailable" xml:space="preserve">
+    <value>跳转不可用</value>
+  </data>
+  <data name="Home.Player.LyricsAvailable" xml:space="preserve">
+    <value>本次已有歌词</value>
+  </data>
+  <data name="Home.Player.LyricsUnknown" xml:space="preserve">
+    <value>歌词尚未确认</value>
+  </data>
+  <data name="Home.Player.NotSelected" xml:space="preserve">
+    <value>尚未选中此会话；不额外查询其控制能力。</value>
+  </data>
+  <data name="Home.Community" xml:space="preserve">
+    <value>项目动态</value>
+  </data>
+  <data name="Home.Stars" xml:space="preserve">
+    <value>Star</value>
+  </data>
+  <data name="Home.OpenIssues" xml:space="preserve">
+    <value>未关闭Issue</value>
+  </data>
+  <data name="Home.RecentIssues" xml:space="preserve">
+    <value>近7天新增Issue</value>
+  </data>
+  <data name="Home.OpenPullRequests" xml:space="preserve">
+    <value>开放PR</value>
+  </data>
+  <data name="Home.Issues" xml:space="preserve">
+    <value>近期Issue</value>
+  </data>
+  <data name="Home.Draft" xml:space="preserve">
+    <value>草稿</value>
+  </data>
+  <data name="Home.NoEntries" xml:space="preserve">
+    <value>暂无可显示的条目；可前往项目页面查看。</value>
+  </data>
+  <data name="Home.ViewAll" xml:space="preserve">
+    <value>查看全部</value>
+  </data>
+  <data name="Home.Bundled" xml:space="preserve">
+    <value>内置资料</value>
+  </data>
+  <data name="Home.Player.Pending" xml:space="preserve">
+    <value>正在切换来源</value>
+  </data>
+  <data name="Home.Player.AwaitingCapabilities" xml:space="preserve">
+    <value>等待此来源的有效快照，不使用上一来源的能力。</value>
+  </data>
+  <data name="Common.Page.PluginCenter" xml:space="preserve"><value>插件下载</value></data>
   <data name="Plugins.Architecture" xml:space="preserve"><value>播放器架构</value></data>
   <data name="Plugins.Attribution" xml:space="preserve"><value>作者：{0}    版本：{1}</value></data>
   <data name="Plugins.Author" xml:space="preserve"><value>作者：{0}</value></data>
@@ -3279,147 +3843,9 @@
   <data name="Plugins.Status.Downloading" xml:space="preserve"><value>正在下载并校验…</value></data>
   <data name="Plugins.Status.Failed" xml:space="preserve"><value>下载失败，可重试或访问上游项目。</value></data>
   <data name="Plugins.Status.Verifying" xml:space="preserve"><value>正在校验文件…</value></data>
-  <data name="Plugins.Subtitle" xml:space="preserve"><value>下载播放器 SMTC 扩展，按说明手动安装。</value></data>
+  <data name="Plugins.Subtitle" xml:space="preserve"><value>下载播放器扩展，按指引手动安装。</value></data>
   <data name="Plugins.Upgrade" xml:space="preserve"><value>升级</value></data>
   <data name="Plugins.VerifyOrDownload" xml:space="preserve"><value>校验或重新下载</value></data>
-  <data name="Common.Page.QuickStart" xml:space="preserve">
-    <value>快速开始</value>
-  </data>
-  <data name="QuickStart.Subtitle" xml:space="preserve">
-    <value>开始使用 AF，查看播放器支持与版本亮点。</value>
-  </data>
-  <data name="QuickStart.Latest" xml:space="preserve">
-    <value>版本亮点</value>
-  </data>
-  <data name="QuickStart.Latest.Description" xml:space="preserve">
-    <value>查看版本新功能与历史亮点。</value>
-  </data>
-  <data name="QuickStart.Latest.Unavailable" xml:space="preserve">
-    <value>暂时无法读取版本资料，可打开版本亮点重试。</value>
-  </data>
-  <data name="QuickStart.AllReleases" xml:space="preserve">
-    <value>查看所有版本</value>
-  </data>
-  <data name="QuickStart.Basics" xml:space="preserve">
-    <value>基础教程</value>
-  </data>
-  <data name="QuickStart.Basics.Description" xml:space="preserve">
-    <value>播放、显示位置、外观与歌词的使用方法。</value>
-  </data>
-  <data name="QuickStart.Players" xml:space="preserve">
-    <value>播放器支持</value>
-  </data>
-  <data name="QuickStart.Players.Description" xml:space="preserve">
-    <value>查看原生媒体控制、AF 补全与插件建议。</value>
-  </data>
-  <data name="QuickStart.Reference" xml:space="preserve">
-    <value>兼容性参考截至 2026-10-24。源码与上游说明不等于本机验收；未确认的能力标为待验证。</value>
-  </data>
-  <data name="QuickStart.Search" xml:space="preserve">
-    <value>搜索播放器</value>
-  </data>
-  <data name="QuickStart.OpenSettings" xml:space="preserve">
-    <value>打开相关设置</value>
-  </data>
-  <data name="QuickStart.ViewPlugin" xml:space="preserve">
-    <value>查看插件</value>
-  </data>
-  <data name="QuickStart.Source" xml:space="preserve">
-    <value>查看依据</value>
-  </data>
-  <data name="QuickStart.Back" xml:space="preserve">
-    <value>返回</value>
-  </data>
-  <data name="QuickStart.Capabilities" xml:space="preserve">
-    <value>原生信息：{0}；时间轴：{1}；控制与跳转：{2}。</value>
-  </data>
-  <data name="QuickStart.Capability.Unknown" xml:space="preserve">
-    <value>待验证</value>
-  </data>
-  <data name="QuickStart.Capability.Implemented" xml:space="preserve">
-    <value>源码已实现</value>
-  </data>
-  <data name="QuickStart.Capability.Reported" xml:space="preserve">
-    <value>上游有说明</value>
-  </data>
-  <data name="QuickStart.Capability.RequiresPlugin" xml:space="preserve">
-    <value>需扩展接入</value>
-  </data>
-  <data name="QuickStart.Capability.Partial" xml:space="preserve">
-    <value>部分支持</value>
-  </data>
-  <data name="QuickStart.PluginAvailable" xml:space="preserve">
-    <value>有补充缺项的插件，按版本与需要选择。</value>
-  </data>
-  <data name="QuickStart.NoRecommendation" xml:space="preserve">
-    <value>需先验证，暂不推荐安装插件。</value>
-  </data>
-  <data name="QuickStart.UseBuiltIn" xml:space="preserve">
-    <value>使用内置媒体控制，无需另装 SMTC 插件。</value>
-  </data>
-  <data name="QuickStart.Af.NetEase" xml:space="preserve">
-    <value>AF 内置网易云信息与进度读取；播放、切歌和跳转仍取决于同来源 SMTC 能力。</value>
-  </data>
-  <data name="QuickStart.Af.KuGou" xml:space="preserve">
-    <value>AF 可补充酷狗进度；元数据、封面与控制仍依赖播放器 SMTC。适配效果需按客户端版本验证。</value>
-  </data>
-  <data name="QuickStart.Af.Smtc" xml:space="preserve">
-    <value>AF 使用播放器上报的媒体会话；没有上报的信息和控制不会自动变为可用。</value>
-  </data>
-  <data name="QuickStart.Note.NetEase" xml:space="preserve">
-    <value>3.1.41 的原生 SMTC 尚未实机验证。InfLink-rs 上游验证 3.1.20–3.1.41 和 2.10.13，依赖 BetterNCM；确认 AF 仍有缺项后再考虑。</value>
-  </data>
-  <data name="QuickStart.Note.QQ" xml:space="preserve">
-    <value>上游在 22.71 验证原生时间轴缺少跳转。插件通过进程注入补充跳转；22.61 尚未验证，不能推断兼容。</value>
-  </data>
-  <data name="QuickStart.Note.KuGou" xml:space="preserve">
-    <value>当前版本尚未本机验收。旧插件仅支持 8.3.97.21592 且不支持跳转，不适用于当前 20.x 客户端。</value>
-  </data>
-  <data name="QuickStart.Note.Pending" xml:space="preserve">
-    <value>未找到足够的版本化证据，需检查歌曲信息、封面、时长、进度及实际控制。不能仅凭出现系统媒体卡片认定完整支持。</value>
-  </data>
-  <data name="QuickStart.Note.Browser" xml:space="preserve">
-    <value>桌面端与网页版分别验证；网页版取决于网站及浏览器的媒体会话实现。</value>
-  </data>
-  <data name="QuickStart.Note.Bodian" xml:space="preserve">
-    <value>上游插件提供元数据、时间轴和控制，但未确认当前播放器版本是否仍需要；暂不提供下载。</value>
-  </data>
-  <data name="QuickStart.Note.BuiltIn" xml:space="preserve">
-    <value>已核对标注发行版本中的 Media Session 元数据、位置上报和跳转处理；Windows 安装包实际表现待维护者验收。</value>
-  </data>
-  <data name="QuickStart.Note.Listen1" xml:space="preserve">
-    <value>已核对桌面项目引用的播放器子模块，实现媒体信息、时间轴与跳转。网页版、扩展版和桌面版须分别验收。</value>
-  </data>
-  <data name="QuickStart.Note.SPlayer" xml:space="preserve">
-    <value>桌面版含原生 Windows SMTC，需开启播放器的 SMTC 选项；网页回退使用 Media Session。实际安装包待验收。</value>
-  </data>
-  <data name="QuickStart.Note.MusicFree" xml:space="preserve">
-    <value>已确认元数据、播放状态及切歌处理；尚未确认时间轴与跳转完整性。MusicFree 音源插件与 SMTC 扩展用途不同。</value>
-  </data>
-  <data name="QuickStart.Note.Foobar" xml:space="preserve">
-    <value>上游 SMTC 使用指引指出内置模式可能缺少专辑与时长；需要这些信息时可用 foo_mediacontrol。当前播放器版本仍需实测。</value>
-  </data>
-  <data name="QuickStart.Note.Plugin" xml:space="preserve">
-    <value>上游提供 SMTC 接入插件。缺少媒体会话或现有组件功能不足时使用，先检查是否已安装同类组件。</value>
-  </data>
-  <data name="QuickStart.Note.Vlc" xml:space="preserve">
-    <value>目录提供上游 VLC 3.0.x 接入方案；4.0 开发版兼容性须单独核对。插件与 VC++ 运行库须匹配 VLC 架构。</value>
-  </data>
-  <data name="QuickStart.Note.ITunes" xml:space="preserve">
-    <value>适用于传统 iTunes 的独立桥接工具；不能据此认定现代 Apple Music 客户端也需要。</value>
-  </data>
-  <data name="QuickStart.Note.Mpv" xml:space="preserve">
-    <value>v0.41.0 原生实现元数据、时间轴和跳转。可在 mpv.conf 设置 media-controls=yes；libmpv 和第三方前端需分别确认。</value>
-  </data>
-  <data name="QuickStart.Note.PotPlayer" xml:space="preserve">
-    <value>桥接项目主要补歌曲、艺术家和专辑等元数据；上游称时间轴与控制原本已提供。本机版本未实测，暂不推荐注入工具。</value>
-  </data>
-  <data name="QuickStart.Note.Aimp" xml:space="preserve">
-    <value>旧桥接作者已因原生支持停止维护，但稳定版与测试版范围尚未核实；不推荐旧桥接作为必装项。</value>
-  </data>
-  <data name="QuickStart.Note.MpcHc" xml:space="preserve">
-    <value>使用仍维护的 clsid2 分支，检查 Windows 集成中的 SMTC 选项；完整元数据、时间轴和控制仍需按版本验收。</value>
-  </data>
   <data name="Plugins.Catalog.foobar.Compatibility" xml:space="preserve">
     <value>按 foobar2000 架构选择组件。</value>
   </data>
@@ -3440,107 +3866,5 @@
   </data>
   <data name="Plugins.DownloadDetails.Body" xml:space="preserve">
     <value>AF 只下载和校验文件，不自动解压或安装。优先尝试镜像，失败后回退官方；切换页面或关闭设置后继续，退出 AF 时取消。文件保存在本地应用数据目录的 AFMediaBar\PluginDownloads。</value>
-  </data>
-  <data name="QuickStart.Tutorial.Playback.Title" xml:space="preserve">
-    <value>播放与来源</value>
-  </data>
-  <data name="QuickStart.Tutorial.Playback.Body" xml:space="preserve">
-    <value>先在播放器中播放歌曲，再在 AF 媒体菜单选择来源。未显示时检查媒体与通知中的来源过滤，并查看下方播放器支持。</value>
-  </data>
-  <data name="QuickStart.Tutorial.Placement.Title" xml:space="preserve">
-    <value>显示与位置</value>
-  </data>
-  <data name="QuickStart.Tutorial.Placement.Body" xml:space="preserve">
-    <value>选择任务栏或桌面悬浮模式，再设置目标显示器、位置和尺寸。桌面悬浮模式可拖动并按需锁定。</value>
-  </data>
-  <data name="QuickStart.Tutorial.Appearance.Title" xml:space="preserve">
-    <value>内容与外观</value>
-  </data>
-  <data name="QuickStart.Tutorial.Appearance.Body" xml:space="preserve">
-    <value>在内容与布局中选择封面、文字和控制等组件；在外观中调整主题、背景和字体。小组件可单独配置。</value>
-  </data>
-  <data name="QuickStart.Tutorial.Lyrics.Title" xml:space="preserve">
-    <value>歌词与进度</value>
-  </data>
-  <data name="QuickStart.Tutorial.Lyrics.Body" xml:space="preserve">
-    <value>在歌词设置中调整显示与来源。歌词同步需要可靠的歌曲信息和进度；若缺少时间轴，先查看播放器支持，不要重复安装同类插件。</value>
-  </data>
-  <data name="QuickStart.Player.netease.Name" xml:space="preserve">
-    <value>网易云音乐</value>
-  </data>
-  <data name="QuickStart.Player.qqmusic.Name" xml:space="preserve">
-    <value>QQ 音乐</value>
-  </data>
-  <data name="QuickStart.Player.kugou.Name" xml:space="preserve">
-    <value>酷狗音乐</value>
-  </data>
-  <data name="QuickStart.Player.soda.Name" xml:space="preserve">
-    <value>汽水音乐</value>
-  </data>
-  <data name="QuickStart.Player.kuwo.Name" xml:space="preserve">
-    <value>酷我音乐</value>
-  </data>
-  <data name="QuickStart.Player.migu.Name" xml:space="preserve">
-    <value>咪咕音乐</value>
-  </data>
-  <data name="QuickStart.Player.qianqian.Name" xml:space="preserve">
-    <value>千千音乐</value>
-  </data>
-  <data name="QuickStart.Player.bodian.Name" xml:space="preserve">
-    <value>波点音乐</value>
-  </data>
-  <data name="QuickStart.Player.lx.Name" xml:space="preserve">
-    <value>洛雪音乐桌面版</value>
-  </data>
-  <data name="QuickStart.Player.yesplay.Name" xml:space="preserve">
-    <value>YesPlayMusic</value>
-  </data>
-  <data name="QuickStart.Player.moekoe.Name" xml:space="preserve">
-    <value>MoeKoeMusic</value>
-  </data>
-  <data name="QuickStart.Player.listen1.Name" xml:space="preserve">
-    <value>Listen 1</value>
-  </data>
-  <data name="QuickStart.Player.splayer.Name" xml:space="preserve">
-    <value>SPlayer</value>
-  </data>
-  <data name="QuickStart.Player.alger.Name" xml:space="preserve">
-    <value>AlgerMusicPlayer</value>
-  </data>
-  <data name="QuickStart.Player.musicfree.Name" xml:space="preserve">
-    <value>MusicFree Desktop</value>
-  </data>
-  <data name="QuickStart.Player.foobar.Name" xml:space="preserve">
-    <value>foobar2000</value>
-  </data>
-  <data name="QuickStart.Player.musicbee.Name" xml:space="preserve">
-    <value>MusicBee</value>
-  </data>
-  <data name="QuickStart.Player.vlc.Name" xml:space="preserve">
-    <value>VLC</value>
-  </data>
-  <data name="QuickStart.Player.itunes.Name" xml:space="preserve">
-    <value>iTunes</value>
-  </data>
-  <data name="QuickStart.Player.mpv.Name" xml:space="preserve">
-    <value>mpv</value>
-  </data>
-  <data name="QuickStart.Player.potplayer.Name" xml:space="preserve">
-    <value>PotPlayer</value>
-  </data>
-  <data name="QuickStart.Player.spotify.Name" xml:space="preserve">
-    <value>Spotify</value>
-  </data>
-  <data name="QuickStart.Player.applemusic.Name" xml:space="preserve">
-    <value>Apple Music</value>
-  </data>
-  <data name="QuickStart.Player.aimp.Name" xml:space="preserve">
-    <value>AIMP</value>
-  </data>
-  <data name="QuickStart.Player.mpchc.Name" xml:space="preserve">
-    <value>MPC-HC</value>
-  </data>
-  <data name="QuickStart.Player.tidal.Name" xml:space="preserve">
-    <value>TIDAL</value>
   </data>
 </root>

@@ -18,16 +18,21 @@ public readonly record struct PerformanceComponentSettings(
     int RefreshIntervalMilliseconds,
     bool OpenTaskManagerOnClick)
 {
+    public MetricVisualSettings Visuals { get; init; }
     public PerformanceDisplayMode DisplayMode { get; init; } = PerformanceDisplayMode.Cycle;
     public IReadOnlyList<MetricKind>? MetricOrder { get; init; }
 
-    /// <summary>在保留既有指标集合语义的同时解析显示顺序。</summary>
+    /// <summary>完整指标顺序；旧配置先保留原有顺序，再补入未登记的指标。</summary>
+    public IReadOnlyList<MetricKind> GetMetricOrder() => (MetricOrder ?? [])
+        .Concat(Metrics ?? [MetricKind.SystemMemory])
+        .Concat(Enum.GetValues<MetricKind>())
+        .Where(Enum.IsDefined).Distinct().ToArray();
+
+    /// <summary>轮换和并排均按完整顺序筛选已开启的指标。</summary>
     public IReadOnlyList<MetricKind> GetOrderedMetrics()
     {
         var selected = Metrics ?? [MetricKind.SystemMemory];
-        var order = MetricOrder ?? [];
-        return order.Where(selected.Contains).Distinct()
-            .Concat(selected.Where(metric => !order.Contains(metric))).ToArray();
+        return GetMetricOrder().Where(selected.Contains).ToArray();
     }
 
     /// <summary>
@@ -75,9 +80,11 @@ public readonly record struct PerformanceComponentSettings(
             SnapRefreshIntervalMilliseconds(RefreshIntervalMilliseconds),
             OpenTaskManagerOnClick)
         {
+            Visuals = Visuals.Normalize(),
             DisplayMode = Enum.IsDefined(DisplayMode) ? DisplayMode : PerformanceDisplayMode.Cycle,
-            MetricOrder = order is null ? null : order.Where(metrics.Contains).Distinct()
-                .Concat(metrics.Where(metric => !order.Contains(metric))).ToArray()
+            MetricOrder = order is null ? null : order.Where(Enum.IsDefined).Distinct()
+                .Concat(metrics.Where(metric => !order.Contains(metric)))
+                .Concat(Enum.GetValues<MetricKind>()).Distinct().ToArray()
         };
     }
 

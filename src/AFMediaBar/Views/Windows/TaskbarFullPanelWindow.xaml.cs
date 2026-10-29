@@ -5,6 +5,7 @@ using AFMediaBar.Classes.Services.Layout;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Resources;
+using AFMediaBar.ViewModels.Windows;
 using System.Diagnostics;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -19,6 +20,7 @@ namespace AFMediaBar.Views.Windows;
 /// <summary>任务栏外的完整媒体、音频与性能面板。 / Full media, audio, and performance panel outside the taskbar.</summary>
 public partial class TaskbarFullPanelWindow : FluentWindow
 {
+    private readonly FullPanelPresentationViewModel _presentation;
     private AppSettings? _presentationSettings;
     private AppSettings PresentationSettings => _presentationSettings ?? SettingsManager.Current;
     public void ApplyPresentationSettings(AppSettings? settings)
@@ -41,6 +43,10 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     private bool _isLoadingDevices;
     private int _audioRefreshGeneration;
     private bool _isSeeking;
+    private MediaSnapshot? _seekSnapshot;
+    private double? _pendingSeekPosition;
+    private long _pendingSeekStarted;
+    private int _seekRequestVersion;
     private bool _audioControlsVisible;
     private bool _performanceVisible;
     private bool _isClosing;
@@ -55,9 +61,19 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         AudioInteractionService audioInteractionService,
         SystemMetricsMonitorService metricsMonitor,
         WindowAppearanceService appearanceService,
-        IDisplayMonitorService displayMonitorService)
+        IDisplayMonitorService displayMonitorService,
+        FullPanelPresentationViewModel presentation)
     {
         InitializeComponent();
+        // MoveToPoint 会先消费轨道点击；仍需暂停进度同步并保存这次定位意图。
+        ProgressSlider.AddHandler(PreviewMouseLeftButtonDownEvent,
+            new MouseButtonEventHandler(ProgressSlider_MouseLeftButtonDown), handledEventsToo: true);
+        ProgressSlider.AddHandler(PreviewMouseLeftButtonUpEvent,
+            new MouseButtonEventHandler(ProgressSlider_MouseLeftButtonUp), handledEventsToo: true);
+        _presentation = presentation;
+        InitializeResizeGrips();
+        PanelRoot.SizeChanged += OnPanelContentSizeChanged;
+        DpiChanged += (_, _) => { if (_isResizing) CancelActiveResize(); QueuePanelPosition(); };
         ApplyMotionEffects();
         _mediaSessionService = mediaSessionService;
         _audioInteractionService = audioInteractionService;
@@ -98,12 +114,14 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 
         _isClosing = false;
         _anchor = anchor;
+        _resizePlacement = null;
         _targetMonitorDeviceId = targetMonitorDeviceId;
         _verticalAnchor = verticalAnchor;
         _placementSide = side;
         ApplyMotionEffects();
         Show();
         UpdateLayout();
+        ApplyFullPanelSettings(animate: false);
         PositionNear(anchor, targetMonitorDeviceId);
         BeginOpenAnimation();
         Activate();
@@ -116,6 +134,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
             return;
 
         _isClosing = true;
+        CancelProgressSeek();
         _audioInteractionService.CancelDeviceOwner(this);
         var motion = MotionPolicy.ResolveCurrent();
         if (!IsVisible || !motion.UseTransitions)
@@ -189,10 +208,20 @@ public partial class TaskbarFullPanelWindow : FluentWindow
                 monitor.WorkArea.Height / scaleY);
         var side = _placementSide ?? FullPanelPlacementPolicy.ResolveSide(anchor, work, _verticalAnchor);
         var limit = FullPanelPlacementPolicy.GetPanelLimit(anchor, work, side);
+        _panelWorkArea = new Rect(side == FullPanelPlacementSide.Right ? work.Right - limit.Width : work.Left,
+            side == FullPanelPlacementSide.Below ? work.Bottom - limit.Height : work.Top, limit.Width, limit.Height);
         MaxWidth = limit.Width;
         MaxHeight = limit.Height;
+        _resolvedSide = side;
+        ApplyScaleGeometry(limit);
+        UpdateResizeGrips();
         UpdateLayout();
-        var bounds = FullPanelPlacementPolicy.PlacePanel(anchor, new Size(ActualWidth, ActualHeight), work, side);
+        var size = new Size(ActualWidth, ActualHeight);
+        var bounds = _resizePlacement is { } placement
+            ? FullPanelScalePolicy.PlaceResizeBounds(placement.Bounds, size, placement.Edge, placement.Side)
+            : FullPanelPlacementPolicy.PlacePanel(anchor, size, work, side);
+        bounds.X = Math.Clamp(bounds.X, _panelWorkArea.Left, Math.Max(_panelWorkArea.Left, _panelWorkArea.Right - bounds.Width));
+        bounds.Y = Math.Clamp(bounds.Y, _panelWorkArea.Top, Math.Max(_panelWorkArea.Top, _panelWorkArea.Bottom - bounds.Height));
         Left = bounds.Left;
         Top = bounds.Top;
         PanelRoot.RenderTransformOrigin = side switch
@@ -208,6 +237,9 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 
     private void ApplySnapshot(MediaSnapshot snapshot)
     {
+        if (_isClosing) return;
+        if (_seekSnapshot is not null && !IsSameSeekTrack(_seekSnapshot, snapshot))
+            CancelProgressSeek();
         _snapshot = snapshot;
         TitleText.Text = string.IsNullOrWhiteSpace(snapshot.Title) ? Translations.Get("Panel.FullPanel.NoMedia") : snapshot.Title;
         ArtistText.Text = snapshot.Artist;
@@ -250,8 +282,13 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     /// Recomputes the one line built in code (the lyric source) after a language change; bound text re-reads itself, and this is
     /// the only composed one.
     /// </summary>
-    private void OnLanguageChanged(object? sender, EventArgs e) =>
-        Dispatcher.BeginInvoke(() => ApplyLyricsSourceLine(_snapshot));
+    private void OnLanguageChanged(object? sender, EventArgs e) => Dispatcher.BeginInvoke(() =>
+    {
+        if (_isClosing) return;
+        ApplyLyricsSourceLine(_snapshot);
+        ApplyChartStyles(PresentationSettings.TaskbarExperience.FullPanel.PerformanceVisuals);
+        QueuePanelPosition();
+    });
 
     /// <summary>
     /// 显示当前曲目的歌词来源。
@@ -282,6 +319,8 @@ public partial class TaskbarFullPanelWindow : FluentWindow
             return;
 
         var settings = PresentationSettings.TaskbarExperience.FullPanel.Normalize();
+        if (!_isResizing) _requestedScale = settings.ScalePercent / 100d;
+        ApplyChartStyles(settings.PerformanceVisuals);
         var animationVersion = ++_sectionAnimationVersion;
         var audioBecameVisible = !_audioControlsVisible && settings.AudioControlsVisible;
         var mediaInfoWasVisible = MediaInfoSection.Visibility == Visibility.Visible;
@@ -346,8 +385,8 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         MediaControlsSection.Visibility = settings.MediaControlsVisible ? Visibility.Visible : Visibility.Collapsed;
         AudioControlsSection.Visibility = settings.AudioControlsVisible ? Visibility.Visible : Visibility.Collapsed;
         PerformanceSection.Visibility = settings.PerformanceVisible ? Visibility.Visible : Visibility.Collapsed;
-        DisposeMetricsSubscription();
-        if (settings.PerformanceVisible)
+        if (!settings.PerformanceVisible || !IsVisible) DisposeMetricsSubscription();
+        else if (_metricsSubscription is null)
         {
             var generation = _metricsSubscriptionGeneration;
             _metricsSubscription = _metricsMonitor.Subscribe(
@@ -451,12 +490,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     {
         if (generation != _metricsSubscriptionGeneration || _isClosing || !_performanceVisible)
             return;
-        RamMetric.Text = metrics.SystemMemoryPercent is int memory ? $"{memory}%" : "—";
-        CpuMetric.Text = metrics.SystemCpuPercent is int cpu ? $"{cpu}%" : "—";
-        GpuMetric.Text = metrics.SystemGpuPercent is int gpu ? $"{gpu}%" : "—";
-        ProcessMetric.Text = metrics.ProcessMemoryMegabytes is long process ? $"{process} MB" : "—";
-        UploadMetric.Text = MetricPresentationPolicy.FormatRate(metrics.NetworkUploadBytesPerSecond);
-        DownloadMetric.Text = MetricPresentationPolicy.FormatRate(metrics.NetworkDownloadBytesPerSecond);
+        foreach (var presenter in PanelPresenters()) presenter.ApplySnapshot(metrics);
     }
 
     private void DisposeMetricsSubscription()
@@ -464,14 +498,22 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         _metricsSubscriptionGeneration++;
         _metricsSubscription?.Dispose();
         _metricsSubscription = null;
+        foreach (var presenter in PanelPresenters()) presenter.Reset();
     }
 
     private void UpdateProgress()
     {
         var position = TaskbarExperiencePolicy.GetPosition(_snapshot, DateTimeOffset.UtcNow);
+        if (!_isSeeking && _pendingSeekPosition is { } target &&
+            (Math.Abs(_snapshot.Position - target) <= 1 ||
+             Stopwatch.GetElapsedTime(_pendingSeekStarted) >= TimeSpan.FromSeconds(2)))
+        {
+            _pendingSeekPosition = null;
+            _seekSnapshot = null;
+        }
         if (!_isSeeking)
-            ProgressSlider.Value = position;
-        PositionText.Text = FormatTime(position);
+            ProgressSlider.Value = _pendingSeekPosition ?? position;
+        PositionText.Text = FormatTime(ProgressSlider.Value);
     }
 
     private static string FormatTime(double seconds)
@@ -502,15 +544,68 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         }
     }
 
-    private void ProgressSlider_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => _isSeeking = true;
-    private async void ProgressSlider_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    private void ProgressSlider_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        _isSeeking = false;
-        if (_snapshot.CanSeek)
-            await _mediaSessionService.SeekAsync(ProgressSlider.Value);
+        if (_isClosing || !_snapshot.CanSeek || e.ChangedButton != MouseButton.Left) return;
+        _seekRequestVersion++;
+        _pendingSeekPosition = null;
+        _seekSnapshot = _snapshot;
+        _isSeeking = true;
+        // 点击轨道时 Thumb 不会捕获鼠标，须保证移出轨道后松手也能结束交互。
+        if (e.Handled && !ProgressSlider.IsMouseCaptureWithin && !ProgressSlider.CaptureMouse())
+            CancelProgressSeek();
     }
 
-    private void ProgressSlider_LostMouseCapture(object sender, MouseEventArgs e) => _isSeeking = false;
+    private async void ProgressSlider_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isSeeking || e.ChangedButton != MouseButton.Left) return;
+        var target = ProgressSlider.Value;
+        var snapshot = _seekSnapshot;
+        _isSeeking = false;
+        if (Mouse.Captured == ProgressSlider) ProgressSlider.ReleaseMouseCapture();
+        if (snapshot is null || !IsSameSeekTrack(snapshot, _snapshot))
+        {
+            CancelProgressSeek();
+            return;
+        }
+
+        var version = ++_seekRequestVersion;
+        _pendingSeekPosition = target;
+        _pendingSeekStarted = Stopwatch.GetTimestamp();
+        try
+        {
+            await _mediaSessionService.SeekAsync(target);
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine($"[FullPanel] Seek failed: {exception}");
+            if (version == _seekRequestVersion) CancelProgressSeek();
+        }
+        finally
+        {
+            if (!_isClosing && version == _seekRequestVersion) UpdateProgress();
+        }
+    }
+
+    private void ProgressSlider_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (_isSeeking && !ProgressSlider.IsMouseCaptureWithin) CancelProgressSeek();
+    }
+
+    private void CancelProgressSeek()
+    {
+        _seekRequestVersion++;
+        _isSeeking = false;
+        _pendingSeekPosition = null;
+        _seekSnapshot = null;
+        if (ProgressSlider.IsMouseCaptureWithin) Mouse.Capture(null);
+    }
+
+    private static bool IsSameSeekTrack(MediaSnapshot expected, MediaSnapshot current) =>
+        current.IsConnected && current.CanSeek &&
+        string.Equals(expected.SourceId, current.SourceId, StringComparison.Ordinal) &&
+        string.Equals(expected.Title, current.Title, StringComparison.Ordinal) &&
+        string.Equals(expected.Artist, current.Artist, StringComparison.Ordinal);
 
 
     private async void DeviceCombo_DropDownOpened(object sender, EventArgs e) => await RefreshAudioAsync();
@@ -614,14 +709,17 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape)
-            RequestClose();
+        if (e.Key != Key.Escape) return;
+        if (_isResizing) CancelActiveResize();
+        else RequestClose();
+        e.Handled = true;
     }
 
     /// <summary>标记窗口已进入关闭流程，覆盖所有外部关闭入口。 / Marks the window as closing for every external close path.</summary>
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
         _isClosing = true;
+        CancelProgressSeek();
         _audioInteractionService.CancelDeviceOwner(this);
         base.OnClosing(e);
         if (e.Cancel)
@@ -635,6 +733,8 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         _audioInteractionService.CancelDeviceOwner(this);
         _volumeApplyVersion++;
         _timer.Stop();
+        PanelRoot.SizeChanged -= OnPanelContentSizeChanged;
+        CancelPanelResize();
         DisposeMetricsSubscription();
         _mediaSessionService.SnapshotChanged -= OnSnapshotChanged;
         SettingsManager.TaskbarExperienceSettingsChanged -= OnTaskbarExperienceSettingsChanged;

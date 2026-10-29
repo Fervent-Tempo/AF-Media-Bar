@@ -46,7 +46,7 @@ public sealed class BluetoothBatteryService(BluetoothBatteryReader reader, Bluet
         {
             var settings = SettingsManager.Current;
             var widget = settings.BluetoothBatteryWidget;
-            return settings.Experiments.BluetoothBattery && widget.Enabled && Snapshot is { IsConnected: true } snapshot &&
+            return settings.Experiments.BluetoothBattery && WidgetRequested(settings) && Snapshot is { IsConnected: true } snapshot &&
                 snapshot.DeviceId == widget.DeviceId && (widget.DisplayMode == BluetoothBatteryDisplayMode.WhenConnected || snapshot.IsRealtime && _lowVisible);
         }
     }
@@ -59,9 +59,12 @@ public sealed class BluetoothBatteryService(BluetoothBatteryReader reader, Bluet
         SettingsManager.SettingsChanged += OnSettingsChanged;
         Reconfigure();
     }, DispatcherPriority.Normal, cancellationToken).Task;
+    private static bool WidgetRequested(AppSettings settings) => new[] { BarLayoutState.Resident, BarLayoutState.Idle }
+        .Any(state => ComponentLayoutPolicy.Resolve(settings, state).Any(entry => entry.Component == TaskbarRestComponent.BluetoothBattery && entry.IsVisible));
+
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
-        if (_disposed || args.PropertyName is not (null or nameof(AppSettings.Experiments) or nameof(AppSettings.BluetoothBatteryWidget))) return;
+        if (_disposed || args.PropertyName is not (null or nameof(AppSettings.Experiments) or nameof(AppSettings.TaskbarExperience) or nameof(AppSettings.BluetoothBatteryWidget))) return;
         // 初始状态和配置变更也会通知呈现订阅，与读取结果使用同一 UI 线程。
         var dispatcher = Application.Current.Dispatcher;
         if (dispatcher.CheckAccess()) Reconfigure();
@@ -71,8 +74,12 @@ public sealed class BluetoothBatteryService(BluetoothBatteryReader reader, Bluet
     {
         if (_disposed) return;
         var settings = SettingsManager.Current.BluetoothBatteryWidget;
-        var enabled = SettingsManager.Current.Experiments.BluetoothBattery && settings.DeviceId is not null && (settings.Enabled || settings.Notifications);
-        if (_configuration == settings && enabled == (_session is not null)) return;
+        var enabled = SettingsManager.Current.Experiments.BluetoothBattery && settings.DeviceId is not null && (WidgetRequested(SettingsManager.Current) || settings.Notifications);
+        if (_configuration == settings && enabled == (_session is not null))
+        {
+            Changed?.Invoke(this, EventArgs.Empty);
+            return;
+        }
         // 仅改变组件显隐不重建会话，避免重置同一设备的提醒周期和重复创建观察器。
         if (enabled && _session is not null && _configuration is { } previous && previous.DeviceId == settings.DeviceId &&
             previous.Notifications == settings.Notifications && previous.LowThreshold == settings.LowThreshold)
@@ -199,7 +206,7 @@ public sealed class BluetoothBatteryService(BluetoothBatteryReader reader, Bluet
                     Changed?.Invoke(this, EventArgs.Empty);
                     if (alerts.Evaluate(session.DeviceId, reading, configuration.Notifications, configuration.LowThreshold))
                     {
-                        try { notifications.TryShowNotification(Translations.Get("Battery.LowTitle"), Translations.Format("Battery.LowBody", reading.DeviceName, reading.Percent)); }
+                        try { notifications.TryShowNotification(Translations.Get("Battery.LowTitle"), Translations.Format("Battery.LowBody", reading.DeviceName, reading.Percent), AFMediaBar.Classes.Models.ShellNotificationTarget.None, "Battery.Low"); }
                         catch (Exception error) { log.Warn("Bluetooth", "低电量通知失败", error); }
                     }
                 });

@@ -1,12 +1,12 @@
 {
   "formatVersion": 2,
-  "latestRelease": "v1.5.0",
+  "latestRelease": "v1.6.0",
   "settingsSchemaVersion": 2,
   "settings": {
     "experiments": {
-      "bluetoothBattery": "unreleased",
-      "memoryTools": "unreleased",
-      "systemMemoryCleanup": "unreleased",
+      "bluetoothBattery": "v1.6.0",
+      "memoryTools": "v1.6.0",
+      "systemMemoryCleanup": "v1.6.0",
       "floatingBar": "v1.5.0",
       "$release": "v1.5.0",
       "verticalTaskbar": "v1.5.0"
@@ -29,14 +29,15 @@
       },
       "orientation": "v1.5.0",
       "layer": "v1.5.0",
-      "edgeCollapseEnabled": "unreleased",
+      "edgeCollapseEnabled": "v1.6.0",
+      "overlayTaskbar": "unreleased",
       "monitorDeviceIds": "v1.5.0",
       "positions": {
         "$items": {
           "centerXDip": "v1.5.0",
           "monitorDeviceId": "v1.5.0",
           "centerYDip": "v1.5.0",
-          "dockEdge": "unreleased"
+          "dockEdge": "v1.6.0"
         },
         "$release": "v1.5.0"
       }
@@ -89,10 +90,10 @@
       "trayChordWheelAction": "v1.2.0",
       "trayClickAction": "v1.2.0",
       "trayPrimaryWheelAction": "v1.2.0",
-      "outputDeviceClickTarget": "unreleased",
-      "outputDeviceWheelTarget": "unreleased",
-      "inputDeviceClickTarget": "unreleased",
-      "inputDeviceWheelTarget": "unreleased"
+      "outputDeviceClickTarget": "v1.5.0",
+      "outputDeviceWheelTarget": "v1.5.0",
+      "inputDeviceClickTarget": "v1.5.0",
+      "inputDeviceWheelTarget": "v1.5.0"
     },
     "interfaceLanguage": "v1.2.0",
     "launchAtStartup": "v1.2.0",
@@ -100,16 +101,16 @@
     "layoutOrientationMode": "v1.2.0",
     "layoutThicknessScalePercent": "v1.2.0",
     "lyricsArtistSeparators": "v1.3.2",
-    "lyricsBracketSymbolsHidden": "unreleased",
+    "lyricsBracketSymbolsHidden": "v1.6.0",
     "lyricsCharacterSpacingPercent": "v1.3.0",
     "lyricsChineseConversion": "v1.4.0",
     "lyricsEnabled": "v1.2.0",
     "lyricsFixedWidthDip": "v1.3.0",
     "lyricsFixedWidthEnabled": "v1.3.0",
-    "lyricsFuriganaFilterEnabled": "unreleased",
+    "lyricsFuriganaFilterEnabled": "v1.6.0",
     "lyricsInfoLineFilterEnabled": "v1.2.0",
     "lyricsLineGapPercent": "v1.3.0",
-    "lyricsLongLineScrollEnabled": "unreleased",
+    "lyricsLongLineScrollEnabled": "v1.6.0",
     "lyricsSecondaryLine": {
       "$release": "v1.2.0",
       "order": "v1.2.0"
@@ -117,15 +118,23 @@
     "lyricsSource": {
       "$release": "v1.2.0",
       "enabledSourceIds": "v1.2.0",
-      "rule": "unreleased",
-      "attemptMode": "unreleased",
-      "resultMode": "unreleased",
-      "prioritySourceIds": "unreleased"
+      "rule": "v1.5.0",
+      "attemptMode": "v1.5.0",
+      "resultMode": "v1.5.0",
+      "prioritySourceIds": "v1.5.0"
     },
     "lyricsSyllableHighlightEnabled": "v1.2.0",
     "lyricsTextAlignment": "v1.2.0",
     "lyricsUnsungOpacityPercent": "v1.2.0",
     "performanceComponent": {
+      "visuals": {
+        "$release": "unreleased",
+        "systemMemory": "unreleased",
+        "systemCpu": "unreleased",
+        "systemGpu": "unreleased",
+        "processMemory": "unreleased",
+        "systemNetwork": "unreleased"
+      },
       "$release": "v1.2.0",
       "displayMode": "v1.4.0",
       "metricOrder": "v1.4.0",
@@ -135,15 +144,15 @@
     },
     "position": "v1.2.0",
     "mediaSelection": {
-      "$release": "unreleased",
-      "mode": "unreleased",
-      "preferredSourceId": "unreleased"
+      "$release": "v1.6.0",
+      "mode": "v1.6.0",
+      "preferredSourceId": "v1.6.0"
     },
     "quickLaunch": {
       "$release": "v1.2.0",
-      "interactionMode": "unreleased",
-      "showApplicationIconOnHover": "unreleased",
-      "selectedEntryId": "unreleased",
+      "interactionMode": "v1.6.0",
+      "showApplicationIconOnHover": "v1.6.0",
+      "selectedEntryId": "v1.6.0",
       "entries": {
         "$release": "v1.2.0",
         "$items": {
@@ -164,8 +173,9 @@
       "$release": "v1.2.0",
       "bandCount": "v1.2.0",
       "captureSource": "v1.4.0",
-      "captureDeviceId": "unreleased",
-      "captureDeviceName": "unreleased",
+      "captureDeviceId": "v1.6.0",
+      "captureDeviceMode": "v1.6.0",
+      "captureDeviceName": "v1.6.0",
       "contentHeightDip": "v1.2.0",
       "refreshRateHz": "v1.2.0",
       "sensitivityPercent": "v1.2.0",
@@ -186,8 +196,18 @@
       "contentLayout": "v1.2.0",
       "density": "v1.2.0",
       "fixedLengthDip": "v1.2.0",
+      "fullPanelEntryHoverDelayMilliseconds": "unreleased",
       "fullLayerEnabled": "v1.2.0",
       "fullPanel": {
+        "scalePercent": "unreleased",
+        "performanceVisuals": {
+          "$release": "unreleased",
+          "systemMemory": "unreleased",
+          "systemCpu": "unreleased",
+          "systemGpu": "unreleased",
+          "processMemory": "unreleased",
+          "systemNetwork": "unreleased"
+        },
         "$release": "v1.2.0",
         "audioControlsVisible": "v1.2.0",
         "mediaControlsVisible": "v1.2.0",
@@ -195,7 +215,7 @@
         "performanceVisible": "v1.2.0"
       },
       "fullPanelEntryVisible": "v1.2.0",
-      "fullPanelEntryTrigger": "unreleased",
+      "fullPanelEntryTrigger": "v1.6.0",
       "hoverButtonSpacingDip": "v1.3.0",
       "hoverControls": {
         "$release": "v1.2.0",
@@ -204,7 +224,7 @@
         "playPauseVisible": "v1.2.0",
         "previousNextVisible": "v1.2.0",
         "progressVisible": "v1.2.0",
-        "inputDeviceVisible": "unreleased"
+        "inputDeviceVisible": "v1.5.0"
       },
       "hoverLayerEnabled": "v1.2.0",
       "idleComponents": "v1.2.1",
@@ -215,9 +235,34 @@
       "performanceVisible": "v1.2.0",
       "restComponentOrder": "v1.2.1",
       "restProgressVisible": "v1.2.0",
+      "smallArtwork": "unreleased",
       "spectrumVisible": "v1.2.0",
       "volumeVisible": "v1.2.1",
-      "inputDeviceVisible": "unreleased"
+      "inputDeviceVisible": "v1.5.0",
+      "componentLayouts": {
+        "$release": "unreleased",
+        "resident": {
+          "$release": "unreleased",
+          "$items": {
+            "component": "unreleased",
+            "isVisible": "unreleased"
+          }
+        },
+        "idle": {
+          "$release": "unreleased",
+          "$items": {
+            "component": "unreleased",
+            "isVisible": "unreleased"
+          }
+        },
+        "hover": {
+          "$release": "unreleased",
+          "$items": {
+            "component": "unreleased",
+            "isVisible": "unreleased"
+          }
+        }
+      }
     },
     "taskbarSurface": {
       "$release": "v1.2.0",
@@ -248,388 +293,900 @@
     },
     "windowMode": "v1.2.0",
     "bluetoothBatteryWidget": {
-      "$release": "unreleased", "enabled": "unreleased", "deviceId": "unreleased", "lastKnownName": "unreleased",
-      "displayMode": "unreleased", "notifications": "unreleased", "lowThreshold": "unreleased"
+      "$release": "v1.6.0",
+      "enabled": "v1.6.0",
+      "deviceId": "v1.6.0",
+      "lastKnownName": "v1.6.0",
+      "displayMode": "v1.6.0",
+      "notifications": "v1.6.0",
+      "lowThreshold": "v1.6.0"
     },
     "systemMemoryOptimization": {
-      "$release": "unreleased", "timerEnabled": "unreleased", "intervalMinutes": "unreleased",
-      "thresholdEnabled": "unreleased", "thresholdPercent": "unreleased", "level": "unreleased"
+      "$release": "v1.6.0",
+      "timerEnabled": "v1.6.0",
+      "intervalMinutes": "v1.6.0",
+      "thresholdEnabled": "v1.6.0",
+      "thresholdPercent": "v1.6.0",
+      "level": "v1.6.0"
     },
     "audioDevices": {
-      "preferences": { "$release": "unreleased", "$items": { "direction": "unreleased", "endpointId": "unreleased", "lastKnownName": "unreleased", "alias": "unreleased" } },
-      "outputCycleHotkey": "unreleased",
-      "inputCycleHotkey": "unreleased",
-      "$release": "unreleased",
-      "outputBlacklist": {
-        "$release": "unreleased",
+      "preferences": {
+        "$release": "v1.6.0",
         "$items": {
-          "endpointId": "unreleased",
-          "displayName": "unreleased"
+          "direction": "v1.6.0",
+          "endpointId": "v1.6.0",
+          "lastKnownName": "v1.6.0",
+          "alias": "v1.6.0"
+        }
+      },
+      "outputCycleHotkey": "v1.6.0",
+      "inputCycleHotkey": "v1.6.0",
+      "$release": "v1.5.0",
+      "outputBlacklist": {
+        "$release": "v1.5.0",
+        "$items": {
+          "endpointId": "v1.5.0",
+          "displayName": "v1.5.0"
         }
       },
       "inputBlacklist": {
-        "$release": "unreleased",
+        "$release": "v1.5.0",
         "$items": {
-          "endpointId": "unreleased",
-          "displayName": "unreleased"
+          "endpointId": "v1.5.0",
+          "displayName": "v1.5.0"
         }
       },
-      "switchOutputCommunications": "unreleased",
-      "switchInputCommunications": "unreleased"
+      "switchOutputCommunications": "v1.5.0",
+      "switchInputCommunications": "v1.5.0"
     }
   },
   "enums": {
     "BluetoothBatteryDisplayMode": {
-      "paths": ["settings.bluetoothBatteryWidget.displayMode"],
-      "members": { "WhenConnected": { "value": 0, "release": "unreleased" }, "WhenLow": { "value": 1, "release": "unreleased" } }
+      "paths": [
+        "settings.bluetoothBatteryWidget.displayMode"
+      ],
+      "members": {
+        "WhenConnected": {
+          "value": 0,
+          "release": "v1.6.0"
+        },
+        "WhenLow": {
+          "value": 1,
+          "release": "v1.6.0"
+        }
+      }
     },
     "SystemMemoryOptimizationLevel": {
-      "paths": ["settings.systemMemoryOptimization.level"],
-      "members": { "Standard": { "value": 0, "release": "unreleased" }, "Deep": { "value": 1, "release": "unreleased" } }
+      "paths": [
+        "settings.systemMemoryOptimization.level"
+      ],
+      "members": {
+        "Standard": {
+          "value": 0,
+          "release": "v1.6.0"
+        },
+        "Deep": {
+          "value": 1,
+          "release": "v1.6.0"
+        }
+      }
     },
     "AudioDeviceDirection": {
-      "paths": ["settings.audioDevices.preferences[].direction"],
-      "members": { "Output": { "value": 0, "release": "unreleased" }, "Input": { "value": 1, "release": "unreleased" } }
+      "paths": [
+        "settings.audioDevices.preferences[].direction"
+      ],
+      "members": {
+        "Output": {
+          "value": 0,
+          "release": "v1.6.0"
+        },
+        "Input": {
+          "value": 1,
+          "release": "v1.6.0"
+        }
+      }
     },
     "FullPanelHandleTrigger": {
-      "paths": ["settings.taskbarExperience.fullPanelEntryTrigger"],
+      "paths": [
+        "settings.taskbarExperience.fullPanelEntryTrigger"
+      ],
       "members": {
-        "Click": {"value": 0, "release": "unreleased"},
-        "Hover": {"value": 1, "release": "unreleased"}
+        "Click": {
+          "value": 0,
+          "release": "v1.6.0"
+        },
+        "Hover": {
+          "value": 1,
+          "release": "v1.6.0"
+        }
       }
     },
     "FloatingBarDockEdge": {
-      "paths": ["settings.floatingBar.positions[].dockEdge"],
+      "paths": [
+        "settings.floatingBar.positions[].dockEdge"
+      ],
       "members": {
-        "None": {"value": 0, "release": "unreleased"},
-        "Left": {"value": 1, "release": "unreleased"},
-        "Right": {"value": 2, "release": "unreleased"},
-        "Top": {"value": 3, "release": "unreleased"},
-        "Bottom": {"value": 4, "release": "unreleased"}
+        "None": {
+          "value": 0,
+          "release": "v1.6.0"
+        },
+        "Left": {
+          "value": 1,
+          "release": "v1.6.0"
+        },
+        "Right": {
+          "value": 2,
+          "release": "v1.6.0"
+        },
+        "Top": {
+          "value": 3,
+          "release": "v1.6.0"
+        },
+        "Bottom": {
+          "value": 4,
+          "release": "v1.6.0"
+        }
       }
     },
     "FloatingBarLayer": {
-        "paths": [
-          "settings.floatingBar.layer"
-        ],
-        "members": {
-          "Desktop": {
-            "value": 0,
-            "release": "v1.5.0"
-          },
-          "Topmost": {
-            "value": 1,
-            "release": "v1.5.0"
-          }
-        }
-      },
-      "LayoutOrientation": {
-        "paths": [
-          "settings.floatingBar.orientation"
-        ],
-        "members": {
-          "Horizontal": {
-            "value": 0,
-            "release": "v1.5.0"
-          },
-          "Vertical": {
-            "value": 1,
-            "release": "v1.5.0"
-          }
-        }
-      },
-
-    "LyricsSourceRule": {
-      "paths": ["settings.lyricsSource.rule"],
+      "paths": [
+        "settings.floatingBar.layer"
+      ],
       "members": {
-        "Default": {"value": 0, "release": "unreleased"},
-        "Manual": {"value": 1, "release": "unreleased"}
+        "Desktop": {
+          "value": 0,
+          "release": "v1.5.0"
+        },
+        "Topmost": {
+          "value": 1,
+          "release": "v1.5.0"
+        }
+      }
+    },
+    "LayoutOrientation": {
+      "paths": [
+        "settings.floatingBar.orientation"
+      ],
+      "members": {
+        "Horizontal": {
+          "value": 0,
+          "release": "v1.5.0"
+        },
+        "Vertical": {
+          "value": 1,
+          "release": "v1.5.0"
+        }
+      }
+    },
+    "LyricsSourceRule": {
+      "paths": [
+        "settings.lyricsSource.rule"
+      ],
+      "members": {
+        "Default": {
+          "value": 0,
+          "release": "v1.5.0"
+        },
+        "Manual": {
+          "value": 1,
+          "release": "v1.5.0"
+        }
       }
     },
     "LyricsSourceAttemptMode": {
-      "paths": ["settings.lyricsSource.attemptMode"],
+      "paths": [
+        "settings.lyricsSource.attemptMode"
+      ],
       "members": {
-        "Sequential": {"value": 0, "release": "unreleased"},
-        "Parallel": {"value": 1, "release": "unreleased"}
+        "Sequential": {
+          "value": 0,
+          "release": "v1.5.0"
+        },
+        "Parallel": {
+          "value": 1,
+          "release": "v1.5.0"
+        }
       }
     },
     "LyricsSourceResultMode": {
-      "paths": ["settings.lyricsSource.resultMode"],
+      "paths": [
+        "settings.lyricsSource.resultMode"
+      ],
       "members": {
-        "Ordered": {"value": 0, "release": "unreleased"},
-        "FirstAvailable": {"value": 1, "release": "unreleased"}
+        "Ordered": {
+          "value": 0,
+          "release": "v1.5.0"
+        },
+        "FirstAvailable": {
+          "value": 1,
+          "release": "v1.5.0"
+        }
       }
     },
     "AccentColorMode": {
-      "paths": ["settings.appearance.accentColorMode"],
+      "paths": [
+        "settings.appearance.accentColorMode"
+      ],
       "members": {
-        "System": {"value": 0, "release": "v1.2.0"},
-        "Custom": {"value": 1, "release": "v1.2.0"}
+        "System": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Custom": {
+          "value": 1,
+          "release": "v1.2.0"
+        }
       }
     },
     "ApplicationBackdropMode": {
-      "paths": ["settings.appearance.backdropMode"],
+      "paths": [
+        "settings.appearance.backdropMode"
+      ],
       "members": {
-        "FluentSolid": {"value": 0, "release": "v1.2.0"},
-        "Mica": {"value": 1, "release": "v1.2.0"},
-        "Acrylic": {"value": 2, "release": "v1.2.0"},
-        "MicaAlt": {"value": 3, "release": "v1.2.0"}
+        "FluentSolid": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Mica": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "Acrylic": {
+          "value": 2,
+          "release": "v1.2.0"
+        },
+        "MicaAlt": {
+          "value": 3,
+          "release": "v1.2.0"
+        }
       }
     },
     "ApplicationThemeMode": {
-      "paths": ["settings.appearance.applicationThemeMode"],
+      "paths": [
+        "settings.appearance.applicationThemeMode"
+      ],
       "members": {
-        "Automatic": {"value": 0, "release": "v1.2.0"},
-        "Light": {"value": 1, "release": "v1.2.0"},
-        "Dark": {"value": 2, "release": "v1.2.0"}
+        "Automatic": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Light": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "Dark": {
+          "value": 2,
+          "release": "v1.2.0"
+        }
       }
     },
     "ArtworkHoverMode": {
-      "paths": ["settings.interaction.artworkHoverMode"],
+      "paths": [
+        "settings.interaction.artworkHoverMode"
+      ],
       "members": {
-        "Off": {"value": 0, "release": "v1.4.0"},
-        "Zoom": {"value": 1, "release": "v1.4.0"},
-        "Preview": {"value": 2, "release": "v1.4.0"}
+        "Off": {
+          "value": 0,
+          "release": "v1.4.0"
+        },
+        "Zoom": {
+          "value": 1,
+          "release": "v1.4.0"
+        },
+        "Preview": {
+          "value": 2,
+          "release": "v1.4.0"
+        },
+        "None": {
+          "value": 3,
+          "release": "unreleased"
+        }
       }
     },
     "CjkFontPreset": {
-      "paths": ["settings.appearance.cjkFont"],
+      "paths": [
+        "settings.appearance.cjkFont"
+      ],
       "members": {
-        "SystemDefault": {"value": 0, "release": "v1.2.0"},
-        "MicrosoftYaHei": {"value": 1, "release": "v1.2.0"},
-        "DengXian": {"value": 2, "release": "v1.2.0"},
-        "SimSun": {"value": 3, "release": "v1.2.0"},
-        "SimHei": {"value": 4, "release": "v1.2.0"},
-        "KaiTi": {"value": 5, "release": "v1.2.0"},
-        "FangSong": {"value": 6, "release": "v1.2.0"}
+        "SystemDefault": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "MicrosoftYaHei": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "DengXian": {
+          "value": 2,
+          "release": "v1.2.0"
+        },
+        "SimSun": {
+          "value": 3,
+          "release": "v1.2.0"
+        },
+        "SimHei": {
+          "value": 4,
+          "release": "v1.2.0"
+        },
+        "KaiTi": {
+          "value": 5,
+          "release": "v1.2.0"
+        },
+        "FangSong": {
+          "value": 6,
+          "release": "v1.2.0"
+        }
       }
     },
     "DynamicIslandBackgroundMode": {
-      "paths": ["settings.dynamicIslandBackgroundMode"],
+      "paths": [
+        "settings.dynamicIslandBackgroundMode"
+      ],
       "members": {
-        "SystemTheme": {"value": 0, "release": "v1.2.0"},
-        "Transparent": {"value": 1, "release": "v1.2.0"}
+        "SystemTheme": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Transparent": {
+          "value": 1,
+          "release": "v1.2.0"
+        }
       }
     },
     "DynamicIslandEdge": {
-      "paths": ["settings.dynamicIslandEdge"],
+      "paths": [
+        "settings.dynamicIslandEdge"
+      ],
       "members": {
-        "Top": {"value": 0, "release": "v1.2.0"},
-        "Right": {"value": 1, "release": "v1.2.0"},
-        "Bottom": {"value": 2, "release": "v1.2.0"},
-        "Left": {"value": 3, "release": "v1.2.0"}
+        "Top": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Right": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "Bottom": {
+          "value": 2,
+          "release": "v1.2.0"
+        },
+        "Left": {
+          "value": 3,
+          "release": "v1.2.0"
+        }
       }
     },
     "InteractionModifier": {
-      "paths": ["settings.interaction.modifier"],
+      "paths": [
+        "settings.interaction.modifier"
+      ],
       "members": {
-        "Shift": {"value": 0, "release": "v1.2.0"},
-        "LeftMouseButton": {"value": 1, "release": "v1.2.0"},
-        "RightMouseButton": {"value": 2, "release": "v1.2.0"}
+        "Shift": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "LeftMouseButton": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "RightMouseButton": {
+          "value": 2,
+          "release": "v1.2.0"
+        }
       }
     },
     "InterfaceLanguage": {
-      "paths": ["settings.interfaceLanguage"],
+      "paths": [
+        "settings.interfaceLanguage"
+      ],
       "members": {
-        "System": {"value": 0, "release": "v1.2.0"},
-        "SimplifiedChinese": {"value": 1, "release": "v1.2.0"},
-        "TraditionalChinese": {"value": 2, "release": "v1.2.0"},
-        "English": {"value": 3, "release": "v1.2.0"},
-        "Vietnamese": {"value": 4, "release": "v1.4.0"}
+        "System": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "SimplifiedChinese": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "TraditionalChinese": {
+          "value": 2,
+          "release": "v1.2.0"
+        },
+        "English": {
+          "value": 3,
+          "release": "v1.2.0"
+        },
+        "Vietnamese": {
+          "value": 4,
+          "release": "v1.4.0"
+        }
       }
     },
     "LatinFontPreset": {
-      "paths": ["settings.appearance.latinFont"],
+      "paths": [
+        "settings.appearance.latinFont"
+      ],
       "members": {
-        "SegoeUi": {"value": 0, "release": "v1.2.0"},
-        "Arial": {"value": 1, "release": "v1.2.0"},
-        "Calibri": {"value": 2, "release": "v1.2.0"},
-        "Verdana": {"value": 3, "release": "v1.2.0"},
-        "Consolas": {"value": 4, "release": "v1.2.0"},
-        "TimesNewRoman": {"value": 5, "release": "v1.2.0"},
-        "SystemDefault": {"value": 6, "release": "v1.3.0"}
+        "SegoeUi": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Arial": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "Calibri": {
+          "value": 2,
+          "release": "v1.2.0"
+        },
+        "Verdana": {
+          "value": 3,
+          "release": "v1.2.0"
+        },
+        "Consolas": {
+          "value": 4,
+          "release": "v1.2.0"
+        },
+        "TimesNewRoman": {
+          "value": 5,
+          "release": "v1.2.0"
+        },
+        "SystemDefault": {
+          "value": 6,
+          "release": "v1.3.0"
+        }
       }
     },
     "LayoutOrientationMode": {
-      "paths": ["settings.layoutOrientationMode"],
+      "paths": [
+        "settings.layoutOrientationMode"
+      ],
       "members": {
-        "Auto": {"value": 0, "release": "v1.2.0"},
-        "Horizontal": {"value": 1, "release": "v1.2.0"},
-        "Vertical": {"value": 2, "release": "v1.2.0"}
+        "Auto": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Horizontal": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "Vertical": {
+          "value": 2,
+          "release": "v1.2.0"
+        }
       }
     },
     "LyricsChineseConversionMode": {
-      "paths": ["settings.lyricsChineseConversion"],
+      "paths": [
+        "settings.lyricsChineseConversion"
+      ],
       "members": {
-        "None": {"value": 0, "release": "v1.4.0"},
-        "SimplifiedToTraditional": {"value": 1, "release": "v1.4.0"},
-        "TraditionalToSimplified": {"value": 2, "release": "v1.4.0"}
+        "None": {
+          "value": 0,
+          "release": "v1.4.0"
+        },
+        "SimplifiedToTraditional": {
+          "value": 1,
+          "release": "v1.4.0"
+        },
+        "TraditionalToSimplified": {
+          "value": 2,
+          "release": "v1.4.0"
+        }
       }
     },
     "LyricsSecondaryLineMode": {
-      "paths": ["settings.lyricsSecondaryLine.order"],
+      "paths": [
+        "settings.lyricsSecondaryLine.order"
+      ],
       "members": {
-        "NextLine": {"value": 0, "release": "v1.2.0"},
-        "Translation": {"value": 1, "release": "v1.2.0"},
-        "Romanization": {"value": 2, "release": "v1.2.0"}
+        "NextLine": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Translation": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "Romanization": {
+          "value": 2,
+          "release": "v1.2.0"
+        }
       }
     },
     "LyricsTextAlignment": {
-      "paths": ["settings.lyricsTextAlignment"],
+      "paths": [
+        "settings.lyricsTextAlignment"
+      ],
       "members": {
-        "Left": {"value": 0, "release": "v1.2.0"},
-        "Center": {"value": 1, "release": "v1.2.0"},
-        "Right": {"value": 2, "release": "v1.2.0"}
+        "Left": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Center": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "Right": {
+          "value": 2,
+          "release": "v1.2.0"
+        }
       }
     },
     "MetricKind": {
-      "paths": ["settings.performanceComponent.metricOrder", "settings.performanceComponent.metrics"],
+      "paths": [
+        "settings.performanceComponent.metricOrder",
+        "settings.performanceComponent.metrics"
+      ],
       "members": {
-        "SystemMemory": {"value": 0, "release": "v1.2.0"},
-        "SystemCpu": {"value": 1, "release": "v1.2.0"},
-        "SystemGpu": {"value": 2, "release": "v1.2.0"},
-        "ProcessMemory": {"value": 3, "release": "v1.2.0"},
-        "SystemNetwork": {"value": 4, "release": "v1.4.0"}
+        "SystemMemory": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "SystemCpu": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "SystemGpu": {
+          "value": 2,
+          "release": "v1.2.0"
+        },
+        "ProcessMemory": {
+          "value": 3,
+          "release": "v1.2.0"
+        },
+        "SystemNetwork": {
+          "value": 4,
+          "release": "v1.4.0"
+        }
       }
     },
     "NotificationTargetMode": {
-      "paths": ["settings.trackChangeNotification.targetMode"],
+      "paths": [
+        "settings.trackChangeNotification.targetMode"
+      ],
       "members": {
-        "Fixed": {"value": 0, "release": "v1.2.0"},
-        "ForegroundWindow": {"value": 1, "release": "v1.2.0"}
+        "Fixed": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "ForegroundWindow": {
+          "value": 1,
+          "release": "v1.2.0"
+        }
       }
     },
     "PlayerClickAction": {
-      "paths": ["settings.interaction.artworkClickAction", "settings.interaction.textClickAction"],
+      "paths": [
+        "settings.interaction.artworkClickAction",
+        "settings.interaction.textClickAction"
+      ],
       "members": {
-        "TogglePlayPause": {"value": 0, "release": "v1.2.0"},
-        "ActivateSource": {"value": 1, "release": "v1.2.0"},
-        "OpenFullPanel": {"value": 2, "release": "v1.2.0"},
-        "Disabled": {"value": 3, "release": "v1.2.0"}
+        "TogglePlayPause": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "ActivateSource": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "OpenFullPanel": {
+          "value": 2,
+          "release": "v1.2.0"
+        },
+        "Disabled": {
+          "value": 3,
+          "release": "v1.2.0"
+        }
       }
     },
     "PlayerForegroundMode": {
-      "paths": ["settings.appearance.playerForegroundMode"],
+      "paths": [
+        "settings.appearance.playerForegroundMode"
+      ],
       "members": {
-        "Automatic": {"value": 0, "release": "v1.2.0"},
-        "LightText": {"value": 1, "release": "v1.2.0"},
-        "DarkText": {"value": 2, "release": "v1.2.0"}
+        "Automatic": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "LightText": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "DarkText": {
+          "value": 2,
+          "release": "v1.2.0"
+        }
       }
     },
     "PlayerSurfaceStyle": {
-      "paths": ["settings.dynamicIslandSurface.style", "settings.taskbarSurface.style"],
+      "paths": [
+        "settings.dynamicIslandSurface.style",
+        "settings.taskbarSurface.style"
+      ],
       "members": {
-        "Automatic": {"value": 0, "release": "v1.2.0"},
-        "Solid": {"value": 1, "release": "v1.2.0"},
-        "ThemeTint": {"value": 2, "release": "v1.2.0"}
+        "Automatic": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Solid": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "ThemeTint": {
+          "value": 2,
+          "release": "v1.2.0"
+        }
       }
     },
     "MediaSelectionMode": {
-      "paths": ["settings.mediaSelection.mode"],
+      "paths": [
+        "settings.mediaSelection.mode"
+      ],
       "members": {
-        "Automatic": {"value": 0, "release": "unreleased"},
-        "LatestSession": {"value": 1, "release": "unreleased"},
-        "PreferredApplication": {"value": 2, "release": "unreleased"}
+        "Automatic": {
+          "value": 0,
+          "release": "v1.6.0"
+        },
+        "LatestSession": {
+          "value": 1,
+          "release": "v1.6.0"
+        },
+        "PreferredApplication": {
+          "value": 2,
+          "release": "v1.6.0"
+        }
       }
     },
     "QuickLaunchInteractionMode": {
-      "paths": ["settings.quickLaunch.interactionMode"],
+      "paths": [
+        "settings.quickLaunch.interactionMode"
+      ],
       "members": {
-        "ListLaunch": {"value": 0, "release": "unreleased"},
-        "SelectThenLaunch": {"value": 1, "release": "unreleased"}
+        "ListLaunch": {
+          "value": 0,
+          "release": "v1.6.0"
+        },
+        "SelectThenLaunch": {
+          "value": 1,
+          "release": "v1.6.0"
+        }
       }
     },
     "QuickLaunchTargetKind": {
-      "paths": ["settings.quickLaunch.entries[].kind"],
+      "paths": [
+        "settings.quickLaunch.entries[].kind"
+      ],
       "members": {
-        "Executable": {"value": 0, "release": "v1.2.0"},
-        "Shortcut": {"value": 1, "release": "v1.2.0"},
-        "AppUserModelId": {"value": 2, "release": "v1.2.0"}
+        "Executable": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Shortcut": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "AppUserModelId": {
+          "value": 2,
+          "release": "v1.2.0"
+        }
+      }
+    },
+    "SpectrumCaptureDeviceMode": {
+      "paths": [
+        "settings.spectrumComponent.captureDeviceMode"
+      ],
+      "members": {
+        "FollowMediaSource": {
+          "value": 0,
+          "release": "v1.6.0"
+        },
+        "SystemDefault": {
+          "value": 1,
+          "release": "v1.6.0"
+        },
+        "SpecificDevice": {
+          "value": 2,
+          "release": "v1.6.0"
+        }
       }
     },
     "SpectrumCaptureSource": {
-      "paths": ["settings.spectrumComponent.captureSource"],
+      "paths": [
+        "settings.spectrumComponent.captureSource"
+      ],
       "members": {
-        "CurrentDevice": {"value": 0, "release": "v1.4.0"},
-        "AllApplications": {"value": 1, "release": "v1.4.0"},
-        "CurrentMediaApplication": {"value": 2, "release": "v1.4.0"}
+        "CurrentDevice": {
+          "value": 0,
+          "release": "v1.4.0"
+        },
+        "AllApplications": {
+          "value": 1,
+          "release": "v1.4.0"
+        },
+        "CurrentMediaApplication": {
+          "value": 2,
+          "release": "v1.4.0"
+        }
       }
     },
     "SpectrumStyle": {
-      "paths": ["settings.spectrumComponent.style"],
+      "paths": [
+        "settings.spectrumComponent.style"
+      ],
       "members": {
-        "Bars": {"value": 0, "release": "v1.2.0"},
-        "Waveform": {"value": 1, "release": "v1.2.0"},
-        "PixelBars": {"value": 2, "release": "v1.2.0"},
-        "MirroredBars": {"value": 3, "release": "v1.2.0"}
+        "Bars": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Waveform": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "PixelBars": {
+          "value": 2,
+          "release": "v1.2.0"
+        },
+        "MirroredBars": {
+          "value": 3,
+          "release": "v1.2.0"
+        }
       }
     },
     "TaskbarBackgroundMaterial": {
-      "paths": ["settings.appearance.taskbarBackgroundMaterial"],
+      "paths": [
+        "settings.appearance.taskbarBackgroundMaterial"
+      ],
       "members": {
-        "Transparent": {"value": 0, "release": "v1.4.0"},
-        "Frosted": {"value": 1, "release": "v1.4.0"}
+        "Transparent": {
+          "value": 0,
+          "release": "v1.4.0"
+        },
+        "Frosted": {
+          "value": 1,
+          "release": "v1.4.0"
+        }
       }
     },
     "TaskbarBarPosition": {
-      "paths": ["settings.position", "settings.floatingBar.profile.position"],
+      "paths": [
+        "settings.position",
+        "settings.floatingBar.profile.position"
+      ],
       "members": {
-        "Start": {"value": 0, "release": "v1.2.0"},
-        "Center": {"value": 1, "release": "v1.2.0"},
-        "End": {"value": 2, "release": "v1.2.0"}
+        "Start": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Center": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "End": {
+          "value": 2,
+          "release": "v1.2.0"
+        }
       }
     },
     "TaskbarContentArrangement": {
-      "paths": ["settings.taskbarExperience.arrangement", "settings.floatingBar.profile.arrangement"],
+      "paths": [
+        "settings.taskbarExperience.arrangement",
+        "settings.floatingBar.profile.arrangement"
+      ],
       "members": {
-        "Left": {"value": 0, "release": "v1.4.0"},
-        "Right": {"value": 1, "release": "v1.4.0"}
+        "Left": {
+          "value": 0,
+          "release": "v1.4.0"
+        },
+        "Right": {
+          "value": 1,
+          "release": "v1.4.0"
+        }
       }
     },
     "TaskbarContentLayout": {
-      "paths": ["settings.taskbarExperience.contentLayout"],
+      "paths": [
+        "settings.taskbarExperience.contentLayout"
+      ],
       "members": {
-        "CompactInline": {"value": 0, "release": "v1.2.0"},
-        "AdaptiveStack": {"value": 1, "release": "v1.2.0"},
-        "CenteredStack": {"value": 2, "release": "v1.2.0"}
+        "CompactInline": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "AdaptiveStack": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "CenteredStack": {
+          "value": 2,
+          "release": "v1.2.0"
+        }
       }
     },
     "TaskbarFrostedStyle": {
-      "paths": ["settings.appearance.taskbarFrostedStyle"],
+      "paths": [
+        "settings.appearance.taskbarFrostedStyle"
+      ],
       "members": {
-        "Neutral": {"value": 0, "release": "v1.4.0"},
-        "Cool": {"value": 1, "release": "v1.4.0"},
-        "Warm": {"value": 2, "release": "v1.4.0"},
-        "Artwork": {"value": 3, "release": "v1.4.0"}
+        "Neutral": {
+          "value": 0,
+          "release": "v1.4.0"
+        },
+        "Cool": {
+          "value": 1,
+          "release": "v1.4.0"
+        },
+        "Warm": {
+          "value": 2,
+          "release": "v1.4.0"
+        },
+        "Artwork": {
+          "value": 3,
+          "release": "v1.4.0"
+        }
       }
     },
     "TaskbarInformationDensity": {
-      "paths": ["settings.taskbarExperience.density"],
+      "paths": [
+        "settings.taskbarExperience.density"
+      ],
       "members": {
-        "Minimal": {"value": 0, "release": "v1.2.0"},
-        "Balanced": {"value": 1, "release": "v1.2.0"},
-        "Information": {"value": 2, "release": "v1.2.0"}
+        "Minimal": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Balanced": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "Information": {
+          "value": 2,
+          "release": "v1.2.0"
+        }
       }
     },
     "TaskbarLengthMode": {
-      "paths": ["settings.taskbarExperience.lengthMode", "settings.floatingBar.profile.lengthMode"],
+      "paths": [
+        "settings.taskbarExperience.lengthMode",
+        "settings.floatingBar.profile.lengthMode"
+      ],
       "members": {
-        "FollowContent": {"value": 0, "release": "v1.2.0"},
-        "Fixed": {"value": 1, "release": "v1.2.0"}
+        "FollowContent": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Fixed": {
+          "value": 1,
+          "release": "v1.2.0"
+        }
       }
     },
     "TaskbarMediaTextAlignment": {
-      "paths": ["settings.taskbarExperience.mediaTextAlignment"],
+      "paths": [
+        "settings.taskbarExperience.mediaTextAlignment"
+      ],
       "members": {
-        "Left": {"value": 0, "release": "v1.2.0"},
-        "Center": {"value": 1, "release": "v1.2.0"},
-        "Right": {"value": 2, "release": "v1.2.0"}
+        "Left": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "Center": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "Right": {
+          "value": 2,
+          "release": "v1.2.0"
+        }
       }
     },
     "TaskbarRestComponent": {
       "paths": [
         "settings.taskbarExperience.idleComponents",
-        "settings.taskbarExperience.restComponentOrder"
+        "settings.taskbarExperience.restComponentOrder",
+        "settings.taskbarExperience.componentLayouts.resident[].component",
+        "settings.taskbarExperience.componentLayouts.idle[].component",
+        "settings.taskbarExperience.componentLayouts.hover[].component"
       ],
       "members": {
         "Artwork": {
@@ -658,79 +1215,205 @@
         },
         "InputDevice": {
           "value": 6,
-          "release": "unreleased"
+          "release": "v1.5.0"
         },
         "BluetoothBattery": {
           "value": 7,
+          "release": "v1.6.0"
+        },
+        "SystemMemory": {
+          "value": 8,
+          "release": "unreleased"
+        },
+        "SystemCpu": {
+          "value": 9,
+          "release": "unreleased"
+        },
+        "SystemGpu": {
+          "value": 10,
+          "release": "unreleased"
+        },
+        "ProcessMemory": {
+          "value": 11,
+          "release": "unreleased"
+        },
+        "SystemNetwork": {
+          "value": 12,
+          "release": "unreleased"
+        },
+        "DragHandle": {
+          "value": 13,
+          "release": "unreleased"
+        },
+        "PreviousTrack": {
+          "value": 14,
+          "release": "unreleased"
+        },
+        "PlayPause": {
+          "value": 15,
+          "release": "unreleased"
+        },
+        "NextTrack": {
+          "value": 16,
           "release": "unreleased"
         }
       }
     },
     "TrackChangeNotificationPosition": {
-      "paths": ["settings.trackChangeNotification.position"],
+      "paths": [
+        "settings.trackChangeNotification.position"
+      ],
       "members": {
-        "BottomLeft": {"value": 0, "release": "v1.2.0"},
-        "TopLeft": {"value": 1, "release": "v1.2.0"},
-        "TopCenter": {"value": 2, "release": "v1.2.0"},
-        "TopRight": {"value": 3, "release": "v1.2.0"},
-        "BottomCenter": {"value": 4, "release": "v1.2.0"},
-        "BottomRight": {"value": 5, "release": "v1.2.0"}
+        "BottomLeft": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "TopLeft": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "TopCenter": {
+          "value": 2,
+          "release": "v1.2.0"
+        },
+        "TopRight": {
+          "value": 3,
+          "release": "v1.2.0"
+        },
+        "BottomCenter": {
+          "value": 4,
+          "release": "v1.2.0"
+        },
+        "BottomRight": {
+          "value": 5,
+          "release": "v1.2.0"
+        }
       }
     },
     "TrayClickAction": {
-      "paths": ["settings.interaction.trayClickAction"],
+      "paths": [
+        "settings.interaction.trayClickAction"
+      ],
       "members": {
-        "None": {"value": 0, "release": "v1.2.0"},
-        "OpenSettings": {"value": 1, "release": "v1.2.0"},
-        "OpenAudioControl": {"value": 2, "release": "v1.2.0"},
-        "OpenContextMenu": {"value": 3, "release": "v1.2.0"},
-        "OpenOutputDeviceMenu": {"value": 4, "release": "v1.2.0"},
-        "OpenCurrentAppVolumeMenu": {"value": 5, "release": "v1.2.0"},
+        "None": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "OpenSettings": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "OpenAudioControl": {
+          "value": 2,
+          "release": "v1.2.0"
+        },
+        "OpenContextMenu": {
+          "value": 3,
+          "release": "v1.2.0"
+        },
+        "OpenOutputDeviceMenu": {
+          "value": 4,
+          "release": "v1.2.0"
+        },
+        "OpenCurrentAppVolumeMenu": {
+          "value": 5,
+          "release": "v1.2.0"
+        },
         "OpenInputDeviceMenu": {
           "value": 6,
-          "release": "unreleased"
+          "release": "v1.5.0"
         }
       }
     },
     "TrayWheelBehavior": {
-      "paths": ["settings.interaction.trayChordWheelAction", "settings.interaction.trayPrimaryWheelAction", "settings.trayWheelBehavior"],
+      "paths": [
+        "settings.interaction.trayChordWheelAction",
+        "settings.interaction.trayPrimaryWheelAction",
+        "settings.trayWheelBehavior"
+      ],
       "members": {
-        "AdjustVolume": {"value": 0, "release": "v1.2.0"},
-        "SwitchOutputDevice": {"value": 1, "release": "v1.2.0"},
-        "Disabled": {"value": 2, "release": "v1.2.0"},
+        "AdjustVolume": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "SwitchOutputDevice": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "Disabled": {
+          "value": 2,
+          "release": "v1.2.0"
+        },
         "SwitchInputDevice": {
           "value": 3,
-          "release": "unreleased"
+          "release": "v1.5.0"
         }
       }
     },
     "WheelAction": {
-      "paths": ["settings.interaction.chordWheelAction", "settings.interaction.primaryWheelAction"],
+      "paths": [
+        "settings.interaction.chordWheelAction",
+        "settings.interaction.primaryWheelAction"
+      ],
       "members": {
-        "PreviousNext": {"value": 0, "release": "v1.2.0"},
-        "CurrentApplicationVolume": {"value": 1, "release": "v1.2.0"},
-        "OutputDevice": {"value": 2, "release": "v1.2.0"},
-        "SwitchMediaSource": {"value": 3, "release": "v1.2.0"},
-        "Disabled": {"value": 4, "release": "v1.2.0"},
+        "PreviousNext": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "CurrentApplicationVolume": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "OutputDevice": {
+          "value": 2,
+          "release": "v1.2.0"
+        },
+        "SwitchMediaSource": {
+          "value": 3,
+          "release": "v1.2.0"
+        },
+        "Disabled": {
+          "value": 4,
+          "release": "v1.2.0"
+        },
         "InputDevice": {
           "value": 5,
-          "release": "unreleased"
+          "release": "v1.5.0"
         }
       }
     },
     "WindowMode": {
-      "paths": ["settings.windowMode"],
+      "paths": [
+        "settings.windowMode"
+      ],
       "members": {
-        "Taskbar": {"value": 0, "release": "v1.2.0"},
-        "DynamicIsland": {"value": 1, "release": "v1.2.0"},
-        "FloatingBar": {"value": 2, "release": "v1.5.0"}
+        "Taskbar": {
+          "value": 0,
+          "release": "v1.2.0"
+        },
+        "DynamicIsland": {
+          "value": 1,
+          "release": "v1.2.0"
+        },
+        "FloatingBar": {
+          "value": 2,
+          "release": "v1.5.0"
+        }
       }
     },
     "PerformanceDisplayMode": {
-      "paths": ["settings.performanceComponent.displayMode"],
+      "paths": [
+        "settings.performanceComponent.displayMode"
+      ],
       "members": {
-        "Cycle": {"value": 0, "release": "v1.4.0"},
-        "Parallel": {"value": 1, "release": "v1.4.0"}
+        "Cycle": {
+          "value": 0,
+          "release": "v1.4.0"
+        },
+        "Parallel": {
+          "value": 1,
+          "release": "v1.4.0"
+        }
       }
     },
     "AudioDeviceSwitchTarget": {
@@ -743,14 +1426,50 @@
       "members": {
         "SystemDefault": {
           "value": 0,
-          "release": "unreleased"
+          "release": "v1.5.0"
         },
         "ForegroundApplication": {
           "value": 1,
-          "release": "unreleased"
+          "release": "v1.5.0"
         },
         "Disabled": {
           "value": 2,
+          "release": "v1.5.0"
+        }
+      }
+    },
+    "MetricVisualStyle": {
+      "paths": [
+        "settings.performanceComponent.visuals.systemMemory",
+        "settings.performanceComponent.visuals.systemCpu",
+        "settings.performanceComponent.visuals.systemGpu",
+        "settings.performanceComponent.visuals.processMemory",
+        "settings.performanceComponent.visuals.systemNetwork",
+        "settings.taskbarExperience.fullPanel.performanceVisuals.systemMemory",
+        "settings.taskbarExperience.fullPanel.performanceVisuals.systemCpu",
+        "settings.taskbarExperience.fullPanel.performanceVisuals.systemGpu",
+        "settings.taskbarExperience.fullPanel.performanceVisuals.processMemory",
+        "settings.taskbarExperience.fullPanel.performanceVisuals.systemNetwork"
+      ],
+      "members": {
+        "Numeric": {
+          "value": 0,
+          "release": "unreleased"
+        },
+        "Bar": {
+          "value": 1,
+          "release": "unreleased"
+        },
+        "Ring": {
+          "value": 2,
+          "release": "unreleased"
+        },
+        "Line": {
+          "value": 3,
+          "release": "unreleased"
+        },
+        "Area": {
+          "value": 4,
           "release": "unreleased"
         }
       }
@@ -760,7 +1479,7 @@
     "settings.experiments.newAudioControl": {
       "firstReleased": "v1.5.0",
       "lastPresentRelease": "v1.5.0",
-      "firstAbsentRelease": "unreleased",
+      "firstAbsentRelease": "v1.6.0",
       "currentHandling": "legacy flag ignored; audio controls always available; saved device preferences and hotkeys preserved"
     },
     "settings.lyricsMatchStrictness": {
@@ -787,12 +1506,20 @@
   "rules": [
     {
       "id": "spectrum-device-target",
-      "paths": ["settings.spectrumComponent.captureSource", "settings.spectrumComponent.captureDeviceId", "settings.spectrumComponent.captureDeviceName"],
-      "text": "设备采集默认跟随 AF 当前媒体来源实际使用的输出端点，无法匹配时回退系统默认；手动端点离线保留配置并暂停采集。程序采集范围忽略所存设备选择。新字段缺失或 ID 为空时使用自动模式。"
+      "paths": [
+        "settings.spectrumComponent.captureSource",
+        "settings.spectrumComponent.captureDeviceId",
+        "settings.spectrumComponent.captureDeviceMode",
+        "settings.spectrumComponent.captureDeviceName"
+      ],
+      "text": "设备策略缺失、null 或无效时按 ID 回退：为空跟随媒体来源，否则固定所存端点。显式策略分别跟随媒体实际输出、系统默认输出（Console）或指定端点；跟随媒体无法匹配时沿用 Multimedia 默认端点回退，指定端点离线保留配置并暂停采集。非指定策略保留设备标识但不用于选择；程序采集范围忽略设备策略与标识。"
     },
     {
       "id": "full-panel-entry-only",
-      "paths": ["settings.taskbarExperience.fullLayerEnabled", "settings.taskbarExperience.fullPanelEntryVisible"],
+      "paths": [
+        "settings.taskbarExperience.fullLayerEnabled",
+        "settings.taskbarExperience.fullPanelEntryVisible"
+      ],
       "text": "完整面板始终允许交互打开；FullLayerEnabled 仅保留已发布字段兼容，归一化时与 FullPanelEntryVisible 合并为入口可见性并恢复为 true。入口关闭只隐藏外侧横杆，不关闭完整面板。"
     },
     {
@@ -808,149 +1535,264 @@
     {
       "id": "enum-input",
       "whenEnum": true,
-      "text": "JSON 无效枚举先变成类型回退值再归一化，可能不同于代码直接传入未定义值。成员发布状态独立于父字段。"
+      "text": "JSON 无效枚举先按对应类型的读取规则回退再归一化，可能不同于代码直接传入未定义值。成员发布状态独立于父字段。"
     },
     {
       "id": "taskbar-reset",
-      "prefixes": ["settings.taskbarExperience"],
-      "text": "ResetContentLayout 恢复任务栏体验但保留媒体字号及频谱、性能显隐；字号由 ResetTaskbarAppearance 恢复，小组件显隐由 ResetComponents 恢复。旧 ResetDisplayModes 仍会恢复组件显隐等，不等于当前页面重置；两者均保留交互中的封面悬停模式。"
+      "prefixes": [
+        "settings.taskbarExperience"
+      ],
+      "text": "三状态组件布局由唯一列表编辑，未配置的状态沿用旧字段。常驻子页重置Resident和Idle及显示细节，保留Hover与组件参数；快捷控制子页仅重置Hover和按钮参数。旧ResetContentLayout兼容入口保留常驻和无媒体布局及显隐，不等于当前子页重置。共享设置与分模式几何保持既有投影，个人默认快照优先。"
     },
     {
       "id": "artwork-progress",
-      "paths": ["settings.taskbarExperience.artworkProgressVisible", "settings.taskbarExperience.hoverControls.progressVisible"],
+      "paths": [
+        "settings.taskbarExperience.artworkProgressVisible",
+        "settings.taskbarExperience.hoverControls.progressVisible"
+      ],
       "text": "封面边缘进度默认开启，缺字段回开启；显式关闭保持。旧悬停进度字段仅保留读写，不再呈现或预留宽度，不映射到新开关。静置文字进度独立；内容布局重置优先用户快照，schema 不变。",
-      "relatedPaths": ["settings.taskbarExperience.restProgressVisible"]
+      "relatedPaths": [
+        "settings.taskbarExperience.restProgressVisible"
+      ]
     },
     {
       "id": "artwork-hover",
-      "paths": ["settings.interaction.artworkHoverMode"],
+      "paths": [
+        "settings.interaction.artworkHoverMode"
+      ],
       "text": "Off 仍有栏内1.1×，Zoom 为2×，Preview 为独立预览。模式存储在 interaction，由交互页提供选项并重置；封面显隐仍归任务栏内容。未发布的开发旧路径不迁移，缺字段回 Off。",
-      "relatedPaths": ["settings.taskbarExperience.artworkVisible"]
+      "relatedPaths": [
+        "settings.taskbarExperience.artworkVisible"
+      ]
     },
     {
       "id": "arrangement",
-      "paths": ["settings.taskbarExperience.arrangement", "settings.floatingBar.profile.arrangement"],
+      "paths": [
+        "settings.taskbarExperience.arrangement",
+        "settings.floatingBar.profile.arrangement"
+      ],
       "text": "null 时 position=End 解析为 Right，其余为 Left；显式值优先。",
-      "relatedPaths": ["settings.position"]
+      "relatedPaths": [
+        "settings.position"
+      ]
     },
     {
       "id": "full-panel",
-      "prefixes": ["settings.taskbarExperience.fullPanel"],
+      "prefixes": [
+        "settings.taskbarExperience.fullPanel"
+      ],
       "text": "四项全关时回 Compact：媒体信息和控制开启，音频与性能关闭；不可只孤立判断一个开关。",
-      "relatedPaths": ["settings.taskbarExperience.fullPanel.mediaInfoVisible", "settings.taskbarExperience.fullPanel.mediaControlsVisible", "settings.taskbarExperience.fullPanel.audioControlsVisible", "settings.taskbarExperience.fullPanel.performanceVisible"]
+      "relatedPaths": [
+        "settings.taskbarExperience.fullPanel.mediaInfoVisible",
+        "settings.taskbarExperience.fullPanel.mediaControlsVisible",
+        "settings.taskbarExperience.fullPanel.audioControlsVisible",
+        "settings.taskbarExperience.fullPanel.performanceVisible"
+      ]
     },
     {
       "id": "rest-order",
-      "paths": ["settings.taskbarExperience.restComponentOrder"],
+      "paths": [
+        "settings.taskbarExperience.restComponentOrder"
+      ],
       "text": "null 用默认顺序；封面和媒体文字固定在前，只排序尾部。遗漏的已知尾部会补全，因此空数组不表示隐藏组件。"
     },
     {
       "id": "idle-components",
-      "paths": ["settings.taskbarExperience.idleComponents"],
+      "paths": [
+        "settings.taskbarExperience.idleComponents"
+      ],
       "text": "null 默认只留 Artwork（无媒体时指快速启动音符）；空数组全部隐藏；显式列表控制无媒体保留项。封面显隐不能替代它。",
-      "relatedPaths": ["settings.taskbarExperience.artworkVisible"]
+      "relatedPaths": [
+        "settings.taskbarExperience.artworkVisible"
+      ]
     },
     {
       "id": "font-family",
-      "prefixes": ["settings.appearance.latinFont", "settings.appearance.cjkFont"],
+      "prefixes": [
+        "settings.appearance.latinFont",
+        "settings.appearance.cjkFont"
+      ],
       "text": "family=null 保留旧字体预设，空串跟随系统；派生的 SelectedFontFamily 不序列化。具体校验和范围查源码。",
-      "relatedPaths": ["settings.appearance.latinFont", "settings.appearance.latinFontFamily", "settings.appearance.cjkFont", "settings.appearance.cjkFontFamily"]
+      "relatedPaths": [
+        "settings.appearance.latinFont",
+        "settings.appearance.latinFontFamily",
+        "settings.appearance.cjkFont",
+        "settings.appearance.cjkFontFamily"
+      ]
     },
     {
       "id": "appearance-reset",
-      "prefixes": ["settings.appearance", "settings.taskbarSurface", "settings.dynamicIslandSurface"],
+      "prefixes": [
+        "settings.appearance",
+        "settings.taskbarSurface",
+        "settings.dynamicIslandSurface"
+      ],
       "text": "应用外观重置保留媒体文字色和任务栏背景；任务栏外观重置保留全局主题字体。旧 ResetAppearance 还覆盖布局，须核对实际调用方。"
     },
     {
       "id": "lyrics-reset",
-      "prefixes": ["settings.lyrics"],
-      "paths": ["settings.allowBrowserAndVideoLyrics", "settings.twoLineLyricsEnabled"],
+      "prefixes": [
+        "settings.lyrics"
+      ],
+      "paths": [
+        "settings.allowBrowserAndVideoLyrics",
+        "settings.twoLineLyricsEnabled"
+      ],
       "text": "ResetLyrics 保留歌词对齐与固定宽度，它们归内容布局重置；简繁、来源、分隔符等仍归歌词重置。"
     },
     {
       "id": "lyrics-sources",
-      "prefixes": ["settings.lyricsSource"],
+      "prefixes": [
+        "settings.lyricsSource"
+      ],
       "text": "null 全启用，空数组全关；保存未知ID，使用时忽略。按Ordinal去重；enabledSourceIds仅控制启用集合，手动规则使用独立prioritySourceIds排序，默认规则不使用手动调度选项。ID为Netease、NeteaseSearch、LRCLIB、QQMusic、Kugou、SodaMusic。"
     },
     {
       "id": "secondary-line",
-      "prefixes": ["settings.lyricsSecondaryLine"],
+      "prefixes": [
+        "settings.lyricsSecondaryLine"
+      ],
       "text": "order=null 使用下一句→翻译→音译；空数组关闭；显式列表保留优先级。JSON非法项先受枚举回退影响。"
     },
     {
       "id": "artist-separators",
-      "paths": ["settings.lyricsArtistSeparators"],
+      "paths": [
+        "settings.lyricsArtistSeparators"
+      ],
       "text": "存储保留空白和换行；null由setter变为空串，空串关闭分割。"
     },
     {
       "id": "interaction",
-      "prefixes": ["settings.interaction"],
+      "prefixes": [
+        "settings.interaction"
+      ],
       "text": "ResetInteraction 恢复整段。托盘点击仅接受模型白名单，其他已定义旧值也可回默认；两个滚轮字段不要用根级旧字段代替。"
     },
     {
       "id": "source-filter",
-      "prefixes": ["settings.smtcSourceFilter"],
+      "prefixes": [
+        "settings.smtcSourceFilter"
+      ],
       "text": "enabled=false 不过滤；true且空列表不允许任何来源。列表Trim、忽略大小写去重并排序，使用时归一化媒体别名。",
-      "relatedPaths": ["settings.smtcSourceFilter.enabled", "settings.smtcSourceFilter.allowedSourceIds"]
+      "relatedPaths": [
+        "settings.smtcSourceFilter.enabled",
+        "settings.smtcSourceFilter.allowedSourceIds"
+      ]
     },
     {
       "id": "quick-launch",
-      "prefixes": ["settings.quickLaunch"],
+      "prefixes": [
+        "settings.quickLaunch"
+      ],
       "text": "小组件页 ResetComponents 恢复快速启动配置，ResetExtraFeatures 保留；快速启动缺少新字段时保持列表启动；悬停应用图标默认开启但仅选择后启动模式使用。选中 ID 无效时回退第一项，空列表没有目标。条目是列表模板，不能当作默认配置；无效目标/Kind 被过滤，空 Id 会生成标识。JSON 非法枚举输入和代码直接传值的回退可能不同，修改时核对真实读取链。"
     },
     {
       "id": "media-source-id",
-      "paths": ["settings.smtcSourceFilter.allowedSourceIds", "settings.quickLaunch.entries[].sourceId", "settings.mediaSelection.preferredSourceId"],
+      "paths": [
+        "settings.smtcSourceFilter.allowedSourceIds",
+        "settings.quickLaunch.entries[].sourceId",
+        "settings.mediaSelection.preferredSourceId"
+      ],
       "text": "媒体ID是开放的SMTC集合。网易云SourceId=cloudmusic、选择键source:cloudmusic；cloudmusic/netease/163music别名不区分大小写，与歌词来源ID不是同一契约。"
     },
     {
       "id": "components",
-      "prefixes": ["settings.spectrumComponent", "settings.performanceComponent"],
-      "text": "小组件页 ResetComponents 恢复频谱、性能、蓝牙电量参数及显隐；ResetContentLayout 和 ResetDeviceManagement 保留这些设置。性能 metrics 空或全无效回 SystemMemory；metricOrder 只决定已选指标顺序，缺失或 null 沿用原顺序。枚举新增成员的发布状态独立核对。"
+      "prefixes": [
+        "settings.spectrumComponent",
+        "settings.performanceComponent",
+        "settings.taskbarExperience.fullPanel.performanceVisuals"
+      ],
+      "text": "旧ResetComponents兼容入口恢复频谱、性能、蓝牙电量参数，以及媒体栏和完整面板的性能样式；保留完整面板缩放与分区显隐。当前性能子页只恢复性能主归属字段。轮换参与项或顺序改变前，固定未配置状态的有效布局，避免改变并排显隐。ResetContentLayout 和 ResetDeviceManagement 保留这些小组件设置。性能 metrics 空或全无效回 SystemMemory；metricOrder 保存全部指标的顺序，运行时按此筛选已开启项；关闭再开启保留位置。读取旧列表时保留原有已开启顺序并将缺失指标补到末尾，不改变原来的选中项；缺失或 null 保留原有选中顺序后补齐未选项。枚举新增成员的发布状态独立核对。"
     },
     {
       "id": "startup",
-      "paths": ["settings.launchAtStartup"],
+      "paths": [
+        "settings.launchAtStartup"
+      ],
       "text": "启动先读实际注册/Windows禁用状态同步；未知时保留意图。只有用户主动开启才允许解除禁用，失败回实际状态或上次值。"
     },
     {
       "id": "translucent-tb",
-      "paths": ["settings.translucentTbCompatibilityPromptShown", "settings.appearance.taskbarBackgroundMaterial"],
+      "paths": [
+        "settings.translucentTbCompatibilityPromptShown",
+        "settings.appearance.taskbarBackgroundMaterial"
+      ],
       "text": "检测到TranslucentTB且未提示时可开启磨砂、先标记落盘再提示；ResetAll保留当前提示标记，用户默认快照不能重新触发。",
-      "relatedPaths": ["settings.translucentTbCompatibilityPromptShown", "settings.appearance.taskbarBackgroundMaterial"]
+      "relatedPaths": [
+        "settings.translucentTbCompatibilityPromptShown",
+        "settings.appearance.taskbarBackgroundMaterial"
+      ]
     },
     {
       "id": "monitor-targets",
-      "prefixes": ["settings.taskbarTargetMonitorDeviceId"],
+      "prefixes": [
+        "settings.taskbarTargetMonitorDeviceId"
+      ],
       "text": "列表为空且旧普通单目标非空时迁入列表并清旧字段；旧单目标AllTaskbars保留全部当前目标语义。离线ID保留，全部离线时临时回主屏。",
-      "relatedPaths": ["settings.taskbarTargetMonitorDeviceIds", "settings.taskbarTargetMonitorDeviceId"]
+      "relatedPaths": [
+        "settings.taskbarTargetMonitorDeviceIds",
+        "settings.taskbarTargetMonitorDeviceId"
+      ]
     },
     {
       "id": "placement-reset",
-      "prefixes": ["settings.taskbarBar", "settings.taskbarTargetMonitorDeviceId", "settings.dynamicIsland"],
-      "paths": ["settings.position", "settings.windowMode", "settings.layoutOrientationMode", "settings.layoutLengthScalePercent", "settings.layoutThicknessScalePercent"],
+      "prefixes": [
+        "settings.taskbarBar",
+        "settings.taskbarTargetMonitorDeviceId",
+        "settings.dynamicIsland"
+      ],
+      "paths": [
+        "settings.position",
+        "settings.windowMode",
+        "settings.layoutOrientationMode",
+        "settings.layoutLengthScalePercent",
+        "settings.layoutThicknessScalePercent"
+      ],
       "text": "新ResetScreenAndPlacement仅恢复目标、位置、padding、跨轴偏移、避让、锁定；比例、模式、barEnabled等旧字段须核对旧ResetLayout/DisplayModes，不能按页名推定。"
     },
     {
       "id": "legacy-geometry-null",
-      "paths": ["settings.layoutLengthScalePercent", "settings.layoutThicknessScalePercent", "settings.taskbarBarCrossAxisOffsetDip", "settings.dynamicIslandLeft", "settings.dynamicIslandTop"],
+      "paths": [
+        "settings.layoutLengthScalePercent",
+        "settings.layoutThicknessScalePercent",
+        "settings.taskbarBarCrossAxisOffsetDip",
+        "settings.dynamicIslandLeft",
+        "settings.dynamicIslandTop"
+      ],
       "text": "五项旧null预处理只识别标准camelCase envelope；大写SETTINGS下非可空几何null仍可导致读取失败。"
     },
     {
       "id": "retained-mode",
-      "prefixes": ["settings.dynamicIsland"],
-      "paths": ["settings.windowMode"],
+      "prefixes": [
+        "settings.dynamicIsland"
+      ],
+      "paths": [
+        "settings.windowMode"
+      ],
       "text": "桌面悬浮标识仅在对应实验开启时生效；实验关闭和旧灵动岛标识归一化为Taskbar。横竖任务栏共享原配置，悬浮配置首次复制后独立保存。"
     },
     {
       "id": "retained-fields",
-      "paths": ["settings.trayWheelBehavior", "settings.appearance.enhancedReadability", "settings.taskbarBarBackgroundBlur"],
+      "paths": [
+        "settings.trayWheelBehavior",
+        "settings.appearance.enhancedReadability",
+        "settings.taskbarBarBackgroundBlur"
+      ],
       "text": "这些旧字段仍写入文件。EnhancedReadability无呈现效果；托盘使用interaction映射，未通用转接根滚轮字段；删除前仍按发布证据判断。"
     },
     {
       "id": "removed-strictness",
-      "paths": ["settings.lyricsMatchStrictness"],
+      "paths": [
+        "settings.lyricsMatchStrictness"
+      ],
       "text": "这是发布过后移除的字段，不是未发布项；当前按未知键忽略，保存时不写回，也没有旧值转接。"
+    },
+    {
+      "id": "full-panel-presentation",
+      "prefixes": [
+        "settings.taskbarExperience.fullPanel"
+      ],
+      "text": "窗口与内容共用缩放比例，缺省100%，范围75%—200%；不保存独立宽高。缺失整个fullPanel子对象时补100%与PanelDefault指标样式，区域继续沿用全关闭到Compact的旧回退。恢复默认尺寸仅恢复100%，工作区夹取不回写偏好。完整面板子页重置缩放、入口和区域显隐，保留性能样式；性能子页重置采样、轮换及媒体栏和面板的指标样式，保留三状态组件布局与面板缩放。均优先使用个人默认快照。未发布旧独立尺寸不迁移。"
     }
   ]
 }

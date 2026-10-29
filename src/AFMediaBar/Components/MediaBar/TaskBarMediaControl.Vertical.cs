@@ -62,7 +62,7 @@ public partial class TaskBarMediaControl
             HoverRevealHost.VerticalAlignment = VerticalAlignment.Center;
             TaskbarHoverContent.Margin = new Thickness(5, 0, 6, 0);
             TaskbarHoverActions.HorizontalAlignment = HorizontalAlignment.Left;
-            foreach (var surface in new FrameworkElement[] { TaskbarSpectrumHoverSurface, TaskbarPerformanceHoverSurface, TaskbarBatterySurface, TaskbarOutputDeviceHoverSurface, TaskbarInputDeviceHoverSurface, TaskbarVolumeHoverSurface })
+            foreach (var surface in new FrameworkElement[] { TaskbarSpectrumHoverSurface, TaskbarPerformanceHoverSurface, TaskbarBatterySurface, TaskbarOutputDeviceHoverSurface, TaskbarInputDeviceHoverSurface, TaskbarVolumeHoverSurface, ResidentPreviousSurface, ResidentPlayPauseSurface, ResidentNextSurface })
                 surface.VerticalAlignment = VerticalAlignment.Center;
         }
     }
@@ -76,14 +76,13 @@ public partial class TaskBarMediaControl
     private TaskbarRestLayout ResolveVerticalLayout(double primaryLength)
     {
         var experience = PresentationSettings.TaskbarExperience.Normalize();
-        var visibility = ResolveRestVisibility(experience);
         var metrics = TaskbarDensityMetrics.From(experience.Density);
         return TaskbarRestLayoutPolicy.Arrange(
-            TaskbarRestLayoutPolicy.ResolveOrder(experience.RestComponentOrder),
+            RestComponentsWithHandle(),
             component => VerticalComponentLength(component, metrics),
-            component => TaskbarRestLayoutPolicy.IsVisible(component, visibility),
+            _ => true,
             2, primaryLength, VerticalSectionGap, 2,
-            ResolvedTaskbarArrangement == TaskbarContentArrangement.Right);
+            false);
     }
 
     private double VerticalSectionGap => TaskbarExperiencePolicy.ResolveSectionGap(
@@ -91,12 +90,24 @@ public partial class TaskBarMediaControl
         PresentationSettings.TaskbarExperience.ComponentSpacingDip) *
         PresentationSettings.LayoutLengthScalePercent / 100d;
 
+    private double VerticalArtworkSize
+    {
+        get
+        {
+            var size = Math.Max(1, MainBorder.Width - 4);
+            return PresentationSettings.TaskbarExperience.SmallArtwork ? Math.Max(1, Math.Round(size * 0.8)) : size;
+        }
+    }
+
     private double VerticalComponentLength(TaskbarRestComponent component, TaskbarDensityMetrics metrics) => component switch
     {
-        TaskbarRestComponent.Artwork => Math.Max(1, MainBorder.Width - 4),
+        TaskbarRestComponent.Artwork => VerticalArtworkSize,
         TaskbarRestComponent.Spectrum => _verticalSpectrumLength,
         TaskbarRestComponent.Performance => _verticalPerformanceLength,
+        TaskbarRestComponent.DragHandle => ComponentLayoutPolicy.HandleLength,
+        _ when ComponentLayoutPolicy.IsMetric(component) => MetricPrimarySize(component, true),
         TaskbarRestComponent.BluetoothBattery => BatteryVerticalLength,
+        TaskbarRestComponent.PreviousTrack or TaskbarRestComponent.PlayPause or TaskbarRestComponent.NextTrack or
         TaskbarRestComponent.OutputDevice or TaskbarRestComponent.InputDevice or TaskbarRestComponent.Volume =>
             VerticalAudioButtonSize(metrics) + RestWidgetVerticalInset(TaskbarOutputDeviceHoverSurface),
         _ => 0
@@ -115,9 +126,7 @@ public partial class TaskBarMediaControl
             ? LyricsFixedWidth.Normalize(PresentationSettings.LyricsFixedWidthDip)
             : Math.Max(Measure(current, VerticalPrimaryFontSize),
                 Measure(lyricsVisible ? secondary : _isSmallTaskbar ? string.Empty : _actualArtist, lyricsVisible ? VerticalPrimaryFontSize : VerticalSecondaryFontSize));
-        var visibility = ResolveRestVisibility(experience);
-        var components = TaskbarRestLayoutPolicy.ResolveOrder(experience.RestComponentOrder)
-            .Where(component => TaskbarRestLayoutPolicy.IsVisible(component, visibility)).ToArray();
+        var components = RestComponentsWithHandle();
         var metrics = TaskbarDensityMetrics.From(experience.Density);
         double Content(double text) => TaskbarExperiencePolicy.CalculateRestWidth(
             components, 2, text, 2, VerticalSectionGap,
@@ -143,25 +152,27 @@ public partial class TaskBarMediaControl
         _quickLaunchTooltip.Placement = tooltipPlacement;
         SongTitle.FontSize = VerticalPrimaryFontSize;
         SongArtist.FontSize = VerticalSecondaryFontSize;
-        SongImageBorder.Width = innerWidth;
-        SongImageBorder.Height = innerWidth;
-        SongImagePlaceholder.FontSize = Math.Max(12, innerWidth * 0.6);
+        SongImageBorder.Width = VerticalArtworkSize;
+        SongImageBorder.Height = VerticalArtworkSize;
+        SongImagePlaceholder.FontSize = Math.Max(12, VerticalArtworkSize * 0.6);
         var layout = ResolveVerticalLayout(primaryLength);
         _isRestLayerEmpty = layout.IsEmpty;
         ApplyRestComponentVisibility(layout);
         void Place(FrameworkElement element, TaskbarRestComponent component)
         {
             if (layout.Find(component) is not { } placement) return;
-            element.Width = innerWidth;
+            var isArtwork = component == TaskbarRestComponent.Artwork;
+            element.Width = isArtwork ? VerticalArtworkSize : innerWidth;
             element.Height = placement.Width;
+            var left = isArtwork ? (width - element.Width) / 2 : 2;
             element.HorizontalAlignment = HorizontalAlignment.Left;
             element.VerticalAlignment = VerticalAlignment.Top;
             if (element.Parent is Canvas)
             {
-                Canvas.SetLeft(element, 2);
+                Canvas.SetLeft(element, left);
                 Canvas.SetTop(element, placement.Left);
             }
-            else element.Margin = new Thickness(2, placement.Left, 0, 0);
+            else element.Margin = new Thickness(left, placement.Left, 0, 0);
         }
         if (!IsArtworkZoomActive) Place(SongImageBorder, TaskbarRestComponent.Artwork);
         if (_artworkHover._artworkZoomSubstitute is { } substitute) Place(substitute, TaskbarRestComponent.Artwork);
@@ -173,6 +184,9 @@ public partial class TaskBarMediaControl
         Place(TaskbarOutputDeviceHoverSurface, TaskbarRestComponent.OutputDevice);
         Place(TaskbarInputDeviceHoverSurface, TaskbarRestComponent.InputDevice);
         Place(TaskbarVolumeHoverSurface, TaskbarRestComponent.Volume);
+        Place(ResidentPreviousSurface, TaskbarRestComponent.PreviousTrack);
+        Place(ResidentPlayPauseSurface, TaskbarRestComponent.PlayPause);
+        Place(ResidentNextSurface, TaskbarRestComponent.NextTrack);
         var textLength = layout.TextWidth;
         SongLyricsPanel.Width = innerWidth;
         SongLyricsPanel.Height = textLength;
@@ -187,13 +201,15 @@ public partial class TaskBarMediaControl
             TaskbarPerformanceHoverSurface.Padding.Right - TaskbarPerformanceHoverSurface.BorderThickness.Left - TaskbarPerformanceHoverSurface.BorderThickness.Right);
         TaskbarPerformanceSurface.Padding = new Thickness(1);
         TaskbarPerformanceSurface.Height = Math.Max(1, _verticalPerformanceLength - RestWidgetVerticalInset(TaskbarPerformanceHoverSurface));
-        foreach (var cell in _performanceCells.Values) cell.Width = Math.Max(1, TaskbarPerformanceSurface.Width - 2);
+        PlaceMetricSurfaces(layout, innerWidth);
+        PlaceBarMoveHandle(layout, innerWidth);
         var buttonSize = VerticalAudioButtonSize(TaskbarDensityMetrics.From(experience.Density));
         foreach (var surface in new[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface })
         {
             surface.Width = buttonSize;
             surface.Height = buttonSize;
         }
+        ResizeResidentTransportButtons(buttonSize, buttonSize);
         HoverRevealHost.HorizontalAlignment = HorizontalAlignment.Left;
         HoverRevealHost.VerticalAlignment = VerticalAlignment.Top;
         HoverRevealHost.Margin = new Thickness(2, layout.TextLeft, 0, 0);
@@ -222,11 +238,7 @@ public partial class TaskBarMediaControl
     private double VerticalHoverMinimumLength()
     {
         var controls = PresentationSettings.TaskbarExperience.Normalize();
-        var count = (controls.HoverControls.PreviousNextVisible ? 2 : 0) +
-            (controls.HoverControls.PlayPauseVisible ? 1 : 0) +
-            (controls.HoverControls.OutputDeviceVisible ? 1 : 0) +
-            (controls.HoverControls.InputDeviceVisible ? 1 : 0) +
-            (controls.HoverControls.AudioControlVisible ? 1 : 0);
+        var count = ComponentLayoutPolicy.Resolve(PresentationSettings, BarLayoutState.Hover).Count(entry => entry.IsVisible);
         return count * VerticalHoverButtonSize() + Math.Max(0, count - 1) * controls.HoverButtonSpacingDip + 8;
     }
 

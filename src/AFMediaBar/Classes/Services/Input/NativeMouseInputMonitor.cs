@@ -21,6 +21,9 @@ public sealed class NativeMouseInputMonitor : IDisposable
     private readonly ShellTrayIconService _trayIcon;
     private readonly NativeMethods.LowLevelMouseProc _callback;
     private readonly Dispatcher _dispatcher;
+    private readonly AppLogService? _log;
+    private readonly RepeatedFailureReporter _callbackFailures = new();
+    private int _failureReportQueued;
     private readonly object _lifecycleGate = new();
     private readonly ManualResetEventSlim _messageLoopReady = new(false);
     private Thread? _hookThread;
@@ -36,6 +39,56 @@ public sealed class NativeMouseInputMonitor : IDisposable
     // order dispatcher posts are delivered in.
     private bool _chordWheelDuringPress;
     private long _suppressNextClickUntilTicks;
+#if DEBUG
+    private const uint DiagnosticHeartbeatMessage = NativeMethods.WM_APP + 72;
+    private DiagnosticState? _diagnosticState;
+
+    internal void SetDiagnosticEnabled(bool enabled)
+    {
+        // 回调只写捕获的这一代；交换引用后，旧回调无需锁也不会污染新记录。
+        Interlocked.Exchange(ref _diagnosticState, enabled ? new DiagnosticState() : null);
+    }
+
+    internal void RequestDiagnosticHeartbeat()
+    {
+        var state = Volatile.Read(ref _diagnosticState);
+        if (state is null || _disposed || _hookThreadId == 0 || _hook == IntPtr.Zero) return;
+        var now = Stopwatch.GetTimestamp();
+        if (Interlocked.CompareExchange(ref state.Pending, now, 0) != 0) return;
+        if (!NativeMethods.PostThreadMessage(_hookThreadId, DiagnosticHeartbeatMessage, new UIntPtr(unchecked((ulong)now)), IntPtr.Zero))
+            Interlocked.CompareExchange(ref state.Pending, 0, now);
+    }
+
+    internal (bool Installed, double PendingMs, double HeartbeatMaxMs, double CallbackMaxMs, double ForwardMaxMs) ReadDiagnosticState()
+    {
+        var state = Volatile.Read(ref _diagnosticState);
+        if (state is null) return (_hook != IntPtr.Zero && !_disposed, 0, 0, 0, 0);
+        var pending = Interlocked.Read(ref state.Pending);
+        return (_hook != IntPtr.Zero && !_disposed, pending == 0 ? 0 : Stopwatch.GetElapsedTime(pending).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref state.HeartbeatMax, 0)).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref state.CallbackMax, 0)).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref state.ForwardMax, 0)).TotalMilliseconds);
+    }
+
+    private static void UpdateDiagnosticMaximum(ref long target, long value)
+    {
+        var previous = Interlocked.Read(ref target);
+        while (value > previous)
+        {
+            var observed = Interlocked.CompareExchange(ref target, value, previous);
+            if (observed == previous) break;
+            previous = observed;
+        }
+    }
+
+    private sealed class DiagnosticState
+    {
+        internal long Pending;
+        internal long HeartbeatMax;
+        internal long CallbackMax;
+        internal long ForwardMax;
+    }
+#endif
 
     /// <summary>
     /// 组合滚轮在本次按压中是否已经用过；用于判断"松开后合成的那次点击"是否需要抑制。
@@ -45,11 +98,12 @@ public sealed class NativeMouseInputMonitor : IDisposable
     private const int SuppressedClickWindowMilliseconds = 750;
 
     /// <summary>创建全局鼠标监听器。/ Creates the global mouse monitor.</summary>
-    public NativeMouseInputMonitor(ShellTrayIconService trayIcon)
+    public NativeMouseInputMonitor(ShellTrayIconService trayIcon, AppLogService? log = null)
     {
         _trayIcon = trayIcon;
         _callback = OnMouseEvent;
         _dispatcher = Application.Current.Dispatcher;
+        _log = log;
     }
 
     public event EventHandler<TrayWheelEventArgs>? WheelChanged;
@@ -168,6 +222,16 @@ public sealed class NativeMouseInputMonitor : IDisposable
 
             while (NativeMethods.GetMessage(out var message, IntPtr.Zero, 0, 0) > 0)
             {
+#if DEBUG
+                if (message.Message == DiagnosticHeartbeatMessage)
+                {
+                    var sent = unchecked((long)message.WParam.ToUInt64());
+                    var state = Volatile.Read(ref _diagnosticState);
+                    if (state is not null && Interlocked.CompareExchange(ref state.Pending, 0, sent) == sent)
+                        UpdateDiagnosticMaximum(ref state.HeartbeatMax, Stopwatch.GetTimestamp() - sent);
+                    continue;
+                }
+#endif
                 NativeMethods.TranslateMessage(ref message);
                 NativeMethods.DispatchMessage(ref message);
             }
@@ -185,7 +249,12 @@ public sealed class NativeMouseInputMonitor : IDisposable
     }
 
     private IntPtr OnMouseEvent(int code, IntPtr wParam, IntPtr lParam)
-    {        try
+    {
+#if DEBUG
+        var diagnostic = Volatile.Read(ref _diagnosticState);
+        var diagnosticStart = diagnostic is not null ? Stopwatch.GetTimestamp() : 0;
+#endif
+        try
         {
             if (code >= 0)
             {
@@ -245,7 +314,20 @@ public sealed class NativeMouseInputMonitor : IDisposable
         }
         catch (Exception exception)
         {
-            Debug.WriteLine($"[NativeMouseInputMonitor] Callback failed: {exception}");
+            // 异常格式化与日志也不能占用输入链；最多保留一项后台报告，不逐次积压任务。
+            if (Interlocked.CompareExchange(ref _failureReportQueued, 1, 0) == 0 &&
+                !ThreadPool.UnsafeQueueUserWorkItem(static state =>
+                {
+                    try
+                    {
+                        if (!state.Monitor._disposed)
+                            state.Monitor._callbackFailures.Report(state.Monitor._log, "Input", "mouse-hook",
+                                "全局鼠标监听回调失败", state.Exception);
+                    }
+                    catch { /* 故障报告不能引发新的后台未处理异常。 */ }
+                    finally { Interlocked.Exchange(ref state.Monitor._failureReportQueued, 0); }
+                }, (Monitor: this, Exception: exception), preferLocal: false))
+                Interlocked.Exchange(ref _failureReportQueued, 0);
         }
         finally
         {
@@ -253,7 +335,15 @@ public sealed class NativeMouseInputMonitor : IDisposable
             // The hook only observes tray hits; every path must forward the input.
         }
 
-        return NativeMethods.CallNextHookEx(_hook, code, wParam, lParam);
+#if DEBUG
+        var forwardStart = diagnosticStart != 0 ? Stopwatch.GetTimestamp() : 0;
+        if (diagnostic is not null) UpdateDiagnosticMaximum(ref diagnostic.CallbackMax, forwardStart - diagnosticStart);
+#endif
+        var result = NativeMethods.CallNextHookEx(_hook, code, wParam, lParam);
+#if DEBUG
+        if (diagnostic is not null) UpdateDiagnosticMaximum(ref diagnostic.ForwardMax, Stopwatch.GetTimestamp() - forwardStart);
+#endif
+        return result;
     }
 
     /// <summary>

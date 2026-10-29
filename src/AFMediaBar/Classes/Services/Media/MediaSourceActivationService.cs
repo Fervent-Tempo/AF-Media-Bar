@@ -25,10 +25,11 @@ public sealed class MediaSourceActivationService
     }
 
     /// <summary>
-    /// 尝试恢复并前置来源进程的主窗口；找不到安全窗口时保持无操作。
-    /// Attempts to restore and foreground the source process main window, becoming a no-op when no safe window is found.
+    /// 在后台解析来源窗口并请求前置；没有有效窗口时沿用应用或可执行文件唤醒入口。
     /// </summary>
-    public void Activate(string sourceId)
+    public Task ActivateAsync(string sourceId) => Task.Run(() => ActivateCoreAsync(sourceId));
+
+    private async Task ActivateCoreAsync(string sourceId)
     {
         if (string.IsNullOrWhiteSpace(sourceId))
         {
@@ -36,42 +37,11 @@ public sealed class MediaSourceActivationService
         }
 
         var executablePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var processName in ResolveActivationProcessNames(sourceId))
-        {
-            foreach (var process in Process.GetProcessesByName(processName))
-            {
-                using (process)
-                {
-                    try
-                    {
-                        var handle = process.MainWindowHandle;
-                        if (handle == IntPtr.Zero)
-                        {
-                            var executablePath = process.MainModule?.FileName;
-                            if (!string.IsNullOrWhiteSpace(executablePath))
-                            {
-                                executablePaths.Add(executablePath);
-                            }
-
-                            continue;
-                        }
-
-                        NativeMethods.ShowWindow(handle, NativeMethods.SW_RESTORE);
-                        NativeMethods.SetForegroundWindow(handle);
-                        return;
-                    }
-                    catch (Exception ex) when (ex is InvalidOperationException or
-                                                   System.ComponentModel.Win32Exception or
-                                                   NotSupportedException)
-                    {
-                        Debug.WriteLine($"[MediaSourceActivationService] Process exited while activating: {ex.Message}");
-                    }
-                }
-            }
-        }
-
         try
         {
+            var result = await TryActivateRunningAsync(sourceId, executablePaths).ConfigureAwait(false);
+            if (result != WindowActivationResult.NotFound) return;
+
             if (sourceId.Contains('!'))
             {
                 Process.Start(new ProcessStartInfo
@@ -132,15 +102,20 @@ public sealed class MediaSourceActivationService
         => Task.Run(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return LaunchCore(entry);
+            return LaunchCoreAsync(entry);
         }, cancellationToken);
 
-    private QuickLaunchResult LaunchCore(QuickLaunchEntry entry)
+    private async Task<QuickLaunchResult> LaunchCoreAsync(QuickLaunchEntry entry)
     {
         try
         {
-            if (!string.IsNullOrWhiteSpace(entry.SourceId) && TryActivateRunning(entry.SourceId))
-                return QuickLaunchResult.Success;
+            if (!string.IsNullOrWhiteSpace(entry.SourceId))
+            {
+                var result = await TryActivateRunningAsync(entry.SourceId).ConfigureAwait(false);
+                if (result == WindowActivationResult.Activated) return QuickLaunchResult.Success;
+                // 已找到界面但系统拒绝前置时，不另起一个应用实例。
+                if (result == WindowActivationResult.Failed) return QuickLaunchResult.Failed;
+            }
             var target = entry.Target.Trim();
             switch (entry.Kind)
             {
@@ -169,21 +144,39 @@ public sealed class MediaSourceActivationService
         }
     }
 
-    private bool TryActivateRunning(string sourceId)
+    private enum WindowActivationResult { NotFound, Activated, Failed }
+
+    private async Task<WindowActivationResult> TryActivateRunningAsync(
+        string sourceId, HashSet<string>? executablePaths = null)
     {
         foreach (var processName in ResolveActivationProcessNames(sourceId))
         {
-            foreach (var process in Process.GetProcessesByName(processName))
+            var processes = Process.GetProcessesByName(processName);
+            try
             {
-                using (process)
+                foreach (var process in processes)
                 {
                     try
                     {
-                        if (process.MainWindowHandle == IntPtr.Zero)
-                            continue;
-                        NativeMethods.ShowWindow(process.MainWindowHandle, NativeMethods.SW_RESTORE);
-                        NativeMethods.SetForegroundWindow(process.MainWindowHandle);
-                        return true;
+                        if (executablePaths is not null)
+                        {
+                            try
+                            {
+                                if (process.MainModule?.FileName is { Length: > 0 } path)
+                                    executablePaths.Add(path);
+                            }
+                            catch (System.ComponentModel.Win32Exception) { }
+                        }
+
+                        // MainWindowHandle 可能指向通信窗口；枚举并验证实际界面，也保留隐藏到托盘的主窗口。
+                        foreach (var handle in FindActivationWindows(process.Id))
+                        {
+                            if (await RestoreWindowAsync(handle, process.Id).ConfigureAwait(false))
+                                return WindowActivationResult.Activated;
+                            // 不因焦点限制依次展开同一播放器的其他窗口。
+                            Debug.WriteLine($"[MediaSourceActivationService] Window activation refused: {sourceId}");
+                            return WindowActivationResult.Failed;
+                        }
                     }
                     catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
                     {
@@ -191,6 +184,54 @@ public sealed class MediaSourceActivationService
                     }
                 }
             }
+            finally
+            {
+                foreach (var process in processes) process.Dispose();
+            }
+        }
+        return WindowActivationResult.NotFound;
+    }
+
+    internal static IReadOnlyList<IntPtr> FindActivationWindows(int processId)
+    {
+        var windows = new List<IntPtr>();
+        NativeMethods.EnumWindows((handle, _) =>
+        {
+            if (IsActivationWindow(handle, processId)) windows.Add(handle);
+            return true;
+        }, IntPtr.Zero);
+        return windows.OrderByDescending(NativeMethods.IsWindowVisible).ToArray();
+    }
+
+    private static bool IsActivationWindow(IntPtr handle, int processId)
+    {
+        const int ToolWindow = 0x00000080;
+        const int AppWindow = 0x00040000;
+        const int Caption = 0x00C00000;
+        const uint Owner = 4;
+        NativeMethods.GetWindowThreadProcessId(handle, out var ownerProcess);
+        if (ownerProcess != processId || NativeMethods.GetWindow(handle, Owner) != IntPtr.Zero) return false;
+        var style = NativeMethods.GetWindowLong(handle, NativeMethods.GWL_STYLE);
+        var extendedStyle = NativeMethods.GetWindowLong(handle, NativeMethods.GWL_EXSTYLE);
+        if ((style & NativeMethods.WS_CHILD) != 0 ||
+            (extendedStyle & NativeMethods.WS_EX_NOACTIVATE) != 0 ||
+            ((extendedStyle & ToolWindow) != 0 && (extendedStyle & AppWindow) == 0)) return false;
+        if (!NativeMethods.GetWindowRect(handle, out var bounds) ||
+            bounds.Right <= bounds.Left || bounds.Bottom <= bounds.Top) return false;
+        return NativeMethods.IsWindowVisible(handle) || (extendedStyle & AppWindow) != 0 || (style & Caption) != 0;
+    }
+
+    private static async Task<bool> RestoreWindowAsync(IntPtr handle, int processId)
+    {
+        if (!IsActivationWindow(handle, processId) ||
+            !NativeMethods.ShowWindowAsync(handle, NativeMethods.SW_RESTORE)) return false;
+        // 异步恢复避免等待目标 UI 线程；窗口显示后只请求一次前置，不绕过系统焦点限制。
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            if (!IsActivationWindow(handle, processId)) return false;
+            if (NativeMethods.IsWindowVisible(handle) && !NativeMethods.IsIconic(handle))
+                return NativeMethods.SetForegroundWindow(handle) || NativeMethods.GetForegroundWindow() == handle;
+            await Task.Delay(50).ConfigureAwait(false);
         }
         return false;
     }

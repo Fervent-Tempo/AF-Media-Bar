@@ -6,18 +6,8 @@ using Wpf.Ui.Abstractions.Controls;
 
 namespace AFMediaBar.Views.Pages
 {
-    /// <summary>
-    /// 关于页：开发人员、赞助者名单、赞助我、开源许可与项目信息。
-    ///
-    /// 它只负责展示，本身不解析设置、不发起网络请求：名单由服务层填进视图模型，许可清单是一份可核对的静态目录，
-    /// 而"哪些设置项在哪里"属于「应用」页。它由原「应用与关于」页的后半部分独立而来。
-    /// About page: developers, the sponsor list, how to support, open-source licenses, and project information.
-    ///
-    /// It only presents. It parses no settings and issues no network requests itself: the name lists are filled into the view model by
-    /// the service layer, the license catalog is a checkable static list, and "which settings live where" belongs to the application
-    /// page. It was split out of the second half of the former "application and about" page.
-    /// </summary>
-    public partial class AboutPage : INavigableView<AboutViewModel>
+    /// <summary>呈现关于设置，编辑器与服务由既有作用域拥有。</summary>
+public partial class AboutPage : INavigableView<AboutViewModel>
     {
         public AboutViewModel ViewModel { get; }
 

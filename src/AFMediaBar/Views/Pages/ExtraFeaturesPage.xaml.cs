@@ -1,4 +1,5 @@
 using AFMediaBar.Classes.Utils;
+using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Resources;
 using AFMediaBar.ViewModels.Pages;
@@ -7,7 +8,7 @@ using Microsoft.Win32;
 
 namespace AFMediaBar.Views.Pages;
 
-/// <summary>额外功能设置页。/ Settings page for auxiliary features.</summary>
+/// <summary>呈现媒体来源设置，编辑器与服务由既有作用域拥有。</summary>
 public partial class ExtraFeaturesPage : INavigableView<ExtraFeaturesViewModel>
 {
     public ExtraFeaturesViewModel ViewModel { get; }
@@ -51,8 +52,8 @@ public partial class ExtraFeaturesPage : INavigableView<ExtraFeaturesViewModel>
 
     private async void ResetButton_Click(object sender, System.Windows.RoutedEventArgs e)
     {
-        if (await SettingsResetDialog.ConfirmAsync("Common.Page.MediaAndNotifications"))
-            ViewModel.ResetExtraFeatures();
+        if (await SettingsResetDialog.ConfirmAsync("Settings.Page.MediaSource"))
+            ViewModel.ResetSection(SettingsResetScope.MediaSource);
     }
 
 }

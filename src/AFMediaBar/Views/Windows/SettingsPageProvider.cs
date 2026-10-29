@@ -15,16 +15,26 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INaviga
     /// <summary>View-layer mapping for semantic navigation and search destinations.</summary>
     public static IReadOnlyDictionary<SettingsPageKey, Type> PageTypes { get; } = new Dictionary<SettingsPageKey, Type>
     {
+        [SettingsPageKey.PluginCenter] = typeof(PluginCenterPage),
         [SettingsPageKey.QuickStart] = typeof(QuickStartPage),
         [SettingsPageKey.ScreenAndPlacement] = typeof(ScreenAndPlacementPage),
         [SettingsPageKey.Appearance] = typeof(AppearancePage),
+        [SettingsPageKey.ApplicationAppearance] = typeof(ApplicationAppearancePage),
+        [SettingsPageKey.RestState] = typeof(RestStatePage),
+        [SettingsPageKey.FullPanel] = typeof(FullPanelPage),
+        [SettingsPageKey.Spectrum] = typeof(SpectrumPage),
+        [SettingsPageKey.Performance] = typeof(PerformancePage),
+        [SettingsPageKey.BluetoothBattery] = typeof(BluetoothBatteryPage),
+        [SettingsPageKey.TrackNotifications] = typeof(TrackNotificationsPage),
+        [SettingsPageKey.Configuration] = typeof(ConfigurationPage),
+        [SettingsPageKey.Diagnostics] = typeof(DiagnosticsPage),
+        [SettingsPageKey.MemoryTools] = typeof(MemoryToolsPage),
         [SettingsPageKey.Interaction] = typeof(InteractionPage),
         [SettingsPageKey.DeviceManagement] = typeof(DeviceManagementPage),
         [SettingsPageKey.Lyrics] = typeof(LyricsPage),
         [SettingsPageKey.Components] = typeof(ComponentsSettingsPage),
         [SettingsPageKey.Widgets] = typeof(WidgetsSettingsPage),
         [SettingsPageKey.MediaAndNotifications] = typeof(ExtraFeaturesPage),
-        [SettingsPageKey.PluginCenter] = typeof(PluginCenterPage),
         [SettingsPageKey.Application] = typeof(ApplicationPage),
         [SettingsPageKey.Experimental] = typeof(ExperimentalPage),
         [SettingsPageKey.ReleaseHighlights] = typeof(ReleaseHighlightsPage),
@@ -41,20 +51,10 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INaviga
         pageType = ResolvePageType(pageType);
         var match = PageTypes.FirstOrDefault(pair => pair.Value == pageType);
         if (match.Value is null || SettingsPageCatalog.Find(match.Key, _context.Mode) is not { } definition) return null;
-        if (pageType == typeof(AppearancePage))
-        {
-            var page = (AppearancePage)cache.Get(pageType, definition with { HasModeContent = false });
-            var editor = SettingsPageCatalog.CanEditProfile(_context.Mode)
-                ? (TaskbarAppearanceViewModel)cache.Get(typeof(TaskbarAppearanceViewModel), definition with { IsGlobal = false })
-                : null;
-            page.SetTaskbarEditor(editor);
-            return page;
-        }
         return cache.Get(pageType, definition);
     }
     /// <summary>保留调用方的旧页面类型入口，不创建重复设置页。</summary>
-    public static Type ResolvePageType(Type pageType) => pageType == typeof(DisplayModesPage) ? typeof(ScreenAndPlacementPage)
-        : pageType == typeof(ApplicationAppearancePage) ? typeof(AppearancePage) : pageType;
+    public static Type ResolvePageType(Type pageType) => pageType == typeof(DisplayModesPage) ? typeof(ScreenAndPlacementPage) : pageType;
     /// <summary>Releases cached objects when the settings window closes.</summary>
     public void Dispose() => cache.Dispose();
 }

@@ -54,8 +54,7 @@ internal static class SmallTaskbarPresentationChecks
             Assert.IsTrue(spectrum.Height <= 20);
             Assert.AreEqual(Visibility.Visible, transportButton.Visibility);
             Assert.IsTrue(transportButton.Height <= 22);
-            var metric = ((StackPanel)control.FindName("TaskbarPerformanceItems")).Children.OfType<TextBlock>().Single();
-            Assert.IsFalse(metric.Text.Contains('\n'), "A narrow horizontal taskbar keeps network values on one row.");
+
             var saved = SettingsManager.Current.Clone();
             control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal, 100, 100);
             control.ApplyPrimaryLength(500);
@@ -123,7 +122,7 @@ internal static class SmallTaskbarPresentationChecks
                 orientation == LayoutOrientation.Horizontal ? cross : 500));
             control.Arrange(new Rect(control.DesiredSize));
             control.UpdateLayout();
-            foreach (var name in new[] { "SongImageBorder", "SongInfoStackPanel", "TaskbarSpectrum", "TaskbarPerformanceSurface", "TaskbarOutputDeviceSurface", "TaskbarVolumeSurface" })
+            foreach (var name in new[] { "SongImageBorder", "SongInfoStackPanel", "TaskbarSpectrum", "TaskbarOutputDeviceSurface", "TaskbarVolumeSurface" })
             {
                 var element = (FrameworkElement)control.FindName(name);
                 var center = element.TranslatePoint(new Point(element.ActualWidth / 2, element.ActualHeight / 2), border);

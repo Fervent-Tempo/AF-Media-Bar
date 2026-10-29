@@ -48,10 +48,20 @@ public enum SettingsPageKey
     DeviceManagement,
     /// <summary>频谱、性能与蓝牙电量的小组件配置。</summary>
     Widgets,
-    /// <summary>全局插件目录、下载和手动安装指引。</summary>
-    PluginCenter,
-    /// <summary>基础教程、版本亮点入口和播放器兼容性参考。</summary>
+
+    /// <summary>常驻组件显隐、顺序及无媒体保留项。</summary>
+    RestState,
+    FullPanel,
+    Spectrum,
+    Performance,
+    BluetoothBattery,
+    TrackNotifications,
+    Configuration,
+    Diagnostics,
+    MemoryTools,
     QuickStart,
+    /// <summary>播放器扩展的下载与手动安装指引。</summary>
+    PluginCenter,
 }
 
 /// <summary>
@@ -70,7 +80,10 @@ public readonly record struct SettingsSearchEntry(
     string PageTitle,
     string Title,
     string Description,
-    IReadOnlyList<string> Keywords);
+    IReadOnlyList<string> Keywords)
+{
+    public string? OptionId { get; init; }
+}
 
 /// <summary>
 /// 一条搜索命中。/ A single search hit.
@@ -85,7 +98,10 @@ public readonly record struct SettingsSearchHit(
     string GroupId,
     string PageTitle,
     string Title,
-    string Description);
+    string Description)
+{
+    public string? OptionId { get; init; }
+}
 
 /// <summary>
 /// 设置搜索策略：把用户输入解析成按相关度排序的分组命中。
@@ -136,14 +152,14 @@ public static class SettingsSearchPolicy
                     entry.GroupId,
                     entry.PageTitle,
                     entry.Title,
-                    entry.Description)));
+                    entry.Description) { OptionId = entry.OptionId }));
             }
         }
 
         return scored
             .OrderBy(candidate => candidate.Rank)
             .ThenBy(candidate => candidate.Order)
-            .DistinctBy(candidate => (candidate.Hit.Page, candidate.Hit.GroupId))
+            .DistinctBy(candidate => (candidate.Hit.Page, candidate.Hit.GroupId, candidate.Hit.OptionId))
             .Take(MaxResults)
             .Select(candidate => candidate.Hit)
             .ToArray();

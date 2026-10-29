@@ -65,7 +65,14 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
         };
     });
     public void SetSpectrum(SpectrumComponentSettings settings) => Update(current => current.SpectrumComponent = settings.Normalize());
-    public void SetPerformance(PerformanceComponentSettings settings) => Update(current => current.PerformanceComponent = settings.Normalize());
+    public void SetPerformance(PerformanceComponentSettings settings) => Update(current =>
+    {
+        var next = settings.Normalize();
+        var previous = current.PerformanceComponent.Normalize();
+        if (!previous.Metrics!.SequenceEqual(next.Metrics!) || !previous.GetMetricOrder().SequenceEqual(next.GetMetricOrder()))
+            current.TaskbarExperience = ComponentLayoutPolicy.PreserveImplicitLayouts(current);
+        current.PerformanceComponent = next;
+    });
     public void SetExperiments(ExperimentalSettings settings)
     {
         if (!context.IsActive) return;
@@ -130,12 +137,29 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
     public void Reset(SettingsResetScope scope)
     {
         if (!IsActive) return;
+        if (SettingsSectionResetPolicy.Handles(scope))
+        {
+            var sectionRoot = SettingsManager.Current;
+            var sectionDefaults = (SettingsManager.UserDefaults ?? new AppSettings()).Clone();
+            if (Target == BarConfigurationTarget.FloatingBar)
+                sectionDefaults = (sectionDefaults.FloatingBar.Profile ?? BarDisplaySettings.Capture(sectionDefaults)).ApplyTo(sectionDefaults);
+            var sectionNext = SettingsSectionResetPolicy.Apply(Current, sectionDefaults, scope);
+            if (Target == BarConfigurationTarget.FloatingBar)
+            {
+                var sectionFloating = sectionNext.FloatingBar with { Profile = BarDisplaySettings.Capture(sectionNext) };
+                sectionNext = BarDisplaySettings.Capture(sectionRoot).ApplyTo(sectionNext);
+                sectionNext.FloatingBar = sectionFloating;
+            }
+            SettingsManager.Replace(sectionNext, scope);
+            return;
+        }
         switch (scope)
         {
             case SettingsResetScope.Lyrics: SettingsManager.ResetLyrics(); return;
             case SettingsResetScope.DeviceManagement: SettingsManager.ResetDeviceManagement(); return;
             case SettingsResetScope.Interaction: SettingsManager.ResetInteraction(); return;
             case SettingsResetScope.Components: SettingsManager.ResetComponents(); return;
+            case SettingsResetScope.RestState: SettingsManager.ResetRestState(); return;
             case SettingsResetScope.Appearance: SettingsManager.ResetTaskbarAppearance(); return;
         }
         if (Target == BarConfigurationTarget.Taskbar)
@@ -161,6 +185,7 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
                 MonitorDeviceIds = defaults.FloatingBar.MonitorDeviceIds,
                 Orientation = defaults.FloatingBar.Orientation,
                 Layer = defaults.FloatingBar.Layer,
+                OverlayTaskbar = defaults.FloatingBar.OverlayTaskbar,
                 EdgeCollapseEnabled = defaults.FloatingBar.EdgeCollapseEnabled
             };
         }
@@ -170,7 +195,7 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
             { LengthMode = geometry.LengthMode, FixedLengthDip = geometry.FixedLengthDip, Arrangement = geometry.Arrangement };
             if (scope == SettingsResetScope.DisplayModes)
             {
-                // 旧入口维持原有范围；当前内容与布局页保留小组件设置。
+                // 旧入口同时恢复组件参数；内容与布局只恢复显隐和顺序。
                 next.TaskbarExperience = next.TaskbarExperience with
                 { SpectrumVisible = defaults.TaskbarExperience.SpectrumVisible, PerformanceVisible = defaults.TaskbarExperience.PerformanceVisible };
                 next.SpectrumComponent = defaults.SpectrumComponent;

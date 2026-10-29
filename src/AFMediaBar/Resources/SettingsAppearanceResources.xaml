@@ -76,8 +76,8 @@
     </Style>
 
     <Style x:Key="AfSettingsRowDescriptionStyle" TargetType="{x:Type TextBlock}">
-        <Setter Property="FontSize" Value="12" />
-        <Setter Property="LineHeight" Value="17" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="LineHeight" Value="20" />
         <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
         <Setter Property="TextWrapping" Value="Wrap" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
@@ -837,4 +837,7 @@
         <Setter Property="Margin" Value="0,8,0,4" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
     </Style>
+    <SolidColorBrush x:Key="AfTutorialSageInkBrush" Color="#648571"/><SolidColorBrush x:Key="AfTutorialSageSurfaceBrush" Color="#12648571"/>
+    <SolidColorBrush x:Key="AfTutorialClayInkBrush" Color="#B67D65"/><SolidColorBrush x:Key="AfTutorialClaySurfaceBrush" Color="#12B67D65"/>
+    <SolidColorBrush x:Key="AfTutorialLavenderInkBrush" Color="#8A7B9F"/><SolidColorBrush x:Key="AfTutorialLavenderSurfaceBrush" Color="#128A7B9F"/>
 </ResourceDictionary>

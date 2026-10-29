@@ -63,23 +63,51 @@ public sealed class AudioSettingsPageLoadingTests
                 using var context = new SettingsPageContext();
                 var configuration = new LegacySettingsConfiguration(context);
                 using var devices = new AudioDeviceSettingsViewModel(new Catalog(), configuration);
-                using var components = new ComponentsSettingsViewModel(configuration, localization, new Catalog());
+                var captureCatalog = new Catalog
+                {
+                    Devices = [new("active", "active", "Alias", false), new("hidden", "hidden", "Hidden", false),
+                        new("old", "old", "Old", false) { IsActive = false },
+                        new("ghost", "ghost", "Ghost", false) { IsActive = false }]
+                };
+                SettingsManager.Current.AudioDevices = new() { OutputBlacklist = [new("hidden", "Hidden")] };
+                using var components = new ComponentsSettingsViewModel(configuration, localization, captureCatalog);
                 using var batteryEditor = new BluetoothBatterySettingsViewModel(battery, configuration, localization);
                 using var quickLaunch = new AFMediaBar.Classes.Services.QuickLaunchService();
                 using var note = new QuickLaunchSettingsViewModel(quickLaunch, configuration, localization);
-                var widgetsModel = new WidgetsSettingsViewModel(components, batteryEditor, note, configuration);
+                using var layout = new TaskbarAppearanceViewModel(configuration, new AFMediaBar.Classes.Services.TaskbarLengthConstraintsService(), localization);
+                var widgetsModel = new WidgetsSettingsViewModel(components, batteryEditor, note, configuration, layout);
                 await widgetsModel.RefreshAsync();
                 var widgets = new WidgetsSettingsPage(widgetsModel);
                 widgets.Measure(new Size(820, 900));
                 Assert.IsNotNull(widgets.Content);
-                Assert.IsNull(components.SelectedSpectrumCaptureDevice!.DeviceId);
-                Assert.AreEqual(2, components.SpectrumCaptureDevices.Count);
-                components.SelectedSpectrumCaptureDevice = components.SpectrumCaptureDevices.Single(option => option.DeviceId == "old");
+                Assert.IsNull(components.SelectedSpectrumCaptureDevice!.DeviceId, "默认策略是跟随媒体来源。");
+                Assert.AreEqual(3, components.SpectrumCaptureDevices.Count, "只列出两个自动策略和允许且在线的输出设备。");
+                Assert.IsFalse(captureCatalog.LastIncludeHidden);
+                Assert.AreEqual("Alias", components.SpectrumCaptureDevices.Single(option => option.DeviceId == "active").DisplayName);
+                Assert.IsTrue(components.SpectrumCaptureDevices.Any(option => option.Mode == SpectrumCaptureDeviceMode.SystemDefault),
+                    "设备下拉里新增系统默认输出设备。");
+                var activeOption = components.SpectrumCaptureDevices.Single(option => option.DeviceId == "active");
+                components.SelectedSpectrumCaptureDevice = activeOption;
+                SettingsManager.Current.AudioDevices = new() { OutputBlacklist = [new("hidden", "Hidden"), new("active", "Alias")] };
+                await widgetsModel.RefreshAsync();
+                Assert.AreEqual("active", components.SelectedSpectrumCaptureDevice!.DeviceId, "禁用当前设备后保留配置，不静默切换目标。");
+                Assert.IsTrue(components.SelectedSpectrumCaptureDevice.DisplayName.Contains(AFMediaBar.Resources.Translations.Get("Audio.Device.Hidden")));
+                Assert.AreEqual(3, components.SpectrumCaptureDevices.Count, "只补回当前隐藏项，其它隐藏和历史离线设备不列出。");
+                SettingsManager.SetSpectrumComponentSettings(SettingsManager.Current.SpectrumComponent with
+                { CaptureDeviceMode = SpectrumCaptureDeviceMode.SpecificDevice, CaptureDeviceId = "old", CaptureDeviceName = "Old" });
                 await widgetsModel.RefreshAsync();
                 Assert.AreEqual("old", components.SelectedSpectrumCaptureDevice!.DeviceId, "刷新离线设备列表不能把手动选择改回自动。");
                 Assert.AreEqual("old", SettingsManager.Current.SpectrumComponent.CaptureDeviceId);
                 components.SelectedSpectrumCaptureDevice = components.SpectrumCaptureDevices.First();
-                Assert.IsNull(SettingsManager.Current.SpectrumComponent.CaptureDeviceId);
+                Assert.AreEqual(SpectrumCaptureDeviceMode.FollowMediaSource,
+                    SettingsManager.Current.SpectrumComponent.ResolveCaptureDeviceMode(), "选回跟随后策略切回跟随媒体来源。");
+                Assert.AreEqual("old", SettingsManager.Current.SpectrumComponent.CaptureDeviceId,
+                    "非指定设备模式保留设备标识，切回指定设备时恢复原选择；该标识不参与设备选择。");
+                Assert.AreEqual(2, components.SpectrumCaptureDevices.Count, "自动策略不补回历史设备。");
+                components.SelectedSpectrumCaptureDevice = activeOption;
+                Assert.AreEqual(SpectrumCaptureDeviceMode.FollowMediaSource, SettingsManager.Current.SpectrumComponent.ResolveCaptureDeviceMode(),
+                    "下拉打开期间设备被禁用后，迟到的选择不能重新选入隐藏设备。");
+                SettingsManager.Current.AudioDevices = new();
                 using var viewModel = new InteractionViewModel(localization, new LegacySettingsConfiguration(context));
                 await devices.RefreshAsync();
                 var management = new DeviceManagementPage(devices);
@@ -152,7 +180,7 @@ public sealed class AudioSettingsPageLoadingTests
             window.Show();
             navigation.ReplaceContent(page);
             await window.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-            var scroll = (ScrollViewer)page.FindName("PageScroll");
+            var scroll = ((SettingsPageLayout)page.FindName("PageLayout")).ScrollViewer!;
             Assert.IsTrue(scroll.ScrollableHeight > 0, "测试窗口必须产生真实溢出。");
             var notice = (FrameworkElement)page.FindName("ExperimentalWarning");
             var gaps = new[] { notice.TranslatePoint(new Point(12, notice.ActualHeight + 4), page),
@@ -185,9 +213,15 @@ public sealed class AudioSettingsPageLoadingTests
 
     private sealed class Catalog : IAudioDeviceCatalog
     {
+        internal IReadOnlyList<AudioDeviceOption> Devices { get; init; } =
+            [new("old", "old", "Old", false) { IsActive = false, Availability = AudioDeviceAvailability.Disabled }];
+        internal bool LastIncludeHidden { get; private set; }
         public event EventHandler? Changed { add { } remove { } }
-        public Task<IReadOnlyList<AudioDeviceOption>> GetDevicesAsync(AudioDeviceDirection direction, bool includeHidden = false, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<AudioDeviceOption>>(direction == AudioDeviceDirection.Output ?
-                [new("old", "old", "Old", false) { IsActive = false, Availability = AudioDeviceAvailability.Disabled }] : []);
+        public Task<IReadOnlyList<AudioDeviceOption>> GetDevicesAsync(AudioDeviceDirection direction, bool includeHidden = false, CancellationToken cancellationToken = default)
+        {
+            LastIncludeHidden = includeHidden;
+            return Task.FromResult<IReadOnlyList<AudioDeviceOption>>(direction == AudioDeviceDirection.Output ?
+                Devices.Where(device => includeHidden || device.IsActive && SettingsManager.Current.AudioDevices.IsAllowed(direction, device.PolicyId)).ToArray() : []);
+        }
     }
 }

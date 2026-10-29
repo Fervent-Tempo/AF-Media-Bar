@@ -72,9 +72,19 @@ namespace AFMediaBar.Components
         private AppSettings PresentationSettings => _presentationSettings ?? SettingsManager.Current;
         public BarPresentationContext PresentationContext { get; private set; } = new(WindowMode.Taskbar, LayoutOrientation.Horizontal);
         private bool IsBarPresentation => PresentationContext.SupportsBarInteractions;
-        internal Point GetFullPanelEntryScreenCenter() => SongInfoStackPanel.IsVisible && SongInfoStackPanel.ActualWidth > 0
-            ? SongInfoStackPanel.PointToScreen(new Point(SongInfoStackPanel.ActualWidth / 2, SongInfoStackPanel.ActualHeight / 2))
-            : PointToScreen(new Point(ActualWidth / 2, ActualHeight / 2));
+        /// <summary>
+        /// 外侧拉杆（完整面板入口）的锚点，取控件根的布局中心。
+        /// 不能用 SongInfoStackPanel：它是原地放大的推挤元素，PointToScreen 会把推挤支的 RenderTransform
+        /// 计入结果，放大动画期间锚点被带着平移，拉杆跟着晃。控件根不挂推挤变换，布局宽度也不随
+        /// 放大期间临时扩展的输入区变化，中心在动画全程稳定；两者中心位置本就基本重合，静态行为不变。
+        /// The anchor for the outer pull handle (full panel entry): the layout center of the control root.
+        /// SongInfoStackPanel must not be used — it is a zoom-push element, and PointToScreen folds its push
+        /// RenderTransform into the result, so the anchor slides during the zoom animation and the handle shakes
+        /// with it. The control root carries no push transform and its layout width ignores the temporary input-region
+        /// extension, so the center holds for the whole animation; the two centers nearly coincide, leaving the
+        /// resting behaviour unchanged.
+        /// </summary>
+        internal Point GetFullPanelEntryScreenCenter() => PointToScreen(new Point(ActualWidth / 2, ActualHeight / 2));
 
         public void ApplyPresentationSettings(AppSettings? settings) => _presentationSettings = settings;
 
@@ -175,6 +185,7 @@ namespace AFMediaBar.Components
             };
             Unloaded += (_, _) =>
             {
+                ClearPerformanceHistory();
                 FinishColorTransitions();
                 SuspendQuickLaunchPresentation();
                 _artworkHover.Detach();
@@ -194,12 +205,14 @@ namespace AFMediaBar.Components
 
             // 计时器必须先于布局初始化；布局会立即应用已持久化的悬停层开关。
             // Timers must exist before layout initialization, which immediately applies persisted hover settings.
+            InitializeComponentLayoutInput();
             InitializeLayoutEngine();
         }
 
         /// <summary>宿主最终关闭时释放控件级呈现资源；普通卸载仍允许重新加载。</summary>
         internal void DisposePresentation()
         {
+            DisposeComponentLayoutInput();
             FinishColorTransitions();
             SuspendQuickLaunchPresentation();
             CancelQuickLaunchInteraction();
@@ -855,7 +868,7 @@ namespace AFMediaBar.Components
             while (source is not null)
             {
                 if (ReferenceEquals(source, TaskbarPerformanceSurface) ||
-                    ReferenceEquals(source, TaskbarPerformanceHoverSurface))
+                    ReferenceEquals(source, TaskbarPerformanceHoverSurface) || _metricSurfaces.Values.Any(surface => ReferenceEquals(surface, source)))
                 {
                     return true;
                 }
@@ -945,6 +958,7 @@ namespace AFMediaBar.Components
             double thicknessScalePercent,
             double? crossAxisDip = null)
         {
+            CancelComponentGesture();
             var previousLayout = _layoutEngine?.CurrentLayout;
             var previousPrimary = previousLayout is null
                 ? 0
@@ -957,7 +971,7 @@ namespace AFMediaBar.Components
 
             // 从预设中获取布局
             // Get layout from presets
-            var layout = LayoutPresets.GetLayout(mode, orientation);
+            var layout = LayoutPresets.GetLayout(mode, orientation, PresentationSettings.TaskbarExperience.SmallArtwork);
             if ((mode is WindowMode.Taskbar or WindowMode.FloatingBar) && orientation == LayoutOrientation.Vertical)
             {
                 layout = layout with { Canvas = layout.Canvas with { Width = Math.Max(1, crossAxisDip ?? 48) } };
@@ -1041,7 +1055,7 @@ namespace AFMediaBar.Components
             ConfigureSpectrum();
             var performanceWidthChanged = ConfigurePerformance();
             var progressVisible = _snapshot.Duration > 0;
-            var controls = experience.HoverControls;
+            var controls = ComponentLayoutPolicy.HoverVisibility(PresentationSettings);
             // 静置层组件的显隐由本方法末尾的 ApplyTaskbarSectionGeometry 按算出的布局落地（那条路径同时覆盖尺寸动画的每一帧）。
             // The rest layer's visibility is applied by the ApplyTaskbarSectionGeometry at the end of this method from the layout it computed (that
             // path also covers every frame of a size animation).
@@ -1079,6 +1093,7 @@ namespace AFMediaBar.Components
             TaskbarDeviceButton.Visibility = controls.OutputDeviceVisible ? Visibility.Visible : Visibility.Collapsed;
             TaskbarInputDeviceButton.Visibility = controls.InputDeviceVisible ? Visibility.Visible : Visibility.Collapsed;
             TaskbarVolumeButton.Visibility = controls.AudioControlVisible ? Visibility.Visible : Visibility.Collapsed;
+            ApplyHoverComponentLayout();
             var hoverGap = experience.HoverButtonSpacingDip;
             var hoverLayerHeight = IsBarPresentation && !_isVertical
                 ? Math.Min(metrics.HoverLayerHeight, Math.Max(1, MainBorder.Height - 2)) : metrics.HoverLayerHeight;
@@ -1270,7 +1285,13 @@ namespace AFMediaBar.Components
             PlaceRestWidget(TaskbarOutputDeviceHoverSurface, layout.Find(TaskbarRestComponent.OutputDevice), hoverHeight);
             PlaceRestWidget(TaskbarInputDeviceHoverSurface, layout.Find(TaskbarRestComponent.InputDevice), hoverHeight);
             PlaceRestWidget(TaskbarVolumeHoverSurface, layout.Find(TaskbarRestComponent.Volume), hoverHeight);
-            TaskbarPerformanceSurface.Height = Math.Min(PreferredPerformanceHeight, Math.Max(1, hoverHeight - RestWidgetVerticalInset(TaskbarPerformanceHoverSurface)));
+            PlaceRestWidget(ResidentPreviousSurface, layout.Find(TaskbarRestComponent.PreviousTrack), hoverHeight);
+            PlaceRestWidget(ResidentPlayPauseSurface, layout.Find(TaskbarRestComponent.PlayPause), hoverHeight);
+            PlaceRestWidget(ResidentNextSurface, layout.Find(TaskbarRestComponent.NextTrack), hoverHeight);
+            ResizeResidentTransportButtons(metrics.ButtonSize,
+                Math.Min(metrics.ButtonSize, Math.Max(1, hoverHeight - RestWidgetVerticalInset(ResidentPreviousSurface))));
+            PlaceMetricSurfaces(layout, hoverHeight);
+            PlaceBarMoveHandle(layout, hoverHeight);
             foreach (var surface in new[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface })
                 surface.Height = Math.Min(metrics.ButtonSize, Math.Max(1, hoverHeight - RestWidgetVerticalInset(TaskbarOutputDeviceHoverSurface)));
 
@@ -1322,8 +1343,9 @@ namespace AFMediaBar.Components
             // 否则悬停表面的 1 DIP 留白点不到，hover 也会在光标移到边缘时闪断。
             // The performance component is built like the spectrum, with an outer hover surface and an inner look: visibility, hit testing, and
             // hover all belong to the outer one, otherwise the surface's one-DIP padding is not clickable and hover flickers at the edges.
-            var performanceVisible = Visible(TaskbarRestComponent.Performance);
+            var performanceVisible = Visible(TaskbarRestComponent.Performance) || ComponentLayoutPolicy.MetricComponents.Any(Visible);
             IsPerformanceComponentVisible = performanceVisible;
+            if (!performanceVisible) ClearPerformanceHistory();
             var outputDeviceVisible = Visible(TaskbarRestComponent.OutputDevice);
             var inputDeviceVisible = Visible(TaskbarRestComponent.InputDevice);
             var volumeVisible = Visible(TaskbarRestComponent.Volume);
@@ -1332,6 +1354,9 @@ namespace AFMediaBar.Components
             SetRestComponentVisible(TaskbarPerformanceHoverSurface, performanceVisible);
             SetRestComponentVisible(TaskbarPerformanceSurface, performanceVisible);
             SetRestComponentVisible(TaskbarBatterySurface, Visible(TaskbarRestComponent.BluetoothBattery));
+            SetRestComponentVisible(ResidentPreviousSurface, Visible(TaskbarRestComponent.PreviousTrack));
+            SetRestComponentVisible(ResidentPlayPauseSurface, Visible(TaskbarRestComponent.PlayPause));
+            SetRestComponentVisible(ResidentNextSurface, Visible(TaskbarRestComponent.NextTrack));
             SetRestComponentVisible(TaskbarOutputDeviceHoverSurface, outputDeviceVisible);
             SetRestComponentVisible(TaskbarOutputDeviceSurface, outputDeviceVisible);
             SetRestComponentVisible(TaskbarInputDeviceHoverSurface, inputDeviceVisible);
@@ -1396,12 +1421,11 @@ namespace AFMediaBar.Components
         /// <param name="primaryLength">媒体栏当前长度（DIP）。/ Current bar length in DIP.</param>
         private TaskbarRestLayout ResolveRestLayout(in TaskbarExperienceSettings experience, double primaryLength)
         {
-            var visibility = ResolveRestVisibility(experience);
             var metrics = TaskbarDensityMetrics.From(experience.Density);
             return TaskbarRestLayoutPolicy.Arrange(
-                TaskbarRestLayoutPolicy.ResolveOrder(experience.RestComponentOrder),
+                RestComponentsWithHandle(),
                 component => ResolveRestComponentWidth(component, metrics),
-                component => TaskbarRestLayoutPolicy.IsVisible(component, visibility),
+                _ => true,
                 GetTaskbarLeadingInset(),
                 Math.Max(0, primaryLength),
                 TaskbarExperiencePolicy.ResolveSectionGap(experience.Density, experience.ComponentSpacingDip),
@@ -1432,11 +1456,15 @@ namespace AFMediaBar.Components
         {
             TaskbarRestComponent.Artwork => Math.Max(0, SongImageBorder.Width),
             TaskbarRestComponent.Spectrum => SpectrumSurfaceWidth,
-            TaskbarRestComponent.Performance => _performanceWidth + TaskbarWidgetPadding * 2,
+            TaskbarRestComponent.Performance => _performanceWidth,
+            TaskbarRestComponent.DragHandle => ComponentLayoutPolicy.HandleLength,
+            _ when ComponentLayoutPolicy.IsMetric(component) => MetricPrimarySize(component, false),
             TaskbarRestComponent.BluetoothBattery => BatterySurfaceWidth,
             TaskbarRestComponent.OutputDevice => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.InputDevice => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.Volume => metrics.ButtonSize + TaskbarWidgetPadding * 2,
+            TaskbarRestComponent.PreviousTrack or TaskbarRestComponent.PlayPause or TaskbarRestComponent.NextTrack =>
+                metrics.ButtonSize + TaskbarWidgetPadding * 2,
             _ => 0
         };
 
@@ -1469,10 +1497,15 @@ namespace AFMediaBar.Components
         /// </summary>
         private double GetTaskbarLeadingInset()
         {
-            var layout = LayoutPresets.GetLayout(_currentMode, LayoutOrientation.Horizontal);
+            var experience = PresentationSettings.TaskbarExperience.Normalize();
+            var useSmallArtwork = experience.SmallArtwork && TaskbarRestLayoutPolicy.IsVisible(
+                TaskbarRestComponent.Artwork, ResolveRestVisibility(experience));
+            var layout = LayoutPresets.GetLayout(_currentMode, LayoutOrientation.Horizontal, useSmallArtwork);
             var artwork = layout.Components.FirstOrDefault(component =>
                 string.Equals(component.Id, LayoutComponentIds.Artwork, StringComparison.Ordinal));
-            var inset = _isSmallTaskbar && UsesAdaptiveTaskbarText ? 2 : artwork?.Bounds.X ?? 0;
+            // 留白取决于任务栏实际高度，不能随文字是否收起而变化。
+            var inset = UsesAdaptiveTaskbarText && MainBorder.Height < SmallTaskbarPresentationPolicy.CompactCrossAxisThresholdDip
+                ? 2 : artwork?.Bounds.X ?? 0;
             return double.IsFinite(inset) && inset > 0 ? inset : 0;
         }
 
@@ -1550,6 +1583,7 @@ namespace AFMediaBar.Components
             _isHostVisibilitySuspended = suspended;
             if (suspended)
             {
+                ClearPerformanceHistory();
                 FinishColorTransitions();
                 SuspendQuickLaunchPresentation();
                 SettleTaskbarPointerVisuals();
@@ -1721,6 +1755,7 @@ namespace AFMediaBar.Components
             SongTitle.Foreground = displayedForeground;
             SongArtist.Foreground = displayedForeground;
             System.Windows.Documents.TextElement.SetForeground(TaskbarPerformanceItems, displayedForeground);
+            foreach (var presenter in _metricPresenters.Values) System.Windows.Documents.TextElement.SetForeground(presenter, displayedForeground);
             // 静置层的设备与音量图标和媒体文字取同一支自动前景：它们铺在同一块任务栏表面上。
             // The rest layer's device and volume glyphs take the same automatic foreground as the media text: they sit on the same
             // taskbar surface.
@@ -1835,6 +1870,8 @@ namespace AFMediaBar.Components
         /// </param>
         public void UpdateSongInfo(MediaSnapshot snapshot, bool skipUnchangedLyricsContent = false)
         {
+            if (snapshot.IsConnected != _snapshot.IsConnected || snapshot.Title != _snapshot.Title || snapshot.IsPlaying != _snapshot.IsPlaying)
+                CancelComponentGesture();
             _snapshot = snapshot;
             if (!snapshot.IsConnected)
             {
@@ -2149,7 +2186,7 @@ namespace AFMediaBar.Components
                         EffectiveLyricFontSize)
                 : MeasureTextWidth(visibleText, SongTitle, isHorizontalMetadata);
             var textWidth = Math.Max(lyricWidth, MeasureTextWidth(artist, SongArtist, isHorizontalMetadata));
-            var preset = LayoutPresets.GetLayout(_currentMode, orientation);
+            var preset = LayoutPresets.GetLayout(_currentMode, orientation, PresentationSettings.TaskbarExperience.SmallArtwork);
             var request = LayoutSizeCalculator.Calculate(
                 preset,
                 PresentationSettings.LayoutLengthScalePercent / 100.0,
@@ -2163,22 +2200,14 @@ namespace AFMediaBar.Components
             {
                 var experience = PresentationSettings.TaskbarExperience.Normalize();
                 var progressVisible = _snapshot.Duration > 0;
-                var restVisibility = ResolveRestVisibility(experience);
-                var visibleComponents = TaskbarRestLayoutPolicy
-                    .ResolveOrder(experience.RestComponentOrder)
-                    .Where(component => TaskbarRestLayoutPolicy.IsVisible(component, restVisibility))
-                    .ToArray();
+                var visibleComponents = RestComponentsWithHandle();
                 var metrics = TaskbarDensityMetrics.From(experience.Density);
                 var sectionGap = TaskbarExperiencePolicy.ResolveSectionGap(experience.Density, experience.ComponentSpacingDip);
                 // 悬停层下限属于媒体文字组件：它只把文字区撑到"悬停控件放得下"，不再另算一段宽度。
                 // The hover-layer minimum belongs to the media text component: it only widens the text region enough for the hover controls
                 // instead of adding a separate span of width.
                 var hoverMinimum = experience.HoverLayerEnabled
-                    ? TaskbarExperiencePolicy.CalculateHoverLayerWidth(
-                        experience.HoverControls,
-                        progressVisible,
-                        experience.Density,
-                        experience.HoverButtonSpacingDip)
+                    ? HoverMinimumWidth()
                     : 0;
                 double ContentWidth(double availableTextWidth) => TaskbarExperiencePolicy.CalculateRestWidth(
                     visibleComponents,

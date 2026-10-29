@@ -35,16 +35,33 @@ public sealed class ApplicationAppearanceResources(ResourceDictionary resources)
         var dark = theme == ApplicationTheme.Dark || theme == ApplicationTheme.HighContrast && SystemParameters.HighContrast;
         var highContrast = SystemParameters.HighContrast;
         var showSettingsMaterial = !highContrast && appearance.BackdropMode != ApplicationBackdropMode.FluentSolid;
-        var cardColor = TintSettingsSurface(dark ? Color.FromRgb(44, 44, 44) : Colors.White, accent.Accent, dark ? 0.08 : 0.04);
-        var groupColor = TintSettingsSurface(dark ? Color.FromRgb(40, 40, 40) : Color.FromRgb(248, 248, 248), accent.Accent, dark ? 0.08 : 0.06);
-        var navigationColor = TintSettingsSurface(dark ? Color.FromRgb(30, 30, 30) : Color.FromRgb(236, 236, 236), accent.Accent, dark ? 0.10 : 0.08);
+        var acrylic = !highContrast && appearance.BackdropMode == ApplicationBackdropMode.Acrylic;
+        var cardColor = TintSettingsSurface(dark ? Color.FromRgb(44, 44, 44) : Colors.White, accent.Accent, acrylic ? 0 : dark ? 0.08 : 0.04);
+        var groupColor = TintSettingsSurface(dark ? Color.FromRgb(40, 40, 40) : Color.FromRgb(248, 248, 248), accent.Accent, acrylic ? 0 : dark ? 0.08 : 0.06);
+        var navigationColor = TintSettingsSurface(dark ? Color.FromRgb(30, 30, 30) : Color.FromRgb(236, 236, 236), accent.Accent, acrylic ? 0 : dark ? 0.10 : 0.08);
         // Alpha belongs to the surface brushes, never to a whole card: labels and controls stay fully legible.
-        _resources["AfSettingsCardBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(cardColor, showSettingsMaterial ? (byte)(dark ? 240 : 245) : byte.MaxValue));
-        _resources["AfSettingsInfoSurfaceBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(cardColor, showSettingsMaterial ? (byte)(dark ? 235 : 242) : byte.MaxValue));
-        _resources["AfSettingsGroupSurfaceBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(groupColor, showSettingsMaterial ? (byte)(dark ? 235 : 242) : byte.MaxValue));
-        _resources["AfSettingsInputBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(54, 54, 54) : Color.FromRgb(247, 247, 247), accent.Accent, dark ? 0.08 : 0.04));
-        _resources["AfSettingsBorderBrush"] = highContrast ? SystemColors.WindowTextBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(72, 72, 72) : Color.FromRgb(216, 216, 216), accent.Accent, 0.08));
-        _resources["AfSettingsNavigationBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(navigationColor);
+        _resources["AfSettingsCardBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(cardColor, acrylic ? (byte)(dark ? 210 : 218) : showSettingsMaterial ? (byte)(dark ? 240 : 245) : byte.MaxValue));
+        _resources["AfSettingsInfoSurfaceBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(cardColor, acrylic ? (byte)(dark ? 190 : 210) : showSettingsMaterial ? (byte)(dark ? 235 : 242) : byte.MaxValue));
+        _resources["AfSettingsGroupSurfaceBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(groupColor, acrylic ? (byte)(dark ? 44 : 64) : showSettingsMaterial ? (byte)(dark ? 235 : 242) : byte.MaxValue));
+        _resources["AfSettingsInputBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(TintSettingsSurface(dark ? Color.FromRgb(54, 54, 54) : Color.FromRgb(247, 247, 247), accent.Accent, acrylic ? 0 : dark ? 0.08 : 0.04));
+        _resources["AfSettingsBorderBrush"] = highContrast ? SystemColors.WindowTextBrush : CreateFrozenBrush(acrylic
+            ? WithAlpha(dark ? Colors.White : Colors.Black, dark ? (byte)28 : (byte)24)
+            : TintSettingsSurface(dark ? Color.FromRgb(72, 72, 72) : Color.FromRgb(216, 216, 216), accent.Accent, 0.08));
+        _resources["AfSettingsNavigationBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(navigationColor, acrylic ? (byte)(dark ? 160 : 184) : byte.MaxValue));
+        _resources["AfSettingsPreviewSurfaceBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(groupColor, acrylic ? (byte)(dark ? 160 : 180) : byte.MaxValue));
+        foreach (var (name, tone) in new[]
+        {
+            ("Sage", dark ? Color.FromRgb(157, 183, 164) : Color.FromRgb(100, 133, 113)),
+            ("Clay", dark ? Color.FromRgb(210, 156, 131) : Color.FromRgb(182, 125, 101)),
+            ("Lavender", dark ? Color.FromRgb(184, 165, 205) : Color.FromRgb(138, 123, 159))
+        })
+        {
+            _resources[$"AfTutorial{name}InkBrush"] = highContrast ? SystemColors.WindowTextBrush : CreateFrozenBrush(tone);
+            _resources[$"AfTutorial{name}SurfaceBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(WithAlpha(tone, dark ? (byte)28 : (byte)18));
+        }
+        // 中性遮罩抑制亚克力后的强色背景；不改变系统材质或用户的浓度参数。
+        _resources["AfWindowAcrylicOverlayBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(
+            WithAlpha(dark ? Color.FromRgb(24, 24, 24) : Color.FromRgb(246, 246, 246), dark ? (byte)154 : (byte)170));
         _resources["AfSettingsSectionBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(groupColor);
         _resources["AfSettingsHeaderBridgeBrush"] = showSettingsMaterial ? CreateSettingsHeaderBridgeBrush(groupColor) : Brushes.Transparent;
         // Context menus always use an opaque Fluent solid surface. Native

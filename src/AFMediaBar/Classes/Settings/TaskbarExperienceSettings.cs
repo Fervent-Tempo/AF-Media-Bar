@@ -71,7 +71,16 @@ public enum TaskbarRestComponent
     Volume = 5,
     InputDevice = 6,
     /// <summary>所选蓝牙设备的电量组件。</summary>
-    BluetoothBattery = 7
+    BluetoothBattery = 7,
+    SystemMemory = 8,
+    SystemCpu = 9,
+    SystemGpu = 10,
+    ProcessMemory = 11,
+    SystemNetwork = 12,
+    DragHandle = 13,
+    PreviousTrack = 14,
+    PlayPause = 15,
+    NextTrack = 16
 }
 
 /// <summary>播放器表面的基础背景方案。 / Basic background style for a player surface.</summary>
@@ -82,13 +91,21 @@ public enum PlayerSurfaceStyle
     ThemeTint = 2
 }
 
-/// <summary>任务栏完整层的功能组显隐设置。 / Visibility settings for taskbar full-panel feature groups.</summary>
+/// <summary>完整面板的分区、缩放与性能样式设置。</summary>
 public readonly record struct TaskbarFullPanelSettings(
     bool MediaInfoVisible,
     bool MediaControlsVisible,
     bool AudioControlsVisible,
     bool PerformanceVisible)
 {
+    // System.Text.Json 对结构体默认走无参构造，显式声明才会执行新增字段的初始化。
+    public TaskbarFullPanelSettings() : this(false, false, false, false) { }
+
+    public const int MinimumScalePercent = 75;
+    public const int MaximumScalePercent = 200;
+    public int ScalePercent { get; init; } = 100;
+    public MetricVisualSettings PerformanceVisuals { get; init; } = MetricVisualSettings.PanelDefault;
+
     /// <summary>仅显示媒体信息和媒体控制。 / Shows only media information and media controls.</summary>
     public static TaskbarFullPanelSettings Compact { get; } = new(true, true, false, false);
 
@@ -99,10 +116,18 @@ public readonly record struct TaskbarFullPanelSettings(
     public static TaskbarFullPanelSettings Default => Full;
 
     /// <summary>确保至少保留一个功能组。 / Ensures at least one feature group remains visible.</summary>
-    public TaskbarFullPanelSettings Normalize() =>
-        MediaInfoVisible || MediaControlsVisible || AudioControlsVisible || PerformanceVisible
-            ? this
-            : Compact;
+    public TaskbarFullPanelSettings Normalize()
+    {
+        // 缺失整个子对象时得到结构体零值，不会执行新增属性的初始化。
+        var unconfigured = Equals(default(TaskbarFullPanelSettings));
+        var result = MediaInfoVisible || MediaControlsVisible || AudioControlsVisible || PerformanceVisible
+            ? this : this with { MediaInfoVisible = true, MediaControlsVisible = true };
+        return result with
+        {
+            ScalePercent = unconfigured ? 100 : Math.Clamp(ScalePercent, MinimumScalePercent, MaximumScalePercent),
+            PerformanceVisuals = (unconfigured ? MetricVisualSettings.PanelDefault : PerformanceVisuals).Normalize(MetricVisualSettings.PanelDefault)
+        };
+    }
 }
 
 /// <summary>任务栏悬停层中各项控制的显隐设置。 / Visibility settings for controls in the taskbar hover layer.</summary>
@@ -133,11 +158,14 @@ public enum ArtworkHoverMode
     /// <summary>栏内紧凑放大 1.1 倍（默认）。/ Compact 1.1× zoom inside the bar (default).</summary>
     Off = 0,
 
-    /// <summary>原地放大：封面组件底部锚定、向上生长 <c>ArtworkHoverZoomScaleFactor</c>（2×），且右侧内容同步右移让位。/ In-place zoom: the artwork grows to <c>ArtworkHoverZoomScaleFactor</c> (2×) upward from its bottom, with the right-hand content shifting right to make room.</summary>
+    /// <summary>原地放大：封面组件底部锚定、向上生长 <c>ArtworkHoverZoomScaleFactor</c>（2×），且内容侧同步推开让位（方向随展开排布解析）。/ In-place zoom: the artwork grows to <c>ArtworkHoverZoomScaleFactor</c> (2×) upward from its bottom, with the content side pushed aside to make room (the direction follows the resolved expansion arrangement).</summary>
     Zoom = 1,
 
     /// <summary>大图预览：独立卡片突出任务栏上方。/ Large preview: a separate card popping above the taskbar.</summary>
-    Preview = 2
+    Preview = 2,
+
+    /// <summary>悬停不放大，封面保持原样。/ No zoom on hover; the artwork stays as it is.</summary>
+    None = 3
 }
 
 /// <summary>任务栏三层体验设置。 / Settings for the three-layer taskbar experience.</summary>
@@ -170,6 +198,14 @@ public readonly record struct TaskbarExperienceSettings(
 
     private readonly bool? _artworkVisible;
 
+    /// <summary>
+    /// 静置层封面缩到原槽位的八成并居中，默认关闭；只在显示封面时生效。
+    /// Shrinks the rest-layer artwork to 80% of its slot and centers it, off by default; applies only while the artwork is shown.
+    /// </summary>
+    public bool SmallArtwork { get => _smallArtwork ?? false; init => _smallArtwork = value; }
+
+    private readonly bool? _smallArtwork;
+
     /// <summary>静置层是否显示性能组件。 / Whether the rest layer shows the performance component.</summary>
     public bool PerformanceVisible { get; init; } = true;
 
@@ -191,6 +227,19 @@ public readonly record struct TaskbarExperienceSettings(
 
     /// <summary>外侧横杆的打开方式，默认点击。</summary>
     public FullPanelHandleTrigger FullPanelEntryTrigger { get; init; } = FullPanelHandleTrigger.Click;
+
+    /// <summary>外侧入口持续悬停后打开的等待时间，单位为毫秒。</summary>
+    public int FullPanelEntryHoverDelayMilliseconds { get; init; } = DefaultFullPanelEntryHoverDelayMilliseconds;
+
+    public const int DefaultFullPanelEntryHoverDelayMilliseconds = 500;
+    public const int MinimumFullPanelEntryHoverDelayMilliseconds = 100;
+    public const int MaximumFullPanelEntryHoverDelayMilliseconds = 1000;
+    public const int FullPanelEntryHoverDelayStepMilliseconds = 100;
+
+    /// <summary>设置编辑器使用秒显示，范围和步长从毫秒契约派生。</summary>
+    public static double MinimumFullPanelEntryHoverDelaySeconds => MinimumFullPanelEntryHoverDelayMilliseconds / 1000d;
+    public static double MaximumFullPanelEntryHoverDelaySeconds => MaximumFullPanelEntryHoverDelayMilliseconds / 1000d;
+    public static double FullPanelEntryHoverDelayStepSeconds => FullPanelEntryHoverDelayStepMilliseconds / 1000d;
 
     /// <summary>悬停层中各项控制的显隐设置。 / Visibility settings for individual hover-layer controls.</summary>
     public TaskbarHoverControlsSettings HoverControls { get; init; } = TaskbarHoverControlsSettings.Default;
@@ -222,6 +271,7 @@ public readonly record struct TaskbarExperienceSettings(
     /// settings file never loses a component a newer version added; the relative order the user gave MUST NOT be rearranged.
     /// </summary>
     public IReadOnlyList<TaskbarRestComponent>? RestComponentOrder { get; init; }
+    public ComponentLayoutsSettings? ComponentLayouts { get; init; }
 
     /// <summary>
     /// 没有媒体（没有 SMTC 来源）时仍然留在任务栏上的静置层组件。这个行为没有开关：没有媒体时媒体栏本来就没有内容可显示，
@@ -290,14 +340,16 @@ public readonly record struct TaskbarExperienceSettings(
             FullPanelEntryVisible = FullLayerEnabled && FullPanelEntryVisible,
             FullLayerEnabled = true,
             FullPanelEntryTrigger = Enum.IsDefined(FullPanelEntryTrigger) ? FullPanelEntryTrigger : FullPanelHandleTrigger.Click,
+            FullPanelEntryHoverDelayMilliseconds = NormalizeFullPanelEntryHoverDelay(FullPanelEntryHoverDelayMilliseconds),
             Density = Enum.IsDefined(Density) ? Density : defaults.Density,
             ContentLayout = Enum.IsDefined(ContentLayout) ? ContentLayout : defaults.ContentLayout,
             MediaTextAlignment = Enum.IsDefined(MediaTextAlignment) ? MediaTextAlignment : defaults.MediaTextAlignment,
             Arrangement = Arrangement is { } arrangement && Enum.IsDefined(arrangement) ? arrangement : null,
             FullPanel = FullPanel.Normalize(),
+            ComponentLayouts = ComponentLayouts?.Normalize(),
             LengthMode = Enum.IsDefined(LengthMode) ? LengthMode : defaults.LengthMode,
             FixedLengthDip = double.IsFinite(FixedLengthDip) && FixedLengthDip >= MinimumStoredFixedLengthDip
-                ? Math.Clamp(FixedLengthDip, MinimumStoredFixedLengthDip, MaximumStoredFixedLengthDip)
+                ? Math.Clamp(Math.Round(FixedLengthDip, MidpointRounding.AwayFromZero), MinimumStoredFixedLengthDip, MaximumStoredFixedLengthDip)
                 : defaults.FixedLengthDip,
             ComponentSpacingDip = double.IsFinite(ComponentSpacingDip)
                 ? Math.Clamp(ComponentSpacingDip, MinimumComponentSpacingDip, MaximumComponentSpacingDip)
@@ -344,6 +396,14 @@ public readonly record struct TaskbarExperienceSettings(
         }
 
         return result;
+    }
+
+    private static int NormalizeFullPanelEntryHoverDelay(int milliseconds)
+    {
+        // 旧 JSON 的结构体反序列化可能跳过属性初始值，以 0 表示缺字段。
+        if (milliseconds == 0) return DefaultFullPanelEntryHoverDelayMilliseconds;
+        return (int)Math.Round(Math.Clamp(milliseconds, MinimumFullPanelEntryHoverDelayMilliseconds, MaximumFullPanelEntryHoverDelayMilliseconds) /
+            (double)FullPanelEntryHoverDelayStepMilliseconds, MidpointRounding.AwayFromZero) * FullPanelEntryHoverDelayStepMilliseconds;
     }
 }
 

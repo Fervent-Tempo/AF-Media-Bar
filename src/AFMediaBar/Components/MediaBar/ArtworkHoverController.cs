@@ -305,7 +305,10 @@ public partial class TaskBarMediaControl
         /// </summary>
         internal readonly System.Windows.Threading.DispatcherTimer _artworkZoomHoverSyncTimer;
 
-        /// <summary>本次放大的推挤量（DIP）：封面宽度增长的一半，右侧内容右移同样的距离以维持间距。/ This activation's push amount (DIP): half the artwork's width growth, matched by the right-hand content to keep the gap.</summary>
+        /// <summary>本次放大的推挤量（DIP，无符号）：封面主轴增长的一半，内容沿主轴避让同样的距离以维持间距；
+        /// 方向（正/负）按解析后的展开位置在 <see cref="AnimateArtworkZoomPush"/> 落定。/ This activation's push amount
+        /// (DIP, unsigned): half the artwork's primary-axis growth, matched by the content to keep the gap; the sign
+        /// resolves from the expansion direction in <see cref="AnimateArtworkZoomPush"/>.</summary>
         internal double _artworkZoomPushOffset;
 
         /// <summary>推挤变换清单：每次激活重建，收回时清零并丢弃。/ The push transforms, rebuilt per activation and zeroed then dropped on reclaim.</summary>
@@ -569,10 +572,12 @@ public partial class TaskBarMediaControl
             // would grow out carrying 3-4 px of un-calibrated bias.
             CalibrateArtworkZoomOnShow(homeScreen, dpiScale, host, popup);
             // 推挤出去的内容要穿过两层裁切才能完整可见：WPF 层 MainBorder 的 ClipToBounds 在此解除（收回时恢复），
-            // HWND 层的 SetWindowRgn 区域由宿主经 ArtworkZoomExtensionChanged 右扩。只处理其中一层，组件仍会被吃。
+            // HWND 层的 SetWindowRgn 区域由宿主经 ArtworkZoomExtensionChanged 扩到内容溢出侧（横向 Left/纵向 Top
+            // 随展开方向翻，见 TaskbarArrangementPolicy.ExtendZoomOverflow）。只处理其中一层，组件仍会被吃。
             // The pushed content must clear two clipping layers to stay fully visible: the WPF layer — MainBorder's
             // ClipToBounds — is released here (and restored on reclaim), while the HWND layer's SetWindowRgn region is widened
-            // by the host through ArtworkZoomExtensionChanged. Handling only one of them still eats the widgets.
+            // by the host through ArtworkZoomExtensionChanged to the side the content overflows (Left/Top flipping with the
+            // expansion direction, see TaskbarArrangementPolicy.ExtendZoomOverflow). Handling only one of them still eats the widgets.
             _owner.MainBorder.ClipToBounds = false;
             _owner.ArtworkZoomExtensionChanged?.Invoke(_owner, _artworkZoomPushOffset);
             // 悬停区轮询从这一刻起接管收/放判定（见 _artworkZoomHoverSyncTimer）：放大后的元素轮廓不再能被当作
@@ -1071,18 +1076,20 @@ public partial class TaskBarMediaControl
         }
 
         /// <summary>
-        /// 收集原地放大期间需要向右避让的元素并准备它们的推挤变换：文字区、文字悬停块、静置层四个小组件、静置进度条
-        /// 与悬停层宿主都住在封面右侧，封面放大时把它们整体右移同样的量，放大于是读作"推开布局"而不是"盖在文字上"。
+        /// 收集原地放大期间需要避让的元素并准备它们的推挤变换：文字区、文字悬停块、静置层四个小组件、静置进度条
+        /// 与悬停层宿主都住在封面旁的内容侧（封面在首端时在右、右侧展开时在左），封面放大时把它们整体沿主轴
+        /// 推开同样的量（符号见 <see cref="ArtworkZoomPushSign"/>），放大于是读作"推开布局"而不是"盖在文字上"。
         /// 渲染变换不参与布局，位置引擎随时重写 Canvas.SetLeft/Margin 也冲不掉推挤。文字区的推挤走专用支，不与入场动画
         /// 共用实例——否则换歌恰逢悬停时入场动画会整体换掉 RenderTransform、抹掉推挤，标题/艺术家因此停止随放大移动
         /// （BUG 2 的根因）。
-        /// Collects the elements that must yield to the right during the in-place zoom and prepares their push transforms: the text
-        /// region, its hover block, the rest layer's four widgets, the rest progress, and the hover-layer host all live right of the
-        /// artwork, and shifting them right by the same amount makes the zoom read as "pushing the layout apart" rather than "covering
-        /// the text". A render transform stays out of layout, so the position engine rewriting Canvas.SetLeft/Margin never washes the
-        /// push away. The text region's push lives on its own branch, not shared with the entrance animation — otherwise a track change
-        /// while hovering would replace the whole RenderTransform and erase the push, freezing the title/artist against the zoom
-        /// (root of BUG 2).
+        /// Collects the elements that must yield during the in-place zoom and prepares their push transforms: the text
+        /// region, its hover block, the rest layer's four widgets, the rest progress, and the hover-layer host all live on
+        /// the artwork's content side (right of it with left-side expansion, left of it with right-side expansion), and
+        /// shifting them along the primary axis by the same amount (sign per <see cref="ArtworkZoomPushSign"/>) makes the
+        /// zoom read as "pushing the layout apart" rather than "covering the text". A render transform stays out of layout,
+        /// so the position engine rewriting Canvas.SetLeft/Margin never washes the push away. The text region's push lives
+        /// on its own branch, not shared with the entrance animation — otherwise a track change while hovering would
+        /// replace the whole RenderTransform and erase the push, freezing the title/artist against the zoom (root of BUG 2).
         /// </summary>
         internal void BuildArtworkZoomPushTransforms()
         {
@@ -1164,27 +1171,51 @@ public partial class TaskBarMediaControl
             yield return _owner.TaskbarOutputDeviceHoverSurface;
             yield return _owner.TaskbarVolumeHoverSurface;
             yield return _owner.TaskbarInputDeviceHoverSurface;
+            yield return _owner.ResidentPreviousSurface;
+            yield return _owner.ResidentPlayPauseSurface;
+            yield return _owner.ResidentNextSurface;
             yield return _owner.HoverRevealHost;
         }
 
-        /// <summary>把推挤推进到目标量；easing 为空时直接跳变（用于关闭过渡或立即路径）。/ Advances the push to the target offset; a null easing jumps outright (for transitions off or the immediate path).</summary>
+        /// <summary>
+        /// 推挤的主轴符号：内容从右侧展开时，<see cref="TaskbarRestLayoutPolicy.Arrange"/> 的 fromRight 把封面镜像到
+        /// 主轴尾端、文字与小组件全部排在它另一侧，推挤必须取负才能把它们带离放大的封面；默认的左侧展开取正。
+        /// 量（<see cref="_artworkZoomPushOffset"/>）始终无符号——宿主扩展与测试读的都是量——符号只在这一处解析，
+        /// 宿主的输入区扩展侧经 <see cref="TaskbarArrangementPolicy.ExtendZoomOverflow"/> 从同一解析取方向。
+        /// The push's primary-axis sign: with right-side expansion, Arrange's fromRight mirrors the artwork to the trailing
+        /// end with the text and widgets all on its other side, so the push must take the negative side to carry them away
+        /// from the enlarged cover; the default left-side expansion keeps it positive. The amount
+        /// (<see cref="_artworkZoomPushOffset"/>) stays unsigned — the host extension and the tests both read the amount —
+        /// and the sign resolves here alone, the host's input-region side taking its direction from the same resolution
+        /// through <see cref="TaskbarArrangementPolicy.ExtendZoomOverflow"/>.
+        /// </summary>
+        private double ArtworkZoomPushSign =>
+            _owner.ResolvedTaskbarArrangement == TaskbarContentArrangement.Right ? -1 : 1;
+
+        /// <summary>把推挤推进到目标量；easing 为空时直接跳变（用于关闭过渡或立即路径）。目标量按解析后的展开方向取符号
+        /// （见 <see cref="ArtworkZoomPushSign"/>）——右侧展开时曾恒写正值，把内容推向放大的封面（issue #236）。
+        /// Advances the push to the target offset; a null easing jumps outright (for transitions off or the immediate path).
+        /// The target takes the sign of the resolved expansion direction (see <see cref="ArtworkZoomPushSign"/>) — with
+        /// right-side expansion it once always wrote a positive value, driving the content under the enlarged cover
+        /// (issue #236).</summary>
         internal void AnimateArtworkZoomPush(double targetOffset, TimeSpan duration, IEasingFunction? easing)
         {
             if (_artworkZoomPushTransforms is null)
                 return;
             var axis = _owner._isVertical ? TranslateTransform.YProperty : TranslateTransform.XProperty;
+            var target = targetOffset * ArtworkZoomPushSign;
             foreach (var transform in _artworkZoomPushTransforms)
             {
                 if (easing is null)
                 {
                     transform.BeginAnimation(axis, null);
-                    if (_owner._isVertical) transform.Y = targetOffset; else transform.X = targetOffset;
+                    if (_owner._isVertical) transform.Y = target; else transform.X = target;
                 }
                 else
                 {
                     transform.BeginAnimation(axis, new DoubleAnimation
                     {
-                        To = targetOffset,
+                        To = target,
                         Duration = new Duration(duration),
                         EasingFunction = easing
                     });
@@ -1208,12 +1239,14 @@ public partial class TaskBarMediaControl
         }
 
         /// <summary>
-        /// 原地放大的动画本体：生长（→2 倍）与收拢（→1 倍）都在 Popup 里完成、底部锚定不动，右侧内容的推挤以同一条曲线
-        /// 同一个时长进退——放大于是读作"把布局推开"，而不是"一张图突然盖上"。收拢动画结束后（Completed）才把元素送回
+        /// 原地放大的动画本体：生长（→2 倍）与收拢（→1 倍）都在 Popup 里完成、底部锚定不动，内容侧的推挤以同一条曲线
+        /// 同一个时长进退（符号随展开方向，见 <see cref="ArtworkZoomPushSign"/>）——放大于是读作"把布局推开"，
+        /// 而不是"一张图突然盖上"。收拢动画结束后（Completed）才把元素送回
         /// 主树；中途回来的指针已先在 ShowArtworkHoverZoom 里清掉收拢标记，倍率被重新拉起来，不会误收。
         /// The in-place zoom's animation core: growth (→2×) and collapse (→1×) both play inside the Popup with the bottom anchor
-        /// unmoved, while the right-hand push slides in and out on the same curve and over the same duration — so the zoom reads as
-        /// "pushing the layout apart" instead of "a card suddenly slapped on". The element returns to the main tree only after the
+        /// unmoved, while the content-side push slides in and out on the same curve and over the same duration (sign per the
+        /// expansion direction, see <see cref="ArtworkZoomPushSign"/>) — so the zoom reads as "pushing the layout apart" instead
+        /// of "a card suddenly slapped on". The element returns to the main tree only after the
         /// collapse finishes (Completed); a pointer returning midway has already cleared the collapse flag in ShowArtworkHoverZoom and
         /// the factor is pulled back up, so the reclaim never misfires.
         /// </summary>
@@ -1623,10 +1656,10 @@ public partial class TaskBarMediaControl
 
             if (zoomActive || zoomPopupWasOpen)
             {
-                // 原地放大走自己的动画路径：生长与收拢都在 Popup 里，右侧推挤同曲线进退（见 AnimateArtworkZoom）。
+                // 原地放大走自己的动画路径：生长与收拢都在 Popup 里，内容侧推挤同曲线进退（见 AnimateArtworkZoom）。
                 // 在途收拢到此为止：推挤与提示的退场动画正由那一次收拢带着走向同一目标，重挂只会重置时钟。
                 // The in-place zoom takes its own animation path: growth and collapse both play inside the Popup while the
-                // right-hand push slides on the same curve (see AnimateArtworkZoom). A collapse already in flight stops
+                // content-side push slides on the same curve (see AnimateArtworkZoom). A collapse already in flight stops
                 // here: that collapse is already walking the push and the hint to the same targets, and re-arming would
                 // only reset the clock.
                 if (!zoomActive && zoomCollapseInFlight)

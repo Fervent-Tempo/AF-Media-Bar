@@ -1,0 +1,41 @@
+<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:memory="clr-namespace:AFMediaBar.Classes.Settings" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:localization="clr-namespace:AFMediaBar.Classes.Services.Localization" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.ConfigurationPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
+    <Page.Resources>
+        <Style TargetType="{x:Type components:SettingsRow}" BasedOn="{StaticResource AfSettingsPilotRowStyle}"/>
+        <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/>
+    </Page.Resources>
+    <components:SettingsPageLayout x:Name="PageLayout">
+        <components:SettingsPageLayout.Header>
+            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Page.Configuration}" Subtitle="{DynamicResource Loc.Settings.Page.Configuration.Description}" PageIcon="{ui:SymbolIcon Save24}" Target="{Binding ScrollViewer, ElementName=PageLayout}"/>
+        </components:SettingsPageLayout.Header>
+        <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded">
+            <components:SettingsGroup GroupId="Common.Group.SettingsFile" Header="{DynamicResource Loc.Common.Group.SettingsFile}" Icon="{ui:SymbolIcon FolderOpen24}">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource Loc.Settings.Group.Files}" Style="{StaticResource AfSettingsSubsectionTitleStyle}"/>
+                    <components:SettingsRow Description="{DynamicResource Loc.About.Row.OpenFolder.Description}" Icon="{ui:SymbolIcon FolderOpen24}" Title="{DynamicResource Loc.About.Row.OpenFolder.Title}">
+                        <ui:Button Click="OpenSettingsFolder_Click" Content="{DynamicResource Loc.Common.OpenFolder}" Icon="{ui:SymbolIcon FolderOpen24}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                    </components:SettingsRow>
+                    <TextBlock Text="{DynamicResource Loc.Settings.Group.Defaults}" Style="{StaticResource AfSettingsSubsectionTitleStyle}"/>
+                    <components:SettingsRow Description="{DynamicResource Loc.About.Row.ResetAll.Description}" Icon="{ui:SymbolIcon ArrowReset24}" Title="{DynamicResource Loc.About.Row.ResetAll.Title}">
+                        <ui:Button Click="ResetAllButton_Click" Content="{DynamicResource Loc.About.Row.ResetAll.Button}" Icon="{ui:SymbolIcon ArrowReset24}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                    </components:SettingsRow>
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon Save24}">
+                        <ui:CardExpander.Header>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Defaults.Title}"/>
+                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Settings.Advanced.Defaults.Description}"/>
+                            </StackPanel>
+                        </ui:CardExpander.Header>
+                        <StackPanel>
+                            <components:SettingsRow IsNested="True" Description="{Binding ViewModel.UserDefaultsStatusText}" Icon="{ui:SymbolIcon Bookmark24}" Title="{DynamicResource Loc.About.Row.SaveDefaults.Title}">
+                                <ui:Button Command="{Binding ViewModel.SaveUserDefaultsCommand}" Content="{DynamicResource Loc.Common.Save}" Icon="{ui:SymbolIcon Save24}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                            </components:SettingsRow>
+                            <components:SettingsRow IsNested="True" Description="{DynamicResource Loc.About.Row.ClearDefaults.Description}" Icon="{ui:SymbolIcon Delete24}" IsEnabled="{Binding ViewModel.HasUserDefaults}" Title="{DynamicResource Loc.About.Row.ClearDefaults.Title}">
+                                <ui:Button Command="{Binding ViewModel.ClearUserDefaultsCommand}" Content="{DynamicResource Loc.Common.Clear}" Icon="{ui:SymbolIcon Delete24}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                            </components:SettingsRow>
+                        </StackPanel>
+                    </ui:CardExpander>
+                </StackPanel>
+            </components:SettingsGroup>
+        </StackPanel>
+    </components:SettingsPageLayout>
+</Page>

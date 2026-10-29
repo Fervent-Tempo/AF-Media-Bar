@@ -22,6 +22,9 @@ public sealed class TaskbarLengthConstraintsService
     /// <summary>当前可显示宿主是否存在共同长度范围。</summary>
     public bool HasAvailableRange { get; private set; }
 
+    /// <summary>是否有宿主发布范围；用于区分尚无宿主与多个范围不相交。</summary>
+    public bool HasSources { get; private set; }
+
     /// <summary>运行时长度范围变化时触发。 / Raised when the runtime length range changes.</summary>
     public event EventHandler? Changed;
 
@@ -65,10 +68,11 @@ public sealed class TaskbarLengthConstraintsService
         var maximum = _sources.Count == 0 ? 1200 : _sources.Values.Min(value => value.Maximum);
         var available = _sources.Count > 0 && maximum >= minimum;
         if (Math.Abs(_minimumLengthDip - minimum) < 0.1 &&
-            Math.Abs(_maximumLengthDip - maximum) < 0.1 && HasAvailableRange == available)
+            Math.Abs(_maximumLengthDip - maximum) < 0.1 && HasAvailableRange == available && HasSources == (_sources.Count > 0))
             return;
 
         HasAvailableRange = available;
+        HasSources = _sources.Count > 0;
         _minimumLengthDip = minimum;
         _maximumLengthDip = maximum;
         Changed?.Invoke(this, EventArgs.Empty);

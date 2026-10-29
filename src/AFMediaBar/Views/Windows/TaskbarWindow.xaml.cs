@@ -97,6 +97,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private double _appliedLengthScalePercent = double.NaN;
     private double _appliedThicknessScalePercent = double.NaN;
     private int _appliedMediaFontSizePercent = -1;
+    private bool? _appliedSmallArtwork;
     private int _dragStartCursorPrimary;
     private int _dragStartBarPrimary;
     private int _dragPrimaryLimit;
@@ -172,6 +173,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
         ViewModel = viewModel;
+        MediaControl.ComponentReorderCommand = viewModel?.CommitComponentReorderCommand;
         PlayerMenu.ViewModel = menuViewModel;
         _targetMonitorDeviceId = targetMonitorDeviceId;
         _surfaceSession = surfaceSessions.Get(targetMonitorDeviceId);
@@ -871,16 +873,16 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private static bool HasArea(RECT rect) => rect.Right > rect.Left && rect.Bottom > rect.Top;
 
     /// <summary>
-    /// 沿主轴末端扩展放大期间的可见与输入区，窗口仍铺满任务栏；WPF 裁剪由控件配合解除。
+    /// 沿主轴把放大期间的可见与输入区扩到内容溢出的一侧（随展开方向翻到首端或尾端），窗口仍铺满任务栏；
+    /// WPF 裁剪由控件配合解除。扩展带在重定位时保留。
+    /// Widens the zoom's visible and input region along the primary axis to the side the content overflows (flipping to the
+    /// leading or trailing end with the expansion direction) while the window still spans the taskbar; the WPF clip is
+    /// released by the control in step. The extension band survives repositioning.
     /// </summary>
     private void ApplyBarInputRegion(IntPtr taskbarWindowHandle, RECT baseRect, bool redraw)
     {
-        var effective = baseRect;
-        if (_artworkZoomExtensionPx > 0)
-        {
-            if (IsVerticalPresentation) effective.Bottom += _artworkZoomExtensionPx;
-            else effective.Right += _artworkZoomExtensionPx;
-        }
+        var effective = TaskbarArrangementPolicy.ExtendZoomOverflow(
+            baseRect, _artworkZoomExtensionPx, IsVerticalPresentation, MediaControl.ResolvedTaskbarArrangement);
         _taskBarService.ApplyInputRegion(taskbarWindowHandle, [effective], redraw);
     }
 
@@ -954,7 +956,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     }
 
     /// <summary>
-    /// 原地放大时同步推挤组件的输入区；收回后还原。扩展带暂时占用主轴末端的任务栏区域，重定位时保留该扩展量。
+    /// 原地放大时同步推挤组件的输入区；收回后还原。扩展带暂时沿主轴扩占任务栏区域（落在内容溢出侧，
+    /// 随展开方向翻到首端或尾端），重定位时保留该扩展量。
     /// </summary>
     private void MediaControl_ArtworkZoomExtensionChanged(object? sender, double extraDip)
     {
@@ -1104,12 +1107,15 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         if (orientation == LayoutOrientation.Horizontal && crossAxisDip.HasValue)
             crossAxisDip = Math.Min(crossAxisDip.Value, LayoutPresets.TaskbarHorizontal.Canvas.Height * thicknessScalePercent / 100);
         var mediaFontSizePercent = SettingsManager.Current.TaskbarExperience.Normalize().MediaFontSizePercent;
+        // 小封面会改变封面组件的尺寸与位置，必须参与重建判定，否则开关只在下次启动时生效。
+        var smallArtwork = SettingsManager.Current.TaskbarExperience.SmallArtwork;
         var layoutChanged = _appliedWindowMode != windowMode ||
                             orientationChanged ||
                             !lengthScalePercent.Equals(_appliedLengthScalePercent) ||
                             !thicknessScalePercent.Equals(_appliedThicknessScalePercent) ||
                             (crossAxisDip.HasValue && Math.Abs((orientation == LayoutOrientation.Vertical ? MediaControl.CurrentLayout?.Canvas.Width ?? 0 : MediaControl.CurrentLayout?.Canvas.Height ?? 0) - crossAxisDip.Value) > 0.1) ||
-                            mediaFontSizePercent != _appliedMediaFontSizePercent;
+                            mediaFontSizePercent != _appliedMediaFontSizePercent ||
+                            smallArtwork != _appliedSmallArtwork;
         if (layoutChanged)
         {
             var previousImmediate = _applySettingsSizeImmediately;
@@ -1123,6 +1129,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                 _appliedLengthScalePercent = lengthScalePercent;
                 _appliedThicknessScalePercent = thicknessScalePercent;
                 _appliedMediaFontSizePercent = mediaFontSizePercent;
+                _appliedSmallArtwork = smallArtwork;
                 MediaControl.RefreshDesiredSize();
             }
             finally
@@ -1907,7 +1914,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     {
         var spectrum = SettingsManager.Current.SpectrumComponent.Normalize();
         _spectrumSession.Interval = TimeSpan.FromMilliseconds(1000d / spectrum.RefreshRateHz);
-        var performance = SettingsManager.Current.PerformanceComponent.Normalize();
+        var performance = MediaControl.EffectivePerformanceSettings.Normalize();
         MediaControl.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);
         MediaControl.ApplyTaskbarExperienceSettings();
         // 是否订阅指标采样按控件算出的性能组件显隐决定：静置层显隐的唯一判据在 TaskbarRestLayoutPolicy 里，
@@ -1938,6 +1945,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void SynchronizeMetricsSubscription(PerformanceComponentSettings performance)
     {
+        performance = MediaControl.EffectivePerformanceSettings.Normalize();
         var metrics = performance.GetOrderedMetrics().ToArray();
         var interval = TimeSpan.FromMilliseconds(performance.RefreshIntervalMilliseconds);
         var shouldSubscribe = !_isClosing && !_isEnvironmentSuspended && !IsBackgroundPruned &&
@@ -2005,8 +2013,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void MediaControl_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (!MediaControl.IsBarDragHandleHit(e.OriginalSource as DependencyObject)) return;
         if (e.ChangedButton != MouseButton.Left ||
-            SettingsManager.Current.TaskbarBarPositionLocked ||
             e.OriginalSource is DependencyObject source && IsMediaAction(source))
         {
             return;
@@ -2024,6 +2032,9 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             _isTaskManagerClickPending = true;
             return;
         }
+
+        if (SettingsManager.Current.TaskbarBarPositionLocked)
+            return;
 
         var taskbarHandle = _lastTaskbarHandle;
         if (taskbarHandle == IntPtr.Zero ||
@@ -2081,6 +2092,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                 return;
             _isDragPending = false;
             _isDragging = true;
+            MediaControl.SetBarDragActive(true);
             MediaControl.SuspendQuickLaunchPresentation();
             _externalFullPanelHandle?.Dismiss(immediate: true);
             MediaControl.CollapseArtworkZoomForDrag();
@@ -2128,6 +2140,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void MediaControl_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
+        if (MediaControl.HasComponentGesture) return;
         if (e.ChangedButton != MouseButton.Left)
             return;
 
@@ -2148,10 +2161,12 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         if (_isTaskManagerClickPending)
         {
             _isTaskManagerClickPending = false;
+            var suppressed = _mouseInputMonitor.ConsumeSuppressedClick();
             // 指针可能已经移到别的元素上，因此抬起时重新判定命中，而不是相信按下时的结论。
             // The pointer may have moved onto another element, so the hit is re-evaluated on release instead of trusting the
             // verdict from the press.
-            if (e.OriginalSource is DependencyObject source && MediaControl.IsPerformanceComponentClick(source))
+            if (!suppressed && SettingsManager.Current.PerformanceComponent.OpenTaskManagerOnClick &&
+                e.OriginalSource is DependencyObject source && MediaControl.IsPerformanceComponentClick(source))
             {
                 MediaControl.RequestOpenTaskManager();
                 e.Handled = true;
@@ -2399,6 +2414,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void EndTaskbarDrag(bool releaseCapture = true)
     {
+        MediaControl.SetBarDragActive(false);
         _isDragging = false;
         _isDragPending = false;
         _isTaskManagerClickPending = false;

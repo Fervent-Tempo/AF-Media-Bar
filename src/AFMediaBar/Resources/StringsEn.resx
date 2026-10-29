@@ -611,7 +611,7 @@
     <value>Support me</value>
   </data>
   <data name="Common.Group.ThemeAndBackdrop" xml:space="preserve">
-    <value>All windows</value>
+    <value>Theme and material</value>
   </data>
   <data name="Common.Group.TrackChangeNotification" xml:space="preserve">
     <value>Track-change notification</value>
@@ -662,7 +662,7 @@
     <value>Application</value>
   </data>
   <data name="Common.Page.Appearance" xml:space="preserve">
-    <value>Appearance</value>
+    <value>Media bar appearance</value>
   </data>
   <data name="Common.Page.Components" xml:space="preserve">
     <value>Components</value>
@@ -1004,7 +1004,7 @@
     <value>Show the title and artist, or lyrics when enabled.</value>
   </data>
   <data name="DisplayModes.Rest.Component.OutputDevice" xml:space="preserve">
-    <value>Output-device button</value>
+    <value>Output device</value>
   </data>
   <data name="DisplayModes.Rest.Component.OutputDevice.Description" xml:space="preserve">
     <value>Click to choose an output device or scroll to switch.</value>
@@ -1028,7 +1028,7 @@
     <value>Show a live spectrum of all audio from the current output device.</value>
   </data>
   <data name="DisplayModes.Rest.Component.Volume" xml:space="preserve">
-    <value>Volume button</value>
+    <value>Volume</value>
   </data>
   <data name="DisplayModes.Rest.Component.Volume.Description" xml:space="preserve">
     <value>Click to open the volume menu or scroll to adjust the current source.</value>
@@ -1126,6 +1126,15 @@
   <data name="DisplayModes.Rest.Row.Artwork.Title" xml:space="preserve">
     <value>Show artwork</value>
   </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Title" xml:space="preserve">
+    <value>Small cover</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Description" xml:space="preserve">
+    <value>Center the artwork at 80% of its original size.</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.SmallArtwork.Badge" xml:space="preserve">
+    <value>Turn on "Show artwork" first</value>
+  </data>
   <data name="DisplayModes.Rest.Row.Progress.Title" xml:space="preserve">
     <value>Show playback progress</value>
   </data>
@@ -1184,13 +1193,16 @@
     <value>Artwork click</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Description" xml:space="preserve">
-    <value>What happens when you rest the mouse on the cover. In-place zoom grows it above the taskbar, large preview pops out a standalone card, and off keeps a small zoom inside the bar.</value>
+    <value>What happens when you rest the mouse on the cover. Slight zoom grows it about 1.1× inside the bar, in-place zoom lifts it above the taskbar, large preview pops out a standalone card, and no zoom leaves it as is.</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Title" xml:space="preserve">
     <value>Artwork hover zoom</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Mode.Off" xml:space="preserve">
-    <value>Off (1.1×)</value>
+    <value>Slight zoom (1.1×)</value>
+  </data>
+  <data name="Interaction.Row.ArtworkHover.Mode.None" xml:space="preserve">
+    <value>No zoom</value>
   </data>
   <data name="Interaction.Row.ArtworkHover.Mode.Zoom" xml:space="preserve">
     <value>In-place zoom (2×)</value>
@@ -1636,12 +1648,10 @@
   <data name="Media.Notification.TargetMode.ForegroundWindow" xml:space="preserve">
     <value>Monitor of the foreground window</value>
   </data>
-  <data name="Media.Performance.Metrics.Description" xml:space="preserve">
-    <value>Choose metrics to show; multiple selections rotate.</value>
+<data name="Media.Performance.Metrics.Description" xml:space="preserve">
+    <value>Configure metric visibility, style, and order together, including disabled metrics.</value>
   </data>
-  <data name="Media.Performance.Metrics.Title" xml:space="preserve">
-    <value>Which metrics to show</value>
-  </data>
+
   <data name="Media.Performance.OpenTaskManager.Description" xml:space="preserve">
     <value>Open Task Manager when the performance component is clicked.</value>
   </data>
@@ -2215,7 +2225,7 @@
   <data name="Wheel.Line.WithValue" xml:space="preserve">
     <value>{0}: {1}</value>
   </data>
-  <data name="Common.Page.ReleaseHighlights" xml:space="preserve"><value>What’s new</value></data>
+  <data name="Common.Page.ReleaseHighlights" xml:space="preserve"><value>Release highlights</value></data>
   <data name="Settings.Navigation.Back" xml:space="preserve"><value>Back</value></data>
   <data name="ReleaseHighlights.Header.Subtitle" xml:space="preserve"><value>Explore the latest improvements and previous releases.</value></data>
   <data name="ReleaseHighlights.Latest" xml:space="preserve"><value>Latest release</value></data>
@@ -2307,13 +2317,13 @@
     <value>Font preview · 가나다 · 示例文字</value>
   </data>
   <data name="Common.Page.ScreenAndPlacement" xml:space="preserve">
-    <value>Display &amp; placement</value>
+    <value>Display and position</value>
   </data>
   <data name="ScreenAndPlacement.Header.Subtitle" xml:space="preserve">
     <value>Choose a display mode, monitor, and media bar position.</value>
   </data>
   <data name="Common.Page.ApplicationAppearance" xml:space="preserve">
-    <value>Application appearance</value>
+    <value>Personalization</value>
   </data>
   <data name="Common.Page.TaskbarAppearance" xml:space="preserve">
     <value>Media bar appearance</value>
@@ -2645,10 +2655,10 @@
   <data name="Media.Performance.DisplayMode.Parallel" xml:space="preserve">
     <value>Side by side</value>
   </data>
-  <data name="Media.Performance.Order.Description" xml:space="preserve">
-    <value>Drag to reorder selected metrics. Both display modes share this order; keep at least one metric.</value>
+<data name="Media.Performance.Order.Description" xml:space="preserve">
+    <value>Drag to order all metrics. Enabled metrics use this order in both display modes. Turning a metric off keeps its position and style. Keep at least one enabled.</value>
   </data>
-  <data name="Panel.Performance.Upload" xml:space="preserve">
+<data name="Panel.Performance.Upload" xml:space="preserve">
     <value>Upload</value>
   </data>
   <data name="Panel.Performance.Download" xml:space="preserve">
@@ -2897,7 +2907,7 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Lyrics.Sources.Order.Reset" xml:space="preserve">
     <value>Restore default order</value>
   </data>
-  <data name="Common.Page.Experimental" xml:space="preserve"><value>Experimental features</value></data>
+  <data name="Common.Page.Experimental" xml:space="preserve"><value>Experiments</value></data>
   <data name="Experimental.Warning" xml:space="preserve"><value>Experimental features have not been fully tested. Please report problems through any existing feedback channel.</value></data>
   <data name="Experimental.Enable" xml:space="preserve"><value>Enable this experiment</value></data>
   <data name="Experimental.Vertical.Title" xml:space="preserve"><value>Vertical taskbar</value></data>
@@ -2961,7 +2971,13 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
     <value>Click</value>
   </data>
   <data name="DisplayModes.Full.Entry.Hover" xml:space="preserve">
-    <value>Hover for 0.5 seconds</value>
+    <value>Hover</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Title" xml:space="preserve">
+    <value>Hover delay</value>
+  </data>
+  <data name="DisplayModes.Full.Entry.HoverDelay.Description" xml:space="preserve">
+    <value>Open the full panel after the pointer stays over the handle for this duration.</value>
   </data>
   <data name="Memory.Title" xml:space="preserve"><value>Memory tools</value></data>
   <data name="Memory.Open" xml:space="preserve"><value>Open memory tools</value></data>
@@ -3125,10 +3141,10 @@ Source: {2}</value></data>
   <data name="Settings.Related.WidgetsSpectrum" xml:space="preserve"><value>Spectrum and performance</value></data>
   <data name="Settings.Related.TextSize" xml:space="preserve"><value>Text size</value></data>
   <data name="Settings.Related.MemoryTools" xml:space="preserve"><value>Memory optimization policy</value></data>
-  <data name="Common.Page.Widgets" xml:space="preserve">
-    <value>Widgets</value>
+<data name="Common.Page.Widgets" xml:space="preserve">
+    <value>Component settings</value>
   </data>
-  <data name="Widgets.Header.Subtitle" xml:space="preserve">
+<data name="Widgets.Header.Subtitle" xml:space="preserve">
     <value>Configure the quick-launch note, spectrum, performance and Bluetooth battery. Arrange components in Content and layout.</value>
   </data>
   <data name="Widgets.Spectrum" xml:space="preserve">
@@ -3150,10 +3166,13 @@ Source: {2}</value></data>
     <value>Capture device</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Description" xml:space="preserve">
-    <value>Follow the current AF media source’s output device, falling back to the system default when unidentified. A selected offline device pauses capture and remains selected.</value>
+    <value>Follow the current media source, always capture the system default output device, or pin a specific device. A selected offline device pauses capture and remains selected.</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Automatic" xml:space="preserve">
     <value>Follow current media source</value>
+  </data>
+  <data name="Media.Spectrum.CaptureDevice.SystemDefault" xml:space="preserve">
+    <value>System default output device</value>
   </data>
   <data name="Media.Spectrum.CaptureDevice.Offline" xml:space="preserve">
     <value>{0} (offline)</value>
@@ -3204,10 +3223,555 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Lyrics.Row.BracketSymbols.Title" xml:space="preserve"><value>Clean up translation formatting</value></data>
   <data name="Lyrics.Row.BracketSymbols.Description" xml:space="preserve"><value>On by default. Cleans up leftover leading slashes and brackets some translation sources include, so the translation reads more cleanly.</value></data>
   <data name="Settings.Numeric.Minutes" xml:space="preserve"><value>minutes</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Title" xml:space="preserve"><value>Overlay the taskbar</value></data>
+  <data name="Placement.Floating.OverlayTaskbar.Description" xml:space="preserve"><value>When on, the floating bar stays above the taskbar and can be dragged over that area.</value></data>
   <data name="Placement.Floating.EdgeCollapse.Title" xml:space="preserve"><value>Auto-hide at desktop edges</value></data>
   <data name="Placement.Floating.EdgeCollapse.Description" xml:space="preserve"><value>On by default. Drag to any work-area edge; move away to hide and approach to reveal.</value></data>
-  <data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>Reveal desktop media bar</value></data>
-  <data name="Common.Page.PluginCenter" xml:space="preserve"><value>Plugin center</value></data>
+<data name="Placement.Floating.EdgeCollapse.Reveal" xml:space="preserve"><value>Reveal desktop media bar</value></data>
+<data name="Developer.Action.PerformanceStatus" xml:space="preserve"><value>Performance recording status</value></data>
+  <data name="Developer.Description.PerformanceStatus" xml:space="preserve"><value>Show Debug recording state, folder, latest sample and dropped records.</value></data>
+  <data name="Developer.Action.PerformanceStart" xml:space="preserve"><value>Start performance recording</value></data>
+  <data name="Developer.Description.PerformanceStart" xml:space="preserve"><value>Start recording for this process. Enabled automatically in Debug builds.</value></data>
+  <data name="Developer.Action.PerformanceStop" xml:space="preserve"><value>Stop performance recording</value></data>
+  <data name="Developer.Description.PerformanceStop" xml:space="preserve"><value>Stop sampling and save queued records in the background. Enabled again on next launch.</value></data>
+  <data name="Developer.Action.PerformanceMark" xml:space="preserve"><value>Mark a recent problem</value></data>
+  <data name="Developer.Description.PerformanceMark" xml:space="preserve"><value>Add a timestamp marker and request a file flush.</value></data>
+  <data name="Developer.Action.PerformanceOpen" xml:space="preserve"><value>Open performance records</value></data>
+  <data name="Developer.Description.PerformanceOpen" xml:space="preserve"><value>Open the separate performance recording folder.</value></data>
+  <data name="Developer.Performance.State.Running" xml:space="preserve"><value>Recording</value></data>
+  <data name="Developer.Performance.State.Stopping" xml:space="preserve"><value>Stopping</value></data>
+  <data name="Developer.Performance.State.Stopped" xml:space="preserve"><value>Stopped</value></data>
+  <data name="Developer.Performance.State.Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Developer.Performance.Status" xml:space="preserve"><value>State: {0}
+Sampling: 1 s active, 4 s idle; paused when display is off, locked or suspended.
+Folder: {1}
+Latest sample: {2}
+Dropped samples: {3}; events: {4}</value></data>
+  <data name="Common.Page.RestState" xml:space="preserve"><value>Always-on view</value></data>
+  <data name="Settings.RestState.Subtitle" xml:space="preserve"><value>Choose visible components, their order, and what remains without media.</value></data>
+  <data name="Settings.RestState.Visible" xml:space="preserve"><value>Visible content</value></data>
+  <data name="Settings.RestState.Idle" xml:space="preserve"><value>Without media</value></data>
+  <data name="Settings.RestState.IdleDescription" xml:space="preserve"><value>Turn off every item to hide the media bar when no media is available.</value></data>
+  <data name="Settings.RestState.OrderHint" xml:space="preserve"><value>Artwork and media text stay at the start. Other components can be reordered.</value></data>
+  <data name="Settings.RestState.Fixed" xml:space="preserve"><value>Fixed</value></data>
+  <data name="Settings.RestState.BatteryHint" xml:space="preserve"><value>Requires the Bluetooth battery experiment and a selected device.</value></data>
+  <data name="Settings.RestState.VisibilityLink" xml:space="preserve"><value>Configure always-on visibility</value></data>
+  <data name="Settings.Component.Configure" xml:space="preserve"><value>Configure</value></data>
+  <data name="Settings.Preview.Title" xml:space="preserve"><value>Preview</value></data>
+  <data name="Settings.Preview.Track" xml:space="preserve"><value>Sample track</value></data>
+  <data name="Settings.Preview.Artist" xml:space="preserve"><value>Sample artist</value></data>
+  <data name="Settings.Preview.Note" xml:space="preserve"><value>Uses current settings and fixed sample data, fitted to the available space. It does not control players or devices.</value></data>
+<data name="Settings.Preview.Empty" xml:space="preserve"><value>No components retained. The bar is hidden without media.</value></data>
+  <data name="Settings.Preview.Idle" xml:space="preserve"><value>Preview without media</value></data>
+  <data name="Settings.Personalization.Subtitle" xml:space="preserve"><value>Set the application theme, window material, accent color, and fonts.</value></data>
+  <data name="Settings.Personalization.Accent" xml:space="preserve"><value>Accent color</value></data>
+  <data name="Settings.Personalization.Sample" xml:space="preserve"><value>Interface sample</value></data>
+  <data name="Settings.Personalization.SampleDescription" xml:space="preserve"><value>Review the current theme, fonts, and accent color.</value></data>
+  <data name="Settings.RestState.ArtworkAndProgress" xml:space="preserve"><value>Artwork and progress</value></data>
+  <data name="Settings.RestState.ArtworkDetails" xml:space="preserve"><value>Artwork details</value></data>
+  <data name="Settings.RestState.ArtworkHint" xml:space="preserve"><value>The idle quick-launch note is configured separately.</value></data>
+  <data name="Settings.RestState.ProgressHint" xml:space="preserve"><value>Show read-only progress. Hidden when duration is unavailable.</value></data>
+  <data name="Settings.RestState.DevicesAndVolume" xml:space="preserve"><value>Devices and volume</value></data>
+  <data name="Settings.RestState.SpaceHint" xml:space="preserve"><value>These controls take up space on the media bar.</value></data>
+  <data name="Settings.RestState.Extensions" xml:space="preserve"><value>Additional components</value></data>
+  <data name="Settings.RestState.Volume" xml:space="preserve"><value>Volume</value></data>
+  <data name="Settings.Group.TextProcessing" xml:space="preserve"><value>Text processing</value></data>
+  <data name="Settings.Group.Capture" xml:space="preserve"><value>Capture</value></data>
+  <data name="Settings.Group.Presentation" xml:space="preserve"><value>Style and size</value></data>
+  <data name="Settings.Group.Metrics" xml:space="preserve"><value>Metrics and sampling</value></data>
+  <data name="Settings.Group.DisplayAndOrder" xml:space="preserve"><value>Display and order</value></data>
+  <data name="Settings.Group.LaunchActions" xml:space="preserve"><value>Launch actions</value></data>
+  <data name="Settings.Group.ApplicationList" xml:space="preserve"><value>Applications</value></data>
+  <data name="Settings.Group.Entry" xml:space="preserve"><value>Entry and opening</value></data>
+  <data name="Settings.Group.PanelSections" xml:space="preserve"><value>Panel sections</value></data>
+  <data name="Settings.Group.Files" xml:space="preserve"><value>Settings files</value></data>
+  <data name="Settings.Group.Defaults" xml:space="preserve"><value>Personal defaults and reset</value></data>
+  <data name="Settings.Group.Logs" xml:space="preserve"><value>Logs</value></data>
+  <data name="Settings.Group.Developer" xml:space="preserve"><value>Developer tools</value></data>
+  <data name="Settings.Experiment.Required" xml:space="preserve"><value>Enable this feature in Experiments first.</value></data>
+  <data name="Settings.Page.QuickControls" xml:space="preserve"><value>Quick controls</value></data>
+  <data name="Settings.Page.ComponentsSettings.Description" xml:space="preserve"><value>Set hover controls, button visibility, and size.</value></data>
+  <data name="Settings.Page.FullPanel" xml:space="preserve"><value>Full panel</value></data>
+  <data name="Settings.Page.FullPanel.Description" xml:space="preserve"><value>Set the entry, opening behavior, and panel sections.</value></data>
+  <data name="Settings.Page.BarAppearance" xml:space="preserve"><value>Appearance and layout</value></data>
+  <data name="Settings.Page.Appearance.Description" xml:space="preserve"><value>Set media bar background, length, spacing, and expansion direction.</value></data>
+  <data name="Settings.Page.TextAndLyrics" xml:space="preserve"><value>Text and lyrics</value></data>
+  <data name="Settings.Page.Lyrics.Description" xml:space="preserve"><value>Set media text, lyric display, text processing, and lyric sources.</value></data>
+  <data name="Settings.Page.NoteAndLaunch" xml:space="preserve"><value>Note and quick launch</value></data>
+  <data name="Settings.Page.WidgetsSettings.Description" xml:space="preserve"><value>Set note colors, launch actions, and the application list.</value></data>
+  <data name="Settings.Page.Spectrum" xml:space="preserve"><value>Spectrum</value></data>
+  <data name="Settings.Page.Spectrum.Description" xml:space="preserve"><value>Set capture scope, device, and spectrum style.</value></data>
+  <data name="Settings.Page.Performance" xml:space="preserve"><value>Performance</value></data>
+  <data name="Settings.Page.Performance.Description" xml:space="preserve"><value>Choose metrics, display mode, and sampling interval.</value></data>
+  <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>Bluetooth battery</value></data>
+  <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>Choose a tracked device, display mode, and low-battery reminders.</value></data>
+  <data name="Settings.Page.MediaSource" xml:space="preserve"><value>Media sources</value></data>
+  <data name="Settings.Page.ExtraFeatures.Description" xml:space="preserve"><value>Choose players, automatic switching behavior, and the allow list.</value></data>
+  <data name="Settings.Page.TrackNotifications" xml:space="preserve"><value>Track notifications</value></data>
+  <data name="Settings.Page.TrackNotifications.Description" xml:space="preserve"><value>Set notification position, duration, and display.</value></data>
+  <data name="Settings.Page.GeneralAndUpdates" xml:space="preserve"><value>General and updates</value></data>
+  <data name="Settings.Page.Application.Description" xml:space="preserve"><value>Set language, startup, and updates.</value></data>
+  <data name="Settings.Page.Configuration" xml:space="preserve"><value>Configuration and defaults</value></data>
+  <data name="Settings.Page.Configuration.Description" xml:space="preserve"><value>Open the settings folder, manage personal defaults, and reset settings.</value></data>
+  <data name="Settings.Page.Diagnostics" xml:space="preserve"><value>Diagnostics and logs</value></data>
+  <data name="Settings.Page.Diagnostics.Description" xml:space="preserve"><value>View logs and manage developer tools.</value></data>
+  <data name="Settings.Page.MemoryTools" xml:space="preserve"><value>Memory tools</value></data>
+  <data name="Settings.Page.MemoryTools.Description" xml:space="preserve"><value>View memory readings and manage manual actions and automatic policies.</value></data>
+  <data name="Settings.Page.ScreenAndPlacement.Description" xml:space="preserve"><value>Choose display mode, monitor, and position.</value></data>
+  <data name="Settings.Page.InteractionAndHotkeys" xml:space="preserve"><value>Interaction and shortcuts</value></data>
+  <data name="Settings.Page.Interaction.Description" xml:space="preserve"><value>Set click, wheel, keyboard, and tray actions.</value></data>
+  <data name="Settings.Page.AudioDevices" xml:space="preserve"><value>Audio devices</value></data>
+  <data name="Settings.Page.DeviceManagement.Description" xml:space="preserve"><value>Manage input and output devices, aliases, order, and communications policy.</value></data>
+  <data name="Settings.Page.Experimental.Description" xml:space="preserve"><value>Manage experiments and open their configuration.</value></data>
+  <data name="Settings.Page.About.Description" xml:space="preserve"><value>Project information, contributors, sponsors, and licenses.</value></data>
+  <data name="Settings.Page.ReleaseHighlights.Description" xml:space="preserve"><value>Read new features and the history of official releases.</value></data>
+  <data name="Settings.Preview.LayerDisabled" xml:space="preserve"><value>There is no content to display.</value></data>
+  <data name="Settings.Section.Start" xml:space="preserve">
+    <value>Quick start</value>
+  </data>
+  <data name="Settings.Section.Bar" xml:space="preserve">
+    <value>Media bar</value>
+  </data>
+  <data name="Settings.Section.Content" xml:space="preserve">
+    <value>Content &amp; components</value>
+  </data>
+  <data name="Settings.Section.Playback" xml:space="preserve">
+    <value>Playback &amp; devices</value>
+  </data>
+  <data name="Settings.Section.Interaction" xml:space="preserve">
+    <value>Interaction &amp; notifications</value>
+  </data>
+  <data name="Settings.Section.App" xml:space="preserve">
+    <value>Application</value>
+  </data>
+  <data name="Start.Description" xml:space="preserve">
+    <value>Learn the media bar and find settings for common tasks.</value>
+  </data>
+  <data name="Start.Overview" xml:space="preserve">
+    <value>Three layers</value>
+  </data>
+  <data name="Start.Intro" xml:space="preserve">
+    <value>AF Media Bar</value>
+  </data>
+  <data name="Start.Intro.Description" xml:space="preserve">
+    <value>See what is playing at rest, use controls on hover, and open the full panel for more detail. All layers share appearance and feature settings.</value>
+  </data>
+  <data name="Start.Rest" xml:space="preserve">
+    <value>At rest</value>
+  </data>
+  <data name="Start.Rest.Description" xml:space="preserve">
+    <value>Choose artwork, text and components, their order, and what stays visible without media.</value>
+  </data>
+  <data name="Start.Hover" xml:space="preserve">
+    <value>Quick controls</value>
+  </data>
+  <data name="Start.Hover.Description" xml:space="preserve">
+    <value>Hover over the media bar to reveal playback buttons. Choose which buttons appear and adjust their size and spacing.</value>
+  </data>
+  <data name="Start.Full" xml:space="preserve">
+    <value>Full panel</value>
+  </data>
+  <data name="Start.Full.Description" xml:space="preserve">
+    <value>Use the expand entry to open artwork, lyrics and other panel regions.</value>
+  </data>
+  <data name="Start.Tutorials" xml:space="preserve">
+    <value>Getting started</value>
+  </data>
+  <data name="Start.Tutorial.Mode" xml:space="preserve">
+    <value>Choose a mode and position</value>
+  </data>
+  <data name="Start.Tutorial.Mode.Short" xml:space="preserve">
+    <value>Choose taskbar or floating mode, then set its position.</value>
+  </data>
+  <data name="Start.Tutorial.Mode.Body" xml:space="preserve">
+    <value>1. Choose the mode and monitor in Display &amp; position.
+2. Taskbar mode follows the system taskbar. Vertical display requires a taskbar on the left or right edge.
+3. In floating mode, adjust position, orientation and edge collapse. Geometry is stored separately for each mode.</value>
+  </data>
+  <data name="Start.Tutorial.Playback" xml:space="preserve">
+    <value>Play and choose a source</value>
+  </data>
+  <data name="Start.Tutorial.Playback.Short" xml:space="preserve">
+    <value>Start playback in a player, then select its source.</value>
+  </data>
+  <data name="Start.Tutorial.Playback.Body" xml:space="preserve">
+    <value>1. Start a track in a supported player.
+2. If several sources are available, select the application in the media-source menu.
+3. Configure automatic switching, preferred apps and the allow list in Media sources. Controls and timeline support depend on the player.</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics" xml:space="preserve">
+    <value>Set up text and lyrics</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics.Short" xml:space="preserve">
+    <value>Adjust media text, lyric presentation and lyric sources.</value>
+  </data>
+  <data name="Start.Tutorial.Lyrics.Body" xml:space="preserve">
+    <value>1. Adjust title, artist and lyric layout in Text &amp; lyrics.
+2. Set two-line lyrics, secondary lines and word timing in Lyric display.
+3. Enable and order lyric sources. Online searches send track and artist information; disable sources you do not need.</value>
+  </data>
+  <data name="Start.Tutorial.Devices" xml:space="preserve">
+    <value>Switch audio devices</value>
+  </data>
+  <data name="Start.Tutorial.Devices.Short" xml:space="preserve">
+    <value>Manage input and output devices, then choose their media-bar entries.</value>
+  </data>
+  <data name="Start.Tutorial.Devices.Body" xml:space="preserve">
+    <value>1. Enable, rename and order devices in Audio devices.
+2. Show input or output buttons in At rest.
+3. Configure device shortcuts and action targets in Interaction &amp; shortcuts. Bluetooth battery requires its experiment and data supplied by Windows and the driver.</value>
+  </data>
+  <data name="Start.Tutorial.Daily" xml:space="preserve">
+    <value>Daily use and ordering</value>
+  </data>
+  <data name="Start.Tutorial.Daily.Short" xml:space="preserve">
+    <value>Clicks, wheel gestures, shortcuts and drag handles.</value>
+  </data>
+  <data name="Start.Tutorial.Daily.Body" xml:space="preserve">
+    <value>Configure click and wheel actions in Interaction &amp; shortcuts.
+Reorder lists with the handle on the right, or focus it and press Alt + Up/Down. Press Esc to cancel a drag.
+Press Ctrl + F to search. Related links appear when a row is hovered or contains keyboard focus.</value>
+  </data>
+  <data name="Start.Releases" xml:space="preserve">
+    <value>Version highlights</value>
+  </data>
+  <data name="Start.Release16" xml:space="preserve">
+    <value>Release 1.6</value>
+  </data>
+  <data name="Start.Release16.Body" xml:space="preserve">
+    <value>Audio device management and switching shortcuts are now available, with aliases and ordering.
+Floating mode supports collapse at all four edges; vertical display follows the system taskbar orientation.
+The full-panel entry opens on click or hover. Bluetooth battery remains an experiment, off by default.</value>
+  </data>
+  <data name="Start.ReleaseNotes" xml:space="preserve">
+    <value>Read release notes</value>
+  </data>
+  <data name="Start.Development" xml:space="preserve">
+    <value>Settings centre in development</value>
+  </data>
+  <data name="Start.Development.Body" xml:space="preserve">
+    <value>This local build includes section navigation, Quick start and task-based settings pages. These interface changes are separate from the published 1.6 release notes.</value>
+  </data>
+  <data name="Start.History" xml:space="preserve">
+    <value>Release history</value>
+  </data>
+  <data name="Start.History.Description" xml:space="preserve">
+    <value>The following comes from the local cache or bundled catalogue. Open Update highlights for the complete history.</value>
+  </data>
+  <data name="Start.Players" xml:space="preserve">
+    <value>Player support</value>
+  </data>
+  <data name="Start.Players.Note" xml:space="preserve">
+    <value>Capabilities depend on player version and session. SMTC is the Windows system media session; missing controls or timeline data remain unavailable. This table describes integrations, not validation of every version.</value>
+  </data>
+  <data name="Start.Player" xml:space="preserve">
+    <value>Player / channel</value>
+  </data>
+  <data name="Start.Metadata" xml:space="preserve">
+    <value>Media info</value>
+  </data>
+  <data name="Start.Control" xml:space="preserve">
+    <value>Controls</value>
+  </data>
+  <data name="Start.Timeline" xml:space="preserve">
+    <value>Timeline</value>
+  </data>
+  <data name="Start.Lyrics" xml:space="preserve">
+    <value>Lyrics</value>
+  </data>
+  <data name="Start.Plugins" xml:space="preserve">
+    <value>Plugins</value>
+  </data>
+  <data name="Start.NetEase" xml:space="preserve">
+    <value>NetEase Cloud Music</value>
+  </data>
+  <data name="Start.KuGou" xml:space="preserve">
+    <value>KuGou Music</value>
+  </data>
+  <data name="Start.OtherSmtc" xml:space="preserve">
+    <value>Other SMTC players</value>
+  </data>
+  <data name="Start.NoSmtc" xml:space="preserve">
+    <value>Other players without SMTC</value>
+  </data>
+  <data name="Start.BuiltIn" xml:space="preserve">
+    <value>Built in; no extra plugin</value>
+  </data>
+  <data name="Start.MemoryAndSmtc" xml:space="preserve">
+    <value>Memory / SMTC</value>
+  </data>
+  <data name="Start.MemoryTimeline" xml:space="preserve">
+    <value>Memory enhancement</value>
+  </data>
+  <data name="Start.NetEaseLyrics" xml:space="preserve">
+    <value>Memory / online</value>
+  </data>
+  <data name="Start.OnlineLyrics" xml:space="preserve">
+    <value>Source / online match</value>
+  </data>
+  <data name="Start.SessionDependent" xml:space="preserve">
+    <value>Session dependent</value>
+  </data>
+  <data name="Start.NoPlugin" xml:space="preserve">
+    <value>SMTC needs no plugin</value>
+  </data>
+  <data name="Start.NotDetected" xml:space="preserve">
+    <value>No generic discovery</value>
+  </data>
+  <data name="Start.UnverifiedPlugin" xml:space="preserve">
+    <value>Third-party requirements unverified</value>
+  </data>
+  <data name="Start.Shortcuts" xml:space="preserve">
+    <value>Common settings</value>
+  </data>
+  <data name="Start.Help" xml:space="preserve">
+    <value>Questions &amp; help</value>
+  </data>
+  <data name="Start.Faq.Source" xml:space="preserve">
+    <value>Nothing appears while playing?</value>
+  </data>
+  <data name="Start.Faq.Source.Body" xml:space="preserve">
+    <value>Start playback, then check the selected source and allow list. Players without a system media session or dedicated integration may not be discovered.</value>
+  </data>
+  <data name="Start.Faq.Lyrics" xml:space="preserve">
+    <value>Track information but no lyrics?</value>
+  </data>
+  <data name="Start.Faq.Lyrics.Body" xml:space="preserve">
+    <value>Check enabled lyric sources, connectivity and track metadata. Some tracks have no available lyrics. Disabled online sources are not queried.</value>
+  </data>
+  <data name="Start.Runtime" xml:space="preserve">
+    <value>Runtime requirements</value>
+  </data>
+  <data name="Start.Runtime.Body" xml:space="preserve">
+    <value>Requires Windows 10 1809 or later, x64, and Microsoft Edge WebView2 Evergreen Runtime. Release packages include .NET; ordinary build output may require a separate runtime.</value>
+  </data>
+  <data name="Start.ProjectHelp" xml:space="preserve">
+    <value>Project help</value>
+  </data>
+  <data name="Start.Report" xml:space="preserve">
+    <value>Report an issue</value>
+  </data>
+  <data name="Start.WebView" xml:space="preserve">
+    <value>Get WebView2</value>
+  </data>
+<data name="Media.Performance.Metrics.Title" xml:space="preserve">
+    <value>Display metrics</value>
+  </data>
+<data name="Performance.Visual.Numeric" xml:space="preserve">
+    <value>Numbers</value>
+  </data>
+<data name="Performance.Visual.Bar" xml:space="preserve">
+    <value>Bar</value>
+  </data>
+<data name="Performance.Visual.Ring" xml:space="preserve">
+    <value>Ring</value>
+  </data>
+<data name="Performance.Visual.Line" xml:space="preserve">
+    <value>Trend line</value>
+  </data>
+<data name="Performance.Visual.Area" xml:space="preserve">
+    <value>Trend area</value>
+  </data>
+<data name="Performance.Visual.Style" xml:space="preserve">
+    <value>Display style</value>
+  </data>
+<data name="Performance.Visual.BarSurface" xml:space="preserve">
+    <value>Media bar styles</value>
+  </data>
+<data name="Performance.Visual.Panel" xml:space="preserve">
+    <value>Full panel styles</value>
+  </data>
+<data name="Performance.Visual.Description" xml:space="preserve">
+    <value>Choose a style for each metric. Charts keep live values; upload and download share a style. Previews use sample data. App memory and network support values, lines and areas only; trends scale to the peak in the last minute.</value>
+  </data>
+<data name="Performance.Visual.Relative" xml:space="preserve">
+    <value>Relative to the peak in the last minute; not capacity or bandwidth utilization.</value>
+  </data>
+<data name="Panel.Scale.Title" xml:space="preserve">
+    <value>Full panel scale</value>
+  </data>
+<data name="Panel.Scale.Description" xml:space="preserve">
+    <value>Scale the window and content together from 75% to 200%, saved across restarts. Drag an outer edge with the opposite side fixed; the edge next to the media bar is locked. Restore default size returns to 100%.</value>
+  </data>
+<data name="Panel.Scale.Reset" xml:space="preserve">
+    <value>Restore default size</value>
+  </data>
+<data name="ComponentLayout.Resident" xml:space="preserve"><value>Resident components</value></data>
+<data name="ComponentLayout.Idle" xml:space="preserve"><value>Without media</value></data>
+<data name="ComponentLayout.Hover" xml:space="preserve"><value>Hover controls</value></data>
+<data name="ComponentLayout.Description" xml:space="preserve"><value>Choose visibility and order, including disabled items. Drag components on the bar to reorder them too.</value></data>
+<data name="ComponentLayout.FixedHead" xml:space="preserve"><value>Pinned to the head of the bar</value></data>
+<data name="ComponentLayout.Move" xml:space="preserve"><value>Drag here to move the media bar</value></data>
+<data name="ComponentLayout.Locked" xml:space="preserve"><value>Position is locked</value></data>
+<data name="ComponentLayout.Cycle" xml:space="preserve"><value>Cycle metrics and order</value></data>
+  <data name="ComponentLayout.CycleDescription" xml:space="preserve"><value>Choose cycling metrics and their order. Configure parallel visibility and order in At rest. Styles apply to the corresponding metric.</value></data>
+<data name="Settings.RestState.Details" xml:space="preserve"><value>Artwork and progress</value></data>
+  <data name="Integration.Performance.Sampling" xml:space="preserve"><value>Sampling and behavior</value></data>
+  <data name="Integration.Performance.Bar" xml:space="preserve"><value>Bar styles and cycling</value></data>
+  <data name="Integration.Performance.Panel" xml:space="preserve"><value>Full panel styles</value></data>
+  <data name="Integration.Panel.Scale" xml:space="preserve"><value>Panel scale</value></data>
+  <data name="Integration.Panel.Scale.Description" xml:space="preserve"><value>Scale the window and content together, from 75% to 200%. The edge next to the bar stays attached.</value></data>
+  <data name="Integration.Panel.ResetSize" xml:space="preserve"><value>Restore default size</value></data>
+  <data name="Settings.RestState.Description" xml:space="preserve"><value>Choose components, order and display details for rest and idle states.</value></data>
+
+  <data name="Integration.Back" xml:space="preserve"><value>Back</value></data>
+
+  <data name="Integration.Scope.Shared" xml:space="preserve"><value>Shared settings</value></data>
+
+  <data name="Integration.Mode.Taskbar" xml:space="preserve"><value>Taskbar mode</value></data>
+
+  <data name="Integration.Mode.Floating" xml:space="preserve"><value>Floating mode</value></data>
+
+  <data name="Integration.Preview.Scale" xml:space="preserve"><value>Panel scale {0}% · fitted preview</value></data>
+  <data name="Settings.Page.QuickControls.Description" xml:space="preserve"><value>Configure hover controls, component order and button sizes.</value></data>
+  <data name="Home.Description" xml:space="preserve">
+    <value>Project news, player support and common settings.</value>
+  </data>
+  <data name="Home.Refresh" xml:space="preserve">
+    <value>Refresh news</value>
+  </data>
+  <data name="Home.Rotation.Resume" xml:space="preserve">
+    <value>Resume slideshow</value>
+  </data>
+  <data name="Home.Rotation.Pause" xml:space="preserve">
+    <value>Pause slideshow</value>
+  </data>
+  <data name="Home.Previous" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="Home.Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Home.ReadMore" xml:space="preserve">
+    <value>Read more</value>
+  </data>
+<data name="Home.Kind.release" xml:space="preserve">
+    <value>Stable release</value>
+  </data>
+  <data name="Home.Kind.feature" xml:space="preserve">
+    <value>Feature guide</value>
+  </data>
+<data name="Home.Kind.development" xml:space="preserve">
+    <value>In development</value>
+  </data>
+  <data name="Home.Feature.Settings" xml:space="preserve">
+    <value>Native settings centre</value>
+  </data>
+  <data name="Home.Feature.Settings.Body" xml:space="preserve">
+    <value>Organise settings by task, edit component visibility and order together, and preview changes. Not yet released.</value>
+  </data>
+  <data name="Home.Feature.Panel" xml:space="preserve">
+    <value>Compact full panel</value>
+  </data>
+  <data name="Home.Feature.Panel.Body" xml:space="preserve">
+    <value>Three component layouts, separate metric styles and 75%–200% panel scaling. Not yet released.</value>
+  </data>
+  <data name="Home.Original" xml:space="preserve">
+    <value>Original text</value>
+  </data>
+  <data name="Home.Cache" xml:space="preserve">
+    <value>Cached data</value>
+  </data>
+  <data name="Home.Updated" xml:space="preserve">
+    <value>Updated</value>
+  </data>
+  <data name="Home.Unavailable" xml:space="preserve">
+    <value>Some data is unavailable. A dash means unknown, not zero.</value>
+  </data>
+  <data name="Home.Players" xml:space="preserve">
+    <value>Your players</value>
+  </data>
+  <data name="Home.Player.Empty" xml:space="preserve">
+    <value>No media session is available. Open a player and play a track, or view the support list.</value>
+  </data>
+  <data name="Home.Player.Scope" xml:space="preserve">
+    <value>Detection applies to this session. See the support list for integration and plugin conditions.</value>
+  </data>
+  <data name="Home.AllPlayers" xml:space="preserve">
+    <value>View all supported players</value>
+  </data>
+  <data name="Home.Player.Filter" xml:space="preserve">
+    <value>Filter by player name</value>
+  </data>
+  <data name="Home.Player.Smtc" xml:space="preserve">
+    <value>Uses Windows media sessions. Metadata, controls and timeline depend on the player version; lyrics use the existing lookup chain. Version compatibility requires verification.</value>
+  </data>
+  <data name="Home.Player.NetEase" xml:space="preserve">
+    <value>Built-in NetEase memory and SMTC channels are combined. Memory data can supplement lyrics and timeline, subject to player-version support.</value>
+  </data>
+  <data name="Home.Player.KuGou" xml:space="preserve">
+    <value>Uses SMTC with built-in KuGou enrichment. Available controls and timeline follow the current session.</value>
+  </data>
+  <data name="Home.Player.Plugin" xml:space="preserve">
+    <value>SMTC itself needs no plugin. A player may need an integration plugin, depending on its version. Plugin installation is not detected.</value>
+  </data>
+  <data name="Home.Player.Current" xml:space="preserve">
+    <value>Current source</value>
+  </data>
+  <data name="Home.Player.Playing" xml:space="preserve">
+    <value>Playing</value>
+  </data>
+  <data name="Home.Player.Connected" xml:space="preserve">
+    <value>Connected session</value>
+  </data>
+  <data name="Home.Player.ControlAvailable" xml:space="preserve">
+    <value>Play/pause available</value>
+  </data>
+  <data name="Home.Player.ControlUnavailable" xml:space="preserve">
+    <value>Play/pause unavailable</value>
+  </data>
+  <data name="Home.Player.SeekAvailable" xml:space="preserve">
+    <value>Seeking available</value>
+  </data>
+  <data name="Home.Player.SeekUnavailable" xml:space="preserve">
+    <value>Seeking unavailable</value>
+  </data>
+  <data name="Home.Player.LyricsAvailable" xml:space="preserve">
+    <value>Lyrics received</value>
+  </data>
+  <data name="Home.Player.LyricsUnknown" xml:space="preserve">
+    <value>Lyrics not confirmed</value>
+  </data>
+  <data name="Home.Player.NotSelected" xml:space="preserve">
+    <value>This session is not selected; its controls are not queried separately.</value>
+  </data>
+  <data name="Home.Community" xml:space="preserve">
+    <value>Project activity</value>
+  </data>
+  <data name="Home.Stars" xml:space="preserve">
+    <value>Stars</value>
+  </data>
+  <data name="Home.OpenIssues" xml:space="preserve">
+    <value>Open issues</value>
+  </data>
+  <data name="Home.RecentIssues" xml:space="preserve">
+    <value>Issues created in 7 days</value>
+  </data>
+  <data name="Home.OpenPullRequests" xml:space="preserve">
+    <value>Open pull requests</value>
+  </data>
+  <data name="Home.Issues" xml:space="preserve">
+    <value>Recent issues</value>
+  </data>
+  <data name="Home.Draft" xml:space="preserve">
+    <value>Draft</value>
+  </data>
+  <data name="Home.NoEntries" xml:space="preserve">
+    <value>No entries to display. Open the project page for details.</value>
+  </data>
+  <data name="Home.ViewAll" xml:space="preserve">
+    <value>View all</value>
+  </data>
+  <data name="Home.Bundled" xml:space="preserve">
+    <value>Bundled data</value>
+  </data>
+  <data name="Home.Player.Pending" xml:space="preserve">
+    <value>Waiting for source update</value>
+  </data>
+  <data name="Home.Player.AwaitingCapabilities" xml:space="preserve">
+    <value>Waiting for a valid snapshot from this source; previous-source capabilities are not reused.</value>
+  </data>
+  <data name="Common.Page.PluginCenter" xml:space="preserve"><value>Plugin downloads</value></data>
   <data name="Plugins.Architecture" xml:space="preserve"><value>Player architecture</value></data>
   <data name="Plugins.Attribution" xml:space="preserve"><value>Author: {0}    Version: {1}</value></data>
   <data name="Plugins.Author" xml:space="preserve"><value>Author: {0}</value></data>
@@ -3279,147 +3843,9 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Plugins.Status.Downloading" xml:space="preserve"><value>Downloading and verifying…</value></data>
   <data name="Plugins.Status.Failed" xml:space="preserve"><value>Download failed. Retry or visit the project.</value></data>
   <data name="Plugins.Status.Verifying" xml:space="preserve"><value>Verifying file…</value></data>
-  <data name="Plugins.Subtitle" xml:space="preserve"><value>Download SMTC extensions for your player and install them manually.</value></data>
+  <data name="Plugins.Subtitle" xml:space="preserve"><value>Download player extensions and follow the manual installation guide.</value></data>
   <data name="Plugins.Upgrade" xml:space="preserve"><value>Upgrade</value></data>
   <data name="Plugins.VerifyOrDownload" xml:space="preserve"><value>Verify or download again</value></data>
-  <data name="Common.Page.QuickStart" xml:space="preserve">
-    <value>Quick start</value>
-  </data>
-  <data name="QuickStart.Subtitle" xml:space="preserve">
-    <value>Get started with AF, player support and release highlights.</value>
-  </data>
-  <data name="QuickStart.Latest" xml:space="preserve">
-    <value>Release highlights</value>
-  </data>
-  <data name="QuickStart.Latest.Description" xml:space="preserve">
-    <value>Read new features and previous releases.</value>
-  </data>
-  <data name="QuickStart.Latest.Unavailable" xml:space="preserve">
-    <value>Release information is unavailable. Open release highlights to retry.</value>
-  </data>
-  <data name="QuickStart.AllReleases" xml:space="preserve">
-    <value>View all releases</value>
-  </data>
-  <data name="QuickStart.Basics" xml:space="preserve">
-    <value>The basics</value>
-  </data>
-  <data name="QuickStart.Basics.Description" xml:space="preserve">
-    <value>Learn playback, placement, appearance and lyrics.</value>
-  </data>
-  <data name="QuickStart.Players" xml:space="preserve">
-    <value>Player support</value>
-  </data>
-  <data name="QuickStart.Players.Description" xml:space="preserve">
-    <value>Check native media controls, AF integration and plugin advice.</value>
-  </data>
-  <data name="QuickStart.Reference" xml:space="preserve">
-    <value>Compatibility reference checked on 2026-10-24. Source code and upstream reports do not replace local testing; unconfirmed capabilities remain unverified.</value>
-  </data>
-  <data name="QuickStart.Search" xml:space="preserve">
-    <value>Search players</value>
-  </data>
-  <data name="QuickStart.OpenSettings" xml:space="preserve">
-    <value>Open related settings</value>
-  </data>
-  <data name="QuickStart.ViewPlugin" xml:space="preserve">
-    <value>View plugins</value>
-  </data>
-  <data name="QuickStart.Source" xml:space="preserve">
-    <value>View source</value>
-  </data>
-  <data name="QuickStart.Back" xml:space="preserve">
-    <value>Back</value>
-  </data>
-  <data name="QuickStart.Capabilities" xml:space="preserve">
-    <value>Native metadata: {0}; timeline: {1}; controls and seeking: {2}.</value>
-  </data>
-  <data name="QuickStart.Capability.Unknown" xml:space="preserve">
-    <value>unverified</value>
-  </data>
-  <data name="QuickStart.Capability.Implemented" xml:space="preserve">
-    <value>implemented in source</value>
-  </data>
-  <data name="QuickStart.Capability.Reported" xml:space="preserve">
-    <value>reported upstream</value>
-  </data>
-  <data name="QuickStart.Capability.RequiresPlugin" xml:space="preserve">
-    <value>requires an extension</value>
-  </data>
-  <data name="QuickStart.Capability.Partial" xml:space="preserve">
-    <value>partial</value>
-  </data>
-  <data name="QuickStart.PluginAvailable" xml:space="preserve">
-    <value>A plugin can fill gaps; check your version and needs.</value>
-  </data>
-  <data name="QuickStart.NoRecommendation" xml:space="preserve">
-    <value>Verify first; no plugin is recommended yet.</value>
-  </data>
-  <data name="QuickStart.UseBuiltIn" xml:space="preserve">
-    <value>Use built-in media controls; no extra SMTC plugin is needed.</value>
-  </data>
-  <data name="QuickStart.Af.NetEase" xml:space="preserve">
-    <value>AF reads NetEase metadata and progress internally. Playback, track changes and seeking still depend on its SMTC capabilities.</value>
-  </data>
-  <data name="QuickStart.Af.KuGou" xml:space="preserve">
-    <value>AF can supplement KuGou progress. Metadata, artwork and controls still use player SMTC; verify integration with your client version.</value>
-  </data>
-  <data name="QuickStart.Af.Smtc" xml:space="preserve">
-    <value>AF uses the player's media session. Missing information and controls do not become available automatically.</value>
-  </data>
-  <data name="QuickStart.Note.NetEase" xml:space="preserve">
-    <value>Native SMTC is not locally verified for 3.1.41. InfLink-rs reports testing 3.1.20–3.1.41 and 2.10.13 and requires BetterNCM. Consider it only if AF still lacks a needed feature.</value>
-  </data>
-  <data name="QuickStart.Note.QQ" xml:space="preserve">
-    <value>Upstream tested missing native seeking on 22.71. The plugin adds seeking through injection. Version 22.61 has not been tested; compatibility is unknown.</value>
-  </data>
-  <data name="QuickStart.Note.KuGou" xml:space="preserve">
-    <value>This version awaits local testing. The old plugin only supports 8.3.97.21592 and has no seeking; it is unsuitable for current 20.x clients.</value>
-  </data>
-  <data name="QuickStart.Note.Pending" xml:space="preserve">
-    <value>Version-specific evidence is insufficient. Check metadata, artwork, duration, progress and actual controls. A system media card alone does not prove full support.</value>
-  </data>
-  <data name="QuickStart.Note.Browser" xml:space="preserve">
-    <value>Test desktop and web editions separately. Web support depends on both the site and browser media session implementation.</value>
-  </data>
-  <data name="QuickStart.Note.Bodian" xml:space="preserve">
-    <value>An upstream plugin supplies metadata, timeline and controls, but its need for the current player version is unconfirmed. No download is listed yet.</value>
-  </data>
-  <data name="QuickStart.Note.BuiltIn" xml:space="preserve">
-    <value>The labelled release implements Media Session metadata, position reporting and seeking. Its Windows package still needs maintainer acceptance testing.</value>
-  </data>
-  <data name="QuickStart.Note.Listen1" xml:space="preserve">
-    <value>The desktop project's pinned player submodule implements metadata, timeline and seeking. Test the web, browser-extension and desktop editions separately.</value>
-  </data>
-  <data name="QuickStart.Note.SPlayer" xml:space="preserve">
-    <value>The desktop app includes native Windows SMTC; enable its SMTC setting. The web fallback uses Media Session. Package behaviour awaits testing.</value>
-  </data>
-  <data name="QuickStart.Note.MusicFree" xml:space="preserve">
-    <value>Metadata, playback state and track-change handlers are present. Complete timeline and seeking remain unconfirmed. MusicFree source plugins serve a different purpose from SMTC extensions.</value>
-  </data>
-  <data name="QuickStart.Note.Foobar" xml:space="preserve">
-    <value>Upstream SMTC setup guidance notes missing album and duration in built-in mode. Use foo_mediacontrol if these are needed; verify your player version.</value>
-  </data>
-  <data name="QuickStart.Note.Plugin" xml:space="preserve">
-    <value>Upstream provides an SMTC plugin. Use it when the media session is absent or an existing component lacks features; first check for a similar installed component.</value>
-  </data>
-  <data name="QuickStart.Note.Vlc" xml:space="preserve">
-    <value>The catalogue offers the upstream VLC 3.0.x integration. Check 4.0 development builds separately. Match both plugin and VC++ runtime to VLC's architecture.</value>
-  </data>
-  <data name="QuickStart.Note.ITunes" xml:space="preserve">
-    <value>A standalone bridge for legacy iTunes. This does not establish a need for the modern Apple Music client.</value>
-  </data>
-  <data name="QuickStart.Note.Mpv" xml:space="preserve">
-    <value>v0.41.0 implements native metadata, timeline and seeking. Set media-controls=yes in mpv.conf if needed. Check libmpv and third-party frontends separately.</value>
-  </data>
-  <data name="QuickStart.Note.PotPlayer" xml:space="preserve">
-    <value>The bridge mainly supplements title, artist and album metadata. Upstream reports existing timeline and controls. This version is not locally tested; no injector is recommended yet.</value>
-  </data>
-  <data name="QuickStart.Note.Aimp" xml:space="preserve">
-    <value>Old bridge authors stopped maintenance after native support appeared. Stable and test-version coverage is unconfirmed; the old bridge is not a required install.</value>
-  </data>
-  <data name="QuickStart.Note.MpcHc" xml:space="preserve">
-    <value>Use the maintained clsid2 fork and check its Windows integration SMTC option. Full metadata, timeline and controls need version-specific testing.</value>
-  </data>
   <data name="Plugins.Catalog.foobar.Compatibility" xml:space="preserve">
     <value>Match the component to foobar2000's architecture.</value>
   </data>
@@ -3440,107 +3866,5 @@ Double-click to launch · Scroll to select · Click for list</value>
   </data>
   <data name="Plugins.DownloadDetails.Body" xml:space="preserve">
     <value>AF downloads and verifies files without extracting or installing them. Mirrors are tried before the official source. Downloads continue after leaving Settings and are cancelled when AF exits. Files are saved under AFMediaBar\PluginDownloads in local application data.</value>
-  </data>
-  <data name="QuickStart.Tutorial.Playback.Title" xml:space="preserve">
-    <value>Playback and sources</value>
-  </data>
-  <data name="QuickStart.Tutorial.Playback.Body" xml:space="preserve">
-    <value>Play a song in your player, then choose its source in AF's media menu. If it is missing, check source filters in Media and notifications and the player support guide below.</value>
-  </data>
-  <data name="QuickStart.Tutorial.Placement.Title" xml:space="preserve">
-    <value>Display and placement</value>
-  </data>
-  <data name="QuickStart.Tutorial.Placement.Body" xml:space="preserve">
-    <value>Choose taskbar or desktop floating mode, then set the target displays, position and size. Drag the floating bar into place and lock it if needed.</value>
-  </data>
-  <data name="QuickStart.Tutorial.Appearance.Title" xml:space="preserve">
-    <value>Content and appearance</value>
-  </data>
-  <data name="QuickStart.Tutorial.Appearance.Body" xml:space="preserve">
-    <value>Choose artwork, text and controls in Content and layout. Adjust theme, background and fonts in Appearance; configure widgets separately.</value>
-  </data>
-  <data name="QuickStart.Tutorial.Lyrics.Title" xml:space="preserve">
-    <value>Lyrics and progress</value>
-  </data>
-  <data name="QuickStart.Tutorial.Lyrics.Body" xml:space="preserve">
-    <value>Configure lyric display and sources in Lyrics. Synchronization needs reliable track information and progress. Check player support before installing overlapping plugins for a missing timeline.</value>
-  </data>
-  <data name="QuickStart.Player.netease.Name" xml:space="preserve">
-    <value>NetEase Cloud Music</value>
-  </data>
-  <data name="QuickStart.Player.qqmusic.Name" xml:space="preserve">
-    <value>QQ Music</value>
-  </data>
-  <data name="QuickStart.Player.kugou.Name" xml:space="preserve">
-    <value>KuGou Music</value>
-  </data>
-  <data name="QuickStart.Player.soda.Name" xml:space="preserve">
-    <value>Soda Music</value>
-  </data>
-  <data name="QuickStart.Player.kuwo.Name" xml:space="preserve">
-    <value>Kuwo Music</value>
-  </data>
-  <data name="QuickStart.Player.migu.Name" xml:space="preserve">
-    <value>Migu Music</value>
-  </data>
-  <data name="QuickStart.Player.qianqian.Name" xml:space="preserve">
-    <value>Qianqian Music</value>
-  </data>
-  <data name="QuickStart.Player.bodian.Name" xml:space="preserve">
-    <value>Bodian Music</value>
-  </data>
-  <data name="QuickStart.Player.lx.Name" xml:space="preserve">
-    <value>LX Music Desktop</value>
-  </data>
-  <data name="QuickStart.Player.yesplay.Name" xml:space="preserve">
-    <value>YesPlayMusic</value>
-  </data>
-  <data name="QuickStart.Player.moekoe.Name" xml:space="preserve">
-    <value>MoeKoeMusic</value>
-  </data>
-  <data name="QuickStart.Player.listen1.Name" xml:space="preserve">
-    <value>Listen 1</value>
-  </data>
-  <data name="QuickStart.Player.splayer.Name" xml:space="preserve">
-    <value>SPlayer</value>
-  </data>
-  <data name="QuickStart.Player.alger.Name" xml:space="preserve">
-    <value>AlgerMusicPlayer</value>
-  </data>
-  <data name="QuickStart.Player.musicfree.Name" xml:space="preserve">
-    <value>MusicFree Desktop</value>
-  </data>
-  <data name="QuickStart.Player.foobar.Name" xml:space="preserve">
-    <value>foobar2000</value>
-  </data>
-  <data name="QuickStart.Player.musicbee.Name" xml:space="preserve">
-    <value>MusicBee</value>
-  </data>
-  <data name="QuickStart.Player.vlc.Name" xml:space="preserve">
-    <value>VLC</value>
-  </data>
-  <data name="QuickStart.Player.itunes.Name" xml:space="preserve">
-    <value>iTunes</value>
-  </data>
-  <data name="QuickStart.Player.mpv.Name" xml:space="preserve">
-    <value>mpv</value>
-  </data>
-  <data name="QuickStart.Player.potplayer.Name" xml:space="preserve">
-    <value>PotPlayer</value>
-  </data>
-  <data name="QuickStart.Player.spotify.Name" xml:space="preserve">
-    <value>Spotify</value>
-  </data>
-  <data name="QuickStart.Player.applemusic.Name" xml:space="preserve">
-    <value>Apple Music</value>
-  </data>
-  <data name="QuickStart.Player.aimp.Name" xml:space="preserve">
-    <value>AIMP</value>
-  </data>
-  <data name="QuickStart.Player.mpchc.Name" xml:space="preserve">
-    <value>MPC-HC</value>
-  </data>
-  <data name="QuickStart.Player.tidal.Name" xml:space="preserve">
-    <value>TIDAL</value>
   </data>
 </root>

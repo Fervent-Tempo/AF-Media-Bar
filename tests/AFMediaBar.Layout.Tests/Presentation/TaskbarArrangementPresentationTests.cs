@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Controls;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
@@ -198,6 +199,11 @@ public sealed class TaskbarArrangementPresentationTests
                 AssertPerformanceLayout(control);
                 VerticalTaskbarPresentationChecks.Verify(control);
                 SmallTaskbarPresentationChecks.Verify(control);
+                AssertSmallArtworkLayout(control);
+                AssertFontSizeKeepsArtworkInset();
+                AssertHoverControlsFitAtMinimumLength();
+                MetricVisualPresentationChecks.Verify(control);
+                ComponentLayoutPresentationChecks.Verify(control);
                 AssertMetadataSurvivesOrientationChanges();
                 AssertLyricsSurviveOrientationChanges();
                 AssertLyricsTimelineChangesResizeRepeatedText();
@@ -218,6 +224,46 @@ public sealed class TaskbarArrangementPresentationTests
         if (failure is not null)
             ExceptionDispatchInfo.Capture(failure).Throw();
     }
+    private static void AssertSmallArtworkLayout(TaskBarMediaControl control)
+    {
+        var original = SettingsManager.Current;
+        try
+        {
+            SettingsManager.Current = new AppSettings();
+            control.UpdateSongInfo(MediaSnapshot.Disconnected with { IsConnected = true, Title = "Small artwork" });
+            var artwork = (Border)control.FindName("SongImageBorder");
+            var text = (FrameworkElement)control.FindName("SongInfoStackPanel");
+            foreach (var mode in new[] { WindowMode.Taskbar, WindowMode.FloatingBar })
+                foreach (var orientation in new[] { LayoutOrientation.Horizontal, LayoutOrientation.Vertical })
+                {
+                    void Apply(bool small, bool visible)
+                    {
+                        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+                        { SmallArtwork = small, ArtworkVisible = visible };
+                        control.ApplyLayout(mode, orientation, 100, 100, orientation == LayoutOrientation.Vertical ? 80 : 44);
+                        control.ApplyPrimaryLength(600);
+                    }
+
+                    double TextStart() => orientation == LayoutOrientation.Vertical ? Canvas.GetTop(text) : Canvas.GetLeft(text);
+                    Apply(false, true);
+                    var normalSize = artwork.Width;
+                    var normalTextStart = TextStart();
+                    Apply(true, true);
+                    Assert.AreEqual(Math.Round(normalSize * 0.8), artwork.Width, 0.01, $"{mode}/{orientation}: artwork must shrink at runtime.");
+                    Assert.AreEqual(artwork.Width, artwork.Height, 0.01);
+                    Assert.IsTrue(TextStart() < normalTextStart, "Smaller artwork must free space for the following text.");
+                    if (orientation == LayoutOrientation.Vertical)
+                        Assert.AreEqual((80 - artwork.Width) / 2, Canvas.GetLeft(artwork), 0.01);
+
+                    Apply(false, false);
+                    var hiddenTextStart = TextStart();
+                    Apply(true, false);
+                    Assert.AreEqual(hiddenTextStart, TextStart(), 0.01, "Hidden artwork must not add padding to the text.");
+                }
+        }
+        finally { SettingsManager.Replace(original); }
+    }
+
     private static void AssertMetadataSurvivesOrientationChanges()
     {
         var settings = new AppSettings
@@ -261,6 +307,94 @@ public sealed class TaskbarArrangementPresentationTests
                 }
             }
         }
+    }
+
+    private static void AssertFontSizeKeepsArtworkInset()
+    {
+        var settings = new AppSettings { Position = TaskbarBarPosition.End };
+        settings.TaskbarExperience = new()
+        {
+            Arrangement = TaskbarContentArrangement.Left,
+            LengthMode = TaskbarLengthMode.Fixed,
+            FixedLengthDip = 180,
+            SpectrumVisible = false,
+            PerformanceVisible = false
+        };
+        var control = new TaskBarMediaControl { AllowRestConnectionTransition = false };
+        try
+        {
+            control.ApplyPresentationSettings(settings);
+            control.UpdateSongInfo(MediaSnapshot.Disconnected with { IsConnected = true, Title = "Title", Artist = "Artist" });
+            foreach (var cross in new[] { 24d, 32d, 44d })
+            {
+                double? inset = null;
+                foreach (var font in new[] { 100, 80, 125, 100 })
+                {
+                    settings.TaskbarExperience = settings.TaskbarExperience with { MediaFontSizePercent = font };
+                    control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal, 100, 100, cross);
+                    control.ApplyPrimaryLength(180);
+                    var left = Canvas.GetLeft((FrameworkElement)control.FindName("SongImageBorder"));
+                    if (inset is { } expected) Assert.AreEqual(expected, left, .01, $"Height {cross}, font {font}% moved artwork.");
+                    inset = left;
+                }
+            }
+        }
+        finally { control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
+    }
+
+    private static void AssertHoverControlsFitAtMinimumLength()
+    {
+        var settings = new AppSettings();
+        var control = new TaskBarMediaControl { AllowRestConnectionTransition = false };
+        control.DesiredSizeChanged += (_, _) => { };
+        try
+        {
+            control.ApplyPresentationSettings(settings);
+            control.UpdateSongInfo(MediaSnapshot.Disconnected with { IsConnected = true, Title = "Title", Artist = "Artist" });
+            foreach (var position in Enum.GetValues<TaskbarBarPosition>())
+                foreach (var arrangement in Enum.GetValues<TaskbarContentArrangement>())
+                    foreach (var density in Enum.GetValues<TaskbarInformationDensity>())
+                        foreach (var transport in new[] { false, true })
+                            foreach (var dpi in new[] { 1d, 1.25, 1.5, 2 })
+                                foreach (var anchorDelta in new[] { -16, 0, 16 })
+                                {
+                                    settings.Position = position;
+                                    settings.TaskbarExperience = TaskbarExperienceSettings.Default with
+                                    {
+                                        Arrangement = arrangement,
+                                        Density = density,
+                                        SpectrumVisible = false,
+                                        PerformanceVisible = false,
+                                        HoverControls = TaskbarHoverControlsSettings.Default with { PlayPauseVisible = transport, PreviousNextVisible = transport }
+                                    };
+                                    control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal, 100, 100, 44);
+                                    control.RefreshDesiredSize();
+                                    var widthPx = (int)Math.Ceiling(control.GetMinimumPrimaryLength(dpi) * dpi);
+                                    var anchor = position == TaskbarBarPosition.Center ? widthPx : position == TaskbarBarPosition.End ? 2L * widthPx : 0;
+                                    // 几何刷新时保留上一帧锚点，按钮仍须位于当前文字区。
+                                    control.ApplyPlacementAnchor(0, anchor + anchorDelta, dpi);
+                                    control.ApplyPrimaryLength(widthPx / dpi);
+                                    var reveal = (Grid)control.FindName("HoverRevealHost");
+                                    var layer = (Border)control.FindName("TaskbarHoverLayer");
+                                    reveal.Visibility = Visibility.Visible;
+                                    layer.Visibility = Visibility.Visible;
+                                    reveal.Width = layer.Width;
+                                    control.Width = widthPx / dpi;
+                                    control.Height = 44;
+                                    control.Measure(new Size(control.Width, 44));
+                                    control.Arrange(new Rect(0, 0, control.Width, 44));
+                                    control.UpdateLayout();
+                                    foreach (var name in new[] { "TaskbarPreviousButton", "TaskbarPlayPauseButton", "TaskbarNextButton", "TaskbarDeviceButton", "TaskbarVolumeButton" })
+                                    {
+                                        var button = (Button)control.FindName(name);
+                                        if (button.Visibility != Visibility.Visible) continue;
+                                        var left = button.TranslatePoint(new Point(), layer).X;
+                                        Assert.IsTrue(left >= -.01 && left + button.ActualWidth <= layer.ActualWidth + .01,
+                                            $"{position}/{arrangement}/{density}/{transport}/DPI {dpi}: {name} outside hover layer ({left} + {button.ActualWidth} > {layer.ActualWidth}).");
+                                    }
+                                }
+        }
+        finally { control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
     }
 
     private static void AssertLyricsTimelineChangesResizeRepeatedText()
@@ -383,32 +517,31 @@ public sealed class TaskbarArrangementPresentationTests
         SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { PerformanceVisible = true };
         control.ApplyTaskbarExperienceSettings();
         control.ApplyPerformanceSnapshot(new(40, 60, null, null, 1024, 2048), 0, true);
-        var items = (StackPanel)control.FindName("TaskbarPerformanceItems");
-        var surface = (Border)control.FindName("TaskbarPerformanceSurface");
-        var cells = items.Children.Cast<TextBlock>().ToArray();
-        Assert.AreEqual(3, cells.Length);
-        Assert.IsTrue(cells.All(item => item.Visibility == Visibility.Visible));
-        Assert.IsTrue(cells[0].Text.StartsWith("↑ ") && cells[0].Text.Contains("\n↓ "));
-        Assert.IsTrue(cells[1].Text.StartsWith("CPU "));
-        Assert.IsTrue(cells[2].Text.StartsWith("MEM "));
-        var parallelWidth = surface.Width;
+        IEnumerable<MetricPresenter> Cards(DependencyObject root)
+        {
+            for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+            {
+                var child = VisualTreeHelper.GetChild(root, index);
+                if (child is MetricPresenter card && card.Parent is Border { Visibility: Visibility.Visible }) yield return card;
+                foreach (var descendant in Cards(child)) yield return descendant;
+            }
+        }
+        var cards = Cards(control).ToArray();
+        CollectionAssert.AreEquivalent(new[] { MetricKind.SystemMemory, MetricKind.SystemCpu, MetricKind.SystemNetwork }, cards.Select(card => card.Metric).ToArray());
+        var widths = cards.Select(card => ((Border)card.Parent).Width).ToArray();
         control.ApplyPerformanceSnapshot(new(80, 100, null, null, 0, 0), 2, true);
-        Assert.AreEqual(parallelWidth, surface.Width, "Changing ordinary readings must not resize the widget.");
-
+        CollectionAssert.AreEqual(widths, Cards(control).Select(card => ((Border)card.Parent).Width).ToArray(), "读数变化不应改变卡片宽度。");
         SettingsManager.Current.PerformanceComponent = SettingsManager.Current.PerformanceComponent with { DisplayMode = PerformanceDisplayMode.Cycle };
         control.ApplyTaskbarExperienceSettings();
         control.ApplyPerformanceSnapshot(new(40, 60, null, null, 1024, 2048), 0, true);
-        var cycleWidth = surface.Width;
+        var cycleWidth = ((Border)Cards(control).Single().Parent).Width;
         control.ApplyPerformanceSnapshot(new(40, 60, null, null, 1024, 2048), 1, true);
-        Assert.AreEqual(cycleWidth, surface.Width, "Cycling reserves the widest selected metric.");
-        Assert.AreEqual(1, items.Children.Cast<TextBlock>().Count(item => item.Visibility == Visibility.Visible));
-        Assert.IsTrue(items.Children.Cast<TextBlock>().Single(item => item.Visibility == Visibility.Visible).Text.StartsWith("CPU "));
-        Assert.IsTrue(cycleWidth < parallelWidth);
-
+        Assert.AreEqual(cycleWidth, ((Border)Cards(control).Single().Parent).Width, "轮换保留最大宽度。");
+        Assert.AreEqual(MetricKind.SystemCpu, Cards(control).Single().Metric);
         SettingsManager.Current.PerformanceComponent = new([MetricKind.SystemNetwork], 500, true);
         control.ApplyTaskbarExperienceSettings();
-        Assert.AreEqual(1, items.Children.Count);
         control.ApplyPerformanceSnapshot(default, 0, true);
-        Assert.IsTrue(((TextBlock)items.Children[0]).Text.Contains("—"));
+        Assert.AreEqual(MetricKind.SystemNetwork, Cards(control).Single().Metric);
+        Assert.IsTrue(Cards(control).Single().ToolTip.ToString()!.Contains("—"));
     }
 }

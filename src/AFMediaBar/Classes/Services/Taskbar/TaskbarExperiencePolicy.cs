@@ -150,7 +150,7 @@ public static class TaskbarExperiencePolicy
             total += component == TaskbarRestComponent.MediaText
                 ? Math.Max(0, textWidth)
                 : Math.Max(0, widthOf(component));
-            if (index < visibleComponents.Count - 1)
+            if (index < visibleComponents.Count - 1 && visibleComponents[index + 1] != TaskbarRestComponent.DragHandle)
             {
                 total += Math.Max(0, sectionGap);
             }

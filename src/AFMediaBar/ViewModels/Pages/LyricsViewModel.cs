@@ -283,6 +283,7 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         _configuration.Current.TaskbarExperience.LengthMode == TaskbarLengthMode.FollowContent;
 
     public void ResetLyrics() => _configuration.Reset(SettingsResetScope.Lyrics);
+    public void ResetTextAndLyrics() => _configuration.Reset(SettingsResetScope.TextAndLyrics);
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
@@ -295,7 +296,7 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (e.PropertyName == nameof(AppSettings.FloatingBar) || e.ResetScope is SettingsResetScope.Lyrics or SettingsResetScope.All)
+        if (e.PropertyName == nameof(AppSettings.FloatingBar) || e.ResetScope is SettingsResetScope.Lyrics or SettingsResetScope.TextAndLyrics or SettingsResetScope.All)
         {
             OnPropertyChanged(nameof(ArtistSeparatorsText));
             RefreshSourceEntries();

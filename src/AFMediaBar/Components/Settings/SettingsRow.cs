@@ -19,6 +19,11 @@ namespace AFMediaBar.Components;
 /// </summary>
 public class SettingsRow : HeaderedContentControl
 {
+    /// <summary>动态设置行的稳定界面身份，不参与配置持久化。</summary>
+    public static readonly DependencyProperty OptionIdProperty = DependencyProperty.Register(
+        nameof(OptionId), typeof(string), typeof(SettingsRow), new PropertyMetadata(string.Empty));
+    public string OptionId { get => (string)GetValue(OptionIdProperty); set => SetValue(OptionIdProperty, value); }
+
     private static readonly DependencyPropertyKey IsCompactPropertyKey = DependencyProperty.RegisterReadOnly(
         nameof(IsCompact), typeof(bool), typeof(SettingsRow), new PropertyMetadata(false));
     /// <summary>Moves controls below the title when the sidebar leaves too little width for two columns.</summary>
@@ -34,14 +39,14 @@ public class SettingsRow : HeaderedContentControl
     private static void OnInlineChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
     {
         var row = (SettingsRow)sender;
-        row.SetValue(IsCompactPropertyKey, !row.KeepControlInline && row.ActualWidth < 520d);
+        row.SetValue(IsCompactPropertyKey, !row.KeepControlInline && row.ActualWidth < 600d);
     }
 
     /// <inheritdoc />
     protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
     {
         base.OnRenderSizeChanged(sizeInfo);
-        SetValue(IsCompactPropertyKey, !KeepControlInline && sizeInfo.NewSize.Width < 520d);
+        SetValue(IsCompactPropertyKey, !KeepControlInline && sizeInfo.NewSize.Width < 600d);
     }
     /// <summary>行标题左侧的图标。/ Icon to the left of the row title.</summary>
     public static readonly DependencyProperty IconProperty = DependencyProperty.Register(
@@ -49,6 +54,11 @@ public class SettingsRow : HeaderedContentControl
         typeof(IconElement),
         typeof(SettingsRow),
         new PropertyMetadata(null));
+
+    /// <summary>使用无底色的单色图标，降低密集设置列表的视觉权重。</summary>
+    public static readonly DependencyProperty IsIconMonochromeProperty = DependencyProperty.Register(
+        nameof(IsIconMonochrome), typeof(bool), typeof(SettingsRow), new PropertyMetadata(false));
+    public bool IsIconMonochrome { get => (bool)GetValue(IsIconMonochromeProperty); set => SetValue(IsIconMonochromeProperty, value); }
 
     /// <summary>行表面的圆角，嵌套行使用共享小卡片圆角。</summary>
     public static readonly DependencyProperty CornerRadiusProperty = DependencyProperty.Register(

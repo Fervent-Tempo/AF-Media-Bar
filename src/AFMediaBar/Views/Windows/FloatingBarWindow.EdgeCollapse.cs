@@ -36,7 +36,7 @@ public sealed partial class FloatingBarWindow
     private int _edgeHoldGeneration;
     private bool IsEdgeConcealed => _edgeProgress > 0 || _edgeTarget > 0;
     private bool IsEdgeFullyCollapsed => _edgeProgress >= 1 && _edgeTarget == 1;
-    private Size WorkAreaDip => new(Monitor.WorkArea.Width / Dpi, Monitor.WorkArea.Height / Dpi);
+    private Size WorkAreaDip => new(PlacementArea.Width / Dpi, PlacementArea.Height / Dpi);
     internal FloatingBarDockEdge DockEdge => _dockEdge;
 
     private void InitializeEdgeCollapse()
@@ -58,8 +58,8 @@ public sealed partial class FloatingBarWindow
             if (_dockEdge == FloatingBarDockEdge.None)
                 _dockEdge = FloatingBarEdgeCollapsePolicy.DetectEdge(normal, WorkAreaDip, IsVerticalPresentation);
             normal = FloatingBarEdgeCollapsePolicy.Anchor(normal, WorkAreaDip, _dockEdge);
-            _centerPx = new Point(Monitor.WorkArea.Left + (normal.Left + normal.Width / 2) * Dpi,
-                Monitor.WorkArea.Top + (normal.Top + normal.Height / 2) * Dpi);
+            _centerPx = new Point(PlacementArea.Left + (normal.Left + normal.Width / 2) * Dpi,
+                PlacementArea.Top + (normal.Top + normal.Height / 2) * Dpi);
         }
         _normalBoundsDip = normal;
         var collapsed = FloatingBarEdgeCollapsePolicy.CollapsedBounds(normal, _dockEdge);
@@ -88,7 +88,7 @@ public sealed partial class FloatingBarWindow
         // 在其它窗口按住鼠标不能唤醒已收起的媒体栏；本栏按压也不触发自动收起。
         if (Mouse.LeftButton == MouseButtonState.Pressed || Mouse.RightButton == MouseButtonState.Pressed) return;
         if (!GetCursorPos(out var cursor)) return;
-        var pointer = new Point((cursor.X - Monitor.WorkArea.Left) / Dpi, (cursor.Y - Monitor.WorkArea.Top) / Dpi);
+        var pointer = new Point((cursor.X - PlacementArea.Left) / Dpi, (cursor.Y - PlacementArea.Top) / Dpi);
         var nearTrigger = FloatingBarEdgeCollapsePolicy.ShouldExpand(_normalBoundsDip, WorkAreaDip, pointer, _dockEdge);
         if (_edgeTarget == 1)
         {
@@ -202,8 +202,8 @@ public sealed partial class FloatingBarWindow
     private Int32Rect? GetEdgeContrastBounds()
     {
         if (!IsOperational || !IsVisible || !IsEdgeFullyCollapsed || _dockEdge == FloatingBarDockEdge.None) return null;
-        // 在工作区内、折叠窗口之外取色，避开横条与轮廓，防止颜色自反馈和跨屏采样。
-        var area = Monitor.WorkArea;
+        // 在放置区域内、折叠窗口之外取色，避开横条与轮廓，防止颜色自反馈和跨屏采样。
+        var area = PlacementArea;
         var inset = (FloatingBarEdgeCollapsePolicy.VisibleStripDip + 1) * Dpi;
         var horizontal = _dockEdge is FloatingBarDockEdge.Top or FloatingBarDockEdge.Bottom;
         var length = (horizontal ? _edgeIndicator.Width : _edgeIndicator.Height) * Dpi;
@@ -240,7 +240,9 @@ public sealed partial class FloatingBarWindow
             _edgeClipBoundsPx = null;
             return true;
         }
-        var visible = Rect.Intersect(new Rect(physical.X, physical.Y, physical.Width, physical.Height), Monitor.WorkArea);
+        // 裁剪区域跟随放置区域：覆盖任务栏时折叠动画会滑出屏幕边缘，
+        // 仍按工作区求交集会把整段动画判成不可见，进而误报折叠失败。
+        var visible = Rect.Intersect(new Rect(physical.X, physical.Y, physical.Width, physical.Height), PlacementArea);
         if (visible.IsEmpty) return false;
         var clip = new Int32Rect((int)Math.Ceiling(visible.Left - physical.X), (int)Math.Ceiling(visible.Top - physical.Y),
             (int)Math.Floor(visible.Right) - (int)Math.Ceiling(visible.Left), (int)Math.Floor(visible.Bottom) - (int)Math.Ceiling(visible.Top));

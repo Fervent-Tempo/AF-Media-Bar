@@ -26,6 +26,13 @@ public static class DeveloperActionCatalog
         new("state", "State", DeveloperActionImpact.Diagnostic),
         new("resources baseline", "ResourceBaseline", DeveloperActionImpact.Diagnostic),
         new("resources compare", "ResourceCompare", DeveloperActionImpact.Diagnostic),
+#if DEBUG
+        new("performance status", "PerformanceStatus", DeveloperActionImpact.Diagnostic),
+        new("performance start", "PerformanceStart", DeveloperActionImpact.Diagnostic),
+        new("performance stop", "PerformanceStop", DeveloperActionImpact.Diagnostic),
+        new("performance mark", "PerformanceMark", DeveloperActionImpact.Diagnostic),
+        new("performance open", "PerformanceOpen", DeveloperActionImpact.Diagnostic),
+#endif
         new("taskbar surface", "Surface", DeveloperActionImpact.Diagnostic),
         new("memory trim", "Trim", DeveloperActionImpact.Diagnostic),
         new("logs open", "Logs", DeveloperActionImpact.Diagnostic),

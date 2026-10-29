@@ -88,6 +88,9 @@ namespace AFMediaBar
                 services.AddNavigationViewPageProvider();
 
                 // === 应用生命周期宿主服务 Application Lifecycle Host Service ===
+#if DEBUG
+                services.AddHostedService(sp => sp.GetRequiredService<DebugPerformanceRecorder>());
+#endif
                 services.AddHostedService(sp => new ApplicationHostService(() =>
                     sp.GetRequiredService<MainWindow>().Show()));
                 // 由 App 拥有；容器释放时不能撤掉仍在保护进程退出的看门狗。
@@ -203,6 +206,9 @@ namespace AFMediaBar
                 services.AddSingleton<SystemMetricsMonitorService>();
                 services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<SystemMetricsMonitorService>());
                 services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<SystemMetricsMonitorService>());
+#if DEBUG
+                services.AddSingleton<DebugPerformanceRecorder>();
+#endif
                 services.AddSingleton<SpatialAudioService>();
                 // 自有 Shell 托盘图标与统一鼠标输入监听
                 // App-owned Shell tray icon and unified mouse input monitor
@@ -238,9 +244,6 @@ namespace AFMediaBar
                 services.AddScoped(sp => new PluginCenterViewModel(sp.GetRequiredService<PluginDownloadService>(),
                     sp.GetRequiredService<LocalizationService>(), Current.Dispatcher));
                 services.AddScoped<PluginCenterPage>();
-                services.AddScoped(sp => new QuickStartViewModel(sp.GetRequiredService<ReleaseHighlightsService>(),
-                    sp.GetRequiredService<LocalizationService>(), Current.Dispatcher));
-                services.AddScoped<QuickStartPage>();
                 services.AddSingleton<IApplicationRestartService>(sp => new ApplicationRestartService(
                     sp.GetRequiredService<UpdateService>().TryReserveOrdinaryRestart,
                     RestartProcessHandoff.PrepareCurrentProcessAsync,
@@ -261,6 +264,8 @@ namespace AFMediaBar
                 });
                 services.AddSingleton<DeveloperToolsWindowHost>();
                 services.AddSingleton<ReleaseHighlightsService>();
+                services.AddSingleton<AFMediaBar.Classes.Services.Home.HomeContentService>();
+                services.AddSingleton<AFMediaBar.Classes.Abstractions.IHomeMediaState, AFMediaBar.Classes.Services.Home.HomeMediaState>();
                 services.AddSingleton<ReleaseHighlightsViewModel>();
                 services.AddScoped<ReleaseHighlightsPage>();
 
@@ -288,6 +293,10 @@ namespace AFMediaBar
                 services.AddTransient<SettingsWindow>();
                 services.AddSingleton<Func<SettingsWindow>>(sp =>
                     () => sp.GetRequiredService<SettingsWindow>());
+                services.AddSingleton(sp => new SingleWindowHost<SettingsWindow>(Current.Dispatcher,
+                    sp.GetRequiredService<Func<SettingsWindow>>(),
+                    exception => sp.GetRequiredService<AppLogService>().Error("Settings", "打开设置窗口失败", exception)));
+                services.AddTransient<FullPanelPresentationViewModel>();
                 services.AddTransient<TaskbarFullPanelWindow>();
                 services.AddSingleton<FullPanelWindowHost>();
                 services.AddSingleton<Func<ExternalFullPanelHandleWindow>>(sp =>
@@ -308,6 +317,19 @@ namespace AFMediaBar
                 services.AddScoped<SettingsPageProvider>();
                 services.AddScoped<AppearancePage>();
                 services.AddScoped<ApplicationAppearancePage>();
+                services.AddScoped<RestStatePage>();
+                services.AddScoped<QuickStartPage>();
+                services.AddScoped<QuickStartViewModel>();
+                services.AddScoped<FullPanelPage>();
+                services.AddScoped<SpectrumPage>();
+                services.AddScoped<PerformancePage>();
+                services.AddScoped<BluetoothBatteryPage>();
+                services.AddScoped<TrackNotificationsPage>();
+                services.AddScoped<ConfigurationPage>();
+                services.AddScoped<DiagnosticsPage>();
+                services.AddScoped<MemoryToolsPage>();
+                services.AddScoped<RestStateViewModel>();
+                services.AddScoped<SettingsPreviewViewModel>();
                 services.AddScoped<TaskbarAppearanceViewModel>();
                 services.AddScoped<AppearanceViewModel>();
 
@@ -576,7 +598,7 @@ namespace AFMediaBar
                     Services.GetRequiredService<ISystemNotificationService>().TryShowNotification(
                         Translations.Get("Startup.TranslucentTb.Title"),
                         Translations.Get("Startup.TranslucentTb.Content"),
-                        ShellNotificationTarget.TaskbarBackground);
+                        ShellNotificationTarget.TaskbarBackground, "Startup.TranslucentTb");
                 }, DispatcherPriority.ApplicationIdle);
             }
 
