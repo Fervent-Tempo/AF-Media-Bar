@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Runtime.InteropServices;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Services.Settings;
@@ -15,6 +16,9 @@ namespace AFMediaBar.Layout.Tests;
 
 internal static class WindowBackdropRefreshChecks
 {
+    [DllImport("user32.dll", EntryPoint = "SendMessageW")]
+    private static extern nint SendMessage(nint window, int message, nint wParam, nint lParam);
+
     internal static void VerifyLiveSelection(Application app)
     {
         var original = SettingsManager.Current;
@@ -67,6 +71,11 @@ internal static class WindowBackdropRefreshChecks
                 viewModel.BackdropMode = mode;
                 app.Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
                 Assert.AreEqual(mode, SettingsManager.Current.Appearance.BackdropMode);
+                if (!MotionPolicy.ResolveCurrent().UseDecorativeEffects && calls.Count == 0)
+                {
+                    Assert.AreEqual(255, ((SolidColorBrush)window.Background).Color.A);
+                    continue;
+                }
                 Assert.IsTrue(calls.Any(call => call.Attribute == 38), "A loaded window must update before the next background operation, without closing it.");
                 var expected = MotionPolicy.ResolveCurrent().UseDecorativeEffects ? mode switch
                 {
@@ -87,6 +96,23 @@ internal static class WindowBackdropRefreshChecks
                 Assert.AreEqual(3, calls.Last(call => call.Attribute == 38).Value);
                 Assert.AreEqual(1, calls.Count(call => call.Attribute == 38 && call.Value != 1), "Rapid selections must coalesce to the final requested material.");
             }
+            calls.Clear();
+            service.RequestRefresh();
+            service.RequestRefresh();
+            app.Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
+            Assert.AreEqual(0, calls.Count, "Unchanged appearance must retain the existing native material.");
+            var handle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+            SendMessage(handle, 0x0231, 0, 0);
+            app.Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
+            Assert.AreEqual(0, calls.Count, "Starting a move or resize must preserve the selected native material.");
+            SendMessage(handle, 0x0232, 0, 0);
+            app.Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
+            Assert.AreEqual(0, calls.Count, "Ending a move or resize must not rebuild the native material.");
+            Assert.AreEqual(ApplicationBackdropMode.Acrylic, SettingsManager.Current.Appearance.BackdropMode);
+            calls.Clear();
+            SendMessage(handle, 0x031E, 0, 0);
+            app.Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
+            Assert.IsTrue(calls.Any(call => call.Attribute == 38), "Composition changes must reapply an unchanged configuration.");
             viewModel.ApplicationThemeMode = ApplicationThemeMode.Dark;
             viewModel.AccentColorMode = AccentColorMode.Custom;
             viewModel.AccentColorHex = "#7C3AED";
@@ -103,6 +129,10 @@ internal static class WindowBackdropRefreshChecks
             Assert.AreEqual(1, calls.Last(call => call.Attribute == 38).Value);
             Assert.AreEqual(255, ((SolidColorBrush)window.Background).Color.A, "A failed application must retain an opaque surface.");
             failMaterial = false;
+            service.RequestRefresh();
+            app.Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
+            if (MotionPolicy.ResolveCurrent().UseDecorativeEffects)
+                Assert.AreEqual(2, calls.Last(call => call.Attribute == 38).Value, "An opaque fallback must not prevent retrying the requested material.");
             calls.Clear();
             viewModel.BackdropMode = ApplicationBackdropMode.Acrylic;
             window.Close();

@@ -17,6 +17,7 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Media.Smtc;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Utils;
 using AFMediaBar.ViewModels.Pages;
 using AFMediaBar.Views.Pages;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -51,6 +52,37 @@ public sealed class SettingsVisualRuntimeTests
     [TestMethod]
     public Task BackdropRefreshCoalescesAndClosingOrDisposalRejectsQueuedWork() =>
         RunIsolatedAsync(nameof(BackdropRefreshCoalescesAndClosingOrDisposalRejectsQueuedWork), WindowBackdropRefreshChecks.VerifyLiveSelection);
+
+    [TestMethod]
+    public Task DeferredPageActivationRejectsAnUnloadedVisit() =>
+        RunIsolatedAsync(nameof(DeferredPageActivationRejectsAnUnloadedVisit), app =>
+        {
+            var page = new Border();
+            var window = new Window { Content = page, Left = -32000, Top = -32000, Width = 1, Height = 1,
+                ShowActivated = false, ShowInTaskbar = false };
+            try
+            {
+                window.Show();
+                app.Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
+                var oldVisit = SettingsPageActivation.WaitForPresentationAsync(page);
+                Assert.IsFalse(oldVisit.IsCompleted, "Data activation must yield to rendering and input.");
+                window.Content = null;
+                app.Dispatcher.Invoke(() => { }, DispatcherPriority.Loaded);
+                window.Content = page;
+                app.Dispatcher.Invoke(() => { }, DispatcherPriority.Loaded);
+                var currentVisit = SettingsPageActivation.WaitForPresentationAsync(page);
+                app.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                Assert.IsFalse(oldVisit.GetAwaiter().GetResult(), "Reloading a cached page must not revive the old visit.");
+                Assert.IsTrue(currentVisit.GetAwaiter().GetResult());
+                using var cancelled = new CancellationTokenSource();
+                var closingVisit = SettingsPageActivation.WaitForPresentationAsync(page, cancelled.Token);
+                cancelled.Cancel();
+                window.Close();
+                app.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                Assert.IsFalse(closingVisit.GetAwaiter().GetResult());
+            }
+            finally { window.Close(); }
+        });
 
     [TestMethod]
     public Task PreferredSourceRefreshKeepsOfflineSelectionWithoutRewritingIdentity() =>

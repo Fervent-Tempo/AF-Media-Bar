@@ -30,12 +30,15 @@ public sealed class WindowAppearanceService : IDisposable
     private readonly HashSet<FluentWindow> _windows = [];
     private readonly HashSet<FluentWindow> _nonActivatingTransientWindows = [];
     private readonly Dictionary<FluentWindow, HwndSource> _windowSources = [];
+    private readonly Dictionary<FluentWindow, BackdropState> _appliedBackdrops = [];
     private readonly HashSet<ContextMenu> _menus = [];
     private readonly Dictionary<ContextMenu, Window> _menuOwners = [];
     private readonly Dispatcher _dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
     private DispatcherOperation? _refreshOperation;
     private int _refreshGeneration;
     private bool _disposed;
+
+    private readonly record struct BackdropState(nint Handle, ApplicationBackdropMode Mode, bool Dark, int Tint);
 
     /// <summary>
     /// 系统强调色变化时触发，由组合根转交主题协调器重新解析并发布强调色调色板。
@@ -120,6 +123,8 @@ public sealed class WindowAppearanceService : IDisposable
         if (sender is FluentWindow window)
         {
             RegisterWindowSource(window);
+            // FluentWindow 创建句柄时可能先触发 Loaded，再清除系统材质；此处必须重新应用。
+            _appliedBackdrops.Remove(window);
             ApplyWindow(window);
         }
     }
@@ -141,6 +146,8 @@ public sealed class WindowAppearanceService : IDisposable
         if (sender is FluentWindow window && !_disposed && _windows.Contains(window))
         {
             RegisterWindowSource(window);
+            // WindowChrome 在首次布局中仍会改写合成属性，不能复用 SourceInitialized 阶段的记录。
+            _appliedBackdrops.Remove(window);
             ApplyWindow(window);
         }
     }
@@ -166,6 +173,7 @@ public sealed class WindowAppearanceService : IDisposable
         window.Closed -= OnWindowClosed;
         _windows.Remove(window);
         _nonActivatingTransientWindows.Remove(window);
+        _appliedBackdrops.Remove(window);
         if (_windowSources.Remove(window, out var source))
         {
             source.RemoveHook(WindowProc);
@@ -225,6 +233,8 @@ public sealed class WindowAppearanceService : IDisposable
         if (message is WmSettingChange or WmThemeChanged or WmDwmCompositionChanged or
             WmDwmColorizationColorChanged or WmDpiChanged or WmDpiChangedAfterParent)
         {
+            // 系统重建合成或跨 DPI 后，即使配置未变也需要重新应用原生属性。
+            _appliedBackdrops.Clear();
             if (message == WmDwmColorizationColorChanged)
                 SystemColorizationChanged?.Invoke();
 
@@ -304,11 +314,14 @@ public sealed class WindowAppearanceService : IDisposable
         if (!MotionPolicy.ResolveCurrent().UseDecorativeEffects)
             mode = ApplicationBackdropMode.FluentSolid;
         var dark = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
+        var tint = WindowBackdropPolicy.ResolveLegacyTint(dark, appearance.ResolveBackdropTintOpacityPercent());
+        var state = new BackdropState(source.Handle, mode, dark, tint);
+        if (_appliedBackdrops.TryGetValue(window, out var previous) && previous == state) return;
+        _appliedBackdrops.Remove(window);
         if (mode != ApplicationBackdropMode.FluentSolid)
         {
             window.Background = Brushes.Transparent;
             source.CompositionTarget.BackgroundColor = Colors.Transparent;
-            var tint = WindowBackdropPolicy.ResolveLegacyTint(dark, appearance.ResolveBackdropTintOpacityPercent());
             var applied = _nonActivatingTransientWindows.Contains(window)
                 ? _nativeBackdropAdapter.ApplyNonActivatingBackdrop(source.Handle, mode, tint)
                 : _nativeBackdropAdapter.ApplyBackdrop(source.Handle, mode, tint);
@@ -326,6 +339,7 @@ public sealed class WindowAppearanceService : IDisposable
                     window.SetResourceReference(Control.BackgroundProperty, "AfWindowAcrylicOverlayBrush");
                 _nativeBackdropAdapter.SetNonClientColors(source.Handle, transparent: true);
                 _nativeBackdropAdapter.SetThemeAttributes(source.Handle, dark);
+                _appliedBackdrops[window] = state;
                 return;
             }
 
@@ -338,6 +352,8 @@ public sealed class WindowAppearanceService : IDisposable
         source.CompositionTarget.BackgroundColor = Colors.Transparent;
         window.SetResourceReference(Control.BackgroundProperty, "ApplicationBackgroundBrush");
         _nativeBackdropAdapter.SetThemeAttributes(source.Handle, dark);
+        // 原生材质失败时保留重试机会，不把纯色回退记作成功应用。
+        if (state.Mode == ApplicationBackdropMode.FluentSolid) _appliedBackdrops[window] = state;
     }
 
     private void ScheduleMenuZOrderReassert(ContextMenu menu)

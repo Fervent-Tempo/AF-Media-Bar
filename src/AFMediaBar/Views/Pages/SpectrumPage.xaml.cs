@@ -23,7 +23,8 @@ public partial class SpectrumPage : INavigableView<WidgetsSettingsViewModel>
     private async void OnPageLoaded(object sender, RoutedEventArgs args)
     {
         SettingsRevealAnimator.Play(sender as Panel);
-        await ViewModel.Components.RefreshCaptureDevicesAsync();
+        if (await SettingsPageActivation.WaitForPresentationAsync(this, ViewModel.ContextCancellationToken))
+            await ViewModel.Components.RefreshCaptureDevicesAsync();
     }
 
     private async void ResetButton_Click(object sender, RoutedEventArgs args)

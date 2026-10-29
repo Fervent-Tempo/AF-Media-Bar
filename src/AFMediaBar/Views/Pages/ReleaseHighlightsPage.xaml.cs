@@ -1,6 +1,7 @@
 // Presents release highlights only; requests are cancelled when this singleton page leaves the visual tree.
 using System.Diagnostics;
 using System.Windows;
+using AFMediaBar.Classes.Utils;
 using AFMediaBar.Classes.Services.Updates;
 using AFMediaBar.ViewModels.Pages;
 using Wpf.Ui.Abstractions.Controls;
@@ -21,7 +22,10 @@ public partial class ReleaseHighlightsPage : INavigableView<ReleaseHighlightsVie
         InitializeComponent();
     }
 
-    private async void OnPageLoaded(object sender, RoutedEventArgs e) => await ViewModel.ActivateAsync();
+    private async void OnPageLoaded(object sender, RoutedEventArgs e)
+    {
+        if (await SettingsPageActivation.WaitForPresentationAsync(this)) await ViewModel.ActivateAsync();
+    }
     private void OnPageUnloaded(object sender, RoutedEventArgs e) => ViewModel.Deactivate();
     private void OnOpenReleaseNotes(object sender, RoutedEventArgs e)
     {

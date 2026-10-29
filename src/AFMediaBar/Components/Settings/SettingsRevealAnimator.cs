@@ -100,8 +100,7 @@ public static class SettingsRevealAnimator
             host.Unloaded += OnUnloaded;
             SystemParameters.StaticPropertyChanged += OnEnvironmentChanged;
             RenderCapability.TierChanged += OnRenderingTierChanged;
-            // Finish layout before creating clocks, and keep the prepared start values even if the presenter touches opacity.
-            host.UpdateLayout();
+            // 入场只操作绘制属性，让 WPF 合并布局并在 Render 阶段启动时钟。
             _start = host.Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(() =>
             {
                 _start = null;

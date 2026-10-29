@@ -38,6 +38,7 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
         if (_scroll is not null) _scroll.ScrollChanged += OnScrollChanged;
         _featureIndex = ViewModel.Features.IndexOf(ViewModel.SelectedFeature!);
         ApplyColumns(PageRoot.ActualWidth);
+        if (!await SettingsPageActivation.WaitForPresentationAsync(this)) return;
         await ViewModel.ActivateAsync();
         if (IsLoaded) UpdateRotation();
     }

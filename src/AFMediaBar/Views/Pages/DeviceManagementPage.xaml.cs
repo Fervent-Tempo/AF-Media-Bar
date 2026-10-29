@@ -16,7 +16,11 @@ public partial class DeviceManagementPage : INavigableView<AudioDeviceSettingsVi
     public DeviceManagementPage(AudioDeviceSettingsViewModel viewModel)
     { ViewModel = viewModel; DataContext = this; InitializeComponent(); }
     private async void OnPageLoaded(object sender, RoutedEventArgs args)
-    { SettingsRevealAnimator.Play(sender as Panel); await ViewModel.RefreshAsync(); }
+    {
+        SettingsRevealAnimator.Play(sender as Panel);
+        if (await SettingsPageActivation.WaitForPresentationAsync(this, ViewModel.CancellationToken))
+            await ViewModel.RefreshAsync();
+    }
     private void DeviceName_MouseDown(object sender, MouseButtonEventArgs args)
     {
         if (sender is not FrameworkElement { DataContext: AudioDevicePermissionItemViewModel row } element || row.IsRenaming) return;

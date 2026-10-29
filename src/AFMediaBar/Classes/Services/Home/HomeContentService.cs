@@ -146,6 +146,18 @@ public sealed class HomeContentService : IDisposable
 
     public async Task<BitmapSource?> ReadImageAsync(string? url, CancellationToken cancellationToken)
     {
+        if (url is "pack://application:,,,/AFMediaBar;component/Assets/Home/settings.png" or
+            "pack://application:,,,/AFMediaBar;component/Assets/Home/panel.png")
+        {
+            using var bundledRequest = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetimeToken);
+            var image = await Task.Run(() =>
+            {
+                using var stream = Application.GetResourceStream(new Uri(url))?.Stream;
+                return stream is null ? null : DecodeImage(stream);
+            }, bundledRequest.Token).ConfigureAwait(false);
+            bundledRequest.Token.ThrowIfCancellationRequested();
+            return image;
+        }
         if (!HomeContentPolicy.IsOfficialImage(url)) return null;
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetimeToken);
         linked.CancelAfter(ReadTimeout);
@@ -166,15 +178,7 @@ public sealed class HomeContentService : IDisposable
             var image = await Task.Run(() =>
             {
                 using var stream = new MemoryStream(bytes);
-                var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
-                if (decoder.Frames[0].PixelWidth > 4096 || decoder.Frames[0].PixelHeight > 4096) throw new FormatException("Home image dimensions exceed limit.");
-                var width = decoder.Frames[0].PixelWidth; var height = decoder.Frames[0].PixelHeight;
-                var scale = Math.Min(1d, Math.Min(1600d / width, 900d / height));
-                using var decodedStream = new MemoryStream(bytes);
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit(); bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.DecodePixelWidth = Math.Max(1, (int)(width * scale)); bitmap.DecodePixelHeight = Math.Max(1, (int)(height * scale));
-                bitmap.StreamSource = decodedStream; bitmap.EndInit(); bitmap.Freeze(); return bitmap;
+                return DecodeImage(stream);
             }, token).ConfigureAwait(false);
             Directory.CreateDirectory(_directory);
             if (!File.Exists(file)) await File.WriteAllBytesAsync(file, bytes, token).ConfigureAwait(false);
@@ -184,6 +188,26 @@ public sealed class HomeContentService : IDisposable
         }
         catch (Exception exception) when (IsReadFailure(exception, token) || exception is NotSupportedException or ArgumentException) { _log.Warn("Home", "首页图片不可用", exception); return null; }
         finally { _imageGate.Release(); }
+    }
+
+    // 内置示例和缓存图片统一在后台按展示尺寸解码，冻结后交给 UI。
+    private static BitmapSource DecodeImage(Stream stream)
+    {
+        var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+        var width = decoder.Frames[0].PixelWidth;
+        var height = decoder.Frames[0].PixelHeight;
+        if (width > 4096 || height > 4096) throw new FormatException("Home image dimensions exceed limit.");
+        var scale = Math.Min(1d, Math.Min(1600d / width, 900d / height));
+        stream.Position = 0;
+        var bitmap = new BitmapImage();
+        bitmap.BeginInit();
+        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+        bitmap.DecodePixelWidth = Math.Max(1, (int)(width * scale));
+        bitmap.DecodePixelHeight = Math.Max(1, (int)(height * scale));
+        bitmap.StreamSource = stream;
+        bitmap.EndInit();
+        bitmap.Freeze();
+        return bitmap;
     }
 
     private static bool IsReadFailure(Exception exception, CancellationToken token) => !token.IsCancellationRequested &&

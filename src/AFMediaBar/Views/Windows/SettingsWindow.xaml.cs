@@ -451,7 +451,7 @@ namespace AFMediaBar.Views.Windows
 
         private async void SettingsWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
-            Navigate(typeof(QuickStartPage));
+            if (!await SettingsPageActivation.WaitForPresentationAsync(this, _contexts.CancellationToken)) return;
             await _contexts.StartAsync();
         }
 

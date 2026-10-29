@@ -1,7 +1,6 @@
 // 首页协调只读资料和已有会话；离页取消请求，不拥有媒体或网络资源。
 using System.Collections.ObjectModel;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Home;
@@ -140,6 +139,8 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         var request = _request = new CancellationTokenSource();
         var token = request.Token;
         var generation = ++_generation;
+        if (SelectedFeature is { } selected && !_images.ContainsKey(selected.ImageUrl ?? string.Empty))
+            _ = LoadImageAsync(selected, token);
         bool IsCurrent() => _active && !_disposed && !token.IsCancellationRequested && generation == _generation;
         IsLoading = true;
         try
@@ -195,12 +196,7 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         // 切页保留上一张图，直到新图就绪；无图条目立即清空，由页面显示静态演示场景。
         if (value?.ImageUrl is not { } url) { FeatureImage = null; return; }
         if (_images.TryGetValue(url, out var image)) { FeatureImage = image; return; }
-        if (url.StartsWith("pack://application:,,,/AFMediaBar;component/Assets/Home/", StringComparison.Ordinal))
-        {
-            try { var bitmap = new BitmapImage(new Uri(url)); bitmap.Freeze(); _images[url] = FeatureImage = bitmap; }
-            catch (Exception exception) { _log.Warn("Home", "内置首页图片不可用", exception); FeatureImage = null; }
-        }
-        else if (_request is { } request) _ = LoadImageAsync(value, request.Token);
+        if (_request is { } request) _ = LoadImageAsync(value, request.Token);
     }
     private async Task LoadImageAsync(HomeFeatureCard card, CancellationToken token)
     {

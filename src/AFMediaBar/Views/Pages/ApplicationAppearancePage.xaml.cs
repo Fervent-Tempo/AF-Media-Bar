@@ -38,6 +38,7 @@ namespace AFMediaBar.Views.Pages
             _fontRefresh = request;
             try
             {
+                if (!await SettingsPageActivation.WaitForPresentationAsync(this, request.Token)) return;
                 await ViewModel.RefreshInstalledFontsAsync(request.Token);
             }
             catch (OperationCanceledException) when (request.IsCancellationRequested) { }
