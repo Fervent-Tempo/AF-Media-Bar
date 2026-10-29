@@ -1,6 +1,7 @@
 // 管理播放器支持弹窗的内容与关闭时序；数据来自快速开始视图模型，不读写设置或启动网络请求。
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using AFMediaBar.Components;
 using AFMediaBar.Resources;
 using AFMediaBar.ViewModels.Pages;
@@ -52,8 +53,9 @@ public partial class PlayerSupportDialog : UserControl
         {
             Title = Translations.Get("Start.Players"),
             Content = content,
-            CloseButtonText = Translations.Get("Common.Close"),
-            DefaultButton = ContentDialogButton.Close
+            // 关闭按钮放在内容底部右侧，底部不再使用对话框自带的整宽按钮条。
+            IsFooterVisible = false,
+            DialogWidth = 620
         };
         content._dialog = dialog;
         try { await service.ShowAsync(dialog, request.Token); }
@@ -61,6 +63,16 @@ public partial class PlayerSupportDialog : UserControl
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e) => FilterBox.Focus();
+
+    private void OnCloseClick(object sender, RoutedEventArgs e) => _dialog?.Hide(ContentDialogResult.None);
+
+    // 对话框不再使用自带关闭按钮，Esc 由内容自己处理（焦点在内容内时生效）。
+    private void OnDialogKeyDown(object sender, KeyEventArgs args)
+    {
+        if (args.Key != Key.Escape || _dialog is null) return;
+        _dialog.Hide(ContentDialogResult.None);
+        args.Handled = true;
+    }
 
     /// <summary>内容里的导航先关闭弹窗，再让导航事件继续冒泡到设置窗口；路由在事件抛出时已确定。</summary>
     private void OnRelatedSettingsRequested(object sender, RoutedEventArgs e) => _dialog?.Hide(ContentDialogResult.None);

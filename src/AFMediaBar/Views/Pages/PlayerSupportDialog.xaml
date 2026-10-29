@@ -5,7 +5,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:components="clr-namespace:AFMediaBar.Components"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    MinWidth="440">
+    MinWidth="520"
+    MaxWidth="620"
+    PreviewKeyDown="OnDialogKeyDown">
     <StackPanel>
         <TextBlock
             Margin="0,0,0,12"
@@ -20,7 +22,7 @@
             PlaceholderText="{DynamicResource Loc.Home.Player.Filter}"
             Text="{Binding PlayerFilter, UpdateSourceTrigger=PropertyChanged}" />
         <ScrollViewer
-            MaxHeight="360"
+            MaxHeight="380"
             Focusable="True"
             HorizontalScrollBarVisibility="Disabled"
             VerticalScrollBarVisibility="Auto">
@@ -77,11 +79,29 @@
                 Command="{Binding ClearPlayerFilterCommand}"
                 Content="{DynamicResource Loc.Home.Player.ClearFilter}" />
         </StackPanel>
-        <components:SettingsNavigationButton
-            Margin="0,16,0,0"
-            HorizontalAlignment="Left"
-            Content="{DynamicResource Loc.Settings.Page.MediaSource}"
-            Destination="MediaAndNotifications"
-            GroupId="Common.MediaSource" />
+        <Border
+            Height="1"
+            Margin="0,14,0,0"
+            Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+        <Grid Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <components:SettingsNavigationButton
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Content="{DynamicResource Loc.Settings.Page.MediaSource}"
+                Destination="MediaAndNotifications"
+                GroupId="Common.MediaSource" />
+            <ui:Button
+                Grid.Column="1"
+                MinWidth="88"
+                HorizontalAlignment="Right"
+                Appearance="Secondary"
+                AutomationProperties.Name="{DynamicResource Loc.Common.Close}"
+                Click="OnCloseClick"
+                Content="{DynamicResource Loc.Common.Close}" />
+        </Grid>
     </StackPanel>
 </UserControl>
