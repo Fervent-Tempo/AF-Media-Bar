@@ -3,6 +3,7 @@ using System.IO;
 using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Audio;
+using AFMediaBar.Classes.Services.Startup;
 using AFMediaBar.Resources;
 
 namespace AFMediaBar.Classes.Services;
@@ -14,14 +15,16 @@ namespace AFMediaBar.Classes.Services;
 public sealed class MediaSourceActivationService
 {
     private readonly MediaSourceProcessResolver _processResolver;
+    private readonly ExplorerApplicationLauncher _launcher;
 
     /// <summary>
     /// 创建来源激活器，并复用音频来源解析规则定位候选进程。
     /// Creates the source activator and reuses audio-source resolution rules to locate candidate processes.
     /// </summary>
-    public MediaSourceActivationService(MediaSourceProcessResolver processResolver)
+    public MediaSourceActivationService(MediaSourceProcessResolver processResolver, ExplorerApplicationLauncher launcher)
     {
         _processResolver = processResolver;
+        _launcher = launcher;
     }
 
     /// <summary>
@@ -56,7 +59,7 @@ public sealed class MediaSourceActivationService
             var executablePath = executablePaths.FirstOrDefault(File.Exists);
             if (executablePath is not null)
             {
-                Process.Start(new ProcessStartInfo(executablePath) { UseShellExecute = true });
+                await _launcher.LaunchAsync(executablePath).ConfigureAwait(false);
             }
         }
         catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
@@ -102,10 +105,10 @@ public sealed class MediaSourceActivationService
         => Task.Run(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return LaunchCoreAsync(entry);
+            return LaunchCoreAsync(entry, cancellationToken);
         }, cancellationToken);
 
-    private async Task<QuickLaunchResult> LaunchCoreAsync(QuickLaunchEntry entry)
+    private async Task<QuickLaunchResult> LaunchCoreAsync(QuickLaunchEntry entry, CancellationToken cancellationToken)
     {
         try
         {
@@ -116,6 +119,7 @@ public sealed class MediaSourceActivationService
                 // 已找到界面但系统拒绝前置时，不另起一个应用实例。
                 if (result == WindowActivationResult.Failed) return QuickLaunchResult.Failed;
             }
+            cancellationToken.ThrowIfCancellationRequested();
             var target = entry.Target.Trim();
             switch (entry.Kind)
             {
@@ -131,7 +135,7 @@ public sealed class MediaSourceActivationService
                     when File.Exists(target) && string.Equals(Path.GetExtension(target), ".exe", StringComparison.OrdinalIgnoreCase):
                 case QuickLaunchTargetKind.Shortcut
                     when File.Exists(target) && string.Equals(Path.GetExtension(target), ".lnk", StringComparison.OrdinalIgnoreCase):
-                    Process.Start(new ProcessStartInfo(Path.GetFullPath(target)) { UseShellExecute = true });
+                    await _launcher.LaunchAsync(Path.GetFullPath(target), cancellationToken).ConfigureAwait(false);
                     return QuickLaunchResult.Success;
                 default:
                     return QuickLaunchResult.InvalidTarget;

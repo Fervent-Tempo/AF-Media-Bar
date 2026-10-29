@@ -3,6 +3,7 @@ using System.Text.Json;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Audio;
+using AFMediaBar.Classes.Services.Startup;
 using AFMediaBar.Classes.Settings;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -15,7 +16,7 @@ public sealed class QuickLaunchSettingsTests
     [TestMethod]
     public async Task CancelledLaunchNeverReachesActivation()
     {
-        var activation = new MediaSourceActivationService(new MediaSourceProcessResolver());
+        var activation = new MediaSourceActivationService(new MediaSourceProcessResolver(), new ExplorerApplicationLauncher());
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         var entry = new QuickLaunchEntry("cancelled", "Cancelled", QuickLaunchTargetKind.Executable, "never-launch-this.exe");

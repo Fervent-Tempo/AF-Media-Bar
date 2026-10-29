@@ -160,6 +160,7 @@ namespace AFMediaBar
                 services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<MediaSessionSelectionService>());
                 services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<NetEaseMediaProvider>());
                 services.AddSingleton<IMemoryPrunable>(sp => sp.GetRequiredService<KuGouMediaProvider>());
+                services.AddSingleton<ExplorerApplicationLauncher>();
                 services.AddSingleton<MediaSourceActivationService>();
                 services.AddSingleton<QuickLaunchService>();
                 services.AddSingleton<QuickLaunchIconService>();
