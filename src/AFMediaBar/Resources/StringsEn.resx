@@ -3771,4 +3771,100 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
   <data name="Home.Player.AwaitingCapabilities" xml:space="preserve">
     <value>Waiting for a valid snapshot from this source; previous-source capabilities are not reused.</value>
   </data>
+  <data name="Common.Page.PluginCenter" xml:space="preserve"><value>Plugin downloads</value></data>
+  <data name="Plugins.Architecture" xml:space="preserve"><value>Player architecture</value></data>
+  <data name="Plugins.Attribution" xml:space="preserve"><value>Author: {0}    Version: {1}</value></data>
+  <data name="Plugins.Author" xml:space="preserve"><value>Author: {0}</value></data>
+  <data name="Plugins.Cancel" xml:space="preserve"><value>Cancel download</value></data>
+  <data name="Plugins.Catalog" xml:space="preserve"><value>Player extensions</value></data>
+  <data name="Plugins.Catalog.foobar.Install" xml:space="preserve"><value>1. In foobar2000, open Preferences → Components → Install.
+2. Select the downloaded .fb2k-component, apply and restart the player.
+3. Play a track and check metadata and progress in Windows media controls.</value></data>
+  <data name="Plugins.Catalog.foobar.Requirements" xml:space="preserve"><value>Choose the x86 or x64 component matching foobar2000. Capabilities depend on the player and component versions.</value></data>
+  <data name="Plugins.Catalog.foobar.Restore" xml:space="preserve"><value>Remove foo_mediacontrol in Components and restart. Reinstall your saved component to roll back.</value></data>
+  <data name="Plugins.Catalog.foobar.Summary" xml:space="preserve"><value>Adds album, album artist, duration and playback progress to Windows media controls.</value></data>
+  <data name="Plugins.Catalog.foobar.Target" xml:space="preserve"><value>foobar2000</value></data>
+  <data name="Plugins.Catalog.foobar.Upgrade" xml:space="preserve"><value>Install the newer component through Components and restart. Keep the previous package for rollback.</value></data>
+  <data name="Plugins.Catalog.itunes.Install" xml:space="preserve"><value>1. Extract the entire archive into a normal folder and keep all files.
+2. Run iTunes.SMTC.exe, then play music in iTunes.
+3. Check Windows media controls. AF does not launch the helper or configure startup for you.</value></data>
+  <data name="Plugins.Catalog.itunes.Requirements" xml:space="preserve"><value>Requires Windows 10/11 and iTunes. Select a package suitable for your system and iTunes installation. Upstream also mentions Apple Music Preview; this is not a general fix for current Apple Music.</value></data>
+  <data name="Plugins.Catalog.itunes.Restore" xml:space="preserve"><value>Exit the helper and remove its folder and any startup entry you added manually. Use your backup to roll back.</value></data>
+  <data name="Plugins.Catalog.itunes.Summary" xml:space="preserve"><value>A standalone helper that connects iTunes to Windows media controls. It is not a DLL to copy into the player folder.</value></data>
+  <data name="Plugins.Catalog.itunes.Target" xml:space="preserve"><value>iTunes</value></data>
+  <data name="Plugins.Catalog.itunes.Upgrade" xml:space="preserve"><value>Exit the helper, back up its folder and extract the complete newer package. Preserve any personal configuration you need.</value></data>
+  <data name="Plugins.Catalog.musicbee.Install" xml:space="preserve"><value>1. Fully exit MusicBee.
+2. Copy mb_MediaControl.dll into this MusicBee installation&apos;s Plugins folder.
+3. Restart and confirm it is enabled in plugin settings. For the Microsoft Store edition, use the player&apos;s Add Plugin option instead of modifying WindowsApps.</value></data>
+  <data name="Plugins.Catalog.musicbee.Requirements" xml:space="preserve"><value>For MusicBee on Windows 10/11 with .NET Framework 4.8. The attachment is AnyCPU. Avoid enabling multiple plugins that publish SMTC sessions.</value></data>
+  <data name="Plugins.Catalog.musicbee.Restore" xml:space="preserve"><value>Uninstall in plugin settings and restart, or fully exit and remove the added DLL. Restore your backup to roll back.</value></data>
+  <data name="Plugins.Catalog.musicbee.Summary" xml:space="preserve"><value>Provides track metadata, transport controls, timeline, seeking, shuffle and repeat.</value></data>
+  <data name="Plugins.Catalog.musicbee.Target" xml:space="preserve"><value>MusicBee</value></data>
+  <data name="Plugins.Catalog.musicbee.Upgrade" xml:space="preserve"><value>Exit MusicBee, back up the old DLL, replace it and restart. Upgrade components added through Add Plugin using the player&apos;s workflow.</value></data>
+  <data name="Plugins.Catalog.qqmusic.Install" xml:space="preserve"><value>1. Fully exit QQ Music. Locate the active version&apos;s installation folder containing QQMusicAgent.exe, not a leftover upgrade folder.
+2. If msimg32.dll exists, identify and back it up elsewhere; do not overwrite it blindly.
+3. Rename payload.dll to msimg32.dll and copy it there. Restart and verify. Writing to Program Files may require administrator rights.</value></data>
+  <data name="Plugins.Catalog.qqmusic.Requirements" xml:space="preserve"><value>Experimental in-process plugin, x86 only; upstream primarily tested QQ Music 22.71. Client updates may break it or cause crashes. Do not combine with another proxy DLL of the same name.</value></data>
+  <data name="Plugins.Catalog.qqmusic.Restore" xml:space="preserve"><value>Fully exit QQ Music and remove only the msimg32.dll installed here. Restore the original backup if a file of that name existed before installation.</value></data>
+  <data name="Plugins.Catalog.qqmusic.Summary" xml:space="preserve"><value>Adds SMTC seeking, QQ song IDs and higher-resolution artwork while retaining the QQMusic.exe session identity.</value></data>
+  <data name="Plugins.Catalog.qqmusic.Target" xml:space="preserve"><value>QQ Music</value></data>
+  <data name="Plugins.Catalog.qqmusic.Upgrade" xml:space="preserve"><value>Check compatibility with the updated client before replacing the plugin while the player is closed. Never overwrite your pre-installation backup with the plugin.</value></data>
+  <data name="Plugins.Catalog.vlc.Install" xml:space="preserve"><value>1. Exit VLC and extract libwin10smtc_plugin.dll into VLC\plugins\misc.
+2. Restart VLC and open Advanced Preferences → Interface → Control Interfaces.
+3. Enable Windows SMTC integration, save and play media again.</value></data>
+  <data name="Plugins.Catalog.vlc.Requirements" xml:space="preserve"><value>VLC 3.0.x or 4.0.0-dev; Windows 10 1607+ / 11. Both the plugin and Visual C++ 2022 or newer runtime must match VLC&apos;s architecture.</value></data>
+  <data name="Plugins.Catalog.vlc.Restore" xml:space="preserve"><value>Disable the control interface, exit VLC and remove the added DLL. Restore your backup to roll back.</value></data>
+  <data name="Plugins.Catalog.vlc.Summary" xml:space="preserve"><value>Adds SMTC metadata, transport controls and seeking. v5.0.0 reports a fix for playback position updates.</value></data>
+  <data name="Plugins.Catalog.vlc.Target" xml:space="preserve"><value>VLC</value></data>
+  <data name="Plugins.Catalog.vlc.Upgrade" xml:space="preserve"><value>Exit VLC, back up the existing plugin, replace it with the matching DLL and restart. Check the Control Interfaces option.</value></data>
+  <data name="Plugins.ChooseArchitecture" xml:space="preserve"><value>Select your player&apos;s architecture, which may differ from Windows or AF.</value></data>
+  <data name="Plugins.Download" xml:space="preserve"><value>Download</value></data>
+  <data name="Plugins.Empty" xml:space="preserve"><value>No matching plugins or setup guides.</value></data>
+  <data name="Plugins.Error.File" xml:space="preserve"><value>Could not save or read the plugin file. Check folder permissions and free space.</value></data>
+  <data name="Plugins.Error.Integrity" xml:space="preserve"><value>File size or SHA-256 verification failed. No completed file was saved. Retry or check the upstream version.</value></data>
+  <data name="Plugins.Error.Network" xml:space="preserve"><value>All download sources failed. Retry or download from the project&apos;s release page.</value></data>
+  <data name="Plugins.Error.Open" xml:space="preserve"><value>Could not open the link or show the file. It may have moved. Check your default browser or download again.</value></data>
+  <data name="Plugins.Experimental" xml:space="preserve"><value>Experimental · check compatibility</value></data>
+  <data name="Plugins.Guide" xml:space="preserve"><value>Installation, upgrade and restore</value></data>
+  <data name="Plugins.Install" xml:space="preserve"><value>Install</value></data>
+  <data name="Plugins.ManualNotice" xml:space="preserve">
+    <value>Download, then install manually using the guide.</value>
+  </data>
+  <data name="Plugins.Native" xml:space="preserve"><value>Native feature setup guide; no plugin download needed.</value></data>
+  <data name="Plugins.Project" xml:space="preserve"><value>Project and instructions</value></data>
+  <data name="Plugins.Restore" xml:space="preserve"><value>Uninstall or restore</value></data>
+  <data name="Plugins.Retry" xml:space="preserve"><value>Retry download</value></data>
+  <data name="Plugins.Reveal" xml:space="preserve"><value>Show in folder</value></data>
+  <data name="Plugins.Search" xml:space="preserve"><value>Search by plugin or player name</value></data>
+  <data name="Plugins.Source" xml:space="preserve"><value>Download source: {0}</value></data>
+  <data name="Plugins.Status.Available" xml:space="preserve"><value>Ready to download. Catalog versions are updated with AF.</value></data>
+  <data name="Plugins.Status.Canceled" xml:space="preserve"><value>Canceled. You can retry the download.</value></data>
+  <data name="Plugins.Status.Completed" xml:space="preserve"><value>Downloaded and verified. Follow the manual installation guide.</value></data>
+  <data name="Plugins.Status.Downloading" xml:space="preserve"><value>Downloading and verifying…</value></data>
+  <data name="Plugins.Status.Failed" xml:space="preserve"><value>Download failed. Retry or visit the project.</value></data>
+  <data name="Plugins.Status.Verifying" xml:space="preserve"><value>Verifying file…</value></data>
+  <data name="Plugins.Subtitle" xml:space="preserve"><value>Download player extensions and follow the manual installation guide.</value></data>
+  <data name="Plugins.Upgrade" xml:space="preserve"><value>Upgrade</value></data>
+  <data name="Plugins.VerifyOrDownload" xml:space="preserve"><value>Verify or download again</value></data>
+  <data name="Plugins.Catalog.foobar.Compatibility" xml:space="preserve">
+    <value>Match the component to foobar2000's architecture.</value>
+  </data>
+  <data name="Plugins.Catalog.musicbee.Compatibility" xml:space="preserve">
+    <value>Requires .NET Framework 4.8.</value>
+  </data>
+  <data name="Plugins.Catalog.vlc.Compatibility" xml:space="preserve">
+    <value>For VLC 3.0.x; requires a matching VC++ 2022 runtime.</value>
+  </data>
+  <data name="Plugins.Catalog.itunes.Compatibility" xml:space="preserve">
+    <value>Runs separately for legacy iTunes.</value>
+  </data>
+  <data name="Plugins.Catalog.qqmusic.Compatibility" xml:space="preserve">
+    <value>x86 only, tested mainly on 22.71; DLL injection may break or crash after client updates.</value>
+  </data>
+  <data name="Plugins.DownloadDetails" xml:space="preserve">
+    <value>Download details</value>
+  </data>
+  <data name="Plugins.DownloadDetails.Body" xml:space="preserve">
+    <value>AF downloads and verifies files without extracting or installing them. Mirrors are tried before the official source. Downloads continue after leaving Settings and are cancelled when AF exits. Files are saved under AFMediaBar\PluginDownloads in local application data.</value>
+  </data>
 </root>

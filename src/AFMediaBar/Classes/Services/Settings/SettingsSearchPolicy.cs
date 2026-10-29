@@ -60,6 +60,8 @@ public enum SettingsPageKey
     Diagnostics,
     MemoryTools,
     QuickStart,
+    /// <summary>播放器扩展的下载与手动安装指引。</summary>
+    PluginCenter,
 }
 
 /// <summary>

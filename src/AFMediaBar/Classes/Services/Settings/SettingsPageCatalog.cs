@@ -25,6 +25,7 @@ public static class SettingsPageCatalog
         new SettingsPageDefinition(SettingsPageKey.Lyrics, "Settings.Page.TextAndLyrics", "TextQuote24", false),
         new SettingsPageDefinition(SettingsPageKey.Interaction, "Settings.Page.InteractionAndHotkeys", "HandDraw24", false),
         new SettingsPageDefinition(SettingsPageKey.DeviceManagement, "Settings.Page.AudioDevices", "Headphones24", true),
+        new SettingsPageDefinition(SettingsPageKey.PluginCenter, "Common.Page.PluginCenter", "ArrowDownload24", true),
         new SettingsPageDefinition(SettingsPageKey.MediaAndNotifications, "Settings.Page.MediaSource", "MusicNote220", true),
         new SettingsPageDefinition(SettingsPageKey.TrackNotifications, "Settings.Page.TrackNotifications", "Alert24", true),
         new SettingsPageDefinition(SettingsPageKey.Application, "Settings.Page.GeneralAndUpdates", "Settings24", true),

@@ -27,6 +27,7 @@ using AFMediaBar.Classes.Services.Audio;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Services.Startup;
 using AFMediaBar.Classes.Services.Updates;
+using AFMediaBar.Classes.Services.Plugins;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Resources;
 using AFMediaBar.ViewModels.Components;
@@ -238,6 +239,11 @@ namespace AFMediaBar
                 services.AddSingleton<UpdatePackageDownloader>();
                 services.AddSingleton<InstalledApplicationProbe>();
                 services.AddSingleton<UpdateService>();
+                services.AddSingleton<PluginDownloadService>();
+                services.AddHostedService(sp => sp.GetRequiredService<PluginDownloadService>());
+                services.AddScoped(sp => new PluginCenterViewModel(sp.GetRequiredService<PluginDownloadService>(),
+                    sp.GetRequiredService<LocalizationService>(), Current.Dispatcher));
+                services.AddScoped<PluginCenterPage>();
                 services.AddSingleton<IApplicationRestartService>(sp => new ApplicationRestartService(
                     sp.GetRequiredService<UpdateService>().TryReserveOrdinaryRestart,
                     RestartProcessHandoff.PrepareCurrentProcessAsync,

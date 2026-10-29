@@ -3808,4 +3808,100 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Home.Player.AwaitingCapabilities" xml:space="preserve">
     <value>Đang chờ dữ liệu hợp lệ từ nguồn này; không dùng khả năng của nguồn trước.</value>
   </data>
+  <data name="Common.Page.PluginCenter" xml:space="preserve"><value>Tải tiện ích</value></data>
+  <data name="Plugins.Architecture" xml:space="preserve"><value>Kiến trúc trình phát</value></data>
+  <data name="Plugins.Attribution" xml:space="preserve"><value>Tác giả: {0}    Phiên bản: {1}</value></data>
+  <data name="Plugins.Author" xml:space="preserve"><value>Tác giả: {0}</value></data>
+  <data name="Plugins.Cancel" xml:space="preserve"><value>Hủy tải</value></data>
+  <data name="Plugins.Catalog" xml:space="preserve"><value>Tiện ích trình phát</value></data>
+  <data name="Plugins.Catalog.foobar.Install" xml:space="preserve"><value>1. Trong foobar2000, mở Preferences → Components → Install.
+2. Chọn tệp .fb2k-component đã tải, áp dụng và khởi động lại.
+3. Phát nhạc và kiểm tra thông tin, tiến độ trong điều khiển phương tiện Windows.</value></data>
+  <data name="Plugins.Catalog.foobar.Requirements" xml:space="preserve"><value>Chọn thành phần x86 hoặc x64 khớp với foobar2000. Tính năng phụ thuộc phiên bản trình phát và thành phần.</value></data>
+  <data name="Plugins.Catalog.foobar.Restore" xml:space="preserve"><value>Gỡ foo_mediacontrol trong Components và khởi động lại. Cài lại thành phần đã lưu để quay về bản cũ.</value></data>
+  <data name="Plugins.Catalog.foobar.Summary" xml:space="preserve"><value>Bổ sung album, nghệ sĩ album, thời lượng và tiến độ cho điều khiển phương tiện Windows.</value></data>
+  <data name="Plugins.Catalog.foobar.Target" xml:space="preserve"><value>foobar2000</value></data>
+  <data name="Plugins.Catalog.foobar.Upgrade" xml:space="preserve"><value>Cài thành phần mới qua Components rồi khởi động lại. Giữ gói cũ để có thể quay lại.</value></data>
+  <data name="Plugins.Catalog.itunes.Install" xml:space="preserve"><value>1. Giải nén toàn bộ gói vào thư mục thông thường và giữ đủ tệp.
+2. Chạy iTunes.SMTC.exe rồi phát nhạc trong iTunes.
+3. Kiểm tra điều khiển phương tiện Windows. AF không chạy công cụ hoặc đặt tự khởi động.</value></data>
+  <data name="Plugins.Catalog.itunes.Requirements" xml:space="preserve"><value>Cần Windows 10/11 và iTunes. Chọn gói phù hợp hệ thống và bản iTunes. Dự án cũng nhắc Apple Music Preview; đây không phải cách sửa chung cho Apple Music hiện nay.</value></data>
+  <data name="Plugins.Catalog.itunes.Restore" xml:space="preserve"><value>Thoát công cụ, xóa thư mục và mục tự khởi động bạn đã tự thêm. Dùng bản sao lưu để quay lại.</value></data>
+  <data name="Plugins.Catalog.itunes.Summary" xml:space="preserve"><value>Công cụ chạy độc lập kết nối iTunes với điều khiển phương tiện Windows; không phải DLL chép vào thư mục trình phát.</value></data>
+  <data name="Plugins.Catalog.itunes.Target" xml:space="preserve"><value>iTunes</value></data>
+  <data name="Plugins.Catalog.itunes.Upgrade" xml:space="preserve"><value>Thoát công cụ, sao lưu thư mục rồi giải nén đầy đủ gói mới. Giữ lại cấu hình cá nhân cần thiết.</value></data>
+  <data name="Plugins.Catalog.musicbee.Install" xml:space="preserve"><value>1. Thoát hoàn toàn MusicBee.
+2. Chép mb_MediaControl.dll vào thư mục Plugins của bản MusicBee đang dùng.
+3. Khởi động lại và kiểm tra tiện ích đã bật. Với bản Microsoft Store, dùng Add Plugin của trình phát, không sửa WindowsApps.</value></data>
+  <data name="Plugins.Catalog.musicbee.Requirements" xml:space="preserve"><value>Dành cho MusicBee trên Windows 10/11 với .NET Framework 4.8. Tệp đính kèm là AnyCPU. Tránh bật nhiều tiện ích cùng tạo phiên SMTC.</value></data>
+  <data name="Plugins.Catalog.musicbee.Restore" xml:space="preserve"><value>Gỡ trong cài đặt tiện ích rồi khởi động lại, hoặc thoát hoàn toàn và xóa DLL đã thêm. Khôi phục bản sao lưu để quay lại.</value></data>
+  <data name="Plugins.Catalog.musicbee.Summary" xml:space="preserve"><value>Cung cấp thông tin bài hát, điều khiển phát, tiến độ, tua, phát ngẫu nhiên và lặp lại.</value></data>
+  <data name="Plugins.Catalog.musicbee.Target" xml:space="preserve"><value>MusicBee</value></data>
+  <data name="Plugins.Catalog.musicbee.Upgrade" xml:space="preserve"><value>Thoát MusicBee, sao lưu DLL cũ, thay thế rồi khởi động lại. Nâng cấp thành phần cài qua Add Plugin theo quy trình của trình phát.</value></data>
+  <data name="Plugins.Catalog.qqmusic.Install" xml:space="preserve"><value>1. Thoát hoàn toàn QQ Music. Tìm thư mục phiên bản đang dùng có QQMusicAgent.exe, không dùng thư mục cũ còn sót sau nâng cấp.
+2. Nếu có msimg32.dll, xác định nguồn và sao lưu riêng, không ghi đè tùy tiện.
+3. Đổi payload.dll thành msimg32.dll rồi chép vào đó. Khởi động lại để kiểm tra. Ghi vào Program Files có thể cần quyền quản trị.</value></data>
+  <data name="Plugins.Catalog.qqmusic.Requirements" xml:space="preserve"><value>Tiện ích thử nghiệm chạy trong tiến trình, chỉ x86; chủ yếu đã thử QQ Music 22.71. Cập nhật trình phát có thể gây lỗi hoặc sập. Không dùng chung với DLL proxy khác cùng tên.</value></data>
+  <data name="Plugins.Catalog.qqmusic.Restore" xml:space="preserve"><value>Thoát hoàn toàn QQ Music và chỉ xóa msimg32.dll đã cài lần này. Khôi phục bản gốc nếu trước đó có tệp cùng tên.</value></data>
+  <data name="Plugins.Catalog.qqmusic.Summary" xml:space="preserve"><value>Bổ sung tua SMTC, ID bài hát QQ và ảnh bìa độ phân giải cao, giữ danh tính phiên QQMusic.exe.</value></data>
+  <data name="Plugins.Catalog.qqmusic.Target" xml:space="preserve"><value>QQ Music</value></data>
+  <data name="Plugins.Catalog.qqmusic.Upgrade" xml:space="preserve"><value>Kiểm tra tương thích với trình phát mới trước khi thay tiện ích lúc trình phát đã đóng. Không ghi tiện ích đè lên bản sao lưu gốc.</value></data>
+  <data name="Plugins.Catalog.vlc.Install" xml:space="preserve"><value>1. Thoát VLC, giải nén libwin10smtc_plugin.dll vào VLC\plugins\misc.
+2. Khởi động lại VLC, mở Advanced Preferences → Interface → Control Interfaces.
+3. Bật Windows SMTC integration, lưu và phát lại phương tiện.</value></data>
+  <data name="Plugins.Catalog.vlc.Requirements" xml:space="preserve"><value>VLC 3.0.x hoặc 4.0.0-dev; Windows 10 1607+ / 11. Tiện ích và runtime Visual C++ 2022 trở lên phải khớp kiến trúc VLC.</value></data>
+  <data name="Plugins.Catalog.vlc.Restore" xml:space="preserve"><value>Tắt giao diện điều khiển, thoát VLC và xóa DLL đã thêm. Khôi phục bản sao lưu để quay lại.</value></data>
+  <data name="Plugins.Catalog.vlc.Summary" xml:space="preserve"><value>Bổ sung thông tin SMTC, điều khiển phát và tua. v5.0.0 công bố sửa lỗi báo cáo vị trí phát.</value></data>
+  <data name="Plugins.Catalog.vlc.Target" xml:space="preserve"><value>VLC</value></data>
+  <data name="Plugins.Catalog.vlc.Upgrade" xml:space="preserve"><value>Thoát VLC, sao lưu tiện ích cũ, thay bằng DLL đúng kiến trúc rồi khởi động lại. Kiểm tra tùy chọn Control Interfaces.</value></data>
+  <data name="Plugins.ChooseArchitecture" xml:space="preserve"><value>Chọn kiến trúc của trình phát; kiến trúc này có thể khác Windows hoặc AF.</value></data>
+  <data name="Plugins.Download" xml:space="preserve"><value>Tải xuống</value></data>
+  <data name="Plugins.Empty" xml:space="preserve"><value>Không có tiện ích hoặc hướng dẫn phù hợp.</value></data>
+  <data name="Plugins.Error.File" xml:space="preserve"><value>Không thể lưu hoặc đọc tệp tiện ích. Kiểm tra quyền thư mục và dung lượng trống.</value></data>
+  <data name="Plugins.Error.Integrity" xml:space="preserve"><value>Kích thước hoặc SHA-256 không khớp. Không lưu tệp hoàn tất. Thử lại hoặc kiểm tra phiên bản trên dự án.</value></data>
+  <data name="Plugins.Error.Network" xml:space="preserve"><value>Mọi nguồn tải đều thất bại. Thử lại hoặc tải từ trang phát hành của dự án.</value></data>
+  <data name="Plugins.Error.Open" xml:space="preserve"><value>Không thể mở liên kết hoặc hiện tệp. Tệp có thể đã bị di chuyển. Kiểm tra trình duyệt mặc định hoặc tải lại.</value></data>
+  <data name="Plugins.Experimental" xml:space="preserve"><value>Thử nghiệm · kiểm tra tương thích</value></data>
+  <data name="Plugins.Guide" xml:space="preserve"><value>Cài đặt, nâng cấp và khôi phục</value></data>
+  <data name="Plugins.Install" xml:space="preserve"><value>Cài đặt</value></data>
+  <data name="Plugins.ManualNotice" xml:space="preserve">
+    <value>Tải xuống rồi cài thủ công theo hướng dẫn.</value>
+  </data>
+  <data name="Plugins.Native" xml:space="preserve"><value>Hướng dẫn tính năng có sẵn; không cần tải tiện ích.</value></data>
+  <data name="Plugins.Project" xml:space="preserve"><value>Dự án và hướng dẫn</value></data>
+  <data name="Plugins.Restore" xml:space="preserve"><value>Gỡ cài đặt hoặc khôi phục</value></data>
+  <data name="Plugins.Retry" xml:space="preserve"><value>Thử tải lại</value></data>
+  <data name="Plugins.Reveal" xml:space="preserve"><value>Hiện trong thư mục</value></data>
+  <data name="Plugins.Search" xml:space="preserve"><value>Tìm theo tên tiện ích hoặc trình phát</value></data>
+  <data name="Plugins.Source" xml:space="preserve"><value>Nguồn tải: {0}</value></data>
+  <data name="Plugins.Status.Available" xml:space="preserve"><value>Sẵn sàng tải. Phiên bản trong danh mục được cập nhật cùng AF.</value></data>
+  <data name="Plugins.Status.Canceled" xml:space="preserve"><value>Đã hủy. Bạn có thể thử tải lại.</value></data>
+  <data name="Plugins.Status.Completed" xml:space="preserve"><value>Đã tải và xác minh. Hãy cài đặt theo hướng dẫn thủ công.</value></data>
+  <data name="Plugins.Status.Downloading" xml:space="preserve"><value>Đang tải và xác minh…</value></data>
+  <data name="Plugins.Status.Failed" xml:space="preserve"><value>Tải thất bại. Hãy thử lại hoặc mở dự án.</value></data>
+  <data name="Plugins.Status.Verifying" xml:space="preserve"><value>Đang xác minh tệp…</value></data>
+  <data name="Plugins.Subtitle" xml:space="preserve"><value>Tải tiện ích trình phát và cài thủ công theo hướng dẫn.</value></data>
+  <data name="Plugins.Upgrade" xml:space="preserve"><value>Nâng cấp</value></data>
+  <data name="Plugins.VerifyOrDownload" xml:space="preserve"><value>Xác minh hoặc tải lại</value></data>
+  <data name="Plugins.Catalog.foobar.Compatibility" xml:space="preserve">
+    <value>Chọn thành phần khớp kiến trúc foobar2000.</value>
+  </data>
+  <data name="Plugins.Catalog.musicbee.Compatibility" xml:space="preserve">
+    <value>Cần .NET Framework 4.8.</value>
+  </data>
+  <data name="Plugins.Catalog.vlc.Compatibility" xml:space="preserve">
+    <value>Cho VLC 3.0.x; cần runtime VC++ 2022 đúng kiến trúc.</value>
+  </data>
+  <data name="Plugins.Catalog.itunes.Compatibility" xml:space="preserve">
+    <value>Chạy riêng cho iTunes cũ.</value>
+  </data>
+  <data name="Plugins.Catalog.qqmusic.Compatibility" xml:space="preserve">
+    <value>Chỉ x86, chủ yếu thử trên 22.71; chèn DLL có thể lỗi hoặc sập sau cập nhật.</value>
+  </data>
+  <data name="Plugins.DownloadDetails" xml:space="preserve">
+    <value>Thông tin tải xuống</value>
+  </data>
+  <data name="Plugins.DownloadDetails.Body" xml:space="preserve">
+    <value>AF chỉ tải và kiểm tra tệp, không tự giải nén hay cài. Thử máy chủ gương trước nguồn chính thức. Tải tiếp khi rời cài đặt và hủy khi thoát AF. Tệp nằm trong AFMediaBar\PluginDownloads ở dữ liệu ứng dụng cục bộ.</value>
+  </data>
 </root>

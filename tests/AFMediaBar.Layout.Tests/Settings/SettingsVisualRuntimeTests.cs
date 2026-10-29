@@ -16,6 +16,7 @@ using AFMediaBar.Components;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Media.Smtc;
 using AFMediaBar.Classes.Services.Localization;
+using AFMediaBar.Classes.Services.Plugins;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.ViewModels.Pages;
 using AFMediaBar.Views.Pages;
@@ -37,6 +38,7 @@ public sealed class SettingsVisualRuntimeTests
         {
             VerifyNumericBinding(app);
             VerifyPageMarkup(app);
+            VerifyPluginCards();
             VerifyGeneratedRowSearch();
             VerifyMetricStylePicker();
             VerifyFullPanelMinimumSize();
@@ -208,7 +210,7 @@ public sealed class SettingsVisualRuntimeTests
         var root = FindRepository();
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
         var eventNames = new HashSet<string> { "Loaded", "Unloaded", "Click", "SelectionChanged", "Checked", "Unchecked", "SizeChanged", "MouseLeftButtonDown", "KeyDown", "IsVisibleChanged", "PreviewKeyDown", "LostKeyboardFocus", "PreviewMouseWheel", "MouseEnter", "MouseLeave", "PreviewGotKeyboardFocus" };
-        foreach (var name in new[] { "QuickStart", "DisplayModes", "ScreenAndPlacement", "Appearance", "ApplicationAppearance", "RestState", "Interaction", "Lyrics", "ComponentsSettings", "FullPanel", "WidgetsSettings", "Spectrum", "Performance", "BluetoothBattery", "ExtraFeatures", "TrackNotifications", "Application", "Configuration", "Diagnostics", "MemoryTools", "DeviceManagement", "Experimental", "ReleaseHighlights", "About" })
+        foreach (var name in new[] { "QuickStart", "DisplayModes", "ScreenAndPlacement", "Appearance", "ApplicationAppearance", "RestState", "Interaction", "Lyrics", "ComponentsSettings", "FullPanel", "WidgetsSettings", "Spectrum", "Performance", "BluetoothBattery", "ExtraFeatures", "PluginCenter", "TrackNotifications", "Application", "Configuration", "Diagnostics", "MemoryTools", "DeviceManagement", "Experimental", "ReleaseHighlights", "About" })
         {
             var document = XDocument.Load(Path.Combine(root, "src", "AFMediaBar", "Views", "Pages", name + "Page.xaml"));
             document.Root!.Attribute(x + "Class")!.Remove();
@@ -288,6 +290,55 @@ public sealed class SettingsVisualRuntimeTests
             Assert.IsTrue(scroll.VerticalOffset > 0, "内容空白处的滚轮应交给页面滚动。");
         }
         finally { window.Close(); }
+    }
+
+    private static void VerifyPluginCards()
+    {
+        using var downloads = new PluginDownloadService();
+        using var localization = new LocalizationService();
+        using var model = new PluginCenterViewModel(downloads, localization, System.Windows.Threading.Dispatcher.CurrentDispatcher);
+        model.Activate();
+        var errors = new StringWriter();
+        using var listener = new TextWriterTraceListener(errors);
+        var trace = PresentationTraceSources.DataBindingSource;
+        var level = trace.Switch.Level;
+        trace.Switch.Level = SourceLevels.Error;
+        trace.Listeners.Add(listener);
+        try
+        {
+            var page = new PluginCenterPage(model);
+            page.Measure(new Size(800, 550));
+            page.Arrange(new Rect(0, 0, 800, 550));
+            page.UpdateLayout();
+            var architecture = VisualChildren(page).OfType<System.Windows.Controls.ComboBox>()
+                .Single(combo => combo.DataContext is PluginCardViewModel card && card.Descriptor.Id == "foobar");
+            var card = (PluginCardViewModel)architecture.DataContext;
+            Assert.AreEqual("x64", card.SelectedAsset?.Architecture, "Prefer x64 without assuming the player architecture.");
+            Assert.IsTrue(card.DownloadCommand.CanExecute(null));
+            architecture.SelectedIndex = 0;
+            Assert.IsNotNull(card.SelectedAsset);
+            Assert.IsTrue(card.DownloadCommand.CanExecute(null));
+            model.SearchText = "mpv";
+            Assert.AreEqual(0, model.Plugins.Count, "Native setup guidance belongs in Quick start.");
+            model.SearchText = "QQ";
+            Assert.AreEqual("x86", model.Plugins.Single().SelectedAsset?.Architecture);
+            Assert.AreEqual(string.Empty, errors.ToString(), "Plugin templates must resolve their runtime bindings.");
+        }
+        finally
+        {
+            trace.Listeners.Remove(listener);
+            trace.Switch.Level = level;
+        }
+
+        static IEnumerable<DependencyObject> VisualChildren(DependencyObject root)
+        {
+            for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+            {
+                var child = VisualTreeHelper.GetChild(root, index);
+                yield return child;
+                foreach (var descendant in VisualChildren(child)) yield return descendant;
+            }
+        }
     }
 
     private static void VerifyPreferredSourceIdentity()
