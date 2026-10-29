@@ -58,7 +58,7 @@ public partial class TaskbarFullPanelWindow
 
     private void QueuePanelPosition()
     {
-        if (_positionQueued || _isClosing || _isResizing || !IsVisible) return;
+        if (_positionQueued || _isClosing || _isResizing || _windowPresentation.IsPreparing || !IsVisible) return;
         _positionQueued = true;
         Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
         {

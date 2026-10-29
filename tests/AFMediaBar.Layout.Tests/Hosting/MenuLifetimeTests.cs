@@ -20,6 +20,49 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class MenuLifetimeTests
 {
     [TestMethod]
+    public void InitialPresentationStaysTransparentAndCannotResumeAfterHideOrClose()
+    {
+        if (RunIsolated(nameof(InitialPresentationStaysTransparentAndCannotResumeAfterHideOrClose))) return;
+        StaTest.Run(async _ =>
+        {
+            var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+            var window = new Window { Width = 100, Height = 50, ShowActivated = false, ShowInTaskbar = false };
+            using var presentation = new AnchoredWindowPresentation(window);
+            try
+            {
+                var positioned = 0;
+                void Position()
+                {
+                    Assert.AreEqual(0d, window.Opacity, "定位完成前整窗必须不可见。");
+                    Assert.IsFalse(window.IsHitTestVisible);
+                    Assert.IsFalse(window.ShowActivated);
+                    window.Left = -32000;
+                    window.Top = -32000;
+                    positioned++;
+                }
+                var pending = presentation.ShowAsync(new Point(20, 20), Position);
+                Assert.AreEqual(0d, window.Opacity);
+                window.Hide();
+                Assert.IsFalse(await pending);
+                Assert.AreEqual(0, positioned, "隐藏后不能继续执行迟到的定位。");
+
+                Assert.IsTrue(await presentation.ShowAsync(new Point(20, 20), Position));
+                Assert.AreEqual(1d, window.Opacity);
+                Assert.IsTrue(window.IsHitTestVisible);
+                Assert.IsFalse(window.ShowActivated);
+                Assert.AreEqual(1, positioned);
+
+                window.Hide();
+                pending = presentation.ShowAsync(new Point(20, 20), Position);
+                window.Close();
+                Assert.IsFalse(await pending);
+                Assert.AreEqual(1, positioned, "关闭后的排队呈现不能恢复窗口。");
+            }
+            finally { window.Close(); app.Shutdown(); }
+        });
+    }
+
+    [TestMethod]
     public void CompactMenusRemainVisibleWhenAnchorHidesAndEscapeStillDismisses()
     {
         if (RunIsolated(nameof(CompactMenusRemainVisibleWhenAnchorHidesAndEscapeStillDismisses))) return;

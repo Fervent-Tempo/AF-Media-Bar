@@ -22,6 +22,9 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
     private int _animationVersion;
     private int _navigationVersion;
     private int _presentationVersion;
+    private readonly AnchoredWindowPresentation _windowPresentation;
+    private TrayIconBounds? _anchor;
+    private Point _physicalAnchor;
     private double _applicationListOffset;
     private WeakReference<IInputElement>? _applicationListFocus;
 
@@ -35,6 +38,11 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         ViewModel = viewModel;
         DataContext = viewModel;
         InitializeComponent();
+        _windowPresentation = new(this);
+        IsVisibleChanged += (_, _) =>
+        {
+            if (!IsVisible) { _presentationVersion++; _navigationVersion++; }
+        };
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         ApplyMotionEffects();
         MaxHeight = 620;
@@ -42,8 +50,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
     }
 
     /// <summary>
-    /// 在托盘锚点附近切换浮窗；显示前完成一次异步音频状态刷新。
-    /// Toggles the flyout near the tray anchor and refreshes audio state asynchronously before showing it.
+    /// 在托盘锚点附近切换浮窗；首次布局期间隐藏整窗。
     /// </summary>
     public async Task ToggleAsync(TrayIconBounds? bounds)
     {
@@ -79,11 +86,10 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
             FlyoutRoot.Opacity = motion.UseTransitions ? 0 : 1;
             FlyoutScale.ScaleX = motion.UseTransitions ? 0.98 : 1;
             FlyoutScale.ScaleY = motion.UseTransitions ? 0.98 : 1;
-            if (!IsVisible)
-                Show();
-            Activate();
-            UpdateLayout();
-            PositionNear(bounds);
+            _anchor = bounds;
+            _physicalAnchor = AnchoredWindowPresentation.GetPhysicalAnchor(bounds);
+            if (!await _windowPresentation.ShowAsync(_physicalAnchor, () => PositionNear(_anchor))) return;
+            if (ShowActivated) Activate();
             if (motion.UseTransitions)
             {
                 var ease = new PowerEase { Power = 3, EasingMode = EasingMode.EaseOut };
@@ -100,17 +106,12 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
 
     private void PositionNear(TrayIconBounds? bounds)
     {
-        if (bounds is not { } icon)
-        {
-            WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            return;
-        }
-
-        var monitorPoint = new NativeMethods.POINT { X = (icon.Left + icon.Right) / 2, Y = (icon.Top + icon.Bottom) / 2 };
+        var monitorPoint = new NativeMethods.POINT { X = (int)_physicalAnchor.X, Y = (int)_physicalAnchor.Y };
         var monitor = NativeMethods.MonitorFromPoint(monitorPoint, NativeMethods.MONITOR_DEFAULTTONEAREST);
         var info = new NativeMethods.MONITORINFOEX { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MONITORINFOEX>() };
-        NativeMethods.GetMonitorInfo(monitor, ref info);
+        if (!NativeMethods.GetMonitorInfo(monitor, ref info)) return;
         var dpi = NativeMethods.GetDpiForMonitor(monitor, NativeMethods.MonitorDpiType.MDT_EFFECTIVE_DPI, out var dpiX, out _) == 0 ? dpiX / 96d : 1d;
+        MaxWidth = Math.Min(320, Math.Max(1, (info.rcWork.Right - info.rcWork.Left) / dpi));
         ApplicationsViewport.Height = 132;
         FlyoutRoot.Measure(new Size(ActualWidth, double.PositiveInfinity));
         var nonApplicationHeight = FlyoutRoot.DesiredSize.Height - 132;
@@ -119,16 +120,18 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         UpdateLayout();
         var width = (int)Math.Ceiling(ActualWidth * dpi);
         var height = (int)Math.Ceiling(ActualHeight * dpi);
-        var x = Math.Clamp(icon.Right - width, info.rcWork.Left, info.rcWork.Right - width);
+        var icon = bounds ?? new TrayIconBounds((int)_physicalAnchor.X, (int)_physicalAnchor.Y, (int)_physicalAnchor.X, (int)_physicalAnchor.Y);
+        var x = Math.Clamp(bounds is null ? icon.Left - width / 2 : icon.Right - width,
+            info.rcWork.Left, Math.Max(info.rcWork.Left, info.rcWork.Right - width));
         var spaceAbove = icon.Top - info.rcWork.Top;
-        var y = spaceAbove >= height + 8 ? icon.Top - height - 8 : icon.Bottom + 8;
-        y = Math.Clamp(y, info.rcWork.Top, info.rcWork.Bottom - height);
+        var y = bounds is null ? icon.Top - height / 2 : spaceAbove >= height + 8 ? icon.Top - height - 8 : icon.Bottom + 8;
+        y = Math.Clamp(y, info.rcWork.Top, Math.Max(info.rcWork.Top, info.rcWork.Bottom - height));
         FlyoutRoot.RenderTransformOrigin = y < icon.Top
             ? new Point(0.85, 1)
             : new Point(0.85, 0);
         var handle = new WindowInteropHelper(this).Handle;
         NativeMethods.SetWindowPos(handle, -1, x, y, 0, 0,
-            NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_SHOWWINDOW);
+            NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
     }
 
     private async void ApplicationDevice_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -268,7 +271,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         // The ComboBox list uses a separate Popup; wait for its state to settle before treating deactivation as an outside click.
         Dispatcher.BeginInvoke(() =>
         {
-            if (!_isDisposed && IsVisible && !_isOutputDeviceDropDownOpen && !OutputDeviceComboBox.IsDropDownOpen && !InputDeviceComboBox.IsDropDownOpen &&
+            if (!_isDisposed && !_windowPresentation.IsPreparing && IsVisible && !_isOutputDeviceDropDownOpen && !OutputDeviceComboBox.IsDropDownOpen && !InputDeviceComboBox.IsDropDownOpen &&
                 !ApplicationOutputDeviceComboBox.IsDropDownOpen && !ApplicationInputDeviceComboBox.IsDropDownOpen && !IsActive)
             {
                 BeginHideAnimation();
@@ -293,6 +296,14 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
             return;
 
         _isHiding = true;
+        _presentationVersion++;
+        if (_windowPresentation.IsPreparing)
+        {
+            _windowPresentation.Cancel();
+            Hide();
+            _isHiding = false;
+            return;
+        }
         OutputDeviceComboBox.IsDropDownOpen = false;
         InputDeviceComboBox.IsDropDownOpen = false;
         ViewModel.CloseApplicationDetail();
@@ -341,6 +352,8 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
             return;
 
         _isDisposed = true;
+        _presentationVersion++;
+        _windowPresentation.Dispose();
         _navigationVersion++;
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
         ViewModel.CloseApplicationDetail();

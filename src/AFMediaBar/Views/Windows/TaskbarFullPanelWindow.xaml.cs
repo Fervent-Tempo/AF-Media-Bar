@@ -21,12 +21,13 @@ namespace AFMediaBar.Views.Windows;
 public partial class TaskbarFullPanelWindow : FluentWindow
 {
     private readonly FullPanelPresentationViewModel _presentation;
+    private readonly AnchoredWindowPresentation _windowPresentation;
     private AppSettings? _presentationSettings;
     private AppSettings PresentationSettings => _presentationSettings ?? SettingsManager.Current;
     public void ApplyPresentationSettings(AppSettings? settings)
     {
         _presentationSettings = settings;
-        ApplyFullPanelSettings(animate: false);
+        if (IsVisible) ApplyFullPanelSettings(animate: false);
     }
 
     private static readonly TimeSpan VolumeWheelApplyDelay =
@@ -65,6 +66,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         FullPanelPresentationViewModel presentation)
     {
         InitializeComponent();
+        _windowPresentation = new(this);
         // MoveToPoint 会先消费轨道点击；仍需暂停进度同步并保存这次定位意图。
         ProgressSlider.AddHandler(PreviewMouseLeftButtonDownEvent,
             new MouseButtonEventHandler(ProgressSlider_MouseLeftButtonDown), handledEventsToo: true);
@@ -88,9 +90,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         Closed += OnClosed;
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         _timer.Tick += Timer_Tick;
-        _timer.Start();
         ApplySnapshot(_mediaSessionService.CurrentSnapshot ?? MediaSnapshot.Disconnected);
-        ApplyFullPanelSettings(animate: false);
     }
 
     public void ToggleNear(Rect anchor, string targetMonitorDeviceId, bool verticalAnchor = false, FullPanelPlacementSide? side = null)
@@ -118,13 +118,29 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         _targetMonitorDeviceId = targetMonitorDeviceId;
         _verticalAnchor = verticalAnchor;
         _placementSide = side;
-        ApplyMotionEffects();
-        Show();
-        UpdateLayout();
-        ApplyFullPanelSettings(animate: false);
-        PositionNear(anchor, targetMonitorDeviceId);
-        BeginOpenAnimation();
-        Activate();
+        _ = PresentNearAsync(anchor, targetMonitorDeviceId);
+    }
+
+    private async Task PresentNearAsync(Rect anchor, string targetMonitorDeviceId)
+    {
+        try
+        {
+            ApplyMotionEffects();
+            ApplyFullPanelSettings(animate: false);
+            var monitor = _displayMonitorService.ResolveFixedMonitor(targetMonitorDeviceId);
+            var physicalAnchor = new Point((anchor.Left + anchor.Width / 2) * (monitor?.DpiX ?? 96) / 96d,
+                (anchor.Top + anchor.Height / 2) * (monitor?.DpiY ?? 96) / 96d);
+            if (!await _windowPresentation.ShowAsync(physicalAnchor, () => PositionNear(anchor, targetMonitorDeviceId)) || _isClosing) return;
+            UpdateMetricsSubscription();
+            _timer.Start();
+            BeginOpenAnimation();
+            if (ShowActivated) Activate();
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine($"[FullPanel] Presentation failed: {exception}");
+            if (!_isClosing) RequestClose();
+        }
     }
 
     /// <summary>幂等关闭完整层，避免失活事件重入窗口关闭。 / Closes the full panel idempotently without deactivation reentrancy.</summary>
@@ -133,11 +149,13 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         if (_isClosing)
             return;
 
+        var wasPreparing = _windowPresentation.IsPreparing;
+        _windowPresentation.Cancel();
         _isClosing = true;
         CancelProgressSeek();
         _audioInteractionService.CancelDeviceOwner(this);
         var motion = MotionPolicy.ResolveCurrent();
-        if (!IsVisible || !motion.UseTransitions)
+        if (!IsVisible || wasPreparing || !motion.UseTransitions)
         {
             Close();
             return;
@@ -385,15 +403,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         MediaControlsSection.Visibility = settings.MediaControlsVisible ? Visibility.Visible : Visibility.Collapsed;
         AudioControlsSection.Visibility = settings.AudioControlsVisible ? Visibility.Visible : Visibility.Collapsed;
         PerformanceSection.Visibility = settings.PerformanceVisible ? Visibility.Visible : Visibility.Collapsed;
-        if (!settings.PerformanceVisible || !IsVisible) DisposeMetricsSubscription();
-        else if (_metricsSubscription is null)
-        {
-            var generation = _metricsSubscriptionGeneration;
-            _metricsSubscription = _metricsMonitor.Subscribe(
-                Enum.GetValues<MetricKind>(),
-                TimeSpan.FromMilliseconds(500),
-                metrics => ApplyMetricsSnapshot(generation, metrics));
-        }
+        UpdateMetricsSubscription();
 
         if (animate)
         {
@@ -408,16 +418,21 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         }
 
         if (audioBecameVisible)
-            _ = RefreshAudioAsync();
+            _ = RefreshAudioSafelyAsync();
 
-        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+        QueuePanelPosition();
+        if (animate) AnimateVisibleSections();
+    }
+
+    private void UpdateMetricsSubscription()
+    {
+        if (!_performanceVisible || !IsVisible || _windowPresentation.IsPreparing) DisposeMetricsSubscription();
+        else if (_metricsSubscription is null)
         {
-            UpdateLayout();
-            if (IsVisible && _anchor is Rect anchor && _targetMonitorDeviceId is { } targetMonitorDeviceId)
-                PositionNear(anchor, targetMonitorDeviceId);
-            if (animate)
-                AnimateVisibleSections();
-        }));
+            var generation = _metricsSubscriptionGeneration;
+            _metricsSubscription = _metricsMonitor.Subscribe(Enum.GetValues<MetricKind>(), TimeSpan.FromMilliseconds(500),
+                metrics => ApplyMetricsSnapshot(generation, metrics));
+        }
     }
 
     private void SetSectionEntryState(UIElement section, bool entering)
@@ -702,7 +717,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     {
         Dispatcher.BeginInvoke(() =>
         {
-            if (!_isClosing && IsVisible && !IsActive && !DeviceCombo.IsDropDownOpen && !InputDeviceCombo.IsDropDownOpen)
+            if (!_isClosing && !_windowPresentation.IsPreparing && IsVisible && !IsActive && !DeviceCombo.IsDropDownOpen && !InputDeviceCombo.IsDropDownOpen)
                 RequestClose();
         }, DispatcherPriority.ContextIdle);
     }
@@ -728,6 +743,9 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 
     private void OnClosed(object? sender, EventArgs e)
     {
+        _isClosing = true;
+        _audioRefreshGeneration++;
+        _windowPresentation.Dispose();
         _audioInteractionService.DeviceSwitches.Updated -= OnAudioDeviceSwitchUpdated;
         _audioInteractionService.DeviceSwitches.Invalidated -= OnAudioDeviceInvalidated;
         _audioInteractionService.CancelDeviceOwner(this);

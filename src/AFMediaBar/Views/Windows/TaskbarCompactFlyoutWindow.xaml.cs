@@ -25,6 +25,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     private bool _isHiding;
     private bool _allowClose;
     private int _animationVersion;
+    private readonly AnchoredWindowPresentation _windowPresentation;
 
     public event Action<QuickLaunchEntry>? QuickLaunchSelected;
     public event Action<AudioDeviceOption>? OutputDeviceSelected;
@@ -36,6 +37,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     public TaskbarCompactFlyoutWindow(WindowAppearanceService appearanceService)
     {
         InitializeComponent();
+        _windowPresentation = new(this);
         appearanceService.Attach(this);
     }
 
@@ -156,7 +158,9 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         if (IsVisible) BeginHideAnimation();
     }
 
-    private void ShowMode(TaskbarCompactFlyoutMode mode, TrayIconBounds anchor)
+    private void ShowMode(TaskbarCompactFlyoutMode mode, TrayIconBounds anchor) => _ = ShowModeAsync(mode, anchor);
+
+    private async Task ShowModeAsync(TaskbarCompactFlyoutMode mode, TrayIconBounds anchor)
     {
         if (_allowClose) return;
         _anchor = anchor;
@@ -173,10 +177,16 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         var motion = MotionPolicy.ResolveCurrent();
         FlyoutRoot.Opacity = motion.UseTransitions ? 0 : 1;
         FlyoutScale.ScaleX = FlyoutScale.ScaleY = motion.UseTransitions ? 0.98 : 1;
-        if (!IsVisible) Show();
-        Activate();
-        UpdateLayout();
-        PositionNear(anchor);
+        try
+        {
+            if (!await _windowPresentation.ShowAsync(AnchoredWindowPresentation.GetPhysicalAnchor(anchor), () => PositionNear(anchor))) return;
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine($"[CompactFlyout] Presentation failed: {exception}");
+            return;
+        }
+        if (ShowActivated) Activate();
         if (!motion.UseTransitions) return;
         var ease = new PowerEase { Power = 3, EasingMode = EasingMode.EaseOut };
         FlyoutRoot.BeginAnimation(OpacityProperty, new DoubleAnimation(1, motion.PanelDuration) { EasingFunction = ease });
@@ -193,9 +203,11 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
             var point = new NativeMethods.POINT { X = (anchor.Left + anchor.Right) / 2, Y = (anchor.Top + anchor.Bottom) / 2 };
             var monitor = NativeMethods.MonitorFromPoint(point, NativeMethods.MONITOR_DEFAULTTONEAREST);
             var info = new NativeMethods.MONITORINFOEX { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MONITORINFOEX>() };
-            NativeMethods.GetMonitorInfo(monitor, ref info);
+            if (!NativeMethods.GetMonitorInfo(monitor, ref info)) return;
             var scale = NativeMethods.GetDpiForMonitor(monitor, NativeMethods.MonitorDpiType.MDT_EFFECTIVE_DPI, out var dpiX, out _) == 0 ? dpiX / 96d : 1d;
             MaxHeight = Math.Min(440, Math.Max(0, (info.rcWork.Bottom - info.rcWork.Top) / scale - 16));
+            MaxWidth = Math.Max(1, (info.rcWork.Right - info.rcWork.Left) / scale);
+            UpdateLayout();
             if (_mode is TaskbarCompactFlyoutMode.OutputDevice or TaskbarCompactFlyoutMode.InputDevice)
             {
                 var reserved = 30 + DeviceHeaderPanel.ActualHeight + DeviceHeaderPanel.Margin.Bottom +
@@ -210,7 +222,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
             y = Math.Clamp(y, info.rcWork.Top, Math.Max(info.rcWork.Top, info.rcWork.Bottom - height));
             FlyoutRoot.RenderTransformOrigin = y < anchor.Top ? new Point(0.5, 1) : new Point(0.5, 0);
             NativeMethods.SetWindowPos(new WindowInteropHelper(this).Handle, -1, x, y, 0, 0,
-                NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_SHOWWINDOW);
+                NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
         }
         finally { _isPositioning = false; }
     }
@@ -271,7 +283,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         var version = _animationVersion;
         Dispatcher.BeginInvoke(() =>
         {
-            if (!_allowClose && version == _animationVersion && IsVisible && !IsActive) BeginHideAnimation();
+            if (!_allowClose && !_windowPresentation.IsPreparing && version == _animationVersion && IsVisible && !IsActive) BeginHideAnimation();
         }, DispatcherPriority.ContextIdle);
     }
 
@@ -294,6 +306,13 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     {
         if (_isHiding || !IsVisible) return;
         _isHiding = true;
+        if (_windowPresentation.IsPreparing)
+        {
+            _windowPresentation.Cancel();
+            Hide();
+            _isHiding = false;
+            return;
+        }
         var version = ++_animationVersion;
         var motion = MotionPolicy.ResolveCurrent();
         if (!motion.UseTransitions) { Hide(); _isHiding = false; return; }
@@ -325,6 +344,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     {
         if (_allowClose) return;
         _allowClose = true;
+        _windowPresentation.Dispose();
         _animationVersion++;
         FlyoutRoot.BeginAnimation(OpacityProperty, null);
         FlyoutScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
