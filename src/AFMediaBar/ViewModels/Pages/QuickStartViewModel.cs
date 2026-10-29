@@ -12,8 +12,13 @@ using AFMediaBar.Classes.Services.Updates;
 using AFMediaBar.Resources;
 namespace AFMediaBar.ViewModels.Pages;
 
-public sealed record HomeFeatureCard(string Id, string Badge, string Title, string Summary, string Url, string? ImageUrl);
-public sealed record HomeThreadCard(string Title, string Detail, string Url);
+public sealed record HomeFeatureCard(string Id, string Badge, string Title, string Summary, string Url, string? ImageUrl)
+{
+    /// <summary>类型、版本与来源标签；Badge 保留原有拼接文案，旧页面继续绑定它。</summary>
+    public IReadOnlyList<string> Tags { get; init; } = [];
+}
+
+public sealed record HomeThreadCard(string Title, string Detail, string Url, string Number = "", string DateText = "", bool IsDraft = false);
 
 /// <summary>先显示本地内容，再刷新公开动态；不上传任何使用资料。</summary>
 public partial class QuickStartViewModel : ObservableObject, IDisposable
@@ -57,6 +62,9 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     public bool HasNoIssues => Issues.Count == 0;
     public bool HasNoPullRequests => PullRequests.Count == 0;
     public bool HasMultipleFeatures => Features.Count > 1;
+    public bool HasNoSupportedPlayers => SupportedPlayers.Count == 0;
+    public int SupportedPlayerCount => PlayerSupportCatalog.All.Count;
+    public string PlayerSupportCountText => Translations.Format("Home.Player.Count", SupportedPlayerCount);
     public string FeaturePosition => $"{Math.Max(1, Features.IndexOf(SelectedFeature!)+1)} / {Features.Count}";
     public string RotationText => Translations.Get(IsRotationPaused ? "Home.Rotation.Resume" : "Home.Rotation.Pause");
     public string ProjectStatus => _project.FetchedAt is { } time
@@ -92,6 +100,12 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         if (DateTimeOffset.UtcNow - _lastManualRefresh < TimeSpan.FromMinutes(5)) return Task.CompletedTask;
         _lastManualRefresh = DateTimeOffset.UtcNow;
         return LoadAsync(true);
+    }
+    [RelayCommand] private void ClearPlayerFilter()
+    {
+        _playerFilter = string.Empty;
+        OnPropertyChanged(nameof(PlayerFilter));
+        ProjectSupport();
     }
     private async Task LoadAsync(bool force)
     {
@@ -179,23 +193,31 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         if (_releaseData.FirstOrDefault() is { } latest)
         {
             var (copy, original) = ReleaseHighlightsPolicy.ResolveText(latest, Language);
+            var source = _releaseIsCached
+                ? Translations.Get(_releaseFetchedAt is null ? "Home.Bundled" : "Home.Cache")
+                : original ? Translations.Get("Home.Original") : null;
             items.Add(new("latest", Translations.Get("Home.Kind.release") + " · v" + latest.Version + (original ? " · " + Translations.Get("Home.Original") : "") +
-                (_releaseIsCached ? " · " + Translations.Get(_releaseFetchedAt is null ? "Home.Bundled" : "Home.Cache") : ""),
-                copy.Title, string.Join(" ", copy.Highlights.Take(2)), latest.ReleaseNotesUrl ?? HomeContentPolicy.RepositoryUrl + "/releases", null));
+                (_releaseIsCached ? " · " + source : ""),
+                copy.Title, string.Join(" ", copy.Highlights.Take(2)), latest.ReleaseNotesUrl ?? HomeContentPolicy.RepositoryUrl + "/releases", null)
+                { Tags = FeatureTags("Home.Kind.release", latest.Version, source) });
         }
         foreach (var item in _catalogue.Items.Take(5))
         {
             var original = !item.Localizations.TryGetValue(Language, out var copy);
             copy ??= item.Localizations.GetValueOrDefault("zh-Hans") ?? item.Localizations.Values.First();
             items.Add(new(item.Id, Translations.Get("Home.Kind." + item.Kind) + (item.Version is null ? "" : " · v" + item.Version) +
-                (original ? " · " + Translations.Get("Home.Original") : ""), copy.Title, copy.Summary, item.Url ?? HomeContentPolicy.RepositoryUrl, item.Image));
+                (original ? " · " + Translations.Get("Home.Original") : ""), copy.Title, copy.Summary, item.Url ?? HomeContentPolicy.RepositoryUrl, item.Image)
+                { Tags = FeatureTags("Home.Kind." + item.Kind, item.Version, original ? Translations.Get("Home.Original") : null) });
         }
         items.Add(new("settings", Translations.Get("Home.Kind.development"), Translations.Get("Home.Feature.Settings"),
-            Translations.Get("Home.Feature.Settings.Body"), HomeContentPolicy.RepositoryUrl, "pack://application:,,,/AFMediaBar;component/Assets/Home/settings.png"));
+            Translations.Get("Home.Feature.Settings.Body"), HomeContentPolicy.RepositoryUrl, "pack://application:,,,/AFMediaBar;component/Assets/Home/settings.png")
+            { Tags = FeatureTags("Home.Kind.development", null, null) });
         items.Add(new("panel", Translations.Get("Home.Kind.development"), Translations.Get("Home.Feature.Panel"),
-            Translations.Get("Home.Feature.Panel.Body"), HomeContentPolicy.RepositoryUrl, "pack://application:,,,/AFMediaBar;component/Assets/Home/panel.png"));
+            Translations.Get("Home.Feature.Panel.Body"), HomeContentPolicy.RepositoryUrl, "pack://application:,,,/AFMediaBar;component/Assets/Home/panel.png")
+            { Tags = FeatureTags("Home.Kind.development", null, null) });
         items.Add(new("layers", Translations.Get("Home.Kind.feature"), Translations.Get("Start.Overview"),
-            Translations.Get("Start.Intro.Description"), HomeContentPolicy.RepositoryUrl, null));
+            Translations.Get("Start.Intro.Description"), HomeContentPolicy.RepositoryUrl, null)
+            { Tags = FeatureTags("Home.Kind.feature", null, null) });
         Features.Clear(); foreach (var item in items.DistinctBy(item => item.Id).Take(5)) Features.Add(item);
         SelectedFeature = !_hasShownLatest && !_featureWasChosen && _releaseData.Count > 0 ? Features.First() : Features.FirstOrDefault(item => item.Id == oldId) ?? Features.First();
         if (_releaseData.Count > 0) _hasShownLatest = true;
@@ -215,10 +237,24 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         Players.Clear(); foreach (var item in PlayerSupportCatalog.Describe(_media.Sessions, _media.Snapshot)) Players.Add(item);
         OnPropertyChanged(nameof(HasPlayers));
     }
+    private static IReadOnlyList<string> FeatureTags(string kindKey, string? version, string? source)
+    {
+        var tags = new List<string> { Translations.Get(kindKey) };
+        if (!string.IsNullOrEmpty(version)) tags.Add("v" + version);
+        if (!string.IsNullOrEmpty(source)) tags.Add(source);
+        return tags;
+    }
     private void ProjectSupport()
     {
         SupportedPlayers.Clear();
-        foreach (var profile in PlayerSupportCatalog.Resolve(_catalogue, Language).Where(profile => profile.Name.Contains(PlayerFilter, StringComparison.CurrentCultureIgnoreCase))) SupportedPlayers.Add(profile);
+        foreach (var profile in PlayerSupportCatalog.Resolve(_catalogue, Language).Where(profile =>
+            profile.Name.Contains(PlayerFilter, StringComparison.CurrentCultureIgnoreCase) ||
+            profile.Notes.Contains(PlayerFilter, StringComparison.CurrentCultureIgnoreCase) ||
+            profile.PluginCondition.Contains(PlayerFilter, StringComparison.CurrentCultureIgnoreCase)))
+            SupportedPlayers.Add(profile);
+        OnPropertyChanged(nameof(HasNoSupportedPlayers));
+        OnPropertyChanged(nameof(SupportedPlayerCount));
+        OnPropertyChanged(nameof(PlayerSupportCountText));
     }
     private void ProjectActivity()
     {
@@ -227,8 +263,12 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         foreach (var pr in _project.PullRequests) PullRequests.Add(Thread(pr));
         foreach (var property in new[] { nameof(Stars), nameof(OpenIssues), nameof(RecentIssues), nameof(OpenPullRequests), nameof(ProjectStatus), nameof(HasNoIssues), nameof(HasNoPullRequests) }) OnPropertyChanged(property);
     }
-    private static HomeThreadCard Thread(ProjectThread item) => new($"#{item.Number}  {item.Title}",
-        (item.IsDraft ? Translations.Get("Home.Draft") + " · " : "") + (item.UpdatedAt == DateTimeOffset.MinValue ? "" : item.UpdatedAt.ToLocalTime().ToString("yyyy-MM-dd")), item.Url);
+    private static HomeThreadCard Thread(ProjectThread item)
+    {
+        var date = item.UpdatedAt == DateTimeOffset.MinValue ? "" : item.UpdatedAt.ToLocalTime().ToString("yyyy-MM-dd");
+        return new($"#{item.Number}  {item.Title}", (item.IsDraft ? Translations.Get("Home.Draft") + " · " : "") + date, item.Url,
+            $"#{item.Number}", date, item.IsDraft);
+    }
     private static string FormatCount(int? value) => value?.ToString("N0") ?? "—";
     private void OnMediaChanged(object? sender, EventArgs args)
     {

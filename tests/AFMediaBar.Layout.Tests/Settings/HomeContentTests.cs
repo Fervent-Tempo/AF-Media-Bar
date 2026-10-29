@@ -102,6 +102,39 @@ public sealed class HomeContentTests
         Assert.IsFalse(stale.Any(card => card.Status == AFMediaBar.Resources.Translations.Get("Home.Player.Current")));
     }
     [TestMethod]
+    public void StructuredPlayerStateMatchesExistingStatusAndCapabilities()
+    {
+        var snapshot = AFMediaBar.Classes.Models.MediaSnapshot.Disconnected with
+        { IsConnected = true, SourceId = "Spotify.exe", CanPlayPause = true, CanSeek = false, IsPlaying = true };
+        AFMediaBar.Classes.Models.MediaSessionOption[] sessions = [new("n", "cloudmusic.exe", "NetEase", true, true), new("s", "Spotify.exe", "Spotify", false, false)];
+        var cards = PlayerSupportCatalog.Describe(sessions, snapshot);
+        var current = cards.Single(card => card.IsCurrent);
+        Assert.AreEqual(PlayerStatusKind.Current, current.StatusKind);
+        Assert.AreEqual(AFMediaBar.Resources.Translations.Get("Home.Player.Current"), current.Status);
+        var pending = cards.Single(card => !card.IsCurrent);
+        Assert.AreEqual(PlayerStatusKind.Pending, pending.StatusKind);
+        Assert.AreEqual(AFMediaBar.Resources.Translations.Get("Home.Player.Pending"), pending.Status);
+        Assert.AreEqual(0, pending.CapabilityItems.Count, "非当前会话不能借用当前来源的能力项。");
+        CollectionAssert.AreEqual(new[]
+        {
+            AFMediaBar.Resources.Translations.Get("Start.Metadata"),
+            AFMediaBar.Resources.Translations.Get("Home.Player.ControlAvailable"),
+            AFMediaBar.Resources.Translations.Get("Home.Player.SeekUnavailable"),
+            AFMediaBar.Resources.Translations.Get("Home.Player.LyricsUnknown")
+        }, current.CapabilityItems.Select(item => item.Label).ToArray());
+        CollectionAssert.AreEqual(new bool?[] { true, true, false, null },
+            current.CapabilityItems.Select(item => item.Available).ToArray());
+        var stale = PlayerSupportCatalog.Describe(sessions, snapshot with { IsStale = true });
+        Assert.IsFalse(stale.Any(card => card.IsCurrent), "过期快照不能产生当前状态。");
+        Assert.IsFalse(stale.Any(card => card.CapabilityItems.Count != 0));
+    }
+    [TestMethod]
+    public void OnlyPlayersWithUnverifiedPluginConditionsAreFlagged()
+    {
+        var flagged = PlayerSupportCatalog.All.Where(profile => profile.IsPluginUnverified).Select(profile => profile.Key).ToArray();
+        CollectionAssert.AreEquivalent(new[] { "mpv", "foobar2000" }, flagged);
+    }
+    [TestMethod]
     public async Task NarrowImageDecodeIsBoundedAndSmallImagesAreNotUpscaled()
     {
         var directory = Path.Combine(Path.GetTempPath(), "AFMB-home-" + Guid.NewGuid().ToString("N"));

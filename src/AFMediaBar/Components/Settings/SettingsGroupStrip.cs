@@ -488,8 +488,19 @@ public class SettingsGroupStrip : Control
     private void UpdateState(bool forceRebuild)
     {
         var target = Target;
+        if (target is null)
+        {
+            return;
+        }
+
+        // 0 分组页面（改版后的快速开始）仍更新页头滚动进度与分隔线，随后再跳过标签逻辑。
+        ApplyProgress(SettingsGroupScrollPolicy.ResolveProgress(
+            target.VerticalOffset,
+            target.ViewportHeight,
+            target.ExtentHeight));
+        ApplyDivider(target.VerticalOffset);
         var groups = ResolveGroups();
-        if (target is null || groups.Count == 0)
+        if (groups.Count == 0)
         {
             return;
         }
@@ -499,13 +510,6 @@ public class SettingsGroupStrip : Control
         {
             tops.Add(group.TranslatePoint(new Point(0d, 0d), target.Content as UIElement ?? target).Y);
         }
-
-        var progress = SettingsGroupScrollPolicy.ResolveProgress(
-            target.VerticalOffset,
-            target.ViewportHeight,
-            target.ExtentHeight);
-        ApplyProgress(progress);
-        ApplyDivider(target.VerticalOffset);
 
         if (_groups.Count != groups.Count)
         {

@@ -234,6 +234,30 @@ public sealed class SettingsVisualRuntimeTests
                 if (name == "QuickStart") VerifyQuickStartScrolling(page, layout);
             }
         }
+
+        // 新对话框不在页面清单里，按同一规则单独解析：资源键或遗漏的事件属性只会在运行时才炸。
+        VerifyPlayerSupportDialogMarkup(root, eventNames);
+    }
+
+    /// <summary>解析播放器支持对话框标记；内容与页面同样只保留纯标记、样式和运行时资源。</summary>
+    private static void VerifyPlayerSupportDialogMarkup(string root, HashSet<string> eventNames)
+    {
+        XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+        var document = XDocument.Load(Path.Combine(root, "src", "AFMediaBar", "Views", "Pages", "PlayerSupportDialog.xaml"));
+        document.Root!.Attribute(x + "Class")!.Remove();
+        foreach (var element in document.Root.DescendantsAndSelf())
+        {
+            foreach (var attribute in element.Attributes().ToArray())
+            {
+                if (eventNames.Contains(attribute.Name.LocalName)) attribute.Remove();
+            }
+        }
+        var markup = Regex.Replace(document.ToString(), "clr-namespace:AFMediaBar[.A-Za-z]+",
+            match => match.Value + ";assembly=AFMediaBar");
+        var control = (UserControl)XamlReader.Parse(markup);
+        control.Measure(new Size(560, 480));
+        control.ApplyTemplate();
+        Assert.IsNotNull(control.Content, "播放器支持对话框必须能加载内容。");
     }
 
     private static void VerifyGeneratedRowSearch()

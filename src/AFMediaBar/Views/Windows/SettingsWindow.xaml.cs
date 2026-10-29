@@ -88,6 +88,7 @@ namespace AFMediaBar.Views.Windows
             _sidebarSelection = new SettingsSidebarSelectionAnimator(RootNavigation, SidebarSelectionOverlay);
             SettingsResetDialog.SetHost(RootContentDialog, _contexts.CancellationToken);
             ArtistSeparatorsEditor.SetHost(RootContentDialog, _contexts.CancellationToken);
+            PlayerSupportDialog.SetHost(RootContentDialog, _contexts.CancellationToken);
             appearanceService.Attach(this);
             SetPageService(_pages);
             RebuildNavigation();
@@ -316,6 +317,7 @@ namespace AFMediaBar.Views.Windows
             _contexts.RefreshFailed -= OnContextRefreshFailed;
             SettingsResetDialog.ClearHost(RootContentDialog);
             ArtistSeparatorsEditor.ClearHost(RootContentDialog);
+            PlayerSupportDialog.ClearHost(RootContentDialog);
             _sessionScope.Dispose();
             _sidebarSelection.Dispose();
             SettingsRevealAnimator.Cancel(_transitionContent);

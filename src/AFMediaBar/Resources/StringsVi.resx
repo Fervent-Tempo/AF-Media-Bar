@@ -3808,4 +3808,43 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Home.Player.AwaitingCapabilities" xml:space="preserve">
     <value>Đang chờ dữ liệu hợp lệ từ nguồn này; không dùng khả năng của nguồn trước.</value>
   </data>
+  <data name="Common.Close" xml:space="preserve">
+    <value>Đóng</value>
+  </data>
+  <data name="Home.Player.OpenSource" xml:space="preserve">
+    <value>Mở nguồn phát</value>
+  </data>
+  <data name="Home.Player.More" xml:space="preserve">
+    <value>Còn {0}</value>
+  </data>
+  <data name="Home.Player.Count" xml:space="preserve">
+    <value>{0} cách kết nối</value>
+  </data>
+  <data name="Home.Player.NoSession" xml:space="preserve">
+    <value>Chưa phát hiện trình phát</value>
+  </data>
+  <data name="Home.Player.NoMatch" xml:space="preserve">
+    <value>Không có trình phát phù hợp</value>
+  </data>
+  <data name="Home.Player.ClearFilter" xml:space="preserve">
+    <value>Xóa bộ lọc</value>
+  </data>
+  <data name="Home.Player.Paused" xml:space="preserve">
+    <value>Đã tạm dừng</value>
+  </data>
+  <data name="Home.Player.NotConnected" xml:space="preserve">
+    <value>Chưa kết nối</value>
+  </data>
+  <data name="Home.Player.PluginUnverified" xml:space="preserve">
+    <value>Chưa xác minh plugin</value>
+  </data>
+  <data name="Home.Rotation.Slide" xml:space="preserve">
+    <value>Trang {0}: {1}</value>
+  </data>
+  <data name="Home.Refreshing" xml:space="preserve">
+    <value>Đang làm mới</value>
+  </data>
+  <data name="Home.RefreshCooldown" xml:space="preserve">
+    <value>Vừa làm mới, vui lòng thử lại sau</value>
+  </data>
 </root>

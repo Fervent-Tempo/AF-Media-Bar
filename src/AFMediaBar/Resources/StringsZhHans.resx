@@ -3771,4 +3771,43 @@
   <data name="Home.Player.AwaitingCapabilities" xml:space="preserve">
     <value>等待此来源的有效快照，不使用上一来源的能力。</value>
   </data>
+  <data name="Common.Close" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="Home.Player.OpenSource" xml:space="preserve">
+    <value>打开媒体来源</value>
+  </data>
+  <data name="Home.Player.More" xml:space="preserve">
+    <value>还有 {0} 个</value>
+  </data>
+  <data name="Home.Player.Count" xml:space="preserve">
+    <value>{0} 种接入方式</value>
+  </data>
+  <data name="Home.Player.NoSession" xml:space="preserve">
+    <value>尚未检测到播放器</value>
+  </data>
+  <data name="Home.Player.NoMatch" xml:space="preserve">
+    <value>没有匹配的播放器</value>
+  </data>
+  <data name="Home.Player.ClearFilter" xml:space="preserve">
+    <value>清除筛选</value>
+  </data>
+  <data name="Home.Player.Paused" xml:space="preserve">
+    <value>已暂停</value>
+  </data>
+  <data name="Home.Player.NotConnected" xml:space="preserve">
+    <value>未连接</value>
+  </data>
+  <data name="Home.Player.PluginUnverified" xml:space="preserve">
+    <value>插件待核实</value>
+  </data>
+  <data name="Home.Rotation.Slide" xml:space="preserve">
+    <value>第 {0} 张：{1}</value>
+  </data>
+  <data name="Home.Refreshing" xml:space="preserve">
+    <value>正在刷新</value>
+  </data>
+  <data name="Home.RefreshCooldown" xml:space="preserve">
+    <value>刚刚已刷新，稍后再试</value>
+  </data>
 </root>
