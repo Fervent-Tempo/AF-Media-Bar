@@ -10,6 +10,7 @@ namespace AFMediaBar.Views.Windows;
 /// <summary>在目标显示器完成窗口布局和定位后，才恢复整窗可见性。</summary>
 internal sealed class AnchoredWindowPresentation : IDisposable
 {
+    private const int DwmwaCloak = 13;
     private readonly Window _window;
     private int _version;
     private bool _disposed;
@@ -39,6 +40,8 @@ internal sealed class AnchoredWindowPresentation : IDisposable
         _window.IsHitTestVisible = false;
         try
         {
+            var handle = new WindowInteropHelper(_window).Handle;
+            if (handle != nint.Zero) SetCloaked(handle, true);
             var point = new NativeMethods.POINT { X = (int)physicalAnchor.X, Y = (int)physicalAnchor.Y };
             var monitor = NativeMethods.MonitorFromPoint(point, NativeMethods.MONITOR_DEFAULTTONEAREST);
             var scale = NativeMethods.GetDpiForMonitor(monitor, NativeMethods.MonitorDpiType.MDT_EFFECTIVE_DPI, out var dpiX, out var dpiY) == 0
@@ -46,8 +49,10 @@ internal sealed class AnchoredWindowPresentation : IDisposable
             _window.WindowStartupLocation = WindowStartupLocation.Manual;
             _window.Left = physicalAnchor.X / scale.X;
             _window.Top = physicalAnchor.Y / scale.Y;
-            var handle = new WindowInteropHelper(_window).EnsureHandle();
+            handle = new WindowInteropHelper(_window).EnsureHandle();
             if (!IsCurrent(version)) return false;
+            // WPF Opacity 只控制视觉树；DWM cloak 同时遮住原生材质、阴影和边框。
+            SetCloaked(handle, true);
             NativeMethods.SetWindowPos(handle, 0, point.X, point.Y, 0, 0,
                 NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_NOZORDER);
             if (!_window.IsVisible) _window.Show();
@@ -62,11 +67,13 @@ internal sealed class AnchoredWindowPresentation : IDisposable
                 _window.SizeToContent = sizeToContent;
             }
             _window.UpdateLayout();
+            if (!IsCurrent(version) || !_window.IsVisible) return false;
             position();
             if (!IsCurrent(version) || !_window.IsVisible) return false;
             _hasPresented = true;
-            RestoreInput();
             _window.Opacity = 1;
+            SetCloaked(handle, false);
+            RestoreInput();
             return true;
         }
         finally
@@ -83,6 +90,13 @@ internal sealed class AnchoredWindowPresentation : IDisposable
     {
         _version++;
         if (IsPreparing) RestoreInput();
+    }
+
+    private static void SetCloaked(nint handle, bool cloaked)
+    {
+        var value = cloaked ? 1 : 0;
+        var result = NativeMethods.DwmSetWindowAttribute(handle, DwmwaCloak, ref value, sizeof(int));
+        if (result < 0) System.Runtime.InteropServices.Marshal.ThrowExceptionForHR(result);
     }
 
     private bool IsCurrent(int version) => !_disposed && version == _version && !_window.Dispatcher.HasShutdownStarted;

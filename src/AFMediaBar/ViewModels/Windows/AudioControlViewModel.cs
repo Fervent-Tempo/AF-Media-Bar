@@ -98,8 +98,17 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
 
     [ObservableProperty] private AudioDeviceOption? _selectedOutputDevice;
     [ObservableProperty] private string _spatialAudioText = Translations.Get("Audio.Spatial.Unavailable");
-    [ObservableProperty] private string _statusText = string.Empty;
-    [ObservableProperty] private bool _isBusy;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RefreshStatusText))]
+    private string _statusText = string.Empty;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RefreshStatusText))]
+    private bool _isBusy;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RefreshStatusText))]
+    private bool _hasLoadedAudioState;
+    public string RefreshStatusText => IsBusy || (!HasLoadedAudioState && string.IsNullOrEmpty(StatusText))
+        ? Translations.Get("Audio.Status.Loading") : StatusText;
 
     public ICommand RefreshCommand { get; }
     public ICommand OpenSpatialAudioSettingsCommand { get; }
@@ -175,6 +184,7 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     /// </summary>
     public async Task RefreshAsync()
     {
+        if (_disposed) return;
         if (IsBusy)
         {
             _refreshRequested = true;
@@ -186,31 +196,38 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         try
         {
             var devices = await _deviceService.GetRenderDevicesAsync().WaitAsync(TimeSpan.FromSeconds(3));
+            var inputs = await _deviceService.GetDevicesAsync(AudioDeviceDirection.Input);
+            var inputStatus = await _deviceService.GetDefaultDescriptionAsync(AudioDeviceDirection.Input);
+            var outputStatus = await _deviceService.GetDefaultDescriptionAsync(AudioDeviceDirection.Output);
             if (_disposed || audioVersion != _audioRefreshVersion) return;
             _isRefreshing = true;
-            OutputDevices.Clear();
-            foreach (var device in devices)
+            try
             {
-                OutputDevices.Add(device);
-            }
+                OutputDevices.Clear();
+                foreach (var device in devices)
+                {
+                    OutputDevices.Add(device);
+                }
 
-            var outputPreview = _audioInteraction.DeviceSwitches.GetPreview(new(AudioDeviceDirection.Output));
-            SelectedOutputDevice = outputPreview is null ? devices.FirstOrDefault(device => device.IsDefault) : devices.FirstOrDefault(device => device.PolicyId == outputPreview.PolicyId);
-            var inputs = await _deviceService.GetDevicesAsync(AudioDeviceDirection.Input);
+                var outputPreview = _audioInteraction.DeviceSwitches.GetPreview(new(AudioDeviceDirection.Output));
+                SelectedOutputDevice = outputPreview is null ? devices.FirstOrDefault(device => device.IsDefault) : devices.FirstOrDefault(device => device.PolicyId == outputPreview.PolicyId);
+                InputDevices.Clear(); foreach (var input in inputs) InputDevices.Add(input);
+                var inputPreview = _audioInteraction.DeviceSwitches.GetPreview(new(AudioDeviceDirection.Input));
+                SelectedInputDevice = inputPreview is null ? inputs.FirstOrDefault(input => input.IsDefault) : inputs.FirstOrDefault(input => input.PolicyId == inputPreview.PolicyId);
+                InputDeviceStatus = inputStatus;
+                OutputDeviceStatus = outputStatus;
+                HasLoadedAudioState = true;
+            }
+            finally { _isRefreshing = false; }
+            var outputId = SelectedOutputDevice?.Id;
+            var spatial = outputId is null ? null : await Task.Run(() => _spatialAudioService.GetState(outputId));
             if (_disposed || audioVersion != _audioRefreshVersion) return;
-            InputDevices.Clear(); foreach (var input in inputs) InputDevices.Add(input);
-            var inputPreview = _audioInteraction.DeviceSwitches.GetPreview(new(AudioDeviceDirection.Input));
-            SelectedInputDevice = inputPreview is null ? inputs.FirstOrDefault(input => input.IsDefault) : inputs.FirstOrDefault(input => input.PolicyId == inputPreview.PolicyId);
-            InputDeviceStatus = await _deviceService.GetDefaultDescriptionAsync(AudioDeviceDirection.Input);
-            OutputDeviceStatus = await _deviceService.GetDefaultDescriptionAsync(AudioDeviceDirection.Output);
-            if (_disposed || audioVersion != _audioRefreshVersion) return;
-            _isRefreshing = false;
-            RefreshSpatialAudio();
+            SpatialAudioText = spatial?.DisplayName ?? Translations.Get("Audio.Spatial.NoDevice");
 
             var pendingVolumes = Applications.Where(row => _applicationControl.IsPending(row.ProcessName)).Select(row => row.ProcessName).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var applications = await Task.Run(() => _volumeService.GetApplications(
-                _mediaSessionService.SelectedSourceId,
-                _mediaSessionService.SelectedSourceName)).WaitAsync(TimeSpan.FromSeconds(3));
+            var sourceId = _mediaSessionService.SelectedSourceId;
+            var sourceName = _mediaSessionService.SelectedSourceName;
+            var applications = await Task.Run(() => _volumeService.GetApplications(sourceId, sourceName)).WaitAsync(TimeSpan.FromSeconds(3));
             var audioApps = await _routing.GetApplicationsAsync();
             if (_disposed || audioVersion != _audioRefreshVersion) return;
             var existingVolumes = Applications.ToDictionary(row => row.ProcessName, StringComparer.OrdinalIgnoreCase);
@@ -249,13 +266,14 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         catch (Exception exception)
         {
             _isRefreshing = false;
-            StatusText = Translations.Format("Audio.Status.ReadFailed", exception.Message);
+            if (!_disposed && audioVersion == _audioRefreshVersion)
+                StatusText = Translations.Format("Audio.Status.ReadFailed", exception.Message);
             Debug.WriteLine($"[AudioControlViewModel] Refresh failed: {exception}");
         }
         finally
         {
             _isRefreshing = false;
-            IsBusy = false;
+            if (!_disposed) IsBusy = false;
             if (_refreshRequested && !_disposed) { _refreshRequested = false; _ = RefreshAsync(); }
         }
     }
@@ -275,9 +293,9 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         catch (Exception) { if (!_disposed) StatusText = Translations.Get("Audio.Route.Failed"); }
     }
     partial void OnSelectedOutputDeviceChanged(AudioDeviceOption? value)
-    { if (!_isRefreshing && value is not null) _ = SelectDeviceAsync(value); }
+    { if (!_isRefreshing && value is not null) { _audioRefreshVersion++; _ = SelectDeviceAsync(value); } }
     partial void OnSelectedInputDeviceChanged(AudioDeviceOption? value)
-    { if (!_isRefreshing && value is not null) _ = SelectDeviceAsync(value); }
+    { if (!_isRefreshing && value is not null) { _audioRefreshVersion++; _ = SelectDeviceAsync(value); } }
     private async Task SelectDeviceAsync(AudioDeviceOption device)
     {
         try
@@ -297,6 +315,8 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
             if (_disposed) return;
             if (update.Result is null)
             {
+                _audioRefreshVersion++;
+                if (IsBusy) _refreshRequested = true;
                 _isRefreshing = true;
                 if (update.Target.Direction == AudioDeviceDirection.Output)
                     SelectedOutputDevice = OutputDevices.FirstOrDefault(device => device.PolicyId == update.Candidate?.PolicyId);
@@ -490,13 +510,6 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
                 _ = ProcessTrayVolumeAsync();
             }
         }
-    }
-
-    private void RefreshSpatialAudio()
-    {
-        SpatialAudioText = SelectedOutputDevice is null
-            ? Translations.Get("Audio.Spatial.NoDevice")
-            : _spatialAudioService.GetState(SelectedOutputDevice.Id).DisplayName;
     }
 
     private void OpenSpatialAudioSettings()

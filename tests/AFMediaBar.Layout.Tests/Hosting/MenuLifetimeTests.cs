@@ -2,12 +2,14 @@
 // 测试拥有窗口和 Application，退出时关闭 Popup 并结束 Dispatcher。
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Controls.Primitives;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.Views.Windows;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -19,6 +21,44 @@ namespace AFMediaBar.Layout.Tests;
 [DoNotParallelize]
 public sealed class MenuLifetimeTests
 {
+    [TestMethod]
+    public void LateAudioMenuResultsCannotUpdateClosedOrReplacedRequests()
+    {
+        if (RunIsolated(nameof(LateAudioMenuResultsCannotUpdateClosedOrReplacedRequests))) return;
+        StaTest.Run(async dispatcher =>
+        {
+            var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+            using var icons = new AppIconService();
+            using var appearance = new WindowAppearanceService(new NativeWindowBackdropAdapter(), icons);
+            TaskbarCompactFlyoutWindow? menu = null;
+            try
+            {
+                LoadResources(app);
+                menu = new(appearance) { ShowActivated = false, ShowInTaskbar = false, Topmost = false };
+                var anchor = new TrayIconBounds(20, 20, 40, 40);
+                var first = menu.ShowDeviceLoading(AudioDeviceDirection.Output, anchor);
+                Assert.IsFalse(((ListBox)menu.FindName("OutputDeviceList")).IsEnabled);
+                menu.Dismiss();
+                Assert.IsFalse(menu.CompleteDeviceLoad(first, new(AudioDeviceDirection.Output), [], null, true));
+                Assert.IsFalse(menu.IsVisible, "准备阶段关闭后，查询结果不能重新显示菜单。");
+
+                var volume = menu.ShowVolumeLoading("Media", anchor);
+                Assert.IsFalse(menu.CompleteDeviceLoad(first, new(AudioDeviceDirection.Output), [], null, true));
+                Assert.IsFalse(((Slider)menu.FindName("VolumeSlider")).IsEnabled);
+                Assert.IsTrue(menu.CompleteVolumeLoad(volume, 35));
+                Assert.AreEqual(35d, ((Slider)menu.FindName("VolumeSlider")).Value);
+                var next = menu.ShowDeviceLoading(AudioDeviceDirection.Input, anchor);
+                Assert.IsFalse(menu.CompleteVolumeLoad(volume, 80));
+                Assert.IsTrue(menu.CompleteDeviceLoad(next, new(AudioDeviceDirection.Input), [], null, true));
+                Assert.AreEqual(AudioDeviceDirection.Input, menu.DeviceTarget!.Direction);
+                await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                menu.Hide();
+                Assert.IsFalse(menu.CompleteDeviceLoad(next, new(AudioDeviceDirection.Input), [], null, true));
+            }
+            finally { menu?.Dispose(); app.Shutdown(); }
+        });
+    }
+
     [TestMethod]
     public void InitialPresentationStaysTransparentAndCannotResumeAfterHideOrClose()
     {
@@ -36,6 +76,9 @@ public sealed class MenuLifetimeTests
                     Assert.AreEqual(0d, window.Opacity, "定位完成前整窗必须不可见。");
                     Assert.IsFalse(window.IsHitTestVisible);
                     Assert.IsFalse(window.ShowActivated);
+                    var handle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+                    Assert.AreEqual(0, GetCloakedState(handle, 14, out var cloaked, sizeof(int)));
+                    Assert.AreEqual(1, cloaked & 1, "布局期间 DWM 材质和边框也必须隐藏。");
                     window.Left = -32000;
                     window.Top = -32000;
                     positioned++;
@@ -51,6 +94,8 @@ public sealed class MenuLifetimeTests
                 Assert.IsTrue(window.IsHitTestVisible);
                 Assert.IsFalse(window.ShowActivated);
                 Assert.AreEqual(1, positioned);
+                Assert.AreEqual(0, GetCloakedState(new System.Windows.Interop.WindowInteropHelper(window).Handle, 14, out var visibleState, sizeof(int)));
+                Assert.AreEqual(0, visibleState & 1);
 
                 window.Hide();
                 pending = presentation.ShowAsync(new Point(20, 20), Position);
@@ -189,6 +234,9 @@ public sealed class MenuLifetimeTests
         foreach (var resource in new[] { "MotionResources", "SettingsAppearanceResources" })
             app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri($"/AFMediaBar;component/Resources/{resource}.xaml", UriKind.Relative) });
     }
+
+    [DllImport("dwmapi.dll", EntryPoint = "DwmGetWindowAttribute")]
+    private static extern int GetCloakedState(nint handle, int attribute, out int value, int size);
 
     private static bool RunIsolated(string name)
     {

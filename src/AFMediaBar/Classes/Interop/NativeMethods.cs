@@ -547,6 +547,9 @@ public static partial class NativeMethods
     [DllImport("dwmapi.dll")]
     public static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out RECT value, int valueSize);
 
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int valueSize);
+
     [LibraryImport("gdi32.dll")]
     public static partial IntPtr CreateRectRgn(int left, int top, int right, int bottom);
 

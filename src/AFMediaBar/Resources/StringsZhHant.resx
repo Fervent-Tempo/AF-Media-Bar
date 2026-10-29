@@ -487,6 +487,9 @@
   <data name="Audio.Status.AdjustApplicationVolumeFailed" xml:space="preserve">
     <value>調整 {0} 音量失敗：{1}</value>
   </data>
+  <data name="Audio.Status.Loading" xml:space="preserve">
+    <value>正在載入…</value>
+  </data>
   <data name="Audio.Status.NoSessions" xml:space="preserve">
     <value>目前沒有應用程式音訊工作階段</value>
   </data>

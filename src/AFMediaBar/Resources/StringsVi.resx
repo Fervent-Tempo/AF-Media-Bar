@@ -376,6 +376,9 @@
   <data name="Audio.Status.AdjustApplicationVolumeFailed" xml:space="preserve">
     <value>Điều chỉnh âm lượng của {0} thất bại: {1}</value>
   </data>
+  <data name="Audio.Status.Loading" xml:space="preserve">
+    <value>Đang tải…</value>
+  </data>
   <data name="Audio.Status.NoSessions" xml:space="preserve">
     <value>Không có phiên âm thanh ứng dụng nào</value>
   </data>

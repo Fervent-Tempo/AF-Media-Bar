@@ -185,6 +185,7 @@
                 <TextBlock Text="{DynamicResource Loc.Common.OutputDevice}" Style="{StaticResource AudioDeviceLabelStyle}" />
             </StackPanel>
             <components:ReleaseOpenComboBox x:Name="OutputDeviceComboBox"
+                      IsEnabled="{Binding HasLoadedAudioState}"
                       Style="{StaticResource {x:Type ComboBox}}"
                       Grid.Row="2" HorizontalAlignment="Stretch"
                       MinHeight="32"
@@ -209,6 +210,7 @@
                     <TextBlock Text="{DynamicResource Loc.Common.InputDevice}" Style="{StaticResource AudioDeviceLabelStyle}" />
                 </StackPanel>
                 <components:ReleaseOpenComboBox x:Name="InputDeviceComboBox" MinHeight="32" MaxDropDownHeight="240"
+                    IsEnabled="{Binding HasLoadedAudioState}"
                     Style="{StaticResource {x:Type ComboBox}}" ItemsSource="{Binding InputDevices}" DisplayMemberPath="MenuLabel"
                     ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=SelectedItem.DeviceHint}"
                     SelectedItem="{Binding SelectedInputDevice, Mode=TwoWay}" PreviewMouseWheel="InputDevice_OnPreviewMouseWheel"
@@ -300,6 +302,7 @@
             </Grid>
 
 
+            <TextBlock Grid.Row="7" Text="{Binding RefreshStatusText}" TextWrapping="Wrap" Style="{StaticResource AudioStatusStyle}" />
         </Grid>
         </Grid>
     </Border>

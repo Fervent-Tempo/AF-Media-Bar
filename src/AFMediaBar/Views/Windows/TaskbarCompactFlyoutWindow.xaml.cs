@@ -26,6 +26,9 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     private bool _allowClose;
     private int _animationVersion;
     private readonly AnchoredWindowPresentation _windowPresentation;
+    internal int RequestVersion { get; private set; }
+
+    internal bool IsCurrentRequest(int version) => !_allowClose && !_isHiding && IsVisible && version == RequestVersion;
 
     public event Action<QuickLaunchEntry>? QuickLaunchSelected;
     public event Action<AudioDeviceOption>? OutputDeviceSelected;
@@ -38,11 +41,12 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     {
         InitializeComponent();
         _windowPresentation = new(this);
+        IsVisibleChanged += (_, _) => { if (!IsVisible) RequestVersion++; };
         appearanceService.Attach(this);
     }
 
     /// <summary>判断指定内容当前是否可见。 / Determines whether the requested content is currently visible.</summary>
-    public bool IsShowing(TaskbarCompactFlyoutMode mode) => IsVisible && _mode == mode;
+    public bool IsShowing(TaskbarCompactFlyoutMode mode) => !_isHiding && IsVisible && _mode == mode;
 
     /// <summary>按内容宽度显示快速启动列表。 / Shows the quick-launch list sized to its content.</summary>
     public void ShowQuickLaunch(IReadOnlyList<QuickLaunchEntry> entries, TrayIconBounds anchor)
@@ -64,6 +68,13 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     public void ShowDevices(AudioDeviceTarget target, IReadOnlyList<AudioDeviceOption> devices, AudioDeviceOption? selected, TrayIconBounds anchor, bool isSupported = true)
     {
         if (_allowClose) return;
+        ApplyDevices(target, devices, selected, isSupported);
+        Width = 320;
+        ShowMode(target.Direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice, anchor);
+    }
+
+    private void ApplyDevices(AudioDeviceTarget target, IReadOnlyList<AudioDeviceOption> devices, AudioDeviceOption? selected, bool isSupported)
+    {
         OutputDeviceList.Visibility = Visibility.Visible;
         CurrentDeviceText.Visibility = Visibility.Visible;
         DeviceTarget = target;
@@ -72,8 +83,59 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         DeviceApplicationText.Text = target.Application?.DisplayName ?? string.Empty;
         DeviceApplicationText.Visibility = target.Application is null ? Visibility.Collapsed : Visibility.Visible;
         UpdateDevices(devices, selected);
-        Width = 320;
-        ShowMode(target.Direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice, anchor);
+    }
+
+    internal int ShowDeviceLoading(AudioDeviceDirection direction, TrayIconBounds anchor)
+    {
+        ShowDevices(new(direction), [], null, anchor, false);
+        DeviceTarget = null;
+        CurrentDeviceText.Text = Translations.Get("Audio.Status.Loading");
+        DeviceUnavailableText.Text = string.Empty;
+        return RequestVersion;
+    }
+
+    internal bool CompleteDeviceLoad(int version, AudioDeviceTarget target, IReadOnlyList<AudioDeviceOption> devices,
+        AudioDeviceOption? selected, bool supported)
+    {
+        if (!IsCurrentRequest(version) || _mode != (target.Direction == AudioDeviceDirection.Output
+            ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice)) return false;
+        ApplyDevices(target, devices, selected, supported);
+        return true;
+    }
+
+    internal int ShowVolumeLoading(string sourceName, TrayIconBounds anchor)
+    {
+        ShowVolume(sourceName, null, anchor);
+        VolumePercentText.Text = Translations.Get("Audio.Status.Loading");
+        VolumePercentText.ToolTip = null;
+        return RequestVersion;
+    }
+
+    internal bool CompleteVolumeLoad(int version, int? volume)
+    {
+        if (!IsCurrentRequest(version) || _mode != TaskbarCompactFlyoutMode.Volume) return false;
+        _isUpdating = true;
+        VolumeSlider.IsEnabled = volume is not null;
+        VolumeSlider.Value = volume ?? 0;
+        VolumePercentText.Text = volume is int value ? $"{value}%" : Translations.Get("Panel.Volume.Unavailable");
+        _isUpdating = false;
+        RepositionVisibleMenu();
+        return true;
+    }
+
+    internal void FailLoading(int version, string message)
+    {
+        if (!IsCurrentRequest(version)) return;
+        if (_mode == TaskbarCompactFlyoutMode.Volume)
+        {
+            CompleteVolumeLoad(version, null);
+            VolumePercentText.ToolTip = message;
+        }
+        else
+        {
+            CurrentDeviceText.Text = message;
+            ShowDeviceStatus(message);
+        }
     }
 
     /// <summary>
@@ -134,7 +196,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         RepositionVisibleMenu();
     }
     private void RepositionVisibleMenu()
-    { if (!_allowClose && IsVisible && _anchor is { } anchor) { UpdateLayout(); PositionNear(anchor); } }
+    { if (!_allowClose && IsVisible && _anchor is { } anchor) { UpdateLayout(); TryPositionNear(anchor); } }
 
     /// <summary>更新滚轮预览的媒体音量。 / Updates the wheel-previewed media volume.</summary>
     public void SetVolumePreview(int volume)
@@ -164,6 +226,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     {
         if (_allowClose) return;
         _anchor = anchor;
+        RequestVersion++;
         _animationVersion++;
         _mode = mode;
         QuickLaunchPanel.Visibility = mode == TaskbarCompactFlyoutMode.QuickLaunch ? Visibility.Visible : Visibility.Collapsed;
@@ -179,7 +242,10 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         FlyoutScale.ScaleX = FlyoutScale.ScaleY = motion.UseTransitions ? 0.98 : 1;
         try
         {
-            if (!await _windowPresentation.ShowAsync(AnchoredWindowPresentation.GetPhysicalAnchor(anchor), () => PositionNear(anchor))) return;
+            if (!await _windowPresentation.ShowAsync(AnchoredWindowPresentation.GetPhysicalAnchor(anchor), () =>
+            {
+                if (!TryPositionNear(anchor)) throw new InvalidOperationException("无法定位紧凑菜单。");
+            })) return;
         }
         catch (Exception exception)
         {
@@ -194,16 +260,16 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         FlyoutScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, motion.PanelDuration) { EasingFunction = ease });
     }
 
-    private void PositionNear(TrayIconBounds anchor)
+    private bool TryPositionNear(TrayIconBounds anchor)
     {
-        if (_isPositioning || _allowClose) return;
+        if (_isPositioning || _allowClose) return false;
         _isPositioning = true;
         try
         {
             var point = new NativeMethods.POINT { X = (anchor.Left + anchor.Right) / 2, Y = (anchor.Top + anchor.Bottom) / 2 };
             var monitor = NativeMethods.MonitorFromPoint(point, NativeMethods.MONITOR_DEFAULTTONEAREST);
             var info = new NativeMethods.MONITORINFOEX { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MONITORINFOEX>() };
-            if (!NativeMethods.GetMonitorInfo(monitor, ref info)) return;
+            if (!NativeMethods.GetMonitorInfo(monitor, ref info)) return false;
             var scale = NativeMethods.GetDpiForMonitor(monitor, NativeMethods.MonitorDpiType.MDT_EFFECTIVE_DPI, out var dpiX, out _) == 0 ? dpiX / 96d : 1d;
             MaxHeight = Math.Min(440, Math.Max(0, (info.rcWork.Bottom - info.rcWork.Top) / scale - 16));
             MaxWidth = Math.Max(1, (info.rcWork.Right - info.rcWork.Left) / scale);
@@ -221,7 +287,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
             var y = anchor.Top - info.rcWork.Top >= height + 8 ? anchor.Top - height - 8 : anchor.Bottom + 8;
             y = Math.Clamp(y, info.rcWork.Top, Math.Max(info.rcWork.Top, info.rcWork.Bottom - height));
             FlyoutRoot.RenderTransformOrigin = y < anchor.Top ? new Point(0.5, 1) : new Point(0.5, 0);
-            NativeMethods.SetWindowPos(new WindowInteropHelper(this).Handle, -1, x, y, 0, 0,
+            return NativeMethods.SetWindowPos(new WindowInteropHelper(this).Handle, -1, x, y, 0, 0,
                 NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
         }
         finally { _isPositioning = false; }
@@ -260,19 +326,19 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         if (e.Handled)
             return;
 
-        VolumeWheelRequested?.Invoke(e.Delta);
+        if (VolumeSlider.IsEnabled) VolumeWheelRequested?.Invoke(e.Delta);
         e.Handled = true;
     }
 
     private void VolumeSlider_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        VolumeWheelRequested?.Invoke(e.Delta);
+        if (VolumeSlider.IsEnabled) VolumeWheelRequested?.Invoke(e.Delta);
         e.Handled = true;
     }
 
     private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (_isUpdating) return;
+        if (_isUpdating || !VolumeSlider.IsEnabled) return;
         var value = Math.Clamp((int)Math.Round(e.NewValue), 0, 100);
         VolumePercentText.Text = $"{value}%";
         VolumeValueRequested?.Invoke(value);
@@ -305,6 +371,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     private void BeginHideAnimation()
     {
         if (_isHiding || !IsVisible) return;
+        RequestVersion++;
         _isHiding = true;
         if (_windowPresentation.IsPreparing)
         {
@@ -344,6 +411,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     {
         if (_allowClose) return;
         _allowClose = true;
+        RequestVersion++;
         _windowPresentation.Dispose();
         _animationVersion++;
         FlyoutRoot.BeginAnimation(OpacityProperty, null);

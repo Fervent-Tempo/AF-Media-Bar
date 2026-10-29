@@ -25,6 +25,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
     private readonly AnchoredWindowPresentation _windowPresentation;
     private TrayIconBounds? _anchor;
     private Point _physicalAnchor;
+    private bool _positionQueued;
     private double _applicationListOffset;
     private WeakReference<IInputElement>? _applicationListFocus;
 
@@ -47,17 +48,19 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         ApplyMotionEffects();
         MaxHeight = 620;
         appearanceService.Attach(this);
+        FlyoutRoot.SizeChanged += (_, _) => QueuePosition();
+        DpiChanged += (_, _) => QueuePosition();
     }
 
     /// <summary>
-    /// 在托盘锚点附近切换浮窗；首次布局期间隐藏整窗。
+    /// 在托盘锚点附近切换浮窗；显示已有内容后异步刷新音频状态。
     /// </summary>
     public async Task ToggleAsync(TrayIconBounds? bounds)
     {
         if (_isDisposed || _isToggling || Dispatcher.HasShutdownStarted)
             return;
 
-        // 门禁覆盖刷新和 HWND 创建；同步完成的刷新也必须先退出托盘原生消息回调。
+        // 门禁覆盖 HWND 创建，不能在托盘原生消息回调内直接创建窗口。
         _isToggling = true;
         var presentationVersion = _presentationVersion;
         try
@@ -72,10 +75,6 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
                 return;
             }
 
-            await ViewModel.RefreshAsync();
-            if (_isDisposed || presentationVersion != _presentationVersion || Dispatcher.HasShutdownStarted)
-                return;
-
             _animationVersion++;
             _isHiding = false;
             ApplyMotionEffects();
@@ -88,7 +87,10 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
             FlyoutScale.ScaleY = motion.UseTransitions ? 0.98 : 1;
             _anchor = bounds;
             _physicalAnchor = AnchoredWindowPresentation.GetPhysicalAnchor(bounds);
-            if (!await _windowPresentation.ShowAsync(_physicalAnchor, () => PositionNear(_anchor))) return;
+            if (!await _windowPresentation.ShowAsync(_physicalAnchor, () =>
+            {
+                if (!TryPositionNear(_anchor)) throw new InvalidOperationException("无法定位音频面板。");
+            })) return;
             if (ShowActivated) Activate();
             if (motion.UseTransitions)
             {
@@ -97,6 +99,12 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
                 FlyoutScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, motion.PanelDuration) { EasingFunction = ease });
                 FlyoutScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, motion.PanelDuration) { EasingFunction = ease });
             }
+            // 先让首帧进入渲染队列；缓存命中时刷新也可能同步完成。
+            _ = Dispatcher.BeginInvoke(() =>
+            {
+                if (!_isDisposed && !_isHiding && IsVisible && presentationVersion == _presentationVersion)
+                    _ = RefreshAudioSafelyAsync();
+            }, DispatcherPriority.Background);
         }
         finally
         {
@@ -104,12 +112,31 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         }
     }
 
-    private void PositionNear(TrayIconBounds? bounds)
+    private async Task RefreshAudioSafelyAsync()
+    {
+        try { await ViewModel.RefreshAsync(); }
+        catch (Exception exception) { System.Diagnostics.Debug.WriteLine($"[AudioFlyout] Refresh failed: {exception}"); }
+    }
+
+    private void QueuePosition()
+    {
+        if (_positionQueued || _isDisposed || !IsVisible || _isHiding || _windowPresentation.IsPreparing) return;
+        _positionQueued = true;
+        var version = _presentationVersion;
+        Dispatcher.BeginInvoke(() =>
+        {
+            _positionQueued = false;
+            if (!_isDisposed && !_isHiding && IsVisible && !_windowPresentation.IsPreparing && version == _presentationVersion)
+                TryPositionNear(_anchor);
+        }, DispatcherPriority.Loaded);
+    }
+
+    private bool TryPositionNear(TrayIconBounds? bounds)
     {
         var monitorPoint = new NativeMethods.POINT { X = (int)_physicalAnchor.X, Y = (int)_physicalAnchor.Y };
         var monitor = NativeMethods.MonitorFromPoint(monitorPoint, NativeMethods.MONITOR_DEFAULTTONEAREST);
         var info = new NativeMethods.MONITORINFOEX { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MONITORINFOEX>() };
-        if (!NativeMethods.GetMonitorInfo(monitor, ref info)) return;
+        if (!NativeMethods.GetMonitorInfo(monitor, ref info)) return false;
         var dpi = NativeMethods.GetDpiForMonitor(monitor, NativeMethods.MonitorDpiType.MDT_EFFECTIVE_DPI, out var dpiX, out _) == 0 ? dpiX / 96d : 1d;
         MaxWidth = Math.Min(320, Math.Max(1, (info.rcWork.Right - info.rcWork.Left) / dpi));
         ApplicationsViewport.Height = 132;
@@ -130,7 +157,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
             ? new Point(0.85, 1)
             : new Point(0.85, 0);
         var handle = new WindowInteropHelper(this).Handle;
-        NativeMethods.SetWindowPos(handle, -1, x, y, 0, 0,
+        return NativeMethods.SetWindowPos(handle, -1, x, y, 0, 0,
             NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
     }
 
@@ -157,7 +184,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
-        if (_isDisposed) return;
+        if (_isDisposed || !IsVisible) return;
         if (args.PropertyName != nameof(AudioControlViewModel.SelectedAudioApplication)) return;
         ApplicationOutputDeviceComboBox.IsDropDownOpen = false;
         ApplicationInputDeviceComboBox.IsDropDownOpen = false;
@@ -169,7 +196,7 @@ public partial class AudioControlFlyoutWindow : FluentWindow, IDisposable
         }
         Dispatcher.BeginInvoke(() =>
         {
-            if (_isDisposed || version != _navigationVersion) return;
+            if (_isDisposed || !IsVisible || version != _navigationVersion) return;
             if (ViewModel.IsApplicationDetailVisible)
             {
                 ApplicationDetailScrollViewer.ScrollToTop();

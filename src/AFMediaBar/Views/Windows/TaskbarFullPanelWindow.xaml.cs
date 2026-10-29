@@ -127,6 +127,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         {
             ApplyMotionEffects();
             ApplyFullPanelSettings(animate: false);
+            PanelRoot.Opacity = MotionPolicy.ResolveCurrent().UseTransitions ? 0 : 1;
             var monitor = _displayMonitorService.ResolveFixedMonitor(targetMonitorDeviceId);
             var physicalAnchor = new Point((anchor.Left + anchor.Width / 2) * (monitor?.DpiX ?? 96) / 96d,
                 (anchor.Top + anchor.Height / 2) * (monitor?.DpiY ?? 96) / 96d);
@@ -470,6 +471,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     private async Task RefreshAudioAsync()
     {
         var generation = ++_audioRefreshGeneration;
+        var volumeVersion = _volumeApplyVersion;
         var devices = await _audioInteractionService.GetOutputDevicesAsync();
         var inputs = await _audioInteractionService.GetInputDevicesAsync();
         var volume = await Task.Run(_audioInteractionService.GetCurrentMediaVolume);
@@ -487,10 +489,13 @@ public partial class TaskbarFullPanelWindow : FluentWindow
                 inputs.FirstOrDefault(device => device.PolicyId == inputPreview.PolicyId);
             AudioDeviceStatusText.Text = DeviceCombo.SelectedItem is null || InputDeviceCombo.SelectedItem is null ?
                 Translations.Get("Audio.Route.HiddenOrDisconnected") : string.Empty;
-            _currentVolume = volume;
-            VolumeSlider.IsEnabled = volume is not null;
-            VolumeSlider.Value = volume?.VolumePercent ?? 0;
-            VolumeText.Text = volume is null ? Translations.Get("Panel.Volume.Unavailable") : $"{volume.VolumePercent}%";
+            if (volumeVersion == _volumeApplyVersion)
+            {
+                _currentVolume = volume;
+                VolumeSlider.IsEnabled = volume is not null;
+                VolumeSlider.Value = volume?.VolumePercent ?? 0;
+                VolumeText.Text = volume is null ? Translations.Get("Panel.Volume.Unavailable") : $"{volume.VolumePercent}%";
+            }
         }
         finally { _isLoadingDevices = false; }
     }

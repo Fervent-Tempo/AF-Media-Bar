@@ -487,6 +487,9 @@
   <data name="Audio.Status.AdjustApplicationVolumeFailed" xml:space="preserve">
     <value>调节 {0} 音量失败：{1}</value>
   </data>
+  <data name="Audio.Status.Loading" xml:space="preserve">
+    <value>正在加载…</value>
+  </data>
   <data name="Audio.Status.NoSessions" xml:space="preserve">
     <value>当前没有应用音频会话</value>
   </data>

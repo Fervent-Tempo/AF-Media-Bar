@@ -130,6 +130,7 @@ public sealed class AudioFlyoutLifecycleTests
                 window.SourceInitialized += (_, _) =>
                 {
                     sourceCount++;
+                    Assert.AreEqual(0d, window.Opacity, "创建 HWND 时整窗必须保持透明。");
                     reentrantToggle = window.ToggleAsync(null);
                 };
 
@@ -142,6 +143,8 @@ public sealed class AudioFlyoutLifecycleTests
                 Assert.IsNotNull(reentrantToggle);
                 await reentrantToggle;
                 Assert.IsTrue(window.IsVisible, "创建 HWND 时的重入不能隐藏刚打开的浮窗。");
+                Assert.AreEqual(1d, window.Opacity);
+                Assert.IsTrue(viewModel.IsBusy, "音频仍忙碌时窗口也必须完成呈现。");
                 var handle = new WindowInteropHelper(window).Handle;
                 Assert.AreNotEqual(nint.Zero, handle);
                 Assert.AreSame(window, ((HwndSource)PresentationSource.FromVisual(window)).RootVisual);

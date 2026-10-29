@@ -1552,26 +1552,37 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         var environmentVersion = _menuEnvironmentVersion;
         var mode = direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice;
         if (_compactFlyout.IsShowing(mode)) { _compactFlyout.Dismiss(); return; }
+        _deviceMenuTarget = null;
+        var requestVersion = _compactFlyout.ShowDeviceLoading(direction, anchor);
         try
         {
             var target = await _audioInteractionService.ResolveTargetAsync(direction, scope, this, false);
-            if (!CanPublishMenu(environmentVersion)) return;
-            if (target is null) { MediaControl.SetDeviceTooltip(direction, Translations.Get("Audio.App.Unavailable")); return; }
+            if (!CanPublishMenu(environmentVersion) || !_compactFlyout.IsCurrentRequest(requestVersion)) return;
+            if (target is null) { _compactFlyout.FailLoading(requestVersion, Translations.Get("Audio.App.Unavailable")); return; }
             var devices = await _audioInteractionService.DeviceSwitches.GetChoicesAsync(target);
             var selected = await _audioInteractionService.DeviceSwitches.GetSelectedAsync(target, devices);
             var route = await _audioInteractionService.DeviceSwitches.ReadRouteAsync(target);
-            if (!CanPublishMenu(environmentVersion)) return;
+            if (!CanPublishMenu(environmentVersion) || !_compactFlyout.IsCurrentRequest(requestVersion)) return;
+            var preview = _audioInteractionService.DeviceSwitches.GetPreview(target);
+            if (preview is not null) selected = devices.FirstOrDefault(device => device.PolicyId == preview.PolicyId);
+            if (!_compactFlyout.CompleteDeviceLoad(requestVersion, target, devices, selected, route.IsSupported && route.Error is null)) return;
             _deviceMenuTarget = target;
-            _compactFlyout.ShowDevices(target, devices, selected, anchor, route.IsSupported && route.Error is null);
             if (!route.IsSupported || route.Error is not null)
             {
                 _compactFlyout.ShowDeviceStatus(Translations.Get(route.Error ?? "Audio.Route.Unsupported"));
                 return;
             }
-            if (selected is null) _compactFlyout.ShowDeviceStatus(target.Application is null ?
-                await _audioInteractionService.GetDeviceDescriptionAsync(direction) : Translations.Get("Audio.Route.HiddenOrDisconnected"));
+            if (selected is null)
+            {
+                var description = target.Application is null ? await _audioInteractionService.GetDeviceDescriptionAsync(direction) : Translations.Get("Audio.Route.HiddenOrDisconnected");
+                if (CanPublishMenu(environmentVersion) && _compactFlyout.IsCurrentRequest(requestVersion)) _compactFlyout.ShowDeviceStatus(description);
+            }
         }
-        catch (Exception exception) { Debug.WriteLine(exception); if (!_isClosing) MediaControl.SetDeviceTooltip(direction, Translations.Get("Audio.Route.Failed")); }
+        catch (Exception exception)
+        {
+            Debug.WriteLine(exception);
+            if (CanPublishMenu(environmentVersion)) _compactFlyout.FailLoading(requestVersion, Translations.Get("Audio.Route.Failed"));
+        }
     }
     private async void MediaControl_OutputDeviceWheelRequested(object? sender, PlayerSurfaceWheelEventArgs e) =>
         await PreviewDeviceAsync(AudioDeviceDirection.Output, e.Delta);
@@ -1643,7 +1654,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             MediaControl.SetDeviceTooltip(update.Target.Direction, string.IsNullOrEmpty(detail) ? string.Empty :
                 (update.Target.Application is null ? string.Empty : update.Target.Application.DisplayName + " · ") + detail);
         }
-        if (_deviceMenuTarget?.Key == update.Target.Key && _compactFlyout.IsVisible)
+        if (_deviceMenuTarget?.Key == update.Target.Key && _compactFlyout.DeviceTarget?.Key == update.Target.Key &&
+            _compactFlyout.IsCurrentRequest(_compactFlyout.RequestVersion))
         {
             if (update.Result is null && update.Candidate is { } candidate) _compactFlyout.SetOutputDevicePreview(candidate);
             else if (update.Result is { } result)
@@ -1660,13 +1672,16 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private async Task RefreshOpenDeviceMenuAsync()
     {
         var environmentVersion = _menuEnvironmentVersion;
+        var requestVersion = _compactFlyout.RequestVersion;
         if (_deviceMenuTarget is not { } target || !_compactFlyout.IsVisible ||
             !_compactFlyout.IsShowing(target.Direction == AudioDeviceDirection.Output ? TaskbarCompactFlyoutMode.OutputDevice : TaskbarCompactFlyoutMode.InputDevice)) return;
         try
         {
             var devices = await _audioInteractionService.DeviceSwitches.GetChoicesAsync(target);
             var selected = await _audioInteractionService.DeviceSwitches.GetSelectedAsync(target, devices);
-            if (!CanPublishMenu(environmentVersion) || !_compactFlyout.IsVisible || _deviceMenuTarget?.Key != target.Key) return;
+            if (!CanPublishMenu(environmentVersion) || !_compactFlyout.IsCurrentRequest(requestVersion) || _deviceMenuTarget?.Key != target.Key) return;
+            var preview = _audioInteractionService.DeviceSwitches.GetPreview(target);
+            if (preview is not null) selected = devices.FirstOrDefault(device => device.PolicyId == preview.PolicyId);
             _compactFlyout.UpdateDevices(devices, selected, _audioInteractionService.DeviceSwitches.HasPending(target));
         }
         catch (Exception exception) { Debug.WriteLine(exception); }
@@ -1674,19 +1689,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private async void MediaControl_VolumeMenuRequested(object? sender, EventArgs e)
     {
-        if (_compactFlyout.IsShowing(TaskbarCompactFlyoutMode.Volume))
-        {
-            _compactFlyout.Dismiss();
-            return;
-        }
-
-        if (!CanPublishMenu(_menuEnvironmentVersion)) return;
-        var environmentVersion = _menuEnvironmentVersion;
-        var openingAnchor = MediaControl.GetVolumeAnchor();
-        var volume = await Task.Run(_audioInteractionService.GetCurrentMediaVolume);
-        if (!CanPublishMenu(environmentVersion)) return;
-        _currentVolume = volume;
-        _compactFlyout.ShowVolume(_lastSnapshot.SourceName, volume?.VolumePercent, openingAnchor);
+        await ShowCompactMenuAsync(TaskbarCompactFlyoutMode.Volume, null);
     }
 
     /// <summary>
@@ -1720,10 +1723,20 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
         var environmentVersion = _menuEnvironmentVersion;
         var openingAnchor = anchor ?? MediaControl.GetVolumeAnchor();
-        var volume = await Task.Run(_audioInteractionService.GetCurrentMediaVolume);
-        if (!CanPublishMenu(environmentVersion)) return;
-        _currentVolume = volume;
-        _compactFlyout.ShowVolume(_lastSnapshot.SourceName, volume?.VolumePercent, openingAnchor);
+        _currentVolume = null;
+        _deviceMenuTarget = null;
+        var requestVersion = _compactFlyout.ShowVolumeLoading(_lastSnapshot.SourceName, openingAnchor);
+        try
+        {
+            var volume = await Task.Run(_audioInteractionService.GetCurrentMediaVolume);
+            if (!CanPublishMenu(environmentVersion) || !_compactFlyout.CompleteVolumeLoad(requestVersion, volume?.VolumePercent)) return;
+            _currentVolume = volume;
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine(exception);
+            if (CanPublishMenu(environmentVersion)) _compactFlyout.FailLoading(requestVersion, Translations.Get("Audio.Route.Failed"));
+        }
     }
 
     private async void MediaControl_VolumeWheelRequested(object? sender, PlayerSurfaceWheelEventArgs e)
