@@ -1,121 +1,1059 @@
-<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.QuickStartPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False" Loaded="OnPageLoaded" Unloaded="OnPageUnloaded">
+<Page
+    x:Class="AFMediaBar.Views.Pages.QuickStartPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:components="clr-namespace:AFMediaBar.Components"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Loaded="OnPageLoaded"
+    Unloaded="OnPageUnloaded"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    ScrollViewer.CanContentScroll="False">
     <Page.Resources>
-        <BooleanToVisibilityConverter x:Key="HomeVisibility"/>
-        <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/>
-        <Style x:Key="BodyText" TargetType="TextBlock"><Setter Property="FontSize" Value="13"/><Setter Property="LineHeight" Value="20"/><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/></Style>
-        <Style x:Key="HomeCard" TargetType="Border"><Setter Property="Padding" Value="20"/><Setter Property="CornerRadius" Value="12"/><Setter Property="Background" Value="{DynamicResource AfSettingsCardBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}"/><Setter Property="BorderThickness" Value="1"/></Style>
-        <Style x:Key="HomeHeading" TargetType="TextBlock"><Setter Property="FontSize" Value="20"/><Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}"/><Setter Property="Margin" Value="0,28,0,14"/><Setter Property="TextWrapping" Value="Wrap"/></Style>
-        <Style x:Key="HomeShortcut" TargetType="{x:Type components:SettingsNavigationButton}" BasedOn="{StaticResource AfSettingsButtonStyle}"><Setter Property="Margin" Value="0,0,10,10"/><Setter Property="Padding" Value="16"/><Setter Property="MinHeight" Value="66"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="HorizontalAlignment" Value="Stretch"/></Style>
-        <DataTemplate x:Key="HomeThread"><ui:Anchor NavigateUri="{Binding Url}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,0,0,12"><StackPanel><TextBlock Text="{Binding Title}" FontSize="14" TextWrapping="Wrap"/><TextBlock Style="{StaticResource BodyText}" Text="{Binding Detail}" Margin="0,4,0,0"/></StackPanel></ui:Anchor></DataTemplate>
+        <BooleanToVisibilityConverter x:Key="HomeVisibility" />
+
+        <!-- 页面级表面：中性卡片由 1px 描边和留白表达层级，不用强调色染色整卡。 -->
+        <Style x:Key="HomeCard" TargetType="Border">
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Background" Value="{DynamicResource CardBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style x:Key="HomeSection" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="FontWeight" Value="{DynamicResource AppTextStrongFontWeight}" />
+            <Setter Property="Margin" Value="0,36,0,12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="HomeBody" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="LineHeight" Value="20" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        </Style>
+        <Style x:Key="HomeHint" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="LineHeight" Value="18" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        </Style>
+        <Style x:Key="HomeIconTile" TargetType="Border">
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+        </Style>
+
+        <!-- Hero 的暂停/上一张/下一张：36×36 透明图标按钮，悬停由既有模板提供。 -->
+        <Style x:Key="HomeIconButton" TargetType="{x:Type ui:Button}" BasedOn="{StaticResource AfSettingsIconButtonStyle}">
+            <Setter Property="Appearance" Value="Transparent" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="Margin" Value="0,0,6,6" />
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
+        </Style>
+
+        <!-- 轮播圆点：当前项拉成强调色胶囊，其余保持中性小圆点。 -->
+        <Style x:Key="HomeDotButton" TargetType="{x:Type ui:Button}">
+            <Setter Property="Appearance" Value="Transparent" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinWidth" Value="20" />
+            <Setter Property="MinHeight" Value="20" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Margin" Value="0,0,4,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
+        </Style>
+
+        <!-- 状态条/播放器状态胶囊：当前来源用强调色，其余用中性芯片。 -->
+        <Style x:Key="HomePlayerChip" TargetType="{x:Type ContentControl}" BasedOn="{StaticResource AfSettingsChipNeutralStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource AfAccentBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource AfOnAccentBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 状态条的动作入口：透明文字按钮，hover 只加浅底，不铺强调色。 -->
+        <Style x:Key="HomeActionLink" TargetType="{x:Type components:SettingsNavigationButton}">
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type components:SettingsNavigationButton}">
+                        <Border x:Name="Surface" Padding="{TemplateBinding Padding}" Background="Transparent"
+                                BorderBrush="Transparent" BorderThickness="1" CornerRadius="8">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <ContentPresenter VerticalAlignment="Center" ContentSource="Content" RecognizesAccessKey="True" />
+                                <ui:SymbolIcon Margin="5,0,0,0" VerticalAlignment="Center" FontSize="12"
+                                               Foreground="{TemplateBinding Foreground}" Symbol="ChevronRight24" />
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 普通文字按钮（查看所有播放器支持、项目动态行）：透明底 + 浅色悬停。 -->
+        <Style x:Key="HomeTextButton" TargetType="{x:Type ui:Button}">
+            <Setter Property="Appearance" Value="Transparent" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
+        </Style>
+
+        <!-- 文字链接（查看全部）：透明底强调色文字，不占用按钮底色。 -->
+        <Style x:Key="HomeLink" TargetType="{x:Type ui:Anchor}">
+            <Setter Property="Appearance" Value="Transparent" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="2" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource AfAccentBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
+        </Style>
+
+        <!-- 胶囊链接（运行组件要求的三个链接）：细边框 + 浅色悬停。 -->
+        <Style x:Key="HomeLinkPill" TargetType="{x:Type ui:Anchor}">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource AfAccentBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ui:Anchor}">
+                        <Border x:Name="Pill" Padding="11,5" Background="Transparent" CornerRadius="6"
+                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
+                            <ContentPresenter VerticalAlignment="Center" ContentSource="Content" RecognizesAccessKey="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Pill" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Pill" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Pill" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 常用设置磁贴：安静的行，用底部 1px 分隔线分组，不铺卡片底色。 -->
+        <Style x:Key="HomeQuickLink" TargetType="{x:Type components:SettingsNavigationButton}">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="MinHeight" Value="56" />
+            <Setter Property="Padding" Value="0,10,6,10" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type components:SettingsNavigationButton}">
+                        <Border x:Name="Surface" Padding="{TemplateBinding Padding}" Background="Transparent"
+                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter Margin="0,0,10,0" VerticalAlignment="Center" ContentSource="Content" RecognizesAccessKey="True" />
+                                <ui:SymbolIcon Grid.Column="1" VerticalAlignment="Center" FontSize="14"
+                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" Symbol="ChevronRight24" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 教程/FAQ 展开器：无卡片底色，行与行之间用 1px 分隔线。 -->
+        <Style x:Key="HomeExpander" TargetType="{x:Type ui:CardExpander}">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="0,12" />
+            <Setter Property="ContentPadding" Value="0,0,0,12" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ui:CardExpander}">
+                        <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                            <StackPanel>
+                                <ToggleButton x:Name="ExpanderToggleButton" Padding="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                              Foreground="{TemplateBinding Foreground}" Cursor="Hand"
+                                              FocusVisualStyle="{DynamicResource AfFocusVisualStyle}"
+                                              IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                              Template="{StaticResource AfSettingsExpanderToggleTemplate}">
+                                    <ToggleButton.Content>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <ContentControl x:Name="ControlIcon" Margin="0,0,14,0" VerticalAlignment="Center"
+                                                            Content="{TemplateBinding Icon}" FontSize="18" Focusable="False"
+                                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                            Template="{StaticResource AfSettingsExpanderIconTemplate}" />
+                                            <ContentPresenter Grid.Column="1" VerticalAlignment="Center" Content="{TemplateBinding Header}" />
+                                        </Grid>
+                                    </ToggleButton.Content>
+                                </ToggleButton>
+                                <Border x:Name="ExpandedContent" Padding="{TemplateBinding ContentPadding}" Visibility="Collapsed">
+                                    <ContentPresenter Content="{TemplateBinding Content}"
+                                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                      HorizontalAlignment="Stretch" />
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter TargetName="ExpandedContent" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="Icon" Value="{x:Null}">
+                                <Setter TargetName="ControlIcon" Property="Visibility" Value="Collapsed" />
+                                <Setter TargetName="ControlIcon" Property="Margin" Value="0" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 项目动态行：整行可点，编号强调色、标题两行、元信息在小字行。 -->
+        <DataTemplate x:Key="HomeThreadRow">
+            <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                <ui:Button Padding="8,10" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                           Style="{StaticResource HomeTextButton}" Click="OnThreadClick">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="46" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Margin="0,2,0,0" VerticalAlignment="Top" FontFamily="Cascadia Mono, Consolas"
+                                   FontSize="12" Foreground="{DynamicResource AfAccentBrush}" Text="{Binding Number}" />
+                        <StackPanel Grid.Column="1">
+                            <TextBlock FontSize="14" LineHeight="20" MaxHeight="40" TextTrimming="CharacterEllipsis"
+                                       TextWrapping="Wrap" Text="{Binding Title}" />
+                            <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+                                <ContentControl Margin="0,0,6,0" Content="{DynamicResource Loc.Home.Draft}"
+                                                Style="{StaticResource AfSettingsBadgeNeutralStyle}"
+                                                Visibility="{Binding IsDraft, Converter={StaticResource HomeVisibility}}" />
+                                <TextBlock VerticalAlignment="Center" FontSize="11"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="{Binding DateText}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </ui:Button>
+            </Border>
+        </DataTemplate>
     </Page.Resources>
+
     <components:SettingsPageLayout x:Name="PageLayout" ContentMaximumWidth="1680">
         <components:SettingsPageLayout.Header>
-            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Section.Start}" Subtitle="{DynamicResource Loc.Home.Description}" PageIcon="{ui:SymbolIcon Sparkle24}" ShowGroupTabs="False" Target="{Binding ScrollViewer, ElementName=PageLayout}">
-                <components:SettingsGroupStrip.HeaderActions><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding ViewModel.InstalledVersion}" VerticalAlignment="Center" Margin="0,0,16,0"/><ui:Button Command="{Binding ViewModel.RefreshCommand}" Content="{DynamicResource Loc.Home.Refresh}" Icon="{ui:SymbolIcon ArrowSync24}"/></StackPanel></components:SettingsGroupStrip.HeaderActions>
+            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Section.Start}"
+                                           Subtitle="{DynamicResource Loc.Home.Description}"
+                                           PageIcon="{ui:SymbolIcon Sparkle24}" ShowGroupTabs="False"
+                                           Target="{Binding ScrollViewer, ElementName=PageLayout}">
+                <components:SettingsGroupStrip.HeaderActions>
+                    <StackPanel Orientation="Horizontal">
+                        <ContentControl Margin="0,0,12,0" VerticalAlignment="Center"
+                                        Content="{Binding ViewModel.InstalledVersion}"
+                                        Style="{StaticResource AfSettingsChipNeutralStyle}" />
+                        <ui:ProgressRing Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center"
+                                         IsIndeterminate="True"
+                                         Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource HomeVisibility}}" />
+                        <ui:Button Command="{Binding ViewModel.RefreshCommand}" Content="{DynamicResource Loc.Home.Refresh}"
+                                   Icon="{ui:SymbolIcon ArrowSync24}" IsEnabled="{Binding ViewModel.CanRefresh}"
+                                   ToolTip="{Binding ViewModel.RefreshHint}" ToolTipService.ShowOnDisabled="True"
+                                   AutomationProperties.Name="{DynamicResource Loc.Home.Refresh}" />
+                    </StackPanel>
+                </components:SettingsGroupStrip.HeaderActions>
             </components:SettingsGroupStrip>
         </components:SettingsPageLayout.Header>
+
         <StackPanel x:Name="PageRoot" SizeChanged="OnContentSizeChanged">
-            <Grid x:Name="HeroGrid"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition x:Name="HeroGap" Width="24"/><ColumnDefinition x:Name="PlayerColumn" Width="360"/></Grid.ColumnDefinitions>
-                <Border x:Name="Hero" Style="{StaticResource HomeCard}" MouseEnter="OnHeroPointerChanged" MouseLeave="OnHeroPointerChanged" PreviewGotKeyboardFocus="OnHeroFocus" PreviewKeyDown="OnHeroKeyDown">
-                    <StackPanel>
-                        <DockPanel Margin="0,0,0,12"><TextBlock DockPanel.Dock="Right" Text="{Binding ViewModel.FeaturePosition}" FontSize="13" HorizontalAlignment="Right"/><TextBlock Text="{Binding ViewModel.SelectedFeature.Badge}" FontSize="13" Foreground="{DynamicResource AfAccentBrush}"/></DockPanel>
-                        <StackPanel x:Name="FeatureBody">
-                            <Border Background="{DynamicResource AfTutorialSageSurfaceBrush}" CornerRadius="8" Height="180" Margin="0,0,0,16" ClipToBounds="True">
-                                <Grid><Viewbox Stretch="Uniform" StretchDirection="DownOnly" Margin="20"><Viewbox.Style><Style TargetType="Viewbox"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding ViewModel.FeatureImage}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Viewbox.Style><components:SettingsPreviewScene DataContext="{Binding ViewModel.Preview}"/></Viewbox><Image Source="{Binding ViewModel.FeatureImage}" Stretch="Uniform" AutomationProperties.Name="{Binding ViewModel.SelectedFeature.Title}"/></Grid>
-                            </Border>
-                            <TextBlock FontSize="26" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{Binding ViewModel.SelectedFeature.Title}" TextWrapping="Wrap"/>
-                            <TextBlock Style="{StaticResource BodyText}" Margin="0,8,0,14" Text="{Binding ViewModel.SelectedFeature.Summary}"/>
+
+            <!-- ① 当前播放器状态条：先回答“现在能不能用”。 -->
+            <Border Margin="0,20,0,0" Padding="20,12" Style="{StaticResource HomeCard}">
+                <Grid x:Name="PlayerStatusGrid">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Style="{StaticResource HomeIconTile}">
+                            <ui:SymbolIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18"
+                                           Foreground="{DynamicResource AfAccentBrush}" Symbol="MusicNote124" />
+                        </Border>
+                        <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                            <ItemsControl ItemsSource="{Binding ViewModel.VisiblePlayers}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,1" Orientation="Horizontal">
+                                            <TextBlock VerticalAlignment="Center" FontSize="15"
+                                                       FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{Binding Name}" />
+                                            <ContentControl Margin="8,0,0,0" VerticalAlignment="Center"
+                                                            Content="{Binding Status}" Style="{StaticResource HomePlayerChip}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Style="{StaticResource HomeHint}" Text="{Binding ViewModel.AdditionalPlayersText}"
+                                       Visibility="{Binding ViewModel.HasAdditionalPlayers, Converter={StaticResource HomeVisibility}}" />
+                            <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                       Text="{DynamicResource Loc.Home.Player.NoSession}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ViewModel.HasPlayers}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </StackPanel>
-                        <WrapPanel><ui:Button Command="{Binding ViewModel.ToggleRotationCommand}" Content="{Binding ViewModel.RotationText}" Click="OnRotationClicked" Margin="0,0,8,6" IsEnabled="{Binding ViewModel.HasMultipleFeatures}"/><ui:Button Command="{Binding ViewModel.PreviousFeatureCommand}" Content="{DynamicResource Loc.Home.Previous}" Margin="0,0,8,6" IsEnabled="{Binding ViewModel.HasMultipleFeatures}"/><ui:Button Command="{Binding ViewModel.NextFeatureCommand}" Content="{DynamicResource Loc.Home.Next}" Margin="0,0,12,6" IsEnabled="{Binding ViewModel.HasMultipleFeatures}"/><ui:Anchor Content="{DynamicResource Loc.Home.ReadMore}" NavigateUri="{Binding ViewModel.SelectedFeature.Url}" VerticalAlignment="Center" Margin="0,0,0,6"/></WrapPanel>
+                    </StackPanel>
+
+                    <WrapPanel x:Name="PlayerActions" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <components:SettingsNavigationButton Margin="0,0,6,0" Content="{DynamicResource Loc.Home.Player.OpenSource}"
+                                                             Destination="MediaAndNotifications" GroupId="Common.MediaSource"
+                                                             Style="{StaticResource HomeActionLink}" />
+                        <Border x:Name="PlayerActionDivider" Width="1" Height="16" Margin="4,0" VerticalAlignment="Center"
+                                Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                        <ui:Button x:Name="SupportTrigger" Style="{StaticResource HomeTextButton}"
+                                   Click="OnPlayerSupportClick" ToolTip="{DynamicResource Loc.Home.AllPlayers}"
+                                   AutomationProperties.Name="{DynamicResource Loc.Home.AllPlayers}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="13"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           Text="{DynamicResource Loc.Home.AllPlayers}" />
+                                <TextBlock Margin="6,0,0,0" VerticalAlignment="Center" FontSize="11"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                           Text="{Binding ViewModel.PlayerSupportCountText}" />
+                                <ui:SymbolIcon Margin="5,0,0,0" VerticalAlignment="Center" FontSize="12"
+                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" Symbol="ChevronRight24" />
+                            </StackPanel>
+                        </ui:Button>
+                    </WrapPanel>
+                </Grid>
+            </Border>
+
+            <!-- ② 整宽 Hero：左文案 36%，右图片 64%；无图时显示页面内静态演示场景。 -->
+            <Grid x:Name="HeroGrid" Margin="0,28,0,0"
+                  MouseEnter="OnHeroPointerChanged" MouseLeave="OnHeroPointerChanged"
+                  PreviewGotKeyboardFocus="OnHeroFocus" PreviewKeyDown="OnHeroKeyDown">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="36*" />
+                    <ColumnDefinition Width="24" />
+                    <ColumnDefinition Width="64*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel x:Name="HeroCopy" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">
+                    <ItemsControl Margin="0,0,0,4" AlternationCount="2" ItemsSource="{Binding ViewModel.SelectedFeature.Tags}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,0,6,6" Padding="8,2" CornerRadius="9"
+                                        Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                    <TextBlock FontSize="11" Text="{Binding}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType=ContentPresenter}}" Value="0">
+                                                        <Setter Property="Foreground" Value="{DynamicResource AfAccentBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock x:Name="HeroTitle" Margin="0,12,0,0" FontSize="24"
+                               FontWeight="{DynamicResource AppTextStrongFontWeight}" LineHeight="30" MaxHeight="90"
+                               TextTrimming="CharacterEllipsis" TextWrapping="Wrap"
+                               Text="{Binding ViewModel.SelectedFeature.Title}" />
+                    <TextBlock Style="{StaticResource HomeBody}" Margin="0,8,0,0" MaxHeight="60"
+                               TextTrimming="CharacterEllipsis" Text="{Binding ViewModel.SelectedFeature.Summary}" />
+
+                    <WrapPanel Margin="0,18,0,0">
+                        <ui:Button Appearance="Primary" MinHeight="36" Padding="14,8" Margin="0,0,8,6"
+                                   Click="OnReadMoreClick" Content="{DynamicResource Loc.Home.ReadMore}"
+                                   Icon="{ui:SymbolIcon ArrowRight24}" />
+                        <ui:Button Style="{StaticResource HomeIconButton}" Command="{Binding ViewModel.ToggleRotationCommand}"
+                                   ToolTip="{Binding ViewModel.RotationText}"
+                                   AutomationProperties.Name="{Binding ViewModel.RotationText}">
+                            <Grid Width="16" Height="16">
+                                <ui:SymbolIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Symbol="Pause24">
+                                    <ui:SymbolIcon.Style>
+                                        <Style TargetType="ui:SymbolIcon">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ViewModel.IsRotationPaused}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ui:SymbolIcon.Style>
+                                </ui:SymbolIcon>
+                                <ui:SymbolIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Symbol="Play24">
+                                    <ui:SymbolIcon.Style>
+                                        <Style TargetType="ui:SymbolIcon">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ViewModel.IsRotationPaused}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ui:SymbolIcon.Style>
+                                </ui:SymbolIcon>
+                            </Grid>
+                        </ui:Button>
+                        <ui:Button Style="{StaticResource HomeIconButton}" Command="{Binding ViewModel.PreviousFeatureCommand}"
+                                   IsEnabled="{Binding ViewModel.HasMultipleFeatures}" Icon="{ui:SymbolIcon Previous24}"
+                                   ToolTip="{DynamicResource Loc.Home.Previous}"
+                                   AutomationProperties.Name="{DynamicResource Loc.Home.Previous}" />
+                        <ui:Button Style="{StaticResource HomeIconButton}" Command="{Binding ViewModel.NextFeatureCommand}"
+                                   IsEnabled="{Binding ViewModel.HasMultipleFeatures}" Icon="{ui:SymbolIcon Next24}"
+                                   ToolTip="{DynamicResource Loc.Home.Next}"
+                                   AutomationProperties.Name="{DynamicResource Loc.Home.Next}" />
+                    </WrapPanel>
+
+                    <Grid Margin="0,14,0,0">
+                        <ItemsControl ItemsSource="{Binding ViewModel.FeatureTabs}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ui:Button Style="{StaticResource HomeDotButton}"
+                                               Command="{Binding DataContext.ViewModel.SelectFeatureCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                               CommandParameter="{Binding}" ToolTip="{Binding AutomationName}"
+                                               AutomationProperties.Name="{Binding AutomationName}">
+                                        <Border HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Width" Value="8" />
+                                                    <Setter Property="Height" Value="8" />
+                                                    <Setter Property="CornerRadius" Value="4" />
+                                                    <Setter Property="Background" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                            <Setter Property="Width" Value="22" />
+                                                            <Setter Property="Background" Value="{DynamicResource AfAccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                        </Border>
+                                    </ui:Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Text="{Binding ViewModel.FeaturePosition}" />
+                    </Grid>
+                </StackPanel>
+
+                <!-- 外层：主题中性画框；内层：16:10 深色屏幕，承载完整图片或静态演示场景。 -->
+                <Border x:Name="HeroVisual" Grid.Row="0" Grid.Column="2" Height="310" Padding="10"
+                        VerticalAlignment="Center" Background="{DynamicResource CardBackground}"
+                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1"
+                        CornerRadius="12" SizeChanged="OnHeroVisualSizeChanged">
+                    <Grid>
+                        <Border x:Name="HeroScreen" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Background="#1F1F1F" CornerRadius="10">
+                            <Grid>
+                                <Rectangle RadiusX="10" RadiusY="10"
+                                           Visibility="{Binding ViewModel.HasFeatureImage, Converter={StaticResource HomeVisibility}}">
+                                    <Rectangle.Fill>
+                                        <ImageBrush AlignmentX="Center" AlignmentY="Center" Stretch="Uniform"
+                                                    ImageSource="{Binding ViewModel.FeatureImage}" />
+                                    </Rectangle.Fill>
+                                </Rectangle>
+
+                                <!-- 无图时的页面内静态演示场景：纯装饰，不随设置变化，不参与命中与自动化树。 -->
+                                <Grid x:Name="HeroDemoScene" IsHitTestVisible="False">
+                                    <Grid.Style>
+                                        <Style TargetType="Grid">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ViewModel.HasFeatureImage}" Value="False">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Grid.Style>
+                                    <Border CornerRadius="10">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                <GradientStop Offset="0" Color="#2A2A2A" />
+                                                <GradientStop Offset="1" Color="#171717" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+                                    <Border CornerRadius="10">
+                                        <Border.Background>
+                                            <RadialGradientBrush Center="0.18,0.05" GradientOrigin="0.12,-0.05" RadiusX="1.1" RadiusY="1.0">
+                                                <GradientStop Offset="0" Color="#1FFFFFFF" />
+                                                <GradientStop Offset="1" Color="#00FFFFFF" />
+                                            </RadialGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+                                    <!-- 应用图标水印：低透明度，只作装饰。 -->
+                                    <StackPanel Margin="20,16,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"
+                                                Orientation="Horizontal" Opacity="0.16">
+                                        <Image Width="22" Height="22"
+                                               Source="pack://application:,,,/AFMediaBar;component/Assets/icon_white.ico" />
+                                        <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontSize="13"
+                                                   FontWeight="{DynamicResource AppTextStrongFontWeight}" Foreground="#FFFFFF"
+                                                   Text="{DynamicResource Loc.Start.Intro}" />
+                                    </StackPanel>
+                                    <!-- 任务栏剪影 -->
+                                    <Border Height="34" Margin="20,0,20,12" VerticalAlignment="Bottom" Background="#141414"
+                                            BorderBrush="#303030" BorderThickness="1" CornerRadius="8">
+                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
+                                            <Border Width="12" Height="10" Margin="0,0,12,0" Background="#3C3C3C" CornerRadius="2" />
+                                            <Border Width="18" Height="10" Margin="0,0,12,0" Background="#3C3C3C" CornerRadius="2" />
+                                            <Border Width="12" Height="10" Margin="0,0,12,0" Background="#3C3C3C" CornerRadius="2" />
+                                            <Border Width="18" Height="10" Margin="0,0,12,0" Background="#3C3C3C" CornerRadius="2" />
+                                            <Border Width="12" Height="10" Background="#3C3C3C" CornerRadius="2" />
+                                        </StackPanel>
+                                    </Border>
+                                    <!-- 示例媒体条：屏幕宽度的 88%。 -->
+                                    <Grid Margin="0,0,0,58" VerticalAlignment="Bottom">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="6*" />
+                                            <ColumnDefinition Width="88*" />
+                                            <ColumnDefinition Width="6*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="1" Height="64" Padding="14,0" Background="#FAFAFA"
+                                                BorderBrush="#1F1F1F" BorderThickness="1" CornerRadius="9">
+                                            <Grid VerticalAlignment="Center">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border Width="38" Height="38" CornerRadius="8">
+                                                    <Border.Background>
+                                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                            <GradientStop Offset="0" Color="#6C8A7B" />
+                                                            <GradientStop Offset="1" Color="#D3BB9E" />
+                                                        </LinearGradientBrush>
+                                                    </Border.Background>
+                                                    <ui:SymbolIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18"
+                                                                   Foreground="#FFFFFF" Symbol="MusicNote124" />
+                                                </Border>
+                                                <StackPanel Grid.Column="1" Margin="10,0,8,0" VerticalAlignment="Center">
+                                                    <TextBlock FontSize="13.5" Foreground="#1B1B1B"
+                                                               FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                                               Text="{DynamicResource Loc.Settings.Preview.Track}" />
+                                                    <TextBlock FontSize="11" Foreground="#5E6061"
+                                                               Text="{DynamicResource Loc.Settings.Preview.Artist}" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2" Height="26" Margin="0,0,12,0" VerticalAlignment="Center" Orientation="Horizontal">
+                                                    <Border Width="3.2" Height="8" Margin="0,0,2.4,0" VerticalAlignment="Center" CornerRadius="1.6" Background="{DynamicResource AfAccentBrush}" />
+                                                    <Border Width="3.2" Height="16" Margin="0,0,2.4,0" VerticalAlignment="Center" CornerRadius="1.6" Background="{DynamicResource AfAccentBrush}" />
+                                                    <Border Width="3.2" Height="23" Margin="0,0,2.4,0" VerticalAlignment="Center" CornerRadius="1.6" Background="{DynamicResource AfAccentBrush}" />
+                                                    <Border Width="3.2" Height="13" Margin="0,0,2.4,0" VerticalAlignment="Center" CornerRadius="1.6" Background="{DynamicResource AfAccentBrush}" />
+                                                    <Border Width="3.2" Height="21" Margin="0,0,2.4,0" VerticalAlignment="Center" CornerRadius="1.6" Background="{DynamicResource AfAccentBrush}" />
+                                                    <Border Width="3.2" Height="10" Margin="0,0,2.4,0" VerticalAlignment="Center" CornerRadius="1.6" Background="{DynamicResource AfAccentBrush}" />
+                                                    <Border Width="3.2" Height="17" Margin="0,0,2.4,0" VerticalAlignment="Center" CornerRadius="1.6" Background="{DynamicResource AfAccentBrush}" />
+                                                    <Border Width="3.2" Height="12" VerticalAlignment="Center" CornerRadius="1.6" Background="{DynamicResource AfAccentBrush}" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="3" VerticalAlignment="Center" Orientation="Horizontal">
+                                                    <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="#5E6061" Text="M" />
+                                                    <TextBlock Margin="4,0,0,0" FontSize="13.5" Foreground="#1B1B1B"
+                                                               FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="68%" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ③ 常用设置：3×2 安静磁贴。 -->
+            <TextBlock Style="{StaticResource HomeSection}" Text="{DynamicResource Loc.Start.Shortcuts}" />
+            <UniformGrid x:Name="QuickLinks" Columns="3">
+                <components:SettingsNavigationButton Destination="ScreenAndPlacement" GroupId="Common.Group.ScreenAndPlacement"
+                                                     Style="{StaticResource HomeQuickLink}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon VerticalAlignment="Center" FontSize="22" Symbol="Desktop24"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel Grid.Column="1" Margin="12,0,10,0" VerticalAlignment="Center">
+                            <TextBlock FontSize="14" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                       TextWrapping="Wrap" Text="{DynamicResource Loc.Common.Page.ScreenAndPlacement}" />
+                            <TextBlock Margin="0,2,0,0" MaxHeight="32" FontSize="12" LineHeight="16"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Text="{DynamicResource Loc.Settings.Page.ScreenAndPlacement.Description}" />
+                        </StackPanel>
+                    </Grid>
+                </components:SettingsNavigationButton>
+                <components:SettingsNavigationButton Destination="RestState" GroupId="Common.RestLayer"
+                                                     Style="{StaticResource HomeQuickLink}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon VerticalAlignment="Center" FontSize="22" Symbol="Layer24"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel Grid.Column="1" Margin="12,0,10,0" VerticalAlignment="Center">
+                            <TextBlock FontSize="14" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                       TextWrapping="Wrap" Text="{DynamicResource Loc.Common.Page.RestState}" />
+                            <TextBlock Margin="0,2,0,0" MaxHeight="32" FontSize="12" LineHeight="16"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Text="{DynamicResource Loc.Settings.RestState.Description}" />
+                        </StackPanel>
+                    </Grid>
+                </components:SettingsNavigationButton>
+                <components:SettingsNavigationButton Destination="Lyrics" GroupId="Common.Group.MediaBarText"
+                                                     Style="{StaticResource HomeQuickLink}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon VerticalAlignment="Center" FontSize="22" Symbol="TextQuote24"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel Grid.Column="1" Margin="12,0,10,0" VerticalAlignment="Center">
+                            <TextBlock FontSize="14" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                       TextWrapping="Wrap" Text="{DynamicResource Loc.Settings.Page.TextAndLyrics}" />
+                            <TextBlock Margin="0,2,0,0" MaxHeight="32" FontSize="12" LineHeight="16"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Text="{DynamicResource Loc.Settings.Page.Lyrics.Description}" />
+                        </StackPanel>
+                    </Grid>
+                </components:SettingsNavigationButton>
+                <components:SettingsNavigationButton Destination="DeviceManagement" GroupId="Common.OutputDevice"
+                                                     Style="{StaticResource HomeQuickLink}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon VerticalAlignment="Center" FontSize="22" Symbol="Headphones24"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel Grid.Column="1" Margin="12,0,10,0" VerticalAlignment="Center">
+                            <TextBlock FontSize="14" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                       TextWrapping="Wrap" Text="{DynamicResource Loc.Settings.Page.AudioDevices}" />
+                            <TextBlock Margin="0,2,0,0" MaxHeight="32" FontSize="12" LineHeight="16"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Text="{DynamicResource Loc.Settings.Page.DeviceManagement.Description}" />
+                        </StackPanel>
+                    </Grid>
+                </components:SettingsNavigationButton>
+                <components:SettingsNavigationButton Destination="ApplicationAppearance" GroupId="Common.Group.ThemeAndBackdrop"
+                                                     Style="{StaticResource HomeQuickLink}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon VerticalAlignment="Center" FontSize="22" Symbol="Color24"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel Grid.Column="1" Margin="12,0,10,0" VerticalAlignment="Center">
+                            <TextBlock FontSize="14" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                       TextWrapping="Wrap" Text="{DynamicResource Loc.Common.Page.ApplicationAppearance}" />
+                            <TextBlock Margin="0,2,0,0" MaxHeight="32" FontSize="12" LineHeight="16"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Text="{DynamicResource Loc.Settings.Personalization.Subtitle}" />
+                        </StackPanel>
+                    </Grid>
+                </components:SettingsNavigationButton>
+                <components:SettingsNavigationButton Destination="Interaction" GroupId="Interaction.Group.Wheel"
+                                                     Style="{StaticResource HomeQuickLink}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon VerticalAlignment="Center" FontSize="22" Symbol="HandDraw24"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel Grid.Column="1" Margin="12,0,10,0" VerticalAlignment="Center">
+                            <TextBlock FontSize="14" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                       TextWrapping="Wrap" Text="{DynamicResource Loc.Settings.Page.InteractionAndHotkeys}" />
+                            <TextBlock Margin="0,2,0,0" MaxHeight="32" FontSize="12" LineHeight="16"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Text="{DynamicResource Loc.Settings.Page.Interaction.Description}" />
+                        </StackPanel>
+                    </Grid>
+                </components:SettingsNavigationButton>
+            </UniformGrid>
+
+            <!-- ④ 上手与帮助：教程 + FAQ + 运行组件要求合并为一节。 -->
+            <TextBlock Style="{StaticResource HomeSection}" Text="{DynamicResource Loc.Start.Tutorials}" />
+            <Grid x:Name="HelpGrid" Margin="0,0,0,4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition x:Name="HelpGap" Width="28" />
+                    <ColumnDefinition Width="320" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.Column="0">
+                    <UniformGrid x:Name="TutorialsGrid" Columns="2">
+                        <ui:CardExpander Margin="0,0,16,0" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Desktop24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                               TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Mode}" />
+                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0"
+                                               Text="{DynamicResource Loc.Start.Tutorial.Mode.Short}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource HomeBody}" Text="{DynamicResource Loc.Start.Tutorial.Mode.Body}" />
+                                <components:SettingsNavigationButton Margin="0,12,0,0" HorizontalAlignment="Left"
+                                                                     Destination="ScreenAndPlacement" GroupId="Common.Group.ChooseDisplayMode"
+                                                                     Content="{DynamicResource Loc.Settings.Component.Configure}"
+                                                                     Style="{StaticResource HomeActionLink}" />
+                            </StackPanel>
+                        </ui:CardExpander>
+                        <ui:CardExpander Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Play24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                               TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Playback}" />
+                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0"
+                                               Text="{DynamicResource Loc.Start.Tutorial.Playback.Short}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource HomeBody}" Text="{DynamicResource Loc.Start.Tutorial.Playback.Body}" />
+                                <components:SettingsNavigationButton Margin="0,12,0,0" HorizontalAlignment="Left"
+                                                                     Destination="MediaAndNotifications" GroupId="Common.MediaSource"
+                                                                     Content="{DynamicResource Loc.Settings.Component.Configure}"
+                                                                     Style="{StaticResource HomeActionLink}" />
+                            </StackPanel>
+                        </ui:CardExpander>
+                        <ui:CardExpander Margin="0,0,16,0" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon TextQuote24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                               TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Lyrics}" />
+                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0"
+                                               Text="{DynamicResource Loc.Start.Tutorial.Lyrics.Short}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource HomeBody}" Text="{DynamicResource Loc.Start.Tutorial.Lyrics.Body}" />
+                                <components:SettingsNavigationButton Margin="0,12,0,0" HorizontalAlignment="Left"
+                                                                     Destination="Lyrics" GroupId="Common.Group.LyricsSources"
+                                                                     Content="{DynamicResource Loc.Settings.Component.Configure}"
+                                                                     Style="{StaticResource HomeActionLink}" />
+                            </StackPanel>
+                        </ui:CardExpander>
+                        <ui:CardExpander Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Headphones24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                               TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Devices}" />
+                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0"
+                                               Text="{DynamicResource Loc.Start.Tutorial.Devices.Short}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource HomeBody}" Text="{DynamicResource Loc.Start.Tutorial.Devices.Body}" />
+                                <components:SettingsNavigationButton Margin="0,12,0,0" HorizontalAlignment="Left"
+                                                                     Destination="DeviceManagement" GroupId="Common.OutputDevice"
+                                                                     Content="{DynamicResource Loc.Settings.Component.Configure}"
+                                                                     Style="{StaticResource HomeActionLink}" />
+                            </StackPanel>
+                        </ui:CardExpander>
+                        <ui:CardExpander Margin="0,0,16,0" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon HandDraw24}">
+                            <ui:CardExpander.Header>
+                                <StackPanel>
+                                    <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                               TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Daily}" />
+                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0"
+                                               Text="{DynamicResource Loc.Start.Tutorial.Daily.Short}" />
+                                </StackPanel>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource HomeBody}" Text="{DynamicResource Loc.Start.Tutorial.Daily.Body}" />
+                                <components:SettingsNavigationButton Margin="0,12,0,0" HorizontalAlignment="Left"
+                                                                     Destination="Interaction" GroupId="Interaction.Group.Wheel"
+                                                                     Content="{DynamicResource Loc.Settings.Component.Configure}"
+                                                                     Style="{StaticResource HomeActionLink}" />
+                            </StackPanel>
+                        </ui:CardExpander>
+                    </UniformGrid>
+
+                    <StackPanel Margin="0,16,0,0">
+                        <ui:CardExpander Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon QuestionCircle24}">
+                            <ui:CardExpander.Header>
+                                <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                           TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Faq.Source}" />
+                            </ui:CardExpander.Header>
+                            <TextBlock Style="{StaticResource HomeBody}" Text="{DynamicResource Loc.Start.Faq.Source.Body}" />
+                        </ui:CardExpander>
+                        <ui:CardExpander Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon QuestionCircle24}">
+                            <ui:CardExpander.Header>
+                                <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                           TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Faq.Lyrics}" />
+                            </ui:CardExpander.Header>
+                            <TextBlock Style="{StaticResource HomeBody}" Text="{DynamicResource Loc.Start.Faq.Lyrics.Body}" />
+                        </ui:CardExpander>
+                    </StackPanel>
+                </StackPanel>
+
+                <Border x:Name="RuntimeHost" Grid.Row="0" Grid.Column="2" Padding="20" VerticalAlignment="Top"
+                        Style="{StaticResource HomeCard}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Border Width="32" Height="32" CornerRadius="8" Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                <ui:SymbolIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18"
+                                               Foreground="{DynamicResource AfAccentBrush}" Symbol="Desktop24" />
+                            </Border>
+                            <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" FontSize="16"
+                                       FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                       Text="{DynamicResource Loc.Start.Runtime}" />
+                        </StackPanel>
+                        <TextBlock Margin="0,12,0,0" Style="{StaticResource HomeBody}" Text="{DynamicResource Loc.Start.Runtime.Body}" />
+                        <WrapPanel Margin="0,14,0,0">
+                            <ui:Anchor Margin="0,0,8,8" Style="{StaticResource HomeLinkPill}"
+                                       NavigateUri="https://github.com/Fervent-Tempo/AF-Media-Bar#readme"
+                                       Content="{DynamicResource Loc.Start.ProjectHelp}" />
+                            <ui:Anchor Margin="0,0,8,8" Style="{StaticResource HomeLinkPill}"
+                                       NavigateUri="https://github.com/Fervent-Tempo/AF-Media-Bar/issues"
+                                       Content="{DynamicResource Loc.Start.Report}" />
+                            <ui:Anchor Margin="0,0,8,8" Style="{StaticResource HomeLinkPill}"
+                                       NavigateUri="https://developer.microsoft.com/microsoft-edge/webview2/"
+                                       Content="{DynamicResource Loc.Start.WebView}" />
+                        </WrapPanel>
                     </StackPanel>
                 </Border>
-                <Border x:Name="PlayerHost" Grid.Column="2" Style="{StaticResource HomeCard}" VerticalAlignment="Top"><StackPanel>
-                    <TextBlock FontSize="20" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{DynamicResource Loc.Home.Players}" Margin="0,0,0,12"/>
-                    <TextBlock Text="{DynamicResource Loc.Home.Player.Empty}"><TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource BodyText}"><Style.Triggers><DataTrigger Binding="{Binding ViewModel.HasPlayers}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
-                    <ItemsControl ItemsSource="{Binding ViewModel.Players}"><ItemsControl.ItemTemplate><DataTemplate><StackPanel Margin="0,0,0,18"><TextBlock Text="{Binding Status}" Foreground="{DynamicResource AfAccentBrush}" FontSize="12"/><TextBlock Text="{Binding Name}" FontSize="18" FontWeight="{DynamicResource AppTextStrongFontWeight}" Margin="0,4,0,8" TextWrapping="Wrap"/><TextBlock Text="{Binding Capabilities}" Style="{StaticResource BodyText}"/></StackPanel></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
-                    <TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Home.Player.Scope}" Margin="0,12,0,14"/>
-                    <components:SettingsNavigationButton Destination="MediaAndNotifications" GroupId="Common.MediaSource" Content="{DynamicResource Loc.Settings.Page.MediaSource}" HorizontalAlignment="Left"/>
-                    <CheckBox Content="{DynamicResource Loc.Home.AllPlayers}" IsChecked="{Binding ViewModel.ShowAllPlayers, Mode=TwoWay}" Margin="0,16,0,0"/>
-                </StackPanel></Border>
             </Grid>
-            <Border Style="{StaticResource HomeCard}" Margin="0,20,0,0" Visibility="{Binding ViewModel.ShowAllPlayers, Converter={StaticResource HomeVisibility}}"><StackPanel>
-                <TextBlock Text="{DynamicResource Loc.Start.Players}" FontSize="20" FontWeight="{DynamicResource AppTextStrongFontWeight}"/><TextBlock Text="{DynamicResource Loc.Start.Players.Note}" Style="{StaticResource BodyText}" Margin="0,8,0,16"/>
-                <TextBox Text="{Binding ViewModel.PlayerFilter, UpdateSourceTrigger=PropertyChanged}" MaxWidth="420" HorizontalAlignment="Left" MinWidth="180" AutomationProperties.Name="{DynamicResource Loc.Home.Player.Filter}" ToolTip="{DynamicResource Loc.Home.Player.Filter}" Margin="0,0,0,16"/>
-                <ItemsControl ItemsSource="{Binding ViewModel.SupportedPlayers}"><ItemsControl.ItemTemplate><DataTemplate><Border BorderThickness="0,0,0,1" BorderBrush="{DynamicResource AfSettingsBorderBrush}" Padding="0,12"><StackPanel><TextBlock Text="{Binding Name}" FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"/><TextBlock Text="{Binding Notes}" Style="{StaticResource BodyText}" Margin="0,6,0,0"/><TextBlock Text="{Binding PluginCondition}" Style="{StaticResource BodyText}"/></StackPanel></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
-            </StackPanel></Border>
-            <TextBlock Style="{StaticResource HomeHeading}" Text="{DynamicResource Loc.Start.Shortcuts}"/>
-            <UniformGrid x:Name="QuickLinks" Columns="3"><components:SettingsNavigationButton Destination="ScreenAndPlacement" GroupId="Common.Group.ScreenAndPlacement" Style="{StaticResource HomeShortcut}"><StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Desktop24" FontSize="20" Margin="0,0,12,0"/><TextBlock VerticalAlignment="Center" FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Common.Page.ScreenAndPlacement}"/></StackPanel></components:SettingsNavigationButton>
-<components:SettingsNavigationButton Destination="RestState" GroupId="Common.RestLayer" Style="{StaticResource HomeShortcut}"><StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Layer24" FontSize="20" Margin="0,0,12,0"/><TextBlock VerticalAlignment="Center" FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Common.Page.RestState}"/></StackPanel></components:SettingsNavigationButton>
-<components:SettingsNavigationButton Destination="Lyrics" GroupId="Common.Group.MediaBarText" Style="{StaticResource HomeShortcut}"><StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="TextQuote24" FontSize="20" Margin="0,0,12,0"/><TextBlock VerticalAlignment="Center" FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Settings.Page.TextAndLyrics}"/></StackPanel></components:SettingsNavigationButton>
-<components:SettingsNavigationButton Destination="DeviceManagement" GroupId="Common.OutputDevice" Style="{StaticResource HomeShortcut}"><StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Headphones24" FontSize="20" Margin="0,0,12,0"/><TextBlock VerticalAlignment="Center" FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Settings.Page.AudioDevices}"/></StackPanel></components:SettingsNavigationButton>
-<components:SettingsNavigationButton Destination="ApplicationAppearance" GroupId="Common.Group.ThemeAndBackdrop" Style="{StaticResource HomeShortcut}"><StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Color24" FontSize="20" Margin="0,0,12,0"/><TextBlock VerticalAlignment="Center" FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Common.Page.ApplicationAppearance}"/></StackPanel></components:SettingsNavigationButton>
-<components:SettingsNavigationButton Destination="Interaction" GroupId="Interaction.Group.Wheel" Style="{StaticResource HomeShortcut}"><StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="HandDraw24" FontSize="20" Margin="0,0,12,0"/><TextBlock VerticalAlignment="Center" FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Settings.Page.InteractionAndHotkeys}"/></StackPanel></components:SettingsNavigationButton></UniformGrid>
-            <TextBlock Style="{StaticResource HomeHeading}" Text="{DynamicResource Loc.Home.Community}"/>
-            <Border Style="{StaticResource HomeCard}" Padding="4"><UniformGrid x:Name="StatisticsGrid" Columns="4"><StackPanel Margin="16,14"><TextBlock FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{Binding ViewModel.Stars}"/><TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Home.Stars}"/></StackPanel>
-<StackPanel Margin="16,14"><TextBlock FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{Binding ViewModel.OpenIssues}"/><TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Home.OpenIssues}"/></StackPanel>
-<StackPanel Margin="16,14"><TextBlock FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{Binding ViewModel.RecentIssues}"/><TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Home.RecentIssues}"/></StackPanel>
-<StackPanel Margin="16,14"><TextBlock FontSize="24" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{Binding ViewModel.OpenPullRequests}"/><TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Home.OpenPullRequests}"/></StackPanel></UniformGrid></Border>
-            <TextBlock Text="{Binding ViewModel.ProjectStatus}" Style="{StaticResource BodyText}" Margin="0,10,0,16"/>
-            <Grid x:Name="CommunityGrid"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition x:Name="CommunityGap" Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                <Border Style="{StaticResource HomeCard}"><StackPanel><TextBlock Text="{DynamicResource Loc.Home.Issues}" FontSize="18" Margin="0,0,0,16"/><ItemsControl ItemsSource="{Binding ViewModel.Issues}" ItemTemplate="{StaticResource HomeThread}"/><TextBlock Text="{DynamicResource Loc.Home.NoEntries}" Style="{StaticResource BodyText}" Visibility="{Binding ViewModel.HasNoIssues, Converter={StaticResource HomeVisibility}}"/><ui:Anchor NavigateUri="https://github.com/Fervent-Tempo/AF-Media-Bar/issues" Content="{DynamicResource Loc.Home.ViewAll}" Margin="0,8,0,0" HorizontalAlignment="Left"/></StackPanel></Border>
-                <Border x:Name="PullRequestsHost" Grid.Column="2" Style="{StaticResource HomeCard}"><StackPanel><TextBlock Text="{DynamicResource Loc.Home.OpenPullRequests}" FontSize="18" Margin="0,0,0,16"/><ItemsControl ItemsSource="{Binding ViewModel.PullRequests}" ItemTemplate="{StaticResource HomeThread}"/><TextBlock Text="{DynamicResource Loc.Home.NoEntries}" Style="{StaticResource BodyText}" Visibility="{Binding ViewModel.HasNoPullRequests, Converter={StaticResource HomeVisibility}}"/><ui:Anchor NavigateUri="https://github.com/Fervent-Tempo/AF-Media-Bar/pulls" Content="{DynamicResource Loc.Home.ViewAll}" Margin="0,8,0,0" HorizontalAlignment="Left"/></StackPanel></Border>
+
+            <!-- ⑤ 项目动态：最后一节，统计 + 近期 Issue/开放 PR 用扁平分隔线列表。 -->
+            <Grid Margin="0,36,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource HomeSection}" Margin="0" Text="{DynamicResource Loc.Home.Community}" />
+                <TextBlock Grid.Column="1" Margin="16,0,4,0" MaxWidth="460" HorizontalAlignment="Right" VerticalAlignment="Center"
+                           FontSize="12" TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource TextFillColorTertiaryBrush}" Text="{Binding ViewModel.ProjectStatus}" />
             </Grid>
-            <components:SettingsGroup GroupId="Start.Tutorials" Header="{DynamicResource Loc.Start.Tutorials}" Icon="{ui:SymbolIcon BookOpen24}">
-                <StackPanel>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Desktop24}"><ui:CardExpander.Header><StackPanel><TextBlock FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Mode}"/><TextBlock Style="{StaticResource BodyText}" Margin="0,4,0,0" Text="{DynamicResource Loc.Start.Tutorial.Mode.Short}"/></StackPanel></ui:CardExpander.Header>
-                        <StackPanel Margin="12">
-                            <TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Tutorial.Mode.Body}"/>
-                            <components:SettingsNavigationButton HorizontalAlignment="Left" Margin="0,16,0,0" Destination="ScreenAndPlacement" GroupId="Common.Group.ChooseDisplayMode" Content="{DynamicResource Loc.Settings.Component.Configure}"/>
+            <Border Margin="0,12,0,0" Padding="6" Style="{StaticResource HomeCard}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="1" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="1" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="1" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid Margin="16,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Margin="0,5,8,0" VerticalAlignment="Top" FontSize="15"
+                                       Foreground="{DynamicResource AfAccentBrush}" Symbol="Star24" />
+                        <StackPanel Grid.Column="1">
+                            <TextBlock FontSize="24" LineHeight="30" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                       Text="{Binding ViewModel.Stars}" />
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Text="{DynamicResource Loc.Home.Stars}" />
                         </StackPanel>
-                    </ui:CardExpander>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Play24}"><ui:CardExpander.Header><StackPanel><TextBlock FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Playback}"/><TextBlock Style="{StaticResource BodyText}" Margin="0,4,0,0" Text="{DynamicResource Loc.Start.Tutorial.Playback.Short}"/></StackPanel></ui:CardExpander.Header>
-                        <StackPanel Margin="12">
-                            <TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Tutorial.Playback.Body}"/>
-                            <components:SettingsNavigationButton HorizontalAlignment="Left" Margin="0,16,0,0" Destination="MediaAndNotifications" GroupId="Common.MediaSource" Content="{DynamicResource Loc.Settings.Component.Configure}"/>
+                    </Grid>
+                    <Border Grid.Column="1" Width="1" Margin="0,14" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                    <Grid Grid.Column="2" Margin="16,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Margin="0,5,8,0" VerticalAlignment="Top" FontSize="15"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" Symbol="Alert24" />
+                        <StackPanel Grid.Column="1">
+                            <TextBlock FontSize="24" LineHeight="30" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                       Text="{Binding ViewModel.OpenIssues}" />
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Text="{DynamicResource Loc.Home.OpenIssues}" />
                         </StackPanel>
-                    </ui:CardExpander>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon TextQuote24}"><ui:CardExpander.Header><StackPanel><TextBlock FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Lyrics}"/><TextBlock Style="{StaticResource BodyText}" Margin="0,4,0,0" Text="{DynamicResource Loc.Start.Tutorial.Lyrics.Short}"/></StackPanel></ui:CardExpander.Header>
-                        <StackPanel Margin="12">
-                            <TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Tutorial.Lyrics.Body}"/>
-                            <components:SettingsNavigationButton HorizontalAlignment="Left" Margin="0,16,0,0" Destination="Lyrics" GroupId="Common.Group.LyricsSources" Content="{DynamicResource Loc.Settings.Component.Configure}"/>
+                    </Grid>
+                    <Border Grid.Column="3" Width="1" Margin="0,14" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                    <Grid Grid.Column="4" Margin="16,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Margin="0,5,8,0" VerticalAlignment="Top" FontSize="15"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" Symbol="Clock24" />
+                        <StackPanel Grid.Column="1">
+                            <TextBlock FontSize="24" LineHeight="30" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                       Text="{Binding ViewModel.RecentIssues}" />
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Text="{DynamicResource Loc.Home.RecentIssues}" />
                         </StackPanel>
-                    </ui:CardExpander>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon Headphones24}"><ui:CardExpander.Header><StackPanel><TextBlock FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Devices}"/><TextBlock Style="{StaticResource BodyText}" Margin="0,4,0,0" Text="{DynamicResource Loc.Start.Tutorial.Devices.Short}"/></StackPanel></ui:CardExpander.Header>
-                        <StackPanel Margin="12">
-                            <TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Tutorial.Devices.Body}"/>
-                            <components:SettingsNavigationButton HorizontalAlignment="Left" Margin="0,16,0,0" Destination="DeviceManagement" GroupId="Common.OutputDevice" Content="{DynamicResource Loc.Settings.Component.Configure}"/>
+                    </Grid>
+                    <Border Grid.Column="5" Width="1" Margin="0,14" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                    <Grid Grid.Column="6" Margin="16,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Margin="0,5,8,0" VerticalAlignment="Top" FontSize="15"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" Symbol="Code24" />
+                        <StackPanel Grid.Column="1">
+                            <TextBlock FontSize="24" LineHeight="30" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                       Text="{Binding ViewModel.OpenPullRequests}" />
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Text="{DynamicResource Loc.Home.OpenPullRequests}" />
                         </StackPanel>
-                    </ui:CardExpander>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon HandDraw24}"><ui:CardExpander.Header><StackPanel><TextBlock FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Daily}"/><TextBlock Style="{StaticResource BodyText}" Margin="0,4,0,0" Text="{DynamicResource Loc.Start.Tutorial.Daily.Short}"/></StackPanel></ui:CardExpander.Header>
-                        <StackPanel Margin="12">
-                            <TextBlock Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Tutorial.Daily.Body}"/>
-                            <components:SettingsNavigationButton HorizontalAlignment="Left" Margin="0,16,0,0" Destination="Interaction" GroupId="Interaction.Group.Wheel" Content="{DynamicResource Loc.Settings.Component.Configure}"/>
-                        </StackPanel>
-                    </ui:CardExpander>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Grid x:Name="CommunityGrid" Margin="0,28,0,4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition x:Name="CommunityGap" Width="28" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel x:Name="IssueHost" Grid.Row="0" Grid.Column="0">
+                    <Grid Margin="0,0,0,8">
+                        <TextBlock FontSize="18" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                   Text="{DynamicResource Loc.Home.Issues}" />
+                        <ui:Anchor HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource HomeLink}"
+                                   NavigateUri="https://github.com/Fervent-Tempo/AF-Media-Bar/issues">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Foreground="{DynamicResource AfAccentBrush}" Text="{DynamicResource Loc.Home.ViewAll}" />
+                                <ui:SymbolIcon Margin="3,0,0,0" VerticalAlignment="Center" FontSize="11"
+                                               Foreground="{DynamicResource AfAccentBrush}" Symbol="ChevronRight24" />
+                            </StackPanel>
+                        </ui:Anchor>
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding ViewModel.Issues}" ItemTemplate="{StaticResource HomeThreadRow}" />
+                    <TextBlock Style="{StaticResource HomeHint}" Text="{DynamicResource Loc.Home.NoEntries}"
+                               Visibility="{Binding ViewModel.HasNoIssues, Converter={StaticResource HomeVisibility}}" />
                 </StackPanel>
-            </components:SettingsGroup>
-            <components:SettingsNavigationButton Destination="ReleaseHighlights" Content="{DynamicResource Loc.Common.Page.ReleaseHighlights}" HorizontalAlignment="Left" Margin="0,16,0,0"/>
-            <components:SettingsGroup GroupId="Start.Help" Header="{DynamicResource Loc.Start.Help}" Icon="{ui:SymbolIcon QuestionCircle24}">
-                <StackPanel>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon QuestionCircle24}"><ui:CardExpander.Header><StackPanel><TextBlock FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Faq.Source}"/></StackPanel></ui:CardExpander.Header>
-                        <TextBlock Margin="16" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Faq.Source.Body}"/>
-                    </ui:CardExpander>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon QuestionCircle24}"><ui:CardExpander.Header><StackPanel><TextBlock FontSize="15" TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Faq.Lyrics}"/></StackPanel></ui:CardExpander.Header>
-                        <TextBlock Margin="16" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Faq.Lyrics.Body}"/>
-                    </ui:CardExpander>
-                    <Border Padding="16">
-                        <StackPanel>
-                            <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{DynamicResource Loc.Start.Runtime}"/>
-                            <TextBlock Margin="0,8,0,16" Style="{StaticResource BodyText}" Text="{DynamicResource Loc.Start.Runtime.Body}"/>
-                            <WrapPanel>
-                                <ui:Anchor Margin="0,0,20,8" Content="{DynamicResource Loc.Start.ProjectHelp}" NavigateUri="https://github.com/Fervent-Tempo/AF-Media-Bar#readme"/>
-                                <ui:Anchor Margin="0,0,20,8" Content="{DynamicResource Loc.Start.Report}" NavigateUri="https://github.com/Fervent-Tempo/AF-Media-Bar/issues"/>
-                                <ui:Anchor Margin="0,0,20,8" Content="{DynamicResource Loc.Start.WebView}" NavigateUri="https://developer.microsoft.com/microsoft-edge/webview2/"/>
-                            </WrapPanel>
-                        </StackPanel>
-                    </Border>
+
+                <StackPanel x:Name="PullRequestsHost" Grid.Row="0" Grid.Column="2">
+                    <Grid Margin="0,0,0,8">
+                        <TextBlock FontSize="18" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                   Text="{DynamicResource Loc.Home.OpenPullRequests}" />
+                        <ui:Anchor HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource HomeLink}"
+                                   NavigateUri="https://github.com/Fervent-Tempo/AF-Media-Bar/pulls">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Foreground="{DynamicResource AfAccentBrush}" Text="{DynamicResource Loc.Home.ViewAll}" />
+                                <ui:SymbolIcon Margin="3,0,0,0" VerticalAlignment="Center" FontSize="11"
+                                               Foreground="{DynamicResource AfAccentBrush}" Symbol="ChevronRight24" />
+                            </StackPanel>
+                        </ui:Anchor>
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding ViewModel.PullRequests}" ItemTemplate="{StaticResource HomeThreadRow}" />
+                    <TextBlock Style="{StaticResource HomeHint}" Text="{DynamicResource Loc.Home.NoEntries}"
+                               Visibility="{Binding ViewModel.HasNoPullRequests, Converter={StaticResource HomeVisibility}}" />
                 </StackPanel>
-            </components:SettingsGroup>
+            </Grid>
         </StackPanel>
     </components:SettingsPageLayout>
 </Page>

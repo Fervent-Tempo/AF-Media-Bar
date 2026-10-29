@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Home;
 using AFMediaBar.Classes.Models.Updates;
@@ -20,14 +21,19 @@ public sealed record HomeFeatureCard(string Id, string Badge, string Title, stri
 
 public sealed record HomeThreadCard(string Title, string Detail, string Url, string Number = "", string DateText = "", bool IsDraft = false);
 
+/// <summary>轮播圆点的一项：当前项显示为强调色胶囊，点击后切到该张并暂停轮播。</summary>
+public sealed record HomeFeatureTab(HomeFeatureCard Feature, bool IsCurrent, string AutomationName);
+
 /// <summary>先显示本地内容，再刷新公开动态；不上传任何使用资料。</summary>
 public partial class QuickStartViewModel : ObservableObject, IDisposable
 {
+    private static readonly TimeSpan RefreshCooldown = TimeSpan.FromMinutes(5);
     private readonly ReleaseHighlightsService _releases;
     private readonly HomeContentService _home;
     private readonly IHomeMediaState _media;
     private readonly LocalizationService _localization;
     private readonly AppLogService _log;
+    private readonly DispatcherTimer _refreshCooldownTimer = new(DispatcherPriority.Background) { Interval = RefreshCooldown };
     private readonly System.Windows.Threading.Dispatcher _dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
     private CancellationTokenSource? _request;
     private IReadOnlyList<ReleaseHighlights> _releaseData = [];
@@ -41,14 +47,16 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     private bool _hasShownLatest, _featureWasChosen;
     private string _playerFilter = string.Empty;
     private string _playerSignature = string.Empty;
+    private string _additionalPlayersText = string.Empty;
     private readonly Dictionary<string, ImageSource> _images = new();
     [ObservableProperty] private HomeFeatureCard? _selectedFeature;
     [ObservableProperty] private ImageSource? _featureImage;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private bool _isRotationPaused;
-    [ObservableProperty] private bool _showAllPlayers;
     public ObservableCollection<HomeFeatureCard> Features { get; } = [];
+    public ObservableCollection<HomeFeatureTab> FeatureTabs { get; } = [];
     public ObservableCollection<HomePlayerCard> Players { get; } = [];
+    public ObservableCollection<HomePlayerCard> VisiblePlayers { get; } = [];
     public ObservableCollection<PlayerSupportProfile> SupportedPlayers { get; } = [];
     public ObservableCollection<HomeThreadCard> Issues { get; } = [];
     public ObservableCollection<HomeThreadCard> PullRequests { get; } = [];
@@ -62,11 +70,17 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     public bool HasNoIssues => Issues.Count == 0;
     public bool HasNoPullRequests => PullRequests.Count == 0;
     public bool HasMultipleFeatures => Features.Count > 1;
+    public bool HasFeatureImage => FeatureImage is not null;
+    public bool HasAdditionalPlayers => AdditionalPlayersText.Length > 0;
     public bool HasNoSupportedPlayers => SupportedPlayers.Count == 0;
     public int SupportedPlayerCount => PlayerSupportCatalog.All.Count;
     public string PlayerSupportCountText => Translations.Format("Home.Player.Count", SupportedPlayerCount);
+    public string AdditionalPlayersText => _additionalPlayersText;
     public string FeaturePosition => $"{Math.Max(1, Features.IndexOf(SelectedFeature!)+1)} / {Features.Count}";
     public string RotationText => Translations.Get(IsRotationPaused ? "Home.Rotation.Resume" : "Home.Rotation.Pause");
+    public bool CanRefresh => !IsLoading && DateTimeOffset.UtcNow - _lastManualRefresh >= RefreshCooldown;
+    public string RefreshHint => IsLoading ? Translations.Get("Home.Refreshing")
+        : CanRefresh ? Translations.Get("Home.Refresh") : Translations.Get("Home.RefreshCooldown");
     public string ProjectStatus => _project.FetchedAt is { } time
         ? Translations.Get(_project.IsCached ? "Home.Cache" : "Home.Updated") + " · " + time.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
         : Translations.Get("Home.Unavailable");
@@ -75,6 +89,7 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         LocalizationService localization, AppLogService log, SettingsPreviewViewModel preview)
     {
         _releases = releases; _home = home; _media = media; _localization = localization; _log = log; Preview = preview;
+        _refreshCooldownTimer.Tick += OnRefreshCooldownElapsed;
         ProjectFeatures(); ProjectPlayers(); ProjectSupport();
     }
     public async Task ActivateAsync()
@@ -97,8 +112,11 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     }
     [RelayCommand] private Task RefreshAsync()
     {
-        if (DateTimeOffset.UtcNow - _lastManualRefresh < TimeSpan.FromMinutes(5)) return Task.CompletedTask;
+        if (!CanRefresh) return Task.CompletedTask;
         _lastManualRefresh = DateTimeOffset.UtcNow;
+        _refreshCooldownTimer.Stop();
+        _refreshCooldownTimer.Start();
+        NotifyRefreshState();
         return LoadAsync(true);
     }
     [RelayCommand] private void ClearPlayerFilter()
@@ -106,6 +124,14 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         _playerFilter = string.Empty;
         OnPropertyChanged(nameof(PlayerFilter));
         ProjectSupport();
+    }
+    /// <summary>圆点点击与主按钮共用同一暂停语义；参数来自 <see cref="FeatureTabs"/> 的当前快照。</summary>
+    [RelayCommand] private void SelectFeature(HomeFeatureTab? tab)
+    {
+        if (tab is null || !Features.Contains(tab.Feature)) return;
+        _featureWasChosen = true;
+        IsRotationPaused = true;
+        SelectedFeature = tab.Feature;
     }
     private async Task LoadAsync(bool force)
     {
@@ -160,16 +186,19 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         if (Features.Count > 1) SelectedFeature = Features[(Features.IndexOf(SelectedFeature!) + direction + Features.Count) % Features.Count];
     }
     partial void OnIsRotationPausedChanged(bool value) => OnPropertyChanged(nameof(RotationText));
+    partial void OnIsLoadingChanged(bool value) => NotifyRefreshState();
+    partial void OnFeatureImageChanged(ImageSource? value) => OnPropertyChanged(nameof(HasFeatureImage));
     partial void OnSelectedFeatureChanged(HomeFeatureCard? value)
     {
         OnPropertyChanged(nameof(FeaturePosition));
-        FeatureImage = null;
-        if (value?.ImageUrl is not { } url) return;
+        ProjectFeatureTabs();
+        // 切页保留上一张图，直到新图就绪；无图条目立即清空，由页面显示静态演示场景。
+        if (value?.ImageUrl is not { } url) { FeatureImage = null; return; }
         if (_images.TryGetValue(url, out var image)) { FeatureImage = image; return; }
         if (url.StartsWith("pack://application:,,,/AFMediaBar;component/Assets/Home/", StringComparison.Ordinal))
         {
             try { var bitmap = new BitmapImage(new Uri(url)); bitmap.Freeze(); _images[url] = FeatureImage = bitmap; }
-            catch (Exception exception) { _log.Warn("Home", "内置首页图片不可用", exception); }
+            catch (Exception exception) { _log.Warn("Home", "内置首页图片不可用", exception); FeatureImage = null; }
         }
         else if (_request is { } request) _ = LoadImageAsync(value, request.Token);
     }
@@ -178,7 +207,8 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         try
         {
             var image = await _home.ReadImageAsync(card.ImageUrl, token);
-            if (!_active || _disposed || token.IsCancellationRequested || image is null) return;
+            if (!_active || _disposed || token.IsCancellationRequested) return;
+            if (image is null) { if (SelectedFeature == card) FeatureImage = null; return; }
             if (_images.Count >= 8) _images.Clear();
             _images[card.ImageUrl!] = image;
             if (SelectedFeature == card) FeatureImage = image;
@@ -221,7 +251,20 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         Features.Clear(); foreach (var item in items.DistinctBy(item => item.Id).Take(5)) Features.Add(item);
         SelectedFeature = !_hasShownLatest && !_featureWasChosen && _releaseData.Count > 0 ? Features.First() : Features.FirstOrDefault(item => item.Id == oldId) ?? Features.First();
         if (_releaseData.Count > 0) _hasShownLatest = true;
+        ProjectFeatureTabs();
         OnPropertyChanged(nameof(HasMultipleFeatures)); OnPropertyChanged(nameof(FeaturePosition));
+    }
+    /// <summary>按当前选中项重投影轮播圆点；标题变化或语言切换后都要重建一次。</summary>
+    private void ProjectFeatureTabs()
+    {
+        FeatureTabs.Clear();
+        for (var index = 0; index < Features.Count; index++)
+        {
+            var feature = Features[index];
+            FeatureTabs.Add(new(feature, feature == SelectedFeature,
+                Translations.Format("Home.Rotation.Slide", index + 1, feature.Title)));
+        }
+        OnPropertyChanged(nameof(FeaturePosition));
     }
     private string Language => _localization.CurrentLanguage switch
     {
@@ -235,6 +278,11 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         if (_playerSignature == signature) return;
         _playerSignature = signature;
         Players.Clear(); foreach (var item in PlayerSupportCatalog.Describe(_media.Sessions, _media.Snapshot)) Players.Add(item);
+        VisiblePlayers.Clear(); foreach (var player in Players.Take(2)) VisiblePlayers.Add(player);
+        var additional = Players.Count - VisiblePlayers.Count;
+        _additionalPlayersText = additional > 0 ? Translations.Format("Home.Player.More", additional) : string.Empty;
+        OnPropertyChanged(nameof(AdditionalPlayersText));
+        OnPropertyChanged(nameof(HasAdditionalPlayers));
         OnPropertyChanged(nameof(HasPlayers));
     }
     private static IReadOnlyList<string> FeatureTags(string kindKey, string? version, string? source)
@@ -266,15 +314,31 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     private static HomeThreadCard Thread(ProjectThread item)
     {
         var date = item.UpdatedAt == DateTimeOffset.MinValue ? "" : item.UpdatedAt.ToLocalTime().ToString("yyyy-MM-dd");
-        return new($"#{item.Number}  {item.Title}", (item.IsDraft ? Translations.Get("Home.Draft") + " · " : "") + date, item.Url,
+        // 页面把编号作为独立列呈现，标题只保留正文，避免 "#261  #261" 重复。
+        return new(item.Title, (item.IsDraft ? Translations.Get("Home.Draft") + " · " : "") + date, item.Url,
             $"#{item.Number}", date, item.IsDraft);
     }
     private static string FormatCount(int? value) => value?.ToString("N0") ?? "—";
+    private void OnRefreshCooldownElapsed(object? sender, EventArgs args)
+    {
+        _refreshCooldownTimer.Stop();
+        NotifyRefreshState();
+    }
+    private void NotifyRefreshState()
+    {
+        OnPropertyChanged(nameof(CanRefresh));
+        OnPropertyChanged(nameof(RefreshHint));
+    }
     private void OnMediaChanged(object? sender, EventArgs args)
     {
         if (!_dispatcher.CheckAccess()) { _dispatcher.BeginInvoke(() => { if (_active && !_disposed) ProjectPlayers(); }); return; }
         if (_active && !_disposed) ProjectPlayers();
     }
-    private void OnLanguageChanged(object? sender, EventArgs args) { if (_active && !_disposed) { ProjectFeatures(); ProjectPlayers(); ProjectSupport(); ProjectActivity(); OnPropertyChanged(nameof(RotationText)); } }
-    public void Dispose() { if (_disposed) return; _disposed = true; Deactivate(); _images.Clear(); }
+    private void OnLanguageChanged(object? sender, EventArgs args)
+    {
+        if (!_active || _disposed) return;
+        ProjectFeatures(); ProjectPlayers(); ProjectSupport(); ProjectActivity();
+        ProjectFeatureTabs(); OnPropertyChanged(nameof(RotationText)); NotifyRefreshState();
+    }
+    public void Dispose() { if (_disposed) return; _disposed = true; Deactivate(); _refreshCooldownTimer.Stop(); _images.Clear(); }
 }
