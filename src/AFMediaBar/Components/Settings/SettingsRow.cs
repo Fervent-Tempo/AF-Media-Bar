@@ -96,8 +96,8 @@ public class SettingsRow : HeaderedContentControl
         new PropertyMetadata(SettingsChipTone.Neutral));
 
     /// <summary>
-    /// 标题旁的圆形提示：文字只在悬停时出现，为空时不显示图标。
-    /// A round hint next to the title: the text only appears on hover, and an empty value hides the icon.
+    /// 说明文本末尾的圆形提示：文字只在悬停时出现，为空时不显示图标。
+    /// A round hint at the end of the description: the text only appears on hover, and an empty value hides the icon.
     /// </summary>
     public static readonly DependencyProperty HintProperty = DependencyProperty.Register(
         nameof(Hint),
@@ -156,7 +156,7 @@ public class SettingsRow : HeaderedContentControl
         set => SetValue(BadgeToneProperty, value);
     }
 
-    /// <summary>标题旁的悬停提示文本。/ Hover text behind the round hint next to the title.</summary>
+    /// <summary>说明末尾的悬停提示文本。/ Hover text behind the round hint at the end of the description.</summary>
     public string Hint
     {
         get => (string)GetValue(HintProperty);
