@@ -87,8 +87,8 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
             }
         }
 
-        // 命中但没歌词不顶掉在线结果：这时当没找到，继续原有链路。
-        if (best is not { Score: >= MinimumScore }) return null;
+        // 一条都没命中就当没找到，继续原有链路。
+        if (best is null) return null;
         return new LyricsResult(LyricsSourceCatalog.LocalFile, best.Document)
         {
             MatchScore = best.Score,
@@ -176,15 +176,20 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         // 元数据和文件名是两条独立线索，各评一次取更强的一条：哪边写全了就用哪边，不要求两份写法一致。
         var fromMetadata = Assess(request, metadata.Title, metadata.Artist, duration);
         var fromFileName = Assess(request, fileTitle, fileArtist, duration);
+        // 证据跨两条线索各取最大值：标题写在元数据、歌手写在文件名，合起来才算数。
+        var titleEvidence = Math.Max(fromMetadata.TitleScore, fromFileName.TitleScore);
+        var artistEvidence = Max(fromMetadata.ArtistScore, fromFileName.ArtistScore);
+        var durationEvidence = Max(fromMetadata.DurationScore, fromFileName.DurationScore);
         // 两边都写了歌手、却明显不是同一位时整份跳过：本地同名翻唱不能顶掉正在播的那首。
-        if (HasArtistConflict(fromMetadata, fromFileName)) return null;
+        if (artistEvidence is { } matchedArtist && matchedArtist < ArtistMismatchFloor) return null;
         var assessment = Stronger(fromMetadata, fromFileName);
         if (assessment.Score < MinimumScore) return null;
 
         var (translation, romanization) = ReadCompanions(path, baseName);
         var document = LyricsTextParser.Parse(text, translation, romanization, request,
             request.DurationSeconds ?? duration, request.FilterInfoLines);
-        return new Candidate(path, assessment.Score, IsLowConfidence(fromMetadata, fromFileName), document);
+        return new Candidate(path, assessment.Score,
+            IsLowConfidence(titleEvidence, artistEvidence, durationEvidence), document);
     }
 
     /// <summary>按扩展名取文本：QRC/KRC 先解密，其余按编码探测。</summary>
@@ -254,7 +259,7 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         return (translation, romanization);
     }
 
-    /// <summary>发帖和歌词文件常见两种写法：QQ 的 _qmts/_qmRoma，网易云的 .tlyric/.romalrc。</summary>
+    /// <summary>附件命名的两种来源：QQ 的 _qmts/_qmRoma，网易云的 .tlyric/.romalrc。</summary>
     private static readonly (string Suffix, LyricRole Role)[] CompanionSuffixes =
     [
         ("_qmts.lrc", LyricRole.Translation),
@@ -310,23 +315,12 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     }
 
     /// <summary>
-    /// 两边都写了歌手、相似度却低于否决线：明确不是同一位，整份候选不采用。
-    /// 文件没写歌手时不算冲突——没有证据不等于反证。
-    /// </summary>
-    private static bool HasArtistConflict(Assessment metadata, Assessment filename) =>
-        Max(metadata.ArtistScore, filename.ArtistScore) is { } artist && artist < ArtistMismatchFloor;
-
-    /// <summary>
     /// 只有标题一条线索时判为低置信度：同名翻唱、Live、同名片看起来都一样，得先让在线查一轮。
-    /// 标题可能写在 [ti:]，也可能只在文件名里；歌手同理，所以两条线索的证据合起来看。
+    /// 标题、歌手、时长的证据都已按两条线索合并，这里只做判定。
     /// </summary>
-    private static bool IsLowConfidence(Assessment metadata, Assessment filename)
-    {
-        if (Math.Max(metadata.TitleScore, filename.TitleScore) < ConfidenceTitleFloor) return true;
-        return Max(metadata.ArtistScore, filename.ArtistScore) is { } artist
-            ? artist < ConfidenceArtistFloor
-            : Max(metadata.DurationScore, filename.DurationScore) is not >= ConfidenceDurationFloor;
-    }
+    private static bool IsLowConfidence(double titleScore, double? artistScore, double? durationScore) =>
+        titleScore < ConfidenceTitleFloor ||
+        (artistScore is { } artist ? artist < ConfidenceArtistFloor : durationScore is not >= ConfidenceDurationFloor);
 
     /// <summary>取两个可空证据里较大的一个；两边都缺就是缺（LINQ 的 Max 在空序列上会抛，不能直接用）。</summary>
     private static double? Max(double? left, double? right) =>
@@ -344,8 +338,9 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         var right = Normalize(actual ?? string.Empty);
         if (left.Length == 0 || right.Length == 0) return 0;
         var direct = Similarity.Similarity(left, right);
-        var overlap = (double)left.Intersect(right).Count() / Math.Max(left.Length, right.Length);
-        var lengthFactor = 0.55 + 0.45 * Math.Min(left.Length, right.Length) / Math.Max(left.Length, right.Length);
+        var longer = Math.Max(left.Length, right.Length);
+        var overlap = (double)left.Intersect(right).Count() / longer;
+        var lengthFactor = 0.55 + 0.45 * Math.Min(left.Length, right.Length) / longer;
         return Math.Max(direct, overlap) * lengthFactor;
     }
 
