@@ -68,7 +68,7 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     private static LyricsResult? Search(LyricsRequest request, IReadOnlyList<string> folders, CancellationToken cancellationToken)
     {
         // 请求侧的派生值对每个候选都一样，算一次即可；候选侧的每份仍各自解析。
-        var key = new RequestKey(VersionDescriptors(request.Title), SingleCharTitle(request.Title));
+        var key = new RequestKey(VersionKeys(request.Title), SingleCharTitle(request.Title));
         Candidate? best = null;
         foreach (var folder in folders)
         {
@@ -422,35 +422,43 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         $@"(?<![\p{{L}}\p{{N}}])(?:{string.Join("|", markers.Select(Regex.Escape))})(?![\p{{L}}\p{{N}}])",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    /// <summary>取标题里带版本标记的括号描述并归一化：`DJ甲 Remix` 与 `DJ乙 Remix` 是两条不同描述。</summary>
-    private static HashSet<string> VersionDescriptors(string? title)
+    /// <summary>括号内的版本描述，归一化后连同类属（无词形态 / 同曲异版）。</summary>
+    private readonly record struct VersionDescriptor(string Text, bool IsHard);
+
+    /// <summary>取标题里带版本标记的括号描述：`DJ甲 Remix` 与 `DJ乙 Remix` 是两条不同描述。</summary>
+    private static List<VersionDescriptor> VersionDescriptors(string? title)
     {
-        var descriptors = new HashSet<string>(StringComparer.Ordinal);
+        var descriptors = new List<VersionDescriptor>();
         if (string.IsNullOrWhiteSpace(title)) return descriptors;
         foreach (Match group in Brackets().Matches(title))
         {
             var inner = group.Value[1..^1];
-            if (!HardVersionPattern.IsMatch(inner) && !SoftVersionPattern.IsMatch(inner)) continue;
+            var isHard = HardVersionPattern.IsMatch(inner);
+            if (!isHard && !SoftVersionPattern.IsMatch(inner)) continue;
             var normalized = Normalize(inner);
-            if (normalized.Length > 0) descriptors.Add(normalized);
+            if (normalized.Length > 0) descriptors.Add(new VersionDescriptor(normalized, isHard));
         }
         return descriptors;
     }
 
+    /// <summary>请求侧的版本描述集合，供候选比较时做「完全一致或互相包含」判定。</summary>
+    private static HashSet<string> VersionKeys(string? title) =>
+        VersionDescriptors(title).Select(descriptor => descriptor.Text).ToHashSet(StringComparer.Ordinal);
+
     /// <summary>
-    /// 比较候选与请求的版本描述：候选没写版本按原版处理；写了就必须与请求的某一条相容
-    /// （完全一致或互相包含），否则按标记类型给出软/硬冲突。
+    /// 比较候选与请求的版本描述：候选没写版本按原版处理；写了就必须与请求的某一条相容，
+    /// 否则按类型给出软/硬冲突。
     /// </summary>
     private static VersionConflict VersionConflictOf(HashSet<string> wanted, string? candidateTitle)
     {
         var conflict = VersionConflict.None;
         foreach (var descriptor in VersionDescriptors(candidateTitle))
         {
-            var compatible = wanted.Any(item => item == descriptor ||
-                item.Contains(descriptor, StringComparison.Ordinal) ||
-                descriptor.Contains(item, StringComparison.Ordinal));
+            var compatible = wanted.Any(item => item == descriptor.Text ||
+                item.Contains(descriptor.Text, StringComparison.Ordinal) ||
+                descriptor.Text.Contains(item, StringComparison.Ordinal));
             if (compatible) continue;
-            if (HardVersionPattern.IsMatch(descriptor)) return VersionConflict.Hard;
+            if (descriptor.IsHard) return VersionConflict.Hard;
             conflict = VersionConflict.Soft;
         }
         return conflict;
