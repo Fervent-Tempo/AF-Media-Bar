@@ -339,6 +339,20 @@ public sealed class LocalFileLyricsProviderTests
     }
 
     [TestMethod]
+    public async Task ReadsSubtitleAsLyrics()
+    {
+        // 字幕不是歌词格式，由 SubtitleTextConverter 先归一化成 LRC 再进现有解析链。
+        File.WriteAllText(Path.Combine(_folder, "光.srt"),
+            "1\n00:00:01,000 --> 00:00:03,000\n光\n");
+        Enable(true, _folder);
+
+        var result = await new LocalFileLyricsProvider().GetLyricsAsync(Request("光", "陈粒"), CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.AreEqual("光", result.Document.Lines[0].Text);
+    }
+
+    [TestMethod]
     public void NormalizeDropsBlankAndDuplicateFolders()
     {
         var settings = new LyricsSourceSettings(null)

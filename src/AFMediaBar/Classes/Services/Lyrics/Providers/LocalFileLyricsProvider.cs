@@ -21,7 +21,7 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 public sealed partial class LocalFileLyricsProvider : ILyricsProvider
 {
     /// <summary>认得出来的歌词文件；翻译和音译各有自己的后缀，进去后单独识别。</summary>
-    private static readonly string[] Extensions = [".lrc", ".qrc", ".krc", ".tlyric", ".romalrc"];
+    private static readonly string[] Extensions = [".lrc", ".qrc", ".krc", ".tlyric", ".romalrc", ".srt", ".ass", ".ssa"];
 
     /// <summary>单文件上限，超过它的多半不是歌词。</summary>
     private const int MaxFileBytes = 2 * 1024 * 1024;
@@ -220,12 +220,13 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         return new Candidate(path, assessment.Score, lowConfidence, document);
     }
 
-    /// <summary>按扩展名取文本：QRC/KRC 先解密，其余按编码探测。</summary>
+    /// <summary>按扩展名取文本：QRC/KRC 先解密，字幕先归一化成 LRC，其余按编码探测。</summary>
     private static string? LoadText(string path, byte[] bytes) =>
         Path.GetExtension(path).ToLowerInvariant() switch
         {
             ".qrc" => DecryptQrc(bytes),
             ".krc" => DecryptKrc(bytes),
+            ".srt" or ".ass" or ".ssa" => SubtitleTextConverter.TryConvert(Decode(bytes)),
             _ => Decode(bytes)
         };
 
