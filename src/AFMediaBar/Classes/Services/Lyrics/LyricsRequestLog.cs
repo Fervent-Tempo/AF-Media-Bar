@@ -35,6 +35,7 @@ internal sealed class LyricsRequestLog(LyricsRequest request, LyricsSourceSettin
     internal LyricsResult? Finish(LyricsResult? result)
     {
         string attempts;
+        var confidence = result?.LowConfidence == true ? " confidence=low" : string.Empty;
         lock (_gate)
         {
             if (_completed) return result;
@@ -44,7 +45,7 @@ internal sealed class LyricsRequestLog(LyricsRequest request, LyricsSourceSettin
         log?.Info("Lyrics", $"取词结束: request={_id} title=\"{request.Title}\" artist=\"{request.Artist}\" " +
             $"playbackSource={request.PlaybackSourceId ?? "none"} rule={settings.Rule}/{settings.AttemptMode}/{settings.ResultMode} " +
             $"attempts=[{attempts}] source={result?.Source ?? "none"} score={result?.MatchScore.ToString() ?? "none"} " +
-            $"status={result?.Status.ToString() ?? "FailedOrUnmatched"}{(result?.LowConfidence == true ? " confidence=low" : string.Empty)} " +
+            $"status={result?.Status.ToString() ?? "FailedOrUnmatched"}{confidence} " +
             $"elapsed={Stopwatch.GetElapsedTime(_started).TotalMilliseconds:0}ms");
         return result;
     }

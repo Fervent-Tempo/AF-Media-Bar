@@ -1525,6 +1525,9 @@
   <data name="Lyrics.Source.Kugou" xml:space="preserve">
     <value>Kugou Music</value>
   </data>
+  <data name="Lyrics.Source.LocalFile" xml:space="preserve">
+    <value>Tệp cục bộ</value>
+  </data>
   <data name="Lyrics.Source.LRCLIB" xml:space="preserve">
     <value>LRCLIB</value>
   </data>

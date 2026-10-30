@@ -1546,6 +1546,9 @@
   <data name="Lyrics.Source.Kugou" xml:space="preserve">
     <value>酷狗音乐</value>
   </data>
+  <data name="Lyrics.Source.LocalFile" xml:space="preserve">
+    <value>本地文件</value>
+  </data>
   <data name="Lyrics.Source.LRCLIB" xml:space="preserve">
     <value>LRCLIB</value>
   </data>

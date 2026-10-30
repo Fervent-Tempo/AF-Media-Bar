@@ -46,7 +46,7 @@ public readonly record struct LyricsSourceSettings(IReadOnlyList<string>? Enable
     /// <summary>手动来源顺序，null 使用目录顺序；关闭来源也保留其位置。</summary>
     public IReadOnlyList<string>? PrioritySourceIds { get; init; }
 
-    /// <summary>是否先查本地歌词文件；关闭时完全不走本地。/ Whether local lyric files are searched first; off means local is skipped entirely.</summary>
+    /// <summary>是否读取本地歌词文件（含在线未命中后的兜底）；关闭时完全不走本地。/ Whether local lyric files are used at all, including the fallback after online misses; off skips them entirely.</summary>
     public bool LocalEnabled { get; init; }
 
     /// <summary>

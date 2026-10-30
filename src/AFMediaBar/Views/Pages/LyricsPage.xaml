@@ -325,7 +325,6 @@
                                         Style="{StaticResource AfSettingsListItemStyle}"
                                         Description="{Binding}"
                                         Icon="{ui:SymbolIcon Folder24}"
-                                        IsNested="True"
                                         Title="{DynamicResource Loc.Lyrics.Row.Local.Folder}">
                                         <ui:Button
                                             Click="RemoveLocalLyricsFolder_Click"

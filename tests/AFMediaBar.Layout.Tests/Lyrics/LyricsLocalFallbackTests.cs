@@ -61,7 +61,7 @@ public sealed class LyricsLocalFallbackTests
     {
         SettingsManager.Current.LyricsSource = SettingsManager.Current.LyricsSource with { LocalFallbackOnly = true };
         var local = Fixed(LyricsSourceCatalog.LocalFile, "Local");
-        var online = new Provider(LyricsSourceCatalog.Lrclib, _ => Task.FromResult<LyricsResult?>(null));
+        var online = Empty(LyricsSourceCatalog.Lrclib);
         var result = await Create(local, online).GetLyricsAsync(Request, CancellationToken.None);
         Assert.AreEqual("Local", result?.Source);
         Assert.AreEqual(1, online.Calls);
@@ -72,8 +72,8 @@ public sealed class LyricsLocalFallbackTests
     public async Task FallbackOnlyStillReturnsNothingWhenNeitherOfThemFindsLyrics()
     {
         SettingsManager.Current.LyricsSource = SettingsManager.Current.LyricsSource with { LocalFallbackOnly = true };
-        var local = new Provider(LyricsSourceCatalog.LocalFile, _ => Task.FromResult<LyricsResult?>(null));
-        var online = new Provider(LyricsSourceCatalog.Lrclib, _ => Task.FromResult<LyricsResult?>(null));
+        var local = Empty(LyricsSourceCatalog.LocalFile);
+        var online = Empty(LyricsSourceCatalog.Lrclib);
         var result = await Create(local, online).GetLyricsAsync(Request, CancellationToken.None);
         Assert.IsNull(result);
         Assert.AreEqual(1, local.Calls, "在线全空之后才轮到本地，且只跑一次。");
@@ -83,8 +83,7 @@ public sealed class LyricsLocalFallbackTests
     public async Task TitleOnlyLocalHitLetsOnlineLookupRunFirst()
     {
         // 只靠标题命中的本地文件（同名翻唱、同名片）不能短路在线搜索。
-        var local = new Provider(LyricsSourceCatalog.LocalFile,
-            _ => Task.FromResult<LyricsResult?>(Available("Local", lowConfidence: true)));
+        var local = Fixed(LyricsSourceCatalog.LocalFile, "Local", lowConfidence: true);
         var online = Fixed(LyricsSourceCatalog.Lrclib, "Online");
         var result = await Create(local, online).GetLyricsAsync(Request, CancellationToken.None);
         Assert.AreEqual("Online", result?.Source);
@@ -94,9 +93,8 @@ public sealed class LyricsLocalFallbackTests
     [TestMethod]
     public async Task LowConfidenceLocalHitIsStillUsedWhenOnlineFindsNothing()
     {
-        var local = new Provider(LyricsSourceCatalog.LocalFile,
-            _ => Task.FromResult<LyricsResult?>(Available("Local", lowConfidence: true)));
-        var online = new Provider(LyricsSourceCatalog.Lrclib, _ => Task.FromResult<LyricsResult?>(null));
+        var local = Fixed(LyricsSourceCatalog.LocalFile, "Local", lowConfidence: true);
+        var online = Empty(LyricsSourceCatalog.Lrclib);
         var result = await Create(local, online).GetLyricsAsync(Request, CancellationToken.None);
         Assert.AreEqual("Local", result?.Source);
         Assert.AreEqual(1, local.Calls);
@@ -105,8 +103,10 @@ public sealed class LyricsLocalFallbackTests
     private static LyricsService Create(Provider local, params Provider[] online) =>
         new(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(6), local, online);
 
-    private static Provider Fixed(string id, string source) =>
-        new(id, _ => Task.FromResult<LyricsResult?>(Available(source)));
+    private static Provider Fixed(string id, string source, bool lowConfidence = false) =>
+        new(id, _ => Task.FromResult<LyricsResult?>(Available(source, lowConfidence)));
+
+    private static Provider Empty(string id) => new(id, _ => Task.FromResult<LyricsResult?>(null));
 
     private static LyricsResult Available(string source, bool lowConfidence = false) =>
         new(source, new LyricDocument([new LyricLine(0, 1, "Lyric")], LyricsSyncType.LineSynced, "LRC"))

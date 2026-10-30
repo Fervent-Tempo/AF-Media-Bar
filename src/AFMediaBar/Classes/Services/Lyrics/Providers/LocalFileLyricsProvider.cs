@@ -29,6 +29,11 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     /// <summary>与在线来源保持一致的门槛：标题对不上就不是同一首。</summary>
     private const int MinimumScore = 60;
 
+    /// <summary>字段权重：标题为主，歌手次之，时长只作辅助。</summary>
+    private const double TitleWeight = 0.6;
+    private const double ArtistWeight = 0.3;
+    private const double DurationWeight = 0.1;
+
     /// <summary>算得上「有独立佐证」的下限：标题几乎一致，且歌手或时长里至少有一项也对得上。</summary>
     private const double ConfidenceTitleFloor = 0.85;
     private const double ConfidenceArtistFloor = 0.6;
@@ -269,11 +274,8 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     /// <summary>一条线索（元数据或文件名）的匹配结论：分数，以及各字段各自的证据强度。</summary>
     private readonly record struct Assessment(int Score, double TitleScore, double? ArtistScore, double? DurationScore);
 
-    /// <summary>两条线索里取更强的一条：先比分数，同分时优先带歌手证据的那条。</summary>
-    private static Assessment Stronger(Assessment left, Assessment right) =>
-        right.Score > left.Score ? right
-        : right.Score == left.Score && left.ArtistScore is null && right.ArtistScore is not null ? right
-        : left;
+    /// <summary>两条线索里取分数更高的一条；同分时保持元数据优先。/ Takes the higher score; ties keep the metadata route.</summary>
+    private static Assessment Stronger(Assessment left, Assessment right) => right.Score > left.Score ? right : left;
 
     private static Assessment Assess(LyricsRequest request, string? title, string? artist, double? duration)
     {
@@ -283,8 +285,8 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         var durationScore = request.DurationSeconds is > 0 && duration is > 0
             ? CompareDuration(request.DurationSeconds.Value, duration)
             : (double?)null;
-        var weight = 0.6 + (artistScore.HasValue ? 0.3 : 0) + (durationScore.HasValue ? 0.1 : 0);
-        var sum = 0.6 * titleScore + (artistScore ?? 0) * 0.3 + (durationScore ?? 0) * 0.1;
+        var weight = TitleWeight + (artistScore.HasValue ? ArtistWeight : 0) + (durationScore.HasValue ? DurationWeight : 0);
+        var sum = TitleWeight * titleScore + (artistScore ?? 0) * ArtistWeight + (durationScore ?? 0) * DurationWeight;
         return new Assessment((int)Math.Round(100 * sum / weight), titleScore, artistScore, durationScore);
     }
 
@@ -294,12 +296,15 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     /// </summary>
     private static bool IsLowConfidence(Assessment metadata, Assessment filename)
     {
-        var title = Math.Max(metadata.TitleScore, filename.TitleScore);
-        var artist = new[] { metadata.ArtistScore, filename.ArtistScore }.Max();
-        var duration = new[] { metadata.DurationScore, filename.DurationScore }.Max();
-        if (title < ConfidenceTitleFloor) return true;
-        return artist is { } matched ? matched < ConfidenceArtistFloor : duration is not >= ConfidenceDurationFloor;
+        if (Math.Max(metadata.TitleScore, filename.TitleScore) < ConfidenceTitleFloor) return true;
+        return Max(metadata.ArtistScore, filename.ArtistScore) is { } artist
+            ? artist < ConfidenceArtistFloor
+            : Max(metadata.DurationScore, filename.DurationScore) is not >= ConfidenceDurationFloor;
     }
+
+    /// <summary>取两个可空证据里较大的一个；两边都缺就是缺（LINQ 的 Max 在空序列上会抛，不能直接用）。</summary>
+    private static double? Max(double? left, double? right) =>
+        left is { } first ? right is { } second ? Math.Max(first, second) : first : right;
 
     /// <summary>
     /// 歌手比较：除了整串相似度，再看一次字符集合重叠。「μ's (缪斯)」和「缪斯 (μ's)」写的是同一组人，

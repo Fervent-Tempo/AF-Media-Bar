@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Win32;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.Resources;
 using AFMediaBar.ViewModels.Pages;
@@ -27,13 +28,13 @@ public partial class LyricsPage : INavigableView<LyricsViewModel>
     /// <summary>选择本地歌词目录；允许一次添加多个，已存在的路径由视图模型去重。</summary>
     private void AddLocalLyricsFolder_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new Microsoft.Win32.OpenFolderDialog
+        var dialog = new OpenFolderDialog
         {
             Multiselect = true,
             Title = Translations.Get("Lyrics.Row.Local.PickTitle")
         };
         if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
-        foreach (var folder in dialog.FolderNames) ViewModel.AddLocalLyricsFolder(folder);
+        ViewModel.AddLocalLyricsFolders(dialog.FolderNames);
     }
 
     private void RemoveLocalLyricsFolder_Click(object sender, RoutedEventArgs e)

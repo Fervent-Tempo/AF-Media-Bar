@@ -266,16 +266,19 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         set => _configuration.SetLyricsSourceSettings(_configuration.Current.LyricsSource with { LocalFallbackOnly = value });
     }
 
-    /// <summary>添加目录；空白与重复路径直接忽略。</summary>
-    public void AddLocalLyricsFolder(string folder)
+    /// <summary>添加目录；空白与重复路径直接忽略，多选时一次写入，避免反复触发设置变更。</summary>
+    public void AddLocalLyricsFolders(IEnumerable<string> folders)
     {
-        folder = folder.Trim();
-        if (folder.Length == 0) return;
-        var folders = LocalLyricsFolders;
-        if (folders.Contains(folder, StringComparer.OrdinalIgnoreCase)) return;
+        var current = LocalLyricsFolders;
+        var added = folders
+            .Select(folder => folder.Trim())
+            .Where(folder => folder.Length > 0 && !current.Contains(folder, StringComparer.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (added.Length == 0) return;
         _configuration.SetLyricsSourceSettings(_configuration.Current.LyricsSource with
         {
-            LocalFolders = [.. folders, folder]
+            LocalFolders = [.. current, .. added]
         });
     }
 
