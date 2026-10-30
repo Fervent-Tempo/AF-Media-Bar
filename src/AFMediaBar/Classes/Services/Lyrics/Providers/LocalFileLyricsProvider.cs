@@ -34,6 +34,9 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     private const double ArtistWeight = 0.3;
     private const double DurationWeight = 0.1;
 
+    /// <summary>两边都写了歌手、相似度却低于这条线时，视为「明确不是同一位歌手」，整份候选不采用。</summary>
+    private const double ArtistMismatchFloor = 0.45;
+
     /// <summary>算得上「有独立佐证」的下限：标题几乎一致，且歌手或时长里至少有一项也对得上。</summary>
     private const double ConfidenceTitleFloor = 0.85;
     private const double ConfidenceArtistFloor = 0.6;
@@ -165,10 +168,14 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         if (string.IsNullOrWhiteSpace(text)) return null;
         var metadata = ReadMetadata(text);
         var (fileTitle, fileArtist, fileDuration) = SplitFileName(request, baseName);
+        // 文件名或元数据自称另一个版本（Instrumental / Karaoke / Live…）就直接跳过：同名不等于同一份歌词。
+        if (HasForeignVersion(request.Title, metadata.Title) || HasForeignVersion(request.Title, fileTitle)) return null;
         var duration = metadata.Duration ?? fileDuration;
         // 元数据和文件名是两条独立线索，各评一次取更强的一条：哪边写全了就用哪边，不要求两份写法一致。
         var fromMetadata = Assess(request, metadata.Title, metadata.Artist, duration);
         var fromFileName = Assess(request, fileTitle, fileArtist, duration);
+        // 两边都写了歌手、却明显不是同一位时整份跳过：本地同名翻唱不能顶掉正在播的那首。
+        if (HasArtistConflict(fromMetadata, fromFileName)) return null;
         var assessment = Stronger(fromMetadata, fromFileName);
         if (assessment.Score < MinimumScore) return null;
 
@@ -259,16 +266,26 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     {
         var parts = fileName.Split(" - ", StringSplitOptions.TrimEntries);
         if (parts.Length >= 3 && double.TryParse(parts[^2], out var seconds) && seconds is > 0 and < 36000)
-            return (parts[1], parts[0], seconds);
+            return (parts[1], ArtistOf(parts[0]), seconds);
         if (parts.Length >= 2)
         {
             var normalized = Normalize(request.Title);
             return Similarity.Similarity(normalized, Normalize(parts[0])) >=
                    Similarity.Similarity(normalized, Normalize(parts[1]))
-                ? (parts[0], parts[1], null)
-                : (parts[1], parts[0], null);
+                ? (parts[0], ArtistOf(parts[1]), null)
+                : (parts[1], ArtistOf(parts[0]), null);
         }
         return (fileName, null, null);
+    }
+
+    /// <summary>
+    /// 「厂牌 _ 歌手」是下载器的常见写法，厂牌不该算进歌手，否则歌手比较全是噪声。
+    /// 只取最后一段；没有该分隔符时原样返回。
+    /// </summary>
+    private static string ArtistOf(string value)
+    {
+        var segments = value.Split(" _ ", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        return segments.Length == 0 ? value : segments[^1];
     }
 
     /// <summary>一条线索（元数据或文件名）的匹配结论：分数，以及各字段各自的证据强度。</summary>
@@ -291,6 +308,13 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     }
 
     /// <summary>
+    /// 两边都写了歌手、相似度却低于否决线：明确不是同一位，整份候选不采用。
+    /// 文件没写歌手时不算冲突——没有证据不等于反证。
+    /// </summary>
+    private static bool HasArtistConflict(Assessment metadata, Assessment filename) =>
+        Max(metadata.ArtistScore, filename.ArtistScore) is { } artist && artist < ArtistMismatchFloor;
+
+    /// <summary>
     /// 只有标题一条线索时判为低置信度：同名翻唱、Live、同名片看起来都一样，得先让在线查一轮。
     /// 标题可能写在 [ti:]，也可能只在文件名里；歌手同理，所以两条线索的证据合起来看。
     /// </summary>
@@ -307,8 +331,10 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         left is { } first ? right is { } second ? Math.Max(first, second) : first : right;
 
     /// <summary>
-    /// 歌手比较：除了整串相似度，再看一次字符集合重叠。「μ's (缪斯)」和「缪斯 (μ's)」写的是同一组人，
-    /// 只因为顺序颠倒就让整串相似度归零，会把正确的文件挡在门外。
+    /// 歌手比较：整串相似度与字符集合重叠取高者，再按长度比例打折。
+    /// 「μ's (缪斯)」和「缪斯 (μ's)」写的是同一组人，只因为顺序颠倒就让整串相似度归零会把正确文件挡在门外；
+    /// 但 Jaro-Winkler 对超短串很宽容——「Lia」对「Girls Dead Monster (ガルデモ)」能到 0.61，
+    /// 不打折就会被当成歌手佐证，把完全不同的歌手判成高置信。
     /// </summary>
     private static double CompareArtist(string? expected, string? actual)
     {
@@ -317,7 +343,41 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         if (left.Length == 0 || right.Length == 0) return 0;
         var direct = Similarity.Similarity(left, right);
         var overlap = (double)left.Intersect(right).Count() / Math.Max(left.Length, right.Length);
-        return Math.Max(direct, overlap);
+        var lengthFactor = 0.55 + 0.45 * Math.Min(left.Length, right.Length) / Math.Max(left.Length, right.Length);
+        return Math.Max(direct, overlap) * lengthFactor;
+    }
+
+    /// <summary>版本标记：候选自称这些版本时歌词不能互借（伴奏、卡拉 OK、现场、重混…）。</summary>
+    private static readonly string[] VersionMarkers =
+    [
+        "instrumental", "inst", "off vocal", "offvocal", "karaoke", "カラオケ", "伴奏",
+        "live", "remix", "acoustic", "demo", "cover", "version", "ver", "tv size", "tvsize",
+        "short", "edit", "remaster"
+    ];
+
+    private static readonly Regex VersionMarkerPattern = new(
+        $@"(?<![\p{{L}}\p{{N}}])(?:{string.Join("|", VersionMarkers.Select(Regex.Escape))})(?![\p{{L}}\p{{N}}])",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>
+    /// 候选自称是另一个版本时返回 true。只认候选多出来的标记：请求带 Live、候选没带，按原版处理即可；
+    /// 反过来候选是 Instrumental，就不能把它的词配给原版。
+    /// </summary>
+    private static bool HasForeignVersion(string? requestTitle, string? candidateTitle)
+    {
+        var wanted = VersionTags(requestTitle);
+        return VersionTags(candidateTitle).Any(marker => !wanted.Contains(marker));
+    }
+
+    /// <summary>取标题里括号内出现的版本标记，忽略空格差异（Off Vocal / offvocal 视为同一个）。</summary>
+    private static HashSet<string> VersionTags(string? title)
+    {
+        var tags = new HashSet<string>(StringComparer.Ordinal);
+        if (string.IsNullOrWhiteSpace(title)) return tags;
+        foreach (Match group in Brackets().Matches(title))
+            foreach (Match marker in VersionMarkerPattern.Matches(group.Value))
+                tags.Add(marker.Value.ToLowerInvariant().Replace(" ", string.Empty));
+        return tags;
     }
 
     /// <summary>同分时选内容更全的一份，再按路径稳定决胜，避免结果随枚举顺序变化。</summary>

@@ -176,6 +176,52 @@ public sealed class LocalFileLyricsProviderTests
     }
 
     [TestMethod]
+    public async Task SkipsCandidatesThatDeclareAnotherVersion()
+    {
+        // 同名但自称 Instrumental：它的词不能配给原版或 Live 版。
+        File.WriteAllText(Path.Combine(_folder, "晴天 (Instrumental).lrc"), "[ti:晴天]\n[00:01.00]伴奏版");
+        Enable(true, _folder);
+
+        Assert.IsNull(await new LocalFileLyricsProvider().GetLyricsAsync(Request("晴天 (Live)", "周杰伦"), CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task KeepsTheSameVersionTag()
+    {
+        // 请求与候选都标了 Instrumental，属于同一版本，照常命中。
+        File.WriteAllText(Path.Combine(_folder, "晴天 (Instrumental).lrc"), "[00:01.00]伴奏版");
+        Enable(true, _folder);
+
+        var result = await new LocalFileLyricsProvider().GetLyricsAsync(Request("晴天 (Instrumental)", "周杰伦"), CancellationToken.None);
+
+        Assert.IsNotNull(result);
+    }
+
+    [TestMethod]
+    public async Task RejectsCandidateThatNamesAnotherArtist()
+    {
+        // 真实场景：QQ 音乐播「Gldemo ver.」的 Girls Dead Monster，本地只有 Lia 的同名片。
+        // 歌手明确对不上（Jaro-Winkler 对短串很宽容，Lia 能到 0.6），不能拿它的词顶上来。
+        File.WriteAllText(Path.Combine(_folder, "My Soul, Your Beats!.lrc"), "[ar:Lia]\n[00:01.00]词");
+        Enable(true, _folder);
+        var request = new LyricsRequest("My Soul, Your Beats! (Gldemo ver.)", "Girls Dead Monster (ガルデモ)",
+            string.Empty, 284.7, null);
+
+        Assert.IsNull(await new LocalFileLyricsProvider().GetLyricsAsync(request, CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task IgnoresTheLabelPrefixInDownloadedFileNames()
+    {
+        // 「厂牌 _ 歌手 - 歌名」是下载器命名：厂牌不能算进歌手，否则歌手比较全是噪声。
+        File.WriteAllText(Path.Combine(_folder, "VISUAL ARTS _ Key Sounds Label _ Lia - 晴天.lrc"), "[00:01.00]词");
+        Enable(true, _folder);
+        var request = new LyricsRequest("晴天 (Gldemo ver.)", "Girls Dead Monster (ガルデモ)", string.Empty, 284.7, null);
+
+        Assert.IsNull(await new LocalFileLyricsProvider().GetLyricsAsync(request, CancellationToken.None));
+    }
+
+    [TestMethod]
     public void NormalizeDropsBlankAndDuplicateFolders()
     {
         var settings = new LyricsSourceSettings(null)
