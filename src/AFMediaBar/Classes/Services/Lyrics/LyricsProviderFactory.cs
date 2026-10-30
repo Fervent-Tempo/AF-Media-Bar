@@ -37,9 +37,10 @@ public static class LyricsProviderFactory
     }
 
     /// <summary>
-    /// 建立使用默认预算与默认提供器序列的歌词服务。
-    /// Creates the lyric service with the default budgets and the default provider sequence.
+    /// 建立使用默认预算与默认提供器序列的歌词服务；本地来源作为独立的前置阶段传入，不进在线来源列表。
+    /// Creates the lyric service with the default budgets and provider sequence; the local source is passed as a separate
+    /// leading stage and never joins the online list.
     /// </summary>
     public static LyricsService CreateDefaultService() =>
-        new(LyricsService.DefaultPerSourceBudget, LyricsService.DefaultTotalBudget, [.. CreateDefault()]);
+        new(LyricsService.DefaultPerSourceBudget, LyricsService.DefaultTotalBudget, new LocalFileLyricsProvider(), [.. CreateDefault()]);
 }

@@ -1420,6 +1420,24 @@
   <data name="Lyrics.Row.BrowserVideo.Title" xml:space="preserve">
     <value>瀏覽器及影片應用程式取詞</value>
   </data>
+  <data name="Lyrics.Row.Local.Title" xml:space="preserve">
+    <value>本地歌詞</value>
+  </data>
+  <data name="Lyrics.Row.Local.Description" xml:space="preserve">
+    <value>優先讀取所選資料夾裡的字幕檔；找不到再連網搜尋。</value>
+  </data>
+  <data name="Lyrics.Row.Local.Folder" xml:space="preserve">
+    <value>歌詞資料夾</value>
+  </data>
+  <data name="Lyrics.Row.Local.Add" xml:space="preserve">
+    <value>新增資料夾</value>
+  </data>
+  <data name="Lyrics.Row.Local.Remove" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="Lyrics.Row.Local.PickTitle" xml:space="preserve">
+    <value>選擇歌詞資料夾</value>
+  </data>
   <data name="Lyrics.Row.BrowserVideo.Description" xml:space="preserve">
     <value>為瀏覽器和已識別的影片應用程式比對歌詞；預設關閉。</value>
   </data>

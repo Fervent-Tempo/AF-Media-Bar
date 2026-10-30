@@ -1420,6 +1420,24 @@
   <data name="Lyrics.Row.BrowserVideo.Title" xml:space="preserve">
     <value>浏览器及视频应用取词</value>
   </data>
+  <data name="Lyrics.Row.Local.Title" xml:space="preserve">
+    <value>本地歌词</value>
+  </data>
+  <data name="Lyrics.Row.Local.Description" xml:space="preserve">
+    <value>优先读取所选文件夹里的歌词文件；没找到再联网搜索。</value>
+  </data>
+  <data name="Lyrics.Row.Local.Folder" xml:space="preserve">
+    <value>歌词文件夹</value>
+  </data>
+  <data name="Lyrics.Row.Local.Add" xml:space="preserve">
+    <value>添加文件夹</value>
+  </data>
+  <data name="Lyrics.Row.Local.Remove" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="Lyrics.Row.Local.PickTitle" xml:space="preserve">
+    <value>选择歌词文件夹</value>
+  </data>
   <data name="Lyrics.Row.BrowserVideo.Description" xml:space="preserve">
     <value>为浏览器和已识别的视频应用匹配歌词；默认关闭。</value>
   </data>

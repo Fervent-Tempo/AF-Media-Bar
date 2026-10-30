@@ -46,6 +46,12 @@ public readonly record struct LyricsSourceSettings(IReadOnlyList<string>? Enable
     /// <summary>手动来源顺序，null 使用目录顺序；关闭来源也保留其位置。</summary>
     public IReadOnlyList<string>? PrioritySourceIds { get; init; }
 
+    /// <summary>是否先查本地歌词文件；关闭时完全不走本地。/ Whether local lyric files are searched first; off means local is skipped entirely.</summary>
+    public bool LocalEnabled { get; init; }
+
+    /// <summary>本地歌词目录，按列表顺序查找；空表示没添加过。/ Local lyric folders searched in order; empty means none were added.</summary>
+    public IReadOnlyList<string>? LocalFolders { get; init; }
+
     /// <summary>默认值：从未配置，即全部来源启用。</summary>
     public static LyricsSourceSettings Default { get; } = new(null);
 
@@ -60,7 +66,8 @@ public readonly record struct LyricsSourceSettings(IReadOnlyList<string>? Enable
         AttemptMode = Enum.IsDefined(AttemptMode) ? AttemptMode : LyricsSourceAttemptMode.Sequential,
         ResultMode = Enum.IsDefined(ResultMode) ? ResultMode : LyricsSourceResultMode.Ordered,
         EnabledSourceIds = NormalizeIds(EnabledSourceIds),
-        PrioritySourceIds = NormalizeIds(PrioritySourceIds)
+        PrioritySourceIds = NormalizeIds(PrioritySourceIds),
+        LocalFolders = NormalizeIds(LocalFolders)
     };
 
     private static string[]? NormalizeIds(IReadOnlyList<string>? ids) => ids?

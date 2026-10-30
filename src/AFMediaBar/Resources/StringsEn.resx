@@ -1420,6 +1420,24 @@
   <data name="Lyrics.Row.BrowserVideo.Title" xml:space="preserve">
     <value>Lyrics for browsers and video apps</value>
   </data>
+  <data name="Lyrics.Row.Local.Title" xml:space="preserve">
+    <value>Local lyrics</value>
+  </data>
+  <data name="Lyrics.Row.Local.Description" xml:space="preserve">
+    <value>Reads lyric files from the folders you pick and uses them first; the network is only used when nothing matches.</value>
+  </data>
+  <data name="Lyrics.Row.Local.Folder" xml:space="preserve">
+    <value>Lyric folder</value>
+  </data>
+  <data name="Lyrics.Row.Local.Add" xml:space="preserve">
+    <value>Add folder</value>
+  </data>
+  <data name="Lyrics.Row.Local.Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Lyrics.Row.Local.PickTitle" xml:space="preserve">
+    <value>Choose lyric folders</value>
+  </data>
   <data name="Lyrics.Row.BrowserVideo.Description" xml:space="preserve">
     <value>Match lyrics for browsers and recognized video apps; off by default.</value>
   </data>

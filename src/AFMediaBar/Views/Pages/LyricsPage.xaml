@@ -307,6 +307,36 @@
                     <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Description}" Icon="{ui:SymbolIcon Video24}" Title="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.AllowBrowserAndVideoLyrics, Mode=TwoWay}"/>
                     </components:SettingsRow>
+                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.Local.Description}" Icon="{ui:SymbolIcon Folder24}" Title="{DynamicResource Loc.Lyrics.Row.Local.Title}" KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.LocalLyricsEnabled, Mode=TwoWay}"/>
+                    </components:SettingsRow>
+                    <StackPanel Visibility="{Binding ViewModel.LocalLyricsEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                        <ItemsControl ItemsSource="{Binding ViewModel.LocalLyricsFolders}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <components:SettingsRow
+                                        Style="{StaticResource AfSettingsListItemStyle}"
+                                        Description="{Binding}"
+                                        Icon="{ui:SymbolIcon Folder24}"
+                                        IsNested="True"
+                                        Title="{DynamicResource Loc.Lyrics.Row.Local.Folder}">
+                                        <ui:Button
+                                            Click="RemoveLocalLyricsFolder_Click"
+                                            Content="{DynamicResource Loc.Lyrics.Row.Local.Remove}"
+                                            Icon="{ui:SymbolIcon Delete24}"
+                                            Style="{StaticResource AfSettingsButtonStyle}"
+                                            Tag="{Binding}" />
+                                    </components:SettingsRow>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <ui:Button
+                            Margin="0,4,0,0"
+                            Click="AddLocalLyricsFolder_Click"
+                            Content="{DynamicResource Loc.Lyrics.Row.Local.Add}"
+                            Icon="{ui:SymbolIcon FolderAdd24}"
+                            Style="{StaticResource AfSettingsButtonStyle}" />
+                    </StackPanel>
                     <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Description}" Icon="{ui:SymbolIcon TextFont24}" Title="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Title}">
                         <ui:Button Click="ManageArtistSeparators_Click" Icon="{ui:SymbolIcon Edit24}" Content="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Manage}" Style="{StaticResource AfSettingsButtonStyle}"/>
                     </components:SettingsRow>

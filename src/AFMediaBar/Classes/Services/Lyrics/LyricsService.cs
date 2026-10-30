@@ -20,6 +20,7 @@ public sealed class LyricsService
     private readonly TimeSpan _totalBudget;
     private readonly TimeSpan _manualPerSourceBudget;
     private readonly RepeatedFailureReporter _failures = new();
+    private readonly ILyricsProvider? _localProvider;
 
     /// <summary>使用默认预算创建协调器。/ Creates the coordinator with default budgets.</summary>
     public LyricsService(params ILyricsProvider[] providers) : this(DefaultPerSourceBudget, DefaultTotalBudget, providers) { }
@@ -27,6 +28,10 @@ public sealed class LyricsService
     /// <summary>使用显式预算创建协调器。/ Creates the coordinator with explicit wait budgets.</summary>
     public LyricsService(TimeSpan perSourceBudget, TimeSpan totalBudget, params ILyricsProvider[] providers)
         : this(perSourceBudget, totalBudget, DefaultManualPerSourceBudget, providers) { }
+
+    /// <summary>带本地来源的构造：本地固定先跑一次，没命中才进入在线来源的规则。/ Creates the coordinator with a local source that always runs before the online rules.</summary>
+    public LyricsService(TimeSpan perSourceBudget, TimeSpan totalBudget, ILyricsProvider? localProvider, params ILyricsProvider[] providers)
+        : this(perSourceBudget, totalBudget, DefaultManualPerSourceBudget, providers) => _localProvider = localProvider;
 
     internal LyricsService(TimeSpan perSourceBudget, TimeSpan totalBudget, TimeSpan manualPerSourceBudget, params ILyricsProvider[] providers)
     {
@@ -49,10 +54,28 @@ public sealed class LyricsService
         var sourceSettings = settings.LyricsSource.Normalize();
         var active = LyricsSourcePolicy.ResolveActive(_providers, sourceSettings);
         var trace = new LyricsRequestLog(effectiveRequest, sourceSettings, AppLogService.Current);
+        var started = Stopwatch.GetTimestamp();
+        // 本地来源固定排在所有在线规则之前：命中就直接用，未命中或解析失败才继续下面的链路。
+        // 它不参与启用列表与排序，因此用户怎么排在线来源都不会把本地挤到后面。
+        if (_localProvider is { } local)
+        {
+            using var localWork = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            try
+            {
+                var localResult = await TryProviderAsync(local, effectiveRequest, Remaining(started), localWork.Token, trace).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (localResult is { Status: LyricsResultStatus.Available } && localResult.Document.Lines.Count > 0)
+                    return trace.Finish(localResult);
+            }
+            finally
+            {
+                localWork.Cancel();
+            }
+        }
+
         if (sourceSettings.Rule == LyricsSourceRule.Manual)
             return await GetManualLyricsAsync(effectiveRequest, active, sourceSettings, trace, cancellationToken).ConfigureAwait(false);
         var plan = LyricsRetrievalPolicy.Plan(_providers, active);
-        var started = Stopwatch.GetTimestamp();
         using var work = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         LyricsResult? preferredResult = null;
         try

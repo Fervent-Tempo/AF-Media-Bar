@@ -249,6 +249,42 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         ? "Lyrics.Sources.Result.SequentialHint" : SourceResultMode == LyricsSourceResultMode.FirstAvailable
             ? "Lyrics.Sources.Result.FirstAvailable.Description" : "Lyrics.Sources.Result.Ordered.Description");
 
+    /// <summary>是否优先读取本地歌词文件；关闭时不会碰任何目录。</summary>
+    public bool LocalLyricsEnabled
+    {
+        get => _configuration.Current.LyricsSource.LocalEnabled;
+        set => _configuration.SetLyricsSourceSettings(_configuration.Current.LyricsSource with { LocalEnabled = value });
+    }
+
+    /// <summary>已添加的本地歌词目录，按列表顺序查找。</summary>
+    public IReadOnlyList<string> LocalLyricsFolders => _configuration.Current.LyricsSource.LocalFolders ?? [];
+
+    /// <summary>添加目录；空白与重复路径直接忽略。</summary>
+    public void AddLocalLyricsFolder(string folder)
+    {
+        folder = folder.Trim();
+        if (folder.Length == 0) return;
+        var folders = LocalLyricsFolders;
+        if (folders.Contains(folder, StringComparer.OrdinalIgnoreCase)) return;
+        _configuration.SetLyricsSourceSettings(_configuration.Current.LyricsSource with
+        {
+            LocalFolders = [.. folders, folder]
+        });
+    }
+
+    /// <summary>移除目录。</summary>
+    public void RemoveLocalLyricsFolder(string folder)
+    {
+        var folders = LocalLyricsFolders;
+        if (!folders.Contains(folder, StringComparer.OrdinalIgnoreCase)) return;
+        _configuration.SetLyricsSourceSettings(_configuration.Current.LyricsSource with
+        {
+            LocalFolders = folders
+                .Where(item => !string.Equals(item, folder, StringComparison.OrdinalIgnoreCase))
+                .ToArray()
+        });
+    }
+
     private void RaiseSourceProperties()
     {
         OnPropertyChanged(nameof(SourceRule));
@@ -257,6 +293,8 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(SourceResultMode));
         OnPropertyChanged(nameof(SourceRuleDescription));
         OnPropertyChanged(nameof(SourceResultDescription));
+        OnPropertyChanged(nameof(LocalLyricsEnabled));
+        OnPropertyChanged(nameof(LocalLyricsFolders));
     }
 
     /// <summary>是否一个来源都没启用：此时不会请求任何歌词服务，页面用提示条说明后果。
