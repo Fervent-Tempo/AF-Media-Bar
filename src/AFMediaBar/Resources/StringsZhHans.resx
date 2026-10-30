@@ -1426,6 +1426,9 @@
   <data name="Lyrics.Row.Local.Description" xml:space="preserve">
     <value>优先读取所选文件夹里的歌词文件；没找到再联网搜索。</value>
   </data>
+  <data name="Lyrics.Row.Local.Formats.Hint" xml:space="preserve">
+    <value>可读取 LRC、SRT、ASS/SSA、QRC 与 KRC；同名的译文与罗马音文件会按行合并。</value>
+  </data>
   <data name="Lyrics.Row.Local.Fallback.Title" xml:space="preserve">
     <value>仅在线未找到时使用</value>
   </data>

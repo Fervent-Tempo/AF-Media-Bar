@@ -204,7 +204,7 @@
                             <StackPanel x:Name="TitleHost"
                                 Grid.Column="1"
                                 VerticalAlignment="Center">
-                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                                     <TextBlock TextWrapping="Wrap"
                                         Style="{StaticResource AfSettingsRowTitleStyle}"
                                         Text="{TemplateBinding Title}" />
@@ -213,6 +213,16 @@
                                         VerticalAlignment="Center"
                                         Content="{TemplateBinding Badge}"
                                         Style="{StaticResource AfSettingsBadgeNeutralStyle}" />
+                                    <ui:SymbolIcon
+                                        x:Name="RowHint" Grid.Column="2"
+                                        Margin="6,0,0,0"
+                                        VerticalAlignment="Center"
+                                        AutomationProperties.HelpText="{TemplateBinding Hint}"
+                                        Cursor="Help"
+                                        FontSize="16"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Symbol="Info24"
+                                        ToolTip="{TemplateBinding Hint}" />
                                 </Grid>
                                 <TextBlock
                                     x:Name="RowDescription"
@@ -248,6 +258,9 @@
                         </Trigger>
                         <Trigger Property="Badge" Value="">
                             <Setter TargetName="RowBadge" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                        <Trigger Property="Hint" Value="">
+                            <Setter TargetName="RowHint" Property="Visibility" Value="Collapsed" />
                         </Trigger>
                         <Trigger Property="BadgeTone" Value="Accent">
                             <Setter TargetName="RowBadge" Property="Style" Value="{StaticResource AfSettingsBadgeAccentStyle}" />

@@ -1381,6 +1381,9 @@
   <data name="Lyrics.Row.Local.Description" xml:space="preserve">
     <value>Đọc tệp lời từ các thư mục bạn chọn và ưu tiên dùng trước; chỉ tìm trên mạng khi không có kết quả.</value>
   </data>
+  <data name="Lyrics.Row.Local.Formats.Hint" xml:space="preserve">
+    <value>Đọc được LRC, SRT, ASS/SSA, QRC và KRC; tệp bản dịch và phiên âm cùng tên sẽ được ghép theo từng dòng.</value>
+  </data>
   <data name="Lyrics.Row.Local.Fallback.Title" xml:space="preserve">
     <value>Chỉ dùng khi trực tuyến không có</value>
   </data>

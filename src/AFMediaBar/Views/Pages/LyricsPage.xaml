@@ -307,7 +307,7 @@
                     <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Description}" Icon="{ui:SymbolIcon Video24}" Title="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.AllowBrowserAndVideoLyrics, Mode=TwoWay}"/>
                     </components:SettingsRow>
-                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.Local.Description}" Icon="{ui:SymbolIcon Folder24}" Title="{DynamicResource Loc.Lyrics.Row.Local.Title}" KeepControlInline="True">
+                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.Local.Description}" Hint="{DynamicResource Loc.Lyrics.Row.Local.Formats.Hint}" Icon="{ui:SymbolIcon Folder24}" Title="{DynamicResource Loc.Lyrics.Row.Local.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.LocalLyricsEnabled, Mode=TwoWay}"/>
                     </components:SettingsRow>
                     <StackPanel Visibility="{Binding ViewModel.LocalLyricsEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
