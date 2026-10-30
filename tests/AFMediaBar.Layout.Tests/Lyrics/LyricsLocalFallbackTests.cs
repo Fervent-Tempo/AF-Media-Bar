@@ -25,7 +25,11 @@ public sealed class LyricsLocalFallbackTests
         _previous = SettingsManager.Current;
         _previousDefaults = SettingsManager.UserDefaults;
         SettingsManager.SetUserDefaults(null);
-        SettingsManager.Current = new AppSettings { LyricsSource = LyricsSourceSettings.Default };
+        // 这个类验证本地阶段的先后顺序，前提是本地开关已打开；关闭行为由下面的专用用例覆盖。
+        SettingsManager.Current = new AppSettings
+        {
+            LyricsSource = LyricsSourceSettings.Default with { LocalEnabled = true }
+        };
     }
 
     [TestCleanup]
@@ -33,6 +37,38 @@ public sealed class LyricsLocalFallbackTests
     {
         SettingsManager.Current = _previous;
         SettingsManager.SetUserDefaults(_previousDefaults);
+    }
+
+    [TestMethod]
+    public async Task DisabledLocalStageIsSkippedEntirely()
+    {
+        // 开关关闭时连阶段都不进：不分配预算，本地提供器一次都不该被调用。
+        SettingsManager.Current.LyricsSource = SettingsManager.Current.LyricsSource with { LocalEnabled = false };
+        var local = Fixed(LyricsSourceCatalog.LocalFile, "Local");
+        var online = Fixed(LyricsSourceCatalog.Lrclib, "Online");
+
+        var result = await Create(local, online).GetLyricsAsync(Request, CancellationToken.None);
+
+        Assert.AreEqual("Online", result?.Source);
+        Assert.AreEqual(0, local.Calls);
+    }
+
+    [TestMethod]
+    public async Task DisabledLocalStageIsSkippedInFallbackModeToo()
+    {
+        // 保守模式下在线全空也不该回头读取一个没开启的来源。
+        SettingsManager.Current.LyricsSource = SettingsManager.Current.LyricsSource with
+        {
+            LocalEnabled = false,
+            LocalFallbackOnly = true
+        };
+        var local = Fixed(LyricsSourceCatalog.LocalFile, "Local");
+        var online = Empty(LyricsSourceCatalog.Lrclib);
+
+        var result = await Create(local, online).GetLyricsAsync(Request, CancellationToken.None);
+
+        Assert.IsNull(result);
+        Assert.AreEqual(0, local.Calls);
     }
 
     [TestMethod]

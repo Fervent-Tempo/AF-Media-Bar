@@ -56,8 +56,10 @@ public sealed class LyricsService
         var trace = new LyricsRequestLog(effectiveRequest, sourceSettings, AppLogService.Current);
         // 默认本地排在所有在线规则之前：命中就直接用，未命中或解析失败才继续在线链路。
         // 它不参与启用列表与排序，因此用户怎么排在线来源都不会把本地挤到后面。
+        // 开关关闭时整段跳过：不给它留预算，也不会在日志里留下一次空的本地尝试。
+        var useLocal = sourceSettings.LocalEnabled;
         LyricsResult? localFirst = null;
-        if (!sourceSettings.LocalFallbackOnly)
+        if (useLocal && !sourceSettings.LocalFallbackOnly)
         {
             // 本地是独立阶段：用自己的单来源预算，耗时不计入在线总预算。
             localFirst = await TryLocalAsync(effectiveRequest, _perSourceBudget, trace, cancellationToken).ConfigureAwait(false);
@@ -72,7 +74,7 @@ public sealed class LyricsService
             : await GetDefaultLyricsAsync(effectiveRequest, active, onlineStarted, trace, cancellationToken).ConfigureAwait(false);
 
         // 保守模式：在线来源一个都没给出歌词时才用本地兜底，避免同名本地文件顶掉本来正常的在线歌词。
-        if (sourceSettings.LocalFallbackOnly && !IsAvailable(result))
+        if (useLocal && sourceSettings.LocalFallbackOnly && !IsAvailable(result))
         {
             var fallback = await TryLocalAsync(effectiveRequest, _perSourceBudget, trace, cancellationToken).ConfigureAwait(false);
             if (IsAvailable(fallback)) return trace.Finish(fallback);
