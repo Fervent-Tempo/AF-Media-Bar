@@ -789,7 +789,7 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Row="0" Grid.Column="0">
-                    <UniformGrid x:Name="TutorialsGrid" Columns="2">
+                    <components:ColumnFlowPanel x:Name="TutorialsGrid" Columns="2">
                         <ui:CardExpander Margin="0,0,16,0" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Desktop24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
@@ -875,7 +875,7 @@
                                                                      Style="{StaticResource HomeActionLink}" />
                             </StackPanel>
                         </ui:CardExpander>
-                    </UniformGrid>
+                    </components:ColumnFlowPanel>
 
                     <StackPanel Margin="0,16,0,0">
                         <ui:CardExpander Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon QuestionCircle24}">
