@@ -56,6 +56,7 @@ list drives the "Open source" section of the About page in Settings through
 | Microsoft.Web.WebView2 | 1.0.4191.47 | BSD-3-Clause | https://aka.ms/webview |
 | NAudio.Wasapi | 3.1.0 | MIT | https://github.com/naudio/NAudio |
 | OpenccNetLib | 1.7.0 | MIT | https://github.com/laisuk/OpenccNet |
+| System.Text.Encoding.CodePages | 10.0.14 | MIT | https://github.com/dotnet/runtime |
 | WPF-UI | 4.2.0 | MIT | https://github.com/lepoco/wpfui |
 | WPF-UI.DependencyInjection | 4.2.0 | MIT | https://github.com/lepoco/wpfui |
 

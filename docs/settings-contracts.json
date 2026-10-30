@@ -121,7 +121,10 @@
       "rule": "v1.5.0",
       "attemptMode": "v1.5.0",
       "resultMode": "v1.5.0",
-      "prioritySourceIds": "v1.5.0"
+      "prioritySourceIds": "v1.5.0",
+      "localEnabled": "unreleased",
+      "localFallbackOnly": "unreleased",
+      "localFolders": "unreleased"
     },
     "lyricsSyllableHighlightEnabled": "v1.2.0",
     "lyricsTextAlignment": "v1.2.0",

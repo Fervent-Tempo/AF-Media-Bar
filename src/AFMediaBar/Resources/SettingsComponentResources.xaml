@@ -214,10 +214,11 @@
                                         Content="{TemplateBinding Badge}"
                                         Style="{StaticResource AfSettingsBadgeNeutralStyle}" />
                                 </Grid>
-                                <TextBlock
+                                <components:SettingsDescriptionText
                                     x:Name="RowDescription"
-                                    Style="{StaticResource AfSettingsRowDescriptionStyle}"
-                                    Text="{TemplateBinding Description}" />
+                                    Description="{TemplateBinding Description}"
+                                    Hint="{TemplateBinding Hint}"
+                                    Style="{StaticResource AfSettingsRowDescriptionStyle}" />
                             </StackPanel>
 
                             <ContentPresenter
