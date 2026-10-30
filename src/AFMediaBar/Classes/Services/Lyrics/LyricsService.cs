@@ -60,7 +60,7 @@ public sealed class LyricsService
         LyricsResult? localFirst = null;
         if (!sourceSettings.LocalFallbackOnly)
         {
-            localFirst = await TryLocalAsync(effectiveRequest, Remaining(started), trace, cancellationToken).ConfigureAwait(false);
+            localFirst = await TryLocalAsync(effectiveRequest, LocalStageBudget(started), trace, cancellationToken).ConfigureAwait(false);
             // 有歌手或时长佐证的命中直接采信；只靠标题命中的先让在线查一轮，同名翻唱才不会顶掉原版。
             if (localFirst is { LowConfidence: false } confident && IsAvailable(confident)) return trace.Finish(confident);
         }
@@ -106,7 +106,10 @@ public sealed class LyricsService
         {
             if (plan.Preferred is { } preferred)
             {
-                preferredResult = await TryProviderAsync(preferred, request, Remaining(started), work.Token, trace).ConfigureAwait(false);
+                // 还有备用来源时，优先阶段只拿一半预算：优先源超时不能把备用来源的机会一起耗掉。
+                var preferredBudget = Remaining(started);
+                if (plan.Fallbacks.Count > 0) preferredBudget /= 2;
+                preferredResult = await TryProviderAsync(preferred, request, preferredBudget, work.Token, trace).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
                 if (preferredResult is not null && preferredResult.MatchScore >= LyricsRetrievalPolicy.PreferredMinimumScore)
                     return preferredResult;
@@ -187,6 +190,14 @@ public sealed class LyricsService
 
     private static bool IsAvailable(LyricsResult? result) =>
         result is { Status: LyricsResultStatus.Available, Document.Lines.Count: > 0 };
+
+    /// <summary>本地阶段最多用掉剩余总预算的一半，剩下留给在线来源。/ Caps the local stage at half of what remains.</summary>
+    private TimeSpan LocalStageBudget(long started)
+    {
+        var remaining = Remaining(started);
+        var half = (_totalBudget - Stopwatch.GetElapsedTime(started)) / 2;
+        return half < remaining ? half : remaining;
+    }
 
     /// <summary>本地兜底至少有一份单来源预算：在线阶段可能已耗尽总预算，不能让已经找到文件的本地来源白等。</summary>
     private TimeSpan LocalFallbackBudget(long started)

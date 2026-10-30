@@ -100,6 +100,29 @@ public sealed class LyricsLocalFallbackTests
         Assert.AreEqual(1, local.Calls);
     }
 
+    [TestMethod]
+    public async Task LocalTimeoutStillLeavesBudgetForTheOnlineFallback()
+    {
+        // 本地与优先源都超时：预算不能被它们吃干，备用源必须还有机会被调用。
+        var local = new Provider(LyricsSourceCatalog.LocalFile, async token =>
+        {
+            await Task.Delay(500, token);
+            return null;
+        });
+        var preferred = new Provider(LyricsSourceCatalog.QQMusic, async token =>
+        {
+            await Task.Delay(500, token);
+            return null;
+        });
+        var fallback = Fixed(LyricsSourceCatalog.Lrclib, "Online");
+        var service = new LyricsService(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(200), local, preferred, fallback);
+
+        var result = await service.GetLyricsAsync(Request, CancellationToken.None);
+
+        Assert.AreEqual("Online", result?.Source);
+        Assert.AreEqual(1, fallback.Calls);
+    }
+
     private static LyricsService Create(Provider local, params Provider[] online) =>
         new(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(6), local, online);
 

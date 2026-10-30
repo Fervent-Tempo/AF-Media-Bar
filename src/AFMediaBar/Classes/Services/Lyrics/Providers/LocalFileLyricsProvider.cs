@@ -67,20 +67,20 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
 
     private static LyricsResult? Search(LyricsRequest request, IReadOnlyList<string> folders, CancellationToken cancellationToken)
     {
-        // 请求侧的版本标记对每个候选都一样，算一次即可；候选侧的每份仍各自解析。
-        var wantedVersions = VersionTags(request.Title);
+        // 请求侧的派生值对每个候选都一样，算一次即可；候选侧的每份仍各自解析。
+        var key = new RequestKey(VersionDescriptors(request.Title), SingleCharTitle(request.Title));
         Candidate? best = null;
         foreach (var folder in folders)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            foreach (var path in ListLyricFiles(folder))
+            foreach (var path in ListLyricFiles(folder, cancellationToken))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var (baseName, role) = Classify(path);
                 // 翻译和罗马音只是主歌词的附件，不单独参与评分。
                 if (role != LyricRole.Main) continue;
                 if (!LooksRelated(baseName, request.Title)) continue;
-                var candidate = Evaluate(request, path, baseName, wantedVersions);
+                var candidate = Evaluate(request, path, baseName, key);
                 // 没有歌词的候选直接跳过：本地文件没内容就等于没找到，不能被它顶掉带词的那一份。
                 if (candidate is null || candidate.Document.Lines.Count == 0) continue;
                 if (best is null || Better(candidate, best)) best = candidate;
@@ -121,26 +121,45 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         return (name, LyricRole.Main);
     }
 
-    private static IReadOnlyList<string> ListLyricFiles(string folder)
+    /// <summary>
+    /// 逐个目录往下走，单独隔离不可读项：整棵树一次枚举时，任何一个无权限或损坏的子目录都会让整个根目录返回空。
+    /// </summary>
+    private static IReadOnlyList<string> ListLyricFiles(string folder, CancellationToken cancellationToken)
     {
-        try
+        var files = new List<string>();
+        var pending = new Stack<string>();
+        pending.Push(folder);
+        while (pending.Count > 0)
         {
-            return Directory.GetFiles(folder, "*", SearchOption.AllDirectories)
-                .Where(path => Extensions.Any(extension => path.EndsWith(extension, StringComparison.OrdinalIgnoreCase)))
-                .ToArray();
+            cancellationToken.ThrowIfCancellationRequested();
+            var current = pending.Pop();
+            try
+            {
+                foreach (var path in Directory.EnumerateFiles(current))
+                    if (IsLyricFile(path)) files.Add(path);
+                foreach (var child in Directory.EnumerateDirectories(current)) pending.Push(child);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+            {
+                // 这个目录读不了就跳过它，父目录与其它子目录照常。
+            }
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
-        {
-            return [];
-        }
+        return files;
     }
+
+    private static bool IsLyricFile(string path) =>
+        Extensions.Any(extension => path.EndsWith(extension, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>文件名规范化后互相包含才算候选，省掉对每个文件的读取和解析。</summary>
     private static bool LooksRelated(string fileName, string title)
     {
         var name = Normalize(fileName);
         var wanted = Normalize(title);
-        if (name.Length < 2 || wanted.Length < 2) return false;
+        if (name.Length == 0 || wanted.Length == 0) return false;
+        // 单字歌名（「光」）也要能进评分：短名只在整串或词尾一致时放行，避免把库里每个文件都读一遍。
+        if (name.Length < 2 || wanted.Length < 2)
+            return name == wanted || name.EndsWith(wanted, StringComparison.Ordinal) ||
+                   wanted.EndsWith(name, StringComparison.Ordinal);
         if (name.Contains(wanted, StringComparison.Ordinal) || wanted.Contains(name, StringComparison.Ordinal)) return true;
 
         // 文件名常写成「歌手 - 歌名」，请求标题却带 (Live)、(Single Version) 这类后缀：
@@ -152,7 +171,7 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
                 wantedCore.Contains(nameCore, StringComparison.Ordinal));
     }
 
-    private static Candidate? Evaluate(LyricsRequest request, string path, string baseName, HashSet<string> wantedVersions)
+    private static Candidate? Evaluate(LyricsRequest request, string path, string baseName, RequestKey key)
     {
         byte[] bytes;
         try
@@ -170,8 +189,14 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         if (string.IsNullOrWhiteSpace(text)) return null;
         var metadata = ReadMetadata(text);
         var (fileTitle, fileArtist, fileDuration) = SplitFileName(request, baseName);
-        // 文件名或元数据自称另一个版本（Instrumental / Karaoke / Live…）就直接跳过：同名不等于同一份歌词。
-        if (HasForeignVersion(wantedVersions, metadata.Title) || HasForeignVersion(wantedVersions, fileTitle)) return null;
+        // 伴奏、卡拉 OK 这类无词版本直接排除；同一首歌的不同 Remix/Live 只降置信度，交给在线先查。
+        var metadataConflict = VersionConflictOf(key.Versions, metadata.Title);
+        if (metadataConflict == VersionConflict.Hard) return null;
+        var fileConflict = VersionConflictOf(key.Versions, fileTitle);
+        if (fileConflict == VersionConflict.Hard) return null;
+        // 单字标题靠相似度分不清「光」与「月光」，只接受完全同名。
+        if (key.SingleCharTitle is { } exact &&
+            Normalize(metadata.Title ?? string.Empty) != exact && Normalize(fileTitle) != exact) return null;
         var duration = metadata.Duration ?? fileDuration;
         // 元数据和文件名是两条独立线索，各评一次取更强的一条：哪边写全了就用哪边，不要求两份写法一致。
         var fromMetadata = Assess(request, metadata.Title, metadata.Artist, duration);
@@ -184,12 +209,15 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         if (artistEvidence is { } matchedArtist && matchedArtist < ArtistMismatchFloor) return null;
         var assessment = Stronger(fromMetadata, fromFileName);
         if (assessment.Score < MinimumScore) return null;
+        // 文件名与内部标签给出相反的歌手证据、或版本描述对不上时，都不能当成确定匹配。
+        var lowConfidence = IsLowConfidence(titleEvidence, artistEvidence, durationEvidence) ||
+                            HasArtistContradiction(fromMetadata.ArtistScore, fromFileName.ArtistScore) ||
+                            metadataConflict == VersionConflict.Soft || fileConflict == VersionConflict.Soft;
 
         var (translation, romanization) = ReadCompanions(path, baseName);
         var document = LyricsTextParser.Parse(text, translation, romanization, request,
             request.DurationSeconds ?? duration, request.FilterInfoLines);
-        return new Candidate(path, assessment.Score,
-            IsLowConfidence(titleEvidence, artistEvidence, durationEvidence), document);
+        return new Candidate(path, assessment.Score, lowConfidence, document);
     }
 
     /// <summary>按扩展名取文本：QRC/KRC 先解密，其余按编码探测。</summary>
@@ -295,6 +323,16 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         return segments.Length == 0 ? value : segments[^1];
     }
 
+    /// <summary>一次搜索内不变的请求侧派生值：版本描述集合，以及单字标题的精确匹配键（非单字为 null）。</summary>
+    private readonly record struct RequestKey(HashSet<string> Versions, string? SingleCharTitle);
+
+    /// <summary>单字标题无法靠相似度区分「光」与「月光」，返回归一化后的标题供精确比较。</summary>
+    private static string? SingleCharTitle(string title)
+    {
+        var normalized = Normalize(title);
+        return normalized.Length == 1 ? normalized : null;
+    }
+
     /// <summary>一条线索（元数据或文件名）的匹配结论：分数，以及各字段各自的证据强度。</summary>
     private readonly record struct Assessment(int Score, double TitleScore, double? ArtistScore, double? DurationScore);
 
@@ -313,6 +351,14 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         var sum = TitleWeight * titleScore + (artistScore ?? 0) * ArtistWeight + (durationScore ?? 0) * DurationWeight;
         return new Assessment((int)Math.Round(100 * sum / weight), titleScore, artistScore, durationScore);
     }
+
+    /// <summary>
+    /// 两条线索给出相反的歌手证据：一条对得上、另一条明确不是同一位。
+    /// 这时无法判断是文件名错了还是标签过时，不能当成确定匹配。
+    /// </summary>
+    private static bool HasArtistContradiction(double? metadataArtist, double? fileNameArtist) =>
+        metadataArtist is { } first && fileNameArtist is { } second &&
+        Math.Max(first, second) >= ConfidenceArtistFloor && Math.Min(first, second) < ArtistMismatchFloor;
 
     /// <summary>
     /// 只有标题一条线索时判为低置信度：同名翻唱、Live、同名片看起来都一样，得先让在线查一轮。
@@ -344,34 +390,70 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         return Math.Max(direct, overlap) * lengthFactor;
     }
 
-    /// <summary>版本标记：候选自称这些版本时歌词不能互借（伴奏、卡拉 OK、现场、重混…）。</summary>
-    private static readonly string[] VersionMarkers =
+    /// <summary>
+    /// 版本描述冲突的程度。Hard 表示候选根本是另一种录音（伴奏、卡拉 OK），词不能互借；
+    /// Soft 表示是同一首歌的不同版本（DJ甲/DJ乙 Remix、Live 2010/Live 2024），可以先查在线再兜底。
+    /// </summary>
+    private enum VersionConflict
+    {
+        None,
+        Soft,
+        Hard
+    }
+
+    /// <summary>无词的录音形态：命中即整份排除，不拿它的词配人声版。</summary>
+    private static readonly string[] HardVersionMarkers =
     [
-        "instrumental", "inst", "off vocal", "offvocal", "karaoke", "カラオケ", "伴奏",
+        "instrumental", "inst", "off vocal", "offvocal", "karaoke", "カラオケ", "伴奏"
+    ];
+
+    /// <summary>同一个歌手的不同版本：描述不一致时降置信度，不直接扔。</summary>
+    private static readonly string[] SoftVersionMarkers =
+    [
         "live", "remix", "acoustic", "demo", "cover", "version", "ver", "tv size", "tvsize",
         "short", "edit", "remaster"
     ];
 
-    private static readonly Regex VersionMarkerPattern = new(
-        $@"(?<![\p{{L}}\p{{N}}])(?:{string.Join("|", VersionMarkers.Select(Regex.Escape))})(?![\p{{L}}\p{{N}}])",
+    private static readonly Regex HardVersionPattern = MarkerPattern(HardVersionMarkers);
+    private static readonly Regex SoftVersionPattern = MarkerPattern(SoftVersionMarkers);
+
+    /// <summary>只匹配独立出现的标记：「Edition」里的 edit 不算，因为后面还跟着字母。</summary>
+    private static Regex MarkerPattern(string[] markers) => new(
+        $@"(?<![\p{{L}}\p{{N}}])(?:{string.Join("|", markers.Select(Regex.Escape))})(?![\p{{L}}\p{{N}}])",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    /// <summary>
-    /// 候选自称是另一个版本时返回 true。只认候选多出来的标记：请求带 Live、候选没带，按原版处理即可；
-    /// 反过来候选是 Instrumental，就不能把它的词配给原版。
-    /// </summary>
-    private static bool HasForeignVersion(HashSet<string> wanted, string? candidateTitle) =>
-        VersionTags(candidateTitle).Any(marker => !wanted.Contains(marker));
-
-    /// <summary>取标题里括号内出现的版本标记，忽略空格差异（Off Vocal / offvocal 视为同一个）。</summary>
-    private static HashSet<string> VersionTags(string? title)
+    /// <summary>取标题里带版本标记的括号描述并归一化：`DJ甲 Remix` 与 `DJ乙 Remix` 是两条不同描述。</summary>
+    private static HashSet<string> VersionDescriptors(string? title)
     {
-        var tags = new HashSet<string>(StringComparer.Ordinal);
-        if (string.IsNullOrWhiteSpace(title)) return tags;
+        var descriptors = new HashSet<string>(StringComparer.Ordinal);
+        if (string.IsNullOrWhiteSpace(title)) return descriptors;
         foreach (Match group in Brackets().Matches(title))
-            foreach (Match marker in VersionMarkerPattern.Matches(group.Value))
-                tags.Add(marker.Value.ToLowerInvariant().Replace(" ", string.Empty));
-        return tags;
+        {
+            var inner = group.Value[1..^1];
+            if (!HardVersionPattern.IsMatch(inner) && !SoftVersionPattern.IsMatch(inner)) continue;
+            var normalized = Normalize(inner);
+            if (normalized.Length > 0) descriptors.Add(normalized);
+        }
+        return descriptors;
+    }
+
+    /// <summary>
+    /// 比较候选与请求的版本描述：候选没写版本按原版处理；写了就必须与请求的某一条相容
+    /// （完全一致或互相包含），否则按标记类型给出软/硬冲突。
+    /// </summary>
+    private static VersionConflict VersionConflictOf(HashSet<string> wanted, string? candidateTitle)
+    {
+        var conflict = VersionConflict.None;
+        foreach (var descriptor in VersionDescriptors(candidateTitle))
+        {
+            var compatible = wanted.Any(item => item == descriptor ||
+                item.Contains(descriptor, StringComparison.Ordinal) ||
+                descriptor.Contains(item, StringComparison.Ordinal));
+            if (compatible) continue;
+            if (HardVersionPattern.IsMatch(descriptor)) return VersionConflict.Hard;
+            conflict = VersionConflict.Soft;
+        }
+        return conflict;
     }
 
     /// <summary>同分时选内容更全的一份，再按路径稳定决胜，避免结果随枚举顺序变化。</summary>

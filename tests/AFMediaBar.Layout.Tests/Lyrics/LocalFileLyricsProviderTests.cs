@@ -222,6 +222,70 @@ public sealed class LocalFileLyricsProviderTests
     }
 
     [TestMethod]
+    public async Task MatchesSingleCharacterTitle()
+    {
+        // 单字歌名以前会被 LooksRelated 的长度限制直接排除，连评分都进不去。
+        File.WriteAllText(Path.Combine(_folder, "光.lrc"), "[ti:光]\n[ar:陈粒]\n[00:01.00]光");
+        Enable(true, _folder);
+
+        var result = await new LocalFileLyricsProvider().GetLyricsAsync(Request("光", "陈粒"), CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.IsFalse(result.LowConfidence);
+    }
+
+    [TestMethod]
+    public async Task RejectsLongerTitleForSingleCharacterRequest()
+    {
+        // 单字标题不能靠相似度沾上别的歌：请求「光」时，「月光」即使歌手对得上也不算。
+        File.WriteAllText(Path.Combine(_folder, "月光.lrc"), "[ti:月光]\n[ar:陈粒]\n[00:01.00]词");
+        Enable(true, _folder);
+
+        Assert.IsNull(await new LocalFileLyricsProvider().GetLyricsAsync(Request("光", "陈粒"), CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task TreatsDifferentRemixDescriptionsAsLowConfidence()
+    {
+        // 两者的标记都是 Remix，但 DJ甲 与 DJ乙 是不同版本：不能当成确定匹配。
+        File.WriteAllText(Path.Combine(_folder, "晴天 (DJ甲 Remix).lrc"),
+            "[ti:晴天 (DJ甲 Remix)]\n[ar:周杰伦]\n[00:01.00]词");
+        Enable(true, _folder);
+
+        var result = await new LocalFileLyricsProvider().GetLyricsAsync(
+            Request("晴天 (DJ乙 Remix)", "周杰伦"), CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.IsTrue(result.LowConfidence);
+    }
+
+    [TestMethod]
+    public async Task KeepsSameVersionDescription()
+    {
+        File.WriteAllText(Path.Combine(_folder, "晴天 (Live 2010).lrc"), "[ti:晴天 (Live 2010)]\n[ar:周杰伦]\n[00:01.00]词");
+        Enable(true, _folder);
+
+        var result = await new LocalFileLyricsProvider().GetLyricsAsync(
+            Request("晴天 (Live 2010)", "周杰伦"), CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.IsFalse(result.LowConfidence);
+    }
+
+    [TestMethod]
+    public async Task TreatsContradictingArtistTagAsLowConfidence()
+    {
+        // 文件名写周杰伦、内部标签写王菲：一条支持一条反对，不能当成确定匹配。
+        File.WriteAllText(Path.Combine(_folder, "周杰伦 - 晴天.lrc"), "[ar:王菲]\n[00:01.00]词");
+        Enable(true, _folder);
+
+        var result = await new LocalFileLyricsProvider().GetLyricsAsync(Request("晴天", "周杰伦"), CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.IsTrue(result.LowConfidence);
+    }
+
+    [TestMethod]
     public void NormalizeDropsBlankAndDuplicateFolders()
     {
         var settings = new LyricsSourceSettings(null)
