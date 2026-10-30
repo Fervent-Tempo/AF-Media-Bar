@@ -67,6 +67,8 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
 
     private static LyricsResult? Search(LyricsRequest request, IReadOnlyList<string> folders, CancellationToken cancellationToken)
     {
+        // 请求侧的版本标记对每个候选都一样，算一次即可；候选侧的每份仍各自解析。
+        var wantedVersions = VersionTags(request.Title);
         Candidate? best = null;
         foreach (var folder in folders)
         {
@@ -78,7 +80,7 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
                 // 翻译和罗马音只是主歌词的附件，不单独参与评分。
                 if (role != LyricRole.Main) continue;
                 if (!LooksRelated(baseName, request.Title)) continue;
-                var candidate = Evaluate(request, path, baseName);
+                var candidate = Evaluate(request, path, baseName, wantedVersions);
                 // 没有歌词的候选直接跳过：本地文件没内容就等于没找到，不能被它顶掉带词的那一份。
                 if (candidate is null || candidate.Document.Lines.Count == 0) continue;
                 if (best is null || Better(candidate, best)) best = candidate;
@@ -150,7 +152,7 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
                 wantedCore.Contains(nameCore, StringComparison.Ordinal));
     }
 
-    private static Candidate? Evaluate(LyricsRequest request, string path, string baseName)
+    private static Candidate? Evaluate(LyricsRequest request, string path, string baseName, HashSet<string> wantedVersions)
     {
         byte[] bytes;
         try
@@ -169,7 +171,7 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         var metadata = ReadMetadata(text);
         var (fileTitle, fileArtist, fileDuration) = SplitFileName(request, baseName);
         // 文件名或元数据自称另一个版本（Instrumental / Karaoke / Live…）就直接跳过：同名不等于同一份歌词。
-        if (HasForeignVersion(request.Title, metadata.Title) || HasForeignVersion(request.Title, fileTitle)) return null;
+        if (HasForeignVersion(wantedVersions, metadata.Title) || HasForeignVersion(wantedVersions, fileTitle)) return null;
         var duration = metadata.Duration ?? fileDuration;
         // 元数据和文件名是两条独立线索，各评一次取更强的一条：哪边写全了就用哪边，不要求两份写法一致。
         var fromMetadata = Assess(request, metadata.Title, metadata.Artist, duration);
@@ -363,11 +365,8 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     /// 候选自称是另一个版本时返回 true。只认候选多出来的标记：请求带 Live、候选没带，按原版处理即可；
     /// 反过来候选是 Instrumental，就不能把它的词配给原版。
     /// </summary>
-    private static bool HasForeignVersion(string? requestTitle, string? candidateTitle)
-    {
-        var wanted = VersionTags(requestTitle);
-        return VersionTags(candidateTitle).Any(marker => !wanted.Contains(marker));
-    }
+    private static bool HasForeignVersion(HashSet<string> wanted, string? candidateTitle) =>
+        VersionTags(candidateTitle).Any(marker => !wanted.Contains(marker));
 
     /// <summary>取标题里括号内出现的版本标记，忽略空格差异（Off Vocal / offvocal 视为同一个）。</summary>
     private static HashSet<string> VersionTags(string? title)
