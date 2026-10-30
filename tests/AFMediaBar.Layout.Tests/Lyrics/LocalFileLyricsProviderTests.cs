@@ -1,7 +1,10 @@
 // 本地歌词来源：文件名与元数据匹配、缺歌手不丢分、无词候选不顶掉带词的那份。
+using System.IO.Compression;
+using System.Text;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Settings;
+using Lyricify.Lyrics.Decrypter.Qrc;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AFMediaBar.Layout.Tests;
@@ -286,6 +289,56 @@ public sealed class LocalFileLyricsProviderTests
     }
 
     [TestMethod]
+    public async Task ReadsLocalCachedQrc()
+    {
+        // 客户端缓存形态：11 字节头 + QMC1 异或，解出来是 XML 包装（LyricContent 里才是逐字时间轴），
+        // 与真实缓存文件一致。按这条链反向造一份，验证解密与 XML 提取都成立。
+        var encrypted = Convert.FromHexString(EncryptQrcPayload(QrcFullXml("[ti:光]\n[ar:陈粒]\n[0,1500]光(0,500)")));
+        var file = new byte[11 + encrypted.Length];
+        new byte[] { 0x98, 0x25, 0xB0, 0xAC, 0xE3, 0x02, 0x83, 0x68, 0xE8, 0xFC, 0x6C }.CopyTo(file, 0);
+        encrypted.CopyTo(file, 11);
+        for (var i = 0; i < file.Length; i++) file[i] ^= Qmc1Key[i & 0x7F];
+        File.WriteAllBytes(Path.Combine(_folder, "光_qm.qrc"), file);
+        Enable(true, _folder);
+
+        var result = await new LocalFileLyricsProvider().GetLyricsAsync(Request("光", "陈粒"), CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.AreEqual("光", result.Document.Lines[0].Text);
+    }
+
+    [TestMethod]
+    public async Task PairsQrcTranslationAndRomanization()
+    {
+        // QQ 的译文/罗马音是独立的 .qrc：主歌词命中后应把同目录的 _qmts / _qmRoma 按行并入。
+        File.WriteAllText(Path.Combine(_folder, "光_qm.qrc"), EncryptQrcPayload("[ti:光]\n[ar:陈粒]\n[00:01.00]光"));
+        File.WriteAllText(Path.Combine(_folder, "光_qmts.qrc"), EncryptQrcPayload("[00:01.00]光（译文）"));
+        File.WriteAllText(Path.Combine(_folder, "光_qmRoma.qrc"), EncryptQrcPayload("[00:01.00]guang"));
+        Enable(true, _folder);
+
+        var result = await new LocalFileLyricsProvider().GetLyricsAsync(Request("光", "陈粒"), CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.AreEqual("光", result.Document.Lines[0].Text);
+        Assert.AreEqual("光（译文）", result.Document.Lines[0].Translation);
+        Assert.AreEqual("guang", result.Document.Lines[0].Romanization);
+    }
+
+    [TestMethod]
+    public async Task ReadsCloudHexQrc()
+    {
+        // 云端形态：十六进制文本，直接交给解密器。
+        File.WriteAllText(Path.Combine(_folder, "光.qrc"),
+            EncryptQrcPayload("[ti:光]\n[ar:陈粒]\n[00:01.00]光"));
+        Enable(true, _folder);
+
+        var result = await new LocalFileLyricsProvider().GetLyricsAsync(Request("光", "陈粒"), CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.AreEqual("光", result.Document.Lines[0].Text);
+    }
+
+    [TestMethod]
     public void NormalizeDropsBlankAndDuplicateFolders()
     {
         var settings = new LyricsSourceSettings(null)
@@ -297,6 +350,57 @@ public sealed class LocalFileLyricsProviderTests
     }
 
     private static LyricsRequest Request(string title, string artist) => new(title, artist, string.Empty, null, null);
+
+    /// <summary>真实缓存解出来的 QRC Full 结构：逐字时间轴放在 LyricContent 属性里，行与行之间是真实换行（不转义）。</summary>
+    private static string QrcFullXml(string content)
+    {
+        var escaped = content.Replace("&", "&amp;").Replace("<", "&lt;").Replace("\"", "&quot;");
+        return "<?xml version=\"1.0\" encoding=\"utf-8\"?><QrcInfos><QrcHeadInfo SaveTime=\"1\" Version=\"100\"/>"
+             + $"<LyricInfo LyricCount=\"1\"><Lyric_1 LyricType=\"1\" LyricContent=\"{escaped}\"/></LyricInfo></QrcInfos>";
+    }
+
+    /// <summary>按 QRC 的加密链反向造样本：zlib → 补零到 8 字节 → 3DES → 十六进制。</summary>
+    private static string EncryptQrcPayload(string plain)
+    {
+        using var buffer = new MemoryStream();
+        using (var zlib = new ZLibStream(buffer, CompressionLevel.Optimal, leaveOpen: true))
+            zlib.Write(Encoding.UTF8.GetBytes(plain));
+        var compressed = buffer.ToArray();
+        var padded = new byte[(compressed.Length + 7) / 8 * 8];
+        compressed.CopyTo(padded, 0);
+
+        var schedule = new byte[3][][];
+        for (var k = 0; k < 3; k++)
+        {
+            schedule[k] = new byte[16][];
+            for (var j = 0; j < 16; j++) schedule[k][j] = new byte[6];
+        }
+        DESHelper.TripleDESKeySetup(Encoding.ASCII.GetBytes("!@#)(*$%123ZXC!@!@#)(NHL"), schedule, DESHelper.ENCRYPT);
+
+        var encrypted = new byte[padded.Length];
+        var block = new byte[8];
+        var temp = new byte[8];
+        for (var i = 0; i < padded.Length; i += 8)
+        {
+            Buffer.BlockCopy(padded, i, block, 0, 8);
+            DESHelper.TripleDESCrypt(block, temp, schedule);
+            Buffer.BlockCopy(temp, 0, encrypted, i, 8);
+        }
+        return Convert.ToHexString(encrypted);
+    }
+
+    /// <summary>与生产实现同一张 QMC1 掩码表：测试造缓存形态的样本时要用它异或回去。</summary>
+    private static readonly byte[] Qmc1Key =
+    [
+        0xc3, 0x4a, 0xd6, 0xca, 0x90, 0x67, 0xf7, 0x52, 0xd8, 0xa1, 0x66, 0x62, 0x9f, 0x5b, 0x09, 0x00,
+        0xc3, 0x5e, 0x95, 0x23, 0x9f, 0x13, 0x11, 0x7e, 0xd8, 0x92, 0x3f, 0xbc, 0x90, 0xbb, 0x74, 0x0e,
+        0xc3, 0x47, 0x74, 0x3d, 0x90, 0xaa, 0x3f, 0x51, 0xd8, 0xf4, 0x11, 0x84, 0x9f, 0xde, 0x95, 0x1d,
+        0xc3, 0xc6, 0x09, 0xd5, 0x9f, 0xfa, 0x66, 0xf9, 0xd8, 0xf0, 0xf7, 0xa0, 0x90, 0xa1, 0xd6, 0xf3,
+        0xc3, 0xf3, 0xd6, 0xa1, 0x90, 0xa0, 0xf7, 0xf0, 0xd8, 0xf9, 0x66, 0xfa, 0x9f, 0xd5, 0x09, 0xc6,
+        0xc3, 0x1d, 0x95, 0xde, 0x9f, 0x84, 0x11, 0xf4, 0xd8, 0x51, 0x3f, 0xaa, 0x90, 0x3d, 0x74, 0x47,
+        0xc3, 0x0e, 0x74, 0xbb, 0x90, 0xbc, 0x3f, 0x92, 0xd8, 0x7e, 0x11, 0x13, 0x9f, 0x23, 0x95, 0x5e,
+        0xc3, 0x00, 0x09, 0x5b, 0x9f, 0x62, 0x66, 0xa1, 0xd8, 0x52, 0xf7, 0x67, 0x90, 0xca, 0xd6, 0x4a
+    ];
 
     private static void Enable(bool localEnabled, params string[] folders)
     {

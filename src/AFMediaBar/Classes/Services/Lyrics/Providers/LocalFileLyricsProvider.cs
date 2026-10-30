@@ -229,18 +229,43 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
             _ => Decode(bytes)
         };
 
+    /// <summary>客户端缓存的 .qrc 前面有 11 字节文件头，QMC1 之后要去掉。/ The cached .qrc carries an 11-byte header before the QMC1 payload.</summary>
+    private const int QmcHeaderBytes = 11;
+
+    /// <summary>QMC1 的 128 字节掩码；配合按位与 0x7F 循环使用。/ The 128-byte QMC1 mask, cycled with `index &amp; 0x7F`.</summary>
+    private static readonly byte[] Qmc1Key =
+    [
+        0xc3, 0x4a, 0xd6, 0xca, 0x90, 0x67, 0xf7, 0x52, 0xd8, 0xa1, 0x66, 0x62, 0x9f, 0x5b, 0x09, 0x00,
+        0xc3, 0x5e, 0x95, 0x23, 0x9f, 0x13, 0x11, 0x7e, 0xd8, 0x92, 0x3f, 0xbc, 0x90, 0xbb, 0x74, 0x0e,
+        0xc3, 0x47, 0x74, 0x3d, 0x90, 0xaa, 0x3f, 0x51, 0xd8, 0xf4, 0x11, 0x84, 0x9f, 0xde, 0x95, 0x1d,
+        0xc3, 0xc6, 0x09, 0xd5, 0x9f, 0xfa, 0x66, 0xf9, 0xd8, 0xf0, 0xf7, 0xa0, 0x90, 0xa1, 0xd6, 0xf3,
+        0xc3, 0xf3, 0xd6, 0xa1, 0x90, 0xa0, 0xf7, 0xf0, 0xd8, 0xf9, 0x66, 0xfa, 0x9f, 0xd5, 0x09, 0xc6,
+        0xc3, 0x1d, 0x95, 0xde, 0x9f, 0x84, 0x11, 0xf4, 0xd8, 0x51, 0x3f, 0xaa, 0x90, 0x3d, 0x74, 0x47,
+        0xc3, 0x0e, 0x74, 0xbb, 0x90, 0xbc, 0x3f, 0x92, 0xd8, 0x7e, 0x11, 0x13, 0x9f, 0x23, 0x95, 0x5e,
+        0xc3, 0x00, 0x09, 0x5b, 0x9f, 0x62, 0x66, 0xa1, 0xd8, 0x52, 0xf7, 0x67, 0x90, 0xca, 0xd6, 0x4a
+    ];
+
+    /// <summary>解密器可能给出空串（格式对但内容为空），统一按「没有歌词」处理。</summary>
+    private static string? Usable(string? text) => string.IsNullOrWhiteSpace(text) ? null : text;
+
     /// <summary>
-    /// QQ 音乐的 .qrc 有两种形态：网络接口给的是十六进制文本，客户端缓存的是带 magic 的二进制。
-    /// 这里只解得开前者（复用依赖里的实现）；后者是客户端私有的 QMC 加密，解不开就当没有歌词。
+    /// QQ 音乐的 .qrc 有两种形态，都交给依赖里的解密器收尾：
+    /// ① 云端：十六进制文本，直接解密；
+    /// ② 客户端缓存：整文件先做 QMC1（与 128 字节掩码异或），去掉 11 字节头，再把剩余字节重新编码成十六进制。
+    /// 解不开就当没有歌词，不影响其它文件。
     /// </summary>
     private static string? DecryptQrc(byte[] bytes)
     {
         try
         {
-            var hex = Decode(bytes).Trim();
-            if (hex.Length < 16 || hex.Length % 2 != 0 || !hex.All(Uri.IsHexDigit)) return null;
-            var text = QrcDecrypter.DecryptLyrics(hex);
-            return string.IsNullOrWhiteSpace(text) ? null : text;
+            // 先按字节认形态：二进制缓存文件就不会白跑一遍编码探测（严格 UTF-8 必然失败，还会再解一次 GB18030）。
+            if (IsHexText(bytes))
+                return Usable(QrcDecrypter.DecryptLyrics(Encoding.ASCII.GetString(bytes).Trim()));
+
+            if (bytes.Length <= QmcHeaderBytes) return null;
+            var payload = Qmc1Unmask(bytes);
+            return Usable(QrcDecrypter.DecryptLyrics(
+                Convert.ToHexString(payload, QmcHeaderBytes, payload.Length - QmcHeaderBytes)));
         }
         catch (Exception)
         {
@@ -248,13 +273,41 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         }
     }
 
+    /// <summary>
+    /// 云端形态是纯十六进制文本：整份只含 0-9A-F 与首尾空白才算。二进制缓存文件在第一个字节就被挡下，
+    /// 也不会把它错当文本去吃一次解密。
+    /// </summary>
+    private static bool IsHexText(byte[] bytes)
+    {
+        if (bytes.Length < 32) return false;
+        var content = 0;
+        foreach (var value in bytes)
+        {
+            if (value is (byte)'\r' or (byte)'\n' or (byte)' ' or (byte)'\t') continue;
+            if (!Uri.IsHexDigit((char)value)) return false;
+            content++;
+        }
+        return content >= 32;
+    }
+
+    private static byte[] Qmc1Unmask(byte[] bytes)
+    {
+        var data = (byte[])bytes.Clone();
+        for (var i = 0; i < data.Length; i++)
+        {
+            // 与参考实现一致：越过 32KB 后索引按 i % 0x7FFF 折回，超过它的文件才需要这条。
+            var index = i > 0x7FFF ? i % 0x7FFF & 0x7F : i & 0x7F;
+            data[i] ^= Qmc1Key[index];
+        }
+        return data;
+    }
+
     /// <summary>酷狗的 .krc 是二进制；依赖里的实现要求 Base64 入参，内部自己跳头、异或、解压。</summary>
     private static string? DecryptKrc(byte[] bytes)
     {
         try
         {
-            var text = KrcDecrypter.DecryptLyrics(Convert.ToBase64String(bytes));
-            return string.IsNullOrWhiteSpace(text) ? null : text;
+            return Usable(KrcDecrypter.DecryptLyrics(Convert.ToBase64String(bytes)));
         }
         catch (Exception)
         {
@@ -287,11 +340,18 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         return (translation, romanization);
     }
 
-    /// <summary>附件命名的两种来源：QQ 的 _qmts/_qmRoma，网易云的 .tlyric/.romalrc。</summary>
+    /// <summary>
+    /// 附件命名：QQ 用 `_qmts`（简中译文）、`_qmts_tw`（繁中译文）、`_qmRoma`（罗马音），客户端缓存是 .qrc、转存后是 .lrc；
+    /// 网易云用独立扩展名 .tlyric / .romalrc。顺序即优先级，简中译文排在繁中之前。
+    /// </summary>
     private static readonly (string Suffix, LyricRole Role)[] CompanionSuffixes =
     [
         ("_qmts.lrc", LyricRole.Translation),
+        ("_qmts.qrc", LyricRole.Translation),
+        ("_qmts_tw.lrc", LyricRole.Translation),
+        ("_qmts_tw.qrc", LyricRole.Translation),
         ("_qmRoma.lrc", LyricRole.Romanization),
+        ("_qmRoma.qrc", LyricRole.Romanization),
         (".tlyric", LyricRole.Translation),
         (".romalrc", LyricRole.Romanization)
     ];
