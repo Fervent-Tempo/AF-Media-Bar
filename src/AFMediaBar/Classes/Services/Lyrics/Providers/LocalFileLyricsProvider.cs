@@ -79,7 +79,7 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
                 var (baseName, role) = Classify(path);
                 // 翻译和罗马音只是主歌词的附件，不单独参与评分。
                 if (role != LyricRole.Main) continue;
-                if (!LooksRelated(baseName, request.Title)) continue;
+                if (!LooksRelated(baseName, request)) continue;
                 var candidate = Evaluate(request, path, baseName, key);
                 // 没有歌词的候选直接跳过：本地文件没内容就等于没找到，不能被它顶掉带词的那一份。
                 if (candidate is null || candidate.Document.Lines.Count == 0) continue;
@@ -151,21 +151,25 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         Extensions.Any(extension => path.EndsWith(extension, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>文件名规范化后互相包含才算候选，省掉对每个文件的读取和解析。</summary>
-    private static bool LooksRelated(string fileName, string title)
+    private static bool LooksRelated(string fileName, LyricsRequest request)
     {
         var name = Normalize(fileName);
-        var wanted = Normalize(title);
+        var wanted = Normalize(request.Title);
         if (name.Length == 0 || wanted.Length == 0) return false;
-        // 单字歌名（「光」）也要能进评分：短名只在整串或词尾一致时放行，避免把库里每个文件都读一遍。
+        // QQ 文件名的曲名可能位于时长与专辑之前，短名也需按曲名字段匹配。
         if (name.Length < 2 || wanted.Length < 2)
-            return name == wanted || name.EndsWith(wanted, StringComparison.Ordinal) ||
-                   wanted.EndsWith(name, StringComparison.Ordinal);
+        {
+            if (name == wanted || name.EndsWith(wanted, StringComparison.Ordinal) ||
+                wanted.EndsWith(name, StringComparison.Ordinal)) return true;
+            var (fileTitle, _, _) = SplitFileName(request, fileName);
+            return Normalize(fileTitle) == wanted;
+        }
         if (name.Contains(wanted, StringComparison.Ordinal) || wanted.Contains(name, StringComparison.Ordinal)) return true;
 
         // 文件名常写成「歌手 - 歌名」，请求标题却带 (Live)、(Single Version) 这类后缀：
         // 两边都去掉括号内容再比一次，否则这类正常写法会被筛选直接漏掉。
         var nameCore = Normalize(Brackets().Replace(fileName, string.Empty));
-        var wantedCore = Normalize(Brackets().Replace(title, string.Empty));
+        var wantedCore = Normalize(Brackets().Replace(request.Title, string.Empty));
         return nameCore.Length >= 2 && wantedCore.Length >= 2 &&
                (nameCore.Contains(wantedCore, StringComparison.Ordinal) ||
                 wantedCore.Contains(nameCore, StringComparison.Ordinal));
@@ -233,6 +237,9 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     /// <summary>客户端缓存的 .qrc 前面有 11 字节文件头，QMC1 之后要去掉。/ The cached .qrc carries an 11-byte header before the QMC1 payload.</summary>
     private const int QmcHeaderBytes = 11;
 
+    private static readonly byte[] _qmcHeader =
+        [0x98, 0x25, 0xB0, 0xAC, 0xE3, 0x02, 0x83, 0x68, 0xE8, 0xFC, 0x6C];
+
     /// <summary>QMC1 的 128 字节掩码；配合按位与 0x7F 循环使用。/ The 128-byte QMC1 mask, cycled with `index &amp; 0x7F`.</summary>
     private static readonly byte[] Qmc1Key =
     [
@@ -259,36 +266,23 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     {
         try
         {
-            // 先按字节认形态：二进制缓存文件就不会白跑一遍编码探测（严格 UTF-8 必然失败，还会再解一次 GB18030）。
-            if (IsHexText(bytes))
-                return Usable(QrcDecrypter.DecryptLyrics(Encoding.ASCII.GetString(bytes).Trim()));
+            if (bytes.AsSpan().StartsWith(_qmcHeader))
+            {
+                if (bytes.Length <= QmcHeaderBytes) return null;
+                var payload = Qmc1Unmask(bytes);
+                return Usable(QrcDecrypter.DecryptLyrics(
+                    Convert.ToHexString(payload, QmcHeaderBytes, payload.Length - QmcHeaderBytes)));
+            }
 
-            if (bytes.Length <= QmcHeaderBytes) return null;
-            var payload = Qmc1Unmask(bytes);
-            return Usable(QrcDecrypter.DecryptLyrics(
-                Convert.ToHexString(payload, QmcHeaderBytes, payload.Length - QmcHeaderBytes)));
+            // 文本的 BOM 属于编码信息，不能把它误认成 QMC1 缓存。
+            var hex = Decode(bytes).Trim();
+            if (hex.Length < 32 || hex.Length % 2 != 0 || !hex.All(Uri.IsHexDigit)) return null;
+            return Usable(QrcDecrypter.DecryptLyrics(hex));
         }
         catch (Exception)
         {
             return null;
         }
-    }
-
-    /// <summary>
-    /// 云端形态是纯十六进制文本：整份只含 0-9A-F 与首尾空白才算。二进制缓存文件在第一个字节就被挡下，
-    /// 也不会把它错当文本去吃一次解密。
-    /// </summary>
-    private static bool IsHexText(byte[] bytes)
-    {
-        if (bytes.Length < 32) return false;
-        var content = 0;
-        foreach (var value in bytes)
-        {
-            if (value is (byte)'\r' or (byte)'\n' or (byte)' ' or (byte)'\t') continue;
-            if (!Uri.IsHexDigit((char)value)) return false;
-            content++;
-        }
-        return content >= 32;
     }
 
     private static byte[] Qmc1Unmask(byte[] bytes)

@@ -224,11 +224,14 @@ public sealed class LocalFileLyricsProviderTests
         Assert.IsNull(await new LocalFileLyricsProvider().GetLyricsAsync(request, CancellationToken.None));
     }
 
-    [TestMethod]
-    public async Task MatchesSingleCharacterTitle()
+    [DataTestMethod]
+    [DataRow("光.lrc")]
+    [DataRow("陈粒 - 光.lrc")]
+    [DataRow("陈粒 - 光 - 180 - 如也.lrc")]
+    public async Task MatchesSingleCharacterTitle(string fileName)
     {
-        // 单字歌名以前会被 LooksRelated 的长度限制直接排除，连评分都进不去。
-        File.WriteAllText(Path.Combine(_folder, "光.lrc"), "[ti:光]\n[ar:陈粒]\n[00:01.00]光");
+        // QQ 文件名的时长与专辑后缀不能挡住正确的单字标题。
+        File.WriteAllText(Path.Combine(_folder, fileName), "[ti:光]\n[ar:陈粒]\n[00:01.00]光");
         Enable(true, _folder);
 
         var result = await new LocalFileLyricsProvider().GetLyricsAsync(Request("光", "陈粒"), CancellationToken.None);
@@ -237,11 +240,13 @@ public sealed class LocalFileLyricsProviderTests
         Assert.IsFalse(result.LowConfidence);
     }
 
-    [TestMethod]
-    public async Task RejectsLongerTitleForSingleCharacterRequest()
+    [DataTestMethod]
+    [DataRow("月光.lrc")]
+    [DataRow("陈粒 - 月光 - 180 - 如也.lrc")]
+    public async Task RejectsLongerTitleForSingleCharacterRequest(string fileName)
     {
         // 单字标题不能靠相似度沾上别的歌：请求「光」时，「月光」即使歌手对得上也不算。
-        File.WriteAllText(Path.Combine(_folder, "月光.lrc"), "[ti:月光]\n[ar:陈粒]\n[00:01.00]词");
+        File.WriteAllText(Path.Combine(_folder, fileName), "[ti:月光]\n[ar:陈粒]\n[00:01.00]词");
         Enable(true, _folder);
 
         Assert.IsNull(await new LocalFileLyricsProvider().GetLyricsAsync(Request("光", "陈粒"), CancellationToken.None));
@@ -295,9 +300,11 @@ public sealed class LocalFileLyricsProviderTests
         // 与真实缓存文件一致。按这条链反向造一份，验证解密与 XML 提取都成立。
         var encrypted = Convert.FromHexString(EncryptQrcPayload(QrcFullXml("[ti:光]\n[ar:陈粒]\n[0,1500]光(0,500)")));
         var file = new byte[11 + encrypted.Length];
-        new byte[] { 0x98, 0x25, 0xB0, 0xAC, 0xE3, 0x02, 0x83, 0x68, 0xE8, 0xFC, 0x6C }.CopyTo(file, 0);
+        Encoding.ASCII.GetBytes("[offset:0]\n").CopyTo(file, 0);
         encrypted.CopyTo(file, 11);
         for (var i = 0; i < file.Length; i++) file[i] ^= Qmc1Key[i & 0x7F];
+        CollectionAssert.AreEqual(
+            new byte[] { 0x98, 0x25, 0xB0, 0xAC, 0xE3, 0x02, 0x83, 0x68, 0xE8, 0xFC, 0x6C }, file[..11]);
         File.WriteAllBytes(Path.Combine(_folder, "光_qm.qrc"), file);
         Enable(true, _folder);
 
@@ -324,12 +331,24 @@ public sealed class LocalFileLyricsProviderTests
         Assert.AreEqual("guang", result.Document.Lines[0].Romanization);
     }
 
-    [TestMethod]
-    public async Task ReadsCloudHexQrc()
+    [DataTestMethod]
+    [DataRow("utf8")]
+    [DataRow("utf8-bom")]
+    [DataRow("utf16-le")]
+    [DataRow("utf16-be")]
+    public async Task ReadsCloudHexQrc(string encodingName)
     {
-        // 云端形态：十六进制文本，直接交给解密器。
+        var encoding = encodingName switch
+        {
+            "utf8" => new UTF8Encoding(false),
+            "utf8-bom" => new UTF8Encoding(true),
+            "utf16-le" => Encoding.Unicode,
+            "utf16-be" => Encoding.BigEndianUnicode,
+            _ => throw new ArgumentOutOfRangeException(nameof(encodingName))
+        };
+        // 文本编码不应改变同一份十六进制负载的读取结果。
         File.WriteAllText(Path.Combine(_folder, "光.qrc"),
-            EncryptQrcPayload("[ti:光]\n[ar:陈粒]\n[00:01.00]光"));
+            EncryptQrcPayload("[ti:光]\n[ar:陈粒]\n[00:01.00]光"), encoding);
         Enable(true, _folder);
 
         var result = await new LocalFileLyricsProvider().GetLyricsAsync(Request("光", "陈粒"), CancellationToken.None);
