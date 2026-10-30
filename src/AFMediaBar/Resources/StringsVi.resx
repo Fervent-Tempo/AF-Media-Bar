@@ -1381,6 +1381,12 @@
   <data name="Lyrics.Row.Local.Description" xml:space="preserve">
     <value>Đọc tệp lời từ các thư mục bạn chọn và ưu tiên dùng trước; chỉ tìm trên mạng khi không có kết quả.</value>
   </data>
+  <data name="Lyrics.Row.Local.Fallback.Title" xml:space="preserve">
+    <value>Chỉ dùng khi trực tuyến không có</value>
+  </data>
+  <data name="Lyrics.Row.Local.Fallback.Description" xml:space="preserve">
+    <value>Chỉ đọc tệp cục bộ khi mọi nguồn trực tuyến đều không có lời, để tệp trùng tên không thay thế lời đúng.</value>
+  </data>
   <data name="Lyrics.Row.Local.Folder" xml:space="preserve">
     <value>Thư mục lời bài hát</value>
   </data>

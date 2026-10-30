@@ -311,6 +311,13 @@
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.LocalLyricsEnabled, Mode=TwoWay}"/>
                     </components:SettingsRow>
                     <StackPanel Visibility="{Binding ViewModel.LocalLyricsEnabled, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                        <components:SettingsRow
+                            Description="{DynamicResource Loc.Lyrics.Row.Local.Fallback.Description}"
+                            Icon="{ui:SymbolIcon ArrowSwap24}"
+                            Style="{StaticResource AfSettingsListItemStyle}"
+                            Title="{DynamicResource Loc.Lyrics.Row.Local.Fallback.Title}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.LocalLyricsFallbackOnly, Mode=TwoWay}"/>
+                        </components:SettingsRow>
                         <ItemsControl ItemsSource="{Binding ViewModel.LocalLyricsFolders}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>

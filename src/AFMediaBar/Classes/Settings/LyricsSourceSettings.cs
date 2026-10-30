@@ -49,6 +49,13 @@ public readonly record struct LyricsSourceSettings(IReadOnlyList<string>? Enable
     /// <summary>是否先查本地歌词文件；关闭时完全不走本地。/ Whether local lyric files are searched first; off means local is skipped entirely.</summary>
     public bool LocalEnabled { get; init; }
 
+    /// <summary>
+    /// 只在在线来源都没有结果时才用本地，默认关闭。本地文件容易和同名歌曲混淆时打开它，避免错误版本顶掉本来正常的在线歌词。
+    /// Only falls back to local files when no online source returns anything, off by default. Turn it on when local files are
+    /// easily confused with same-titled songs, so a wrong copy cannot replace working online lyrics.
+    /// </summary>
+    public bool LocalFallbackOnly { get; init; }
+
     /// <summary>本地歌词目录，按列表顺序查找；空表示没添加过。/ Local lyric folders searched in order; empty means none were added.</summary>
     public IReadOnlyList<string>? LocalFolders { get; init; }
 

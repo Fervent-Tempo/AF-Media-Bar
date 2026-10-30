@@ -259,6 +259,13 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
     /// <summary>已添加的本地歌词目录，按列表顺序查找。</summary>
     public IReadOnlyList<string> LocalLyricsFolders => _configuration.Current.LyricsSource.LocalFolders ?? [];
 
+    /// <summary>只在在线来源都没找到时才用本地，避免同名文件顶掉正常的在线歌词。</summary>
+    public bool LocalLyricsFallbackOnly
+    {
+        get => _configuration.Current.LyricsSource.LocalFallbackOnly;
+        set => _configuration.SetLyricsSourceSettings(_configuration.Current.LyricsSource with { LocalFallbackOnly = value });
+    }
+
     /// <summary>添加目录；空白与重复路径直接忽略。</summary>
     public void AddLocalLyricsFolder(string folder)
     {
@@ -294,6 +301,7 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(SourceRuleDescription));
         OnPropertyChanged(nameof(SourceResultDescription));
         OnPropertyChanged(nameof(LocalLyricsEnabled));
+        OnPropertyChanged(nameof(LocalLyricsFallbackOnly));
         OnPropertyChanged(nameof(LocalLyricsFolders));
     }
 

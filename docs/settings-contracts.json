@@ -123,6 +123,7 @@
       "resultMode": "v1.5.0",
       "prioritySourceIds": "v1.5.0",
       "localEnabled": "unreleased",
+      "localFallbackOnly": "unreleased",
       "localFolders": "unreleased"
     },
     "lyricsSyllableHighlightEnabled": "v1.2.0",

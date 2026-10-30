@@ -29,7 +29,7 @@ public sealed class LyricsService
     public LyricsService(TimeSpan perSourceBudget, TimeSpan totalBudget, params ILyricsProvider[] providers)
         : this(perSourceBudget, totalBudget, DefaultManualPerSourceBudget, providers) { }
 
-    /// <summary>带本地来源的构造：本地固定先跑一次，没命中才进入在线来源的规则。/ Creates the coordinator with a local source that always runs before the online rules.</summary>
+    /// <summary>带本地来源的构造：本地默认先跑一次，保守模式改为在线全空之后兜底。/ Creates the coordinator with a local source that runs first by default and only as a fallback in conservative mode.</summary>
     public LyricsService(TimeSpan perSourceBudget, TimeSpan totalBudget, ILyricsProvider? localProvider, params ILyricsProvider[] providers)
         : this(perSourceBudget, totalBudget, DefaultManualPerSourceBudget, providers) => _localProvider = localProvider;
 
@@ -55,26 +55,45 @@ public sealed class LyricsService
         var active = LyricsSourcePolicy.ResolveActive(_providers, sourceSettings);
         var trace = new LyricsRequestLog(effectiveRequest, sourceSettings, AppLogService.Current);
         var started = Stopwatch.GetTimestamp();
-        // 本地来源固定排在所有在线规则之前：命中就直接用，未命中或解析失败才继续下面的链路。
+        // 默认本地排在所有在线规则之前：命中就直接用，未命中或解析失败才继续在线链路。
         // 它不参与启用列表与排序，因此用户怎么排在线来源都不会把本地挤到后面。
-        if (_localProvider is { } local)
+        if (!sourceSettings.LocalFallbackOnly)
         {
-            using var localWork = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            try
-            {
-                var localResult = await TryProviderAsync(local, effectiveRequest, Remaining(started), localWork.Token, trace).ConfigureAwait(false);
-                cancellationToken.ThrowIfCancellationRequested();
-                if (localResult is { Status: LyricsResultStatus.Available } && localResult.Document.Lines.Count > 0)
-                    return trace.Finish(localResult);
-            }
-            finally
-            {
-                localWork.Cancel();
-            }
+            var localFirst = await TryLocalAsync(effectiveRequest, Remaining(started), trace, cancellationToken).ConfigureAwait(false);
+            if (IsAvailable(localFirst)) return trace.Finish(localFirst);
         }
 
-        if (sourceSettings.Rule == LyricsSourceRule.Manual)
-            return await GetManualLyricsAsync(effectiveRequest, active, sourceSettings, trace, cancellationToken).ConfigureAwait(false);
+        var result = sourceSettings.Rule == LyricsSourceRule.Manual
+            ? await GetManualLyricsAsync(effectiveRequest, active, sourceSettings, trace, cancellationToken).ConfigureAwait(false)
+            : await GetDefaultLyricsAsync(effectiveRequest, active, started, trace, cancellationToken).ConfigureAwait(false);
+
+        // 保守模式：在线来源一个都没给出歌词时才用本地兜底，避免同名本地文件顶掉本来正常的在线歌词。
+        if (sourceSettings.LocalFallbackOnly && !IsAvailable(result))
+        {
+            var fallback = await TryLocalAsync(effectiveRequest, LocalFallbackBudget(started), trace, cancellationToken).ConfigureAwait(false);
+            if (IsAvailable(fallback)) return trace.Finish(fallback);
+        }
+
+        return trace.Finish(result);
+    }
+
+    /// <summary>跑一次本地来源；未配置或没命中时返回 null。/ Runs the local source once and returns null when it is unconfigured or finds nothing.</summary>
+    private async Task<LyricsResult?> TryLocalAsync(LyricsRequest request, TimeSpan budget, LyricsRequestLog trace, CancellationToken cancellationToken)
+    {
+        if (_localProvider is not { } local) return null;
+        using var work = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        try
+        {
+            var result = await TryProviderAsync(local, request, budget, work.Token, trace).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            return result;
+        }
+        finally { work.Cancel(); }
+    }
+
+    private async Task<LyricsResult?> GetDefaultLyricsAsync(LyricsRequest request, IReadOnlyList<ILyricsProvider> active,
+        long started, LyricsRequestLog trace, CancellationToken cancellationToken)
+    {
         var plan = LyricsRetrievalPolicy.Plan(_providers, active);
         using var work = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         LyricsResult? preferredResult = null;
@@ -82,28 +101,28 @@ public sealed class LyricsService
         {
             if (plan.Preferred is { } preferred)
             {
-                preferredResult = await TryProviderAsync(preferred, effectiveRequest, Remaining(started), work.Token, trace).ConfigureAwait(false);
+                preferredResult = await TryProviderAsync(preferred, request, Remaining(started), work.Token, trace).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
                 if (preferredResult is not null && preferredResult.MatchScore >= LyricsRetrievalPolicy.PreferredMinimumScore)
-                    return trace.Finish(preferredResult);
+                    return preferredResult;
             }
             cancellationToken.ThrowIfCancellationRequested();
             var budget = Remaining(started);
-            if (budget <= TimeSpan.Zero) return trace.Finish(preferredResult);
+            if (budget <= TimeSpan.Zero) return preferredResult;
             // 等的是各自受预算约束的包装任务，不会无限等待底层歌词库。
-            var tasks = plan.Fallbacks.Select(provider => TryProviderAsync(provider, effectiveRequest, budget, work.Token, trace)).ToArray();
+            var tasks = plan.Fallbacks.Select(provider => TryProviderAsync(provider, request, budget, work.Token, trace)).ToArray();
             var results = await Task.WhenAll(tasks).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             // Provider identity owns routing; a result's display/source label may differ from SourceName.
             var currentPlayback = plan.Preferred is { } currentPreferred &&
-                LyricsSourcePolicy.IsCurrentPlaybackSource(effectiveRequest.PlaybackSourceId, currentPreferred.SourceName)
+                LyricsSourcePolicy.IsCurrentPlaybackSource(request.PlaybackSourceId, currentPreferred.SourceName)
                 ? preferredResult : null;
             for (var index = 0; currentPlayback is null && index < plan.Fallbacks.Count; index++)
             {
-                if (LyricsSourcePolicy.IsCurrentPlaybackSource(effectiveRequest.PlaybackSourceId, plan.Fallbacks[index].SourceName))
+                if (LyricsSourcePolicy.IsCurrentPlaybackSource(request.PlaybackSourceId, plan.Fallbacks[index].SourceName))
                     currentPlayback = results[index];
             }
-            return trace.Finish(LyricsRetrievalPolicy.Select(results, preferredResult, currentPlayback));
+            return LyricsRetrievalPolicy.Select(results, preferredResult, currentPlayback);
         }
         finally { work.Cancel(); }
     }
@@ -122,10 +141,10 @@ public sealed class LyricsService
                     cancellationToken.ThrowIfCancellationRequested();
                     var result = await TryProviderAsync(provider, request, _manualPerSourceBudget, work.Token, trace).ConfigureAwait(false);
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (IsAvailable(result)) return trace.Finish(result);
+                    if (IsAvailable(result)) return result;
                     if (result?.Status == LyricsResultStatus.NoLyrics) noLyrics ??= result;
                 }
-                return trace.Finish(noLyrics);
+                return noLyrics;
             }
 
             var firstAvailable = new TaskCompletionSource<LyricsResult?>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -145,24 +164,31 @@ public sealed class LyricsService
                 await Task.WhenAny(firstAvailable.Task, all).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
                 if (firstAvailable.Task.IsCompletedSuccessfully)
-                    return trace.Finish(await firstAvailable.Task.ConfigureAwait(false));
+                    return await firstAvailable.Task.ConfigureAwait(false);
             }
             // 顺序等待已同时启动的任务；后序即使先返回，也不能越过仍在等待的前序来源。
             foreach (var task in tasks)
             {
                 var result = await task.ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
-                if (IsAvailable(result)) return trace.Finish(result);
+                if (IsAvailable(result)) return result;
                 if (result?.Status == LyricsResultStatus.NoLyrics) noLyrics ??= result;
             }
             cancellationToken.ThrowIfCancellationRequested();
-            return trace.Finish(noLyrics);
+            return noLyrics;
         }
         finally { work.Cancel(); }
     }
 
     private static bool IsAvailable(LyricsResult? result) =>
         result is { Status: LyricsResultStatus.Available, Document.Lines.Count: > 0 };
+
+    /// <summary>本地兜底至少有一份单来源预算：在线阶段可能已耗尽总预算，不能让已经找到文件的本地来源白等。</summary>
+    private TimeSpan LocalFallbackBudget(long started)
+    {
+        var remaining = Remaining(started);
+        return remaining > TimeSpan.Zero ? remaining : _perSourceBudget;
+    }
 
     private TimeSpan Remaining(long started)
     {
