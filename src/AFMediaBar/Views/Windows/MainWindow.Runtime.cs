@@ -176,7 +176,7 @@ public partial class MainWindow
     {
         if (_isClosing || sender is not FloatingBarWindow host || !_floatingWindows.Contains(host)) return;
         var panel = _fullPanels.Open(host.TargetMonitorDeviceId, args.Anchor, args.VerticalAnchor,
-            args.EnsureOpen, host.EffectiveSettings, args.PlacementSide);
+            args.EnsureOpen, host.EffectiveSettings, args.PlacementSide, args.EntryCenter);
         if (panel is not null) host.SetFullPanelOpen(panel.IsVisible);
     }
 }

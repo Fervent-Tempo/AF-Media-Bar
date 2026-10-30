@@ -74,6 +74,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private bool _overlayTaskbar;
     private double _primary = 240;
     private double _targetPrimary = 240;
+    private double _hoverReferenceLengthDip = 120;
     private double _animationStart;
     private long _animationTick;
     private double _animationProgress;
@@ -468,9 +469,24 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             requested, new Point((_centerPx.X - PlacementArea.Left) / Dpi, (_centerPx.Y - PlacementArea.Top) / Dpi));
         bounds = ResolveEdgeBounds(bounds);
         UpdateEdgePresentation();
+        var physical = new Int32Rect((int)Math.Round(PlacementArea.Left + bounds.Left * Dpi),
+            (int)Math.Round(PlacementArea.Top + bounds.Top * Dpi), (int)Math.Ceiling(bounds.Width * Dpi), (int)Math.Ceiling(bounds.Height * Dpi));
         // 纯平移不重排内容或发布长度预算；实际尺寸、DPI 或配置变化才更新布局。
         var size = bounds.Size;
-        if (refreshLayout || _layoutSizeDip != size || _layoutDpi != Dpi)
+        var layoutChanged = refreshLayout || _layoutSizeDip != size || _layoutDpi != Dpi;
+        if (layoutChanged) _hoverReferenceLengthDip = _mediaControl.GetMinimumPrimaryLength(Dpi);
+        // 以最小可用布局为参考，避免围绕中心伸缩时按钮和入口随当前栏长移动。
+        var referenceSize = IsVerticalPresentation ? new Size(_cross, _hoverReferenceLengthDip) : new Size(_hoverReferenceLengthDip, _cross);
+        var reference = FloatingBarGeometryPolicy.Resolve(new Size(PlacementArea.Width / Dpi, PlacementArea.Height / Dpi),
+            referenceSize, new Point((_centerPx.X - PlacementArea.Left) / Dpi, (_centerPx.Y - PlacementArea.Top) / Dpi));
+        if (!_dragging && SettingsManager.Current.FloatingBar.EdgeCollapseEnabled)
+            reference = FloatingBarEdgeCollapsePolicy.Anchor(reference, WorkAreaDip, _dockEdge);
+        var referenceOrigin = (int)Math.Round((IsVerticalPresentation ? PlacementArea.Top + reference.Top * Dpi : PlacementArea.Left + reference.Left * Dpi));
+        var referenceLength = (int)Math.Ceiling((IsVerticalPresentation ? reference.Height : reference.Width) * Dpi);
+        var anchor = 2L * referenceOrigin + (PresentationSettings.Position == TaskbarBarPosition.End ? 2L * referenceLength
+            : PresentationSettings.Position == TaskbarBarPosition.Center ? referenceLength : 0);
+        _mediaControl.ApplyPlacementAnchor(IsVerticalPresentation ? physical.Y : physical.X, anchor, Dpi);
+        if (layoutChanged)
         {
             _layoutSizeDip = size;
             _layoutDpi = Dpi;
@@ -482,8 +498,6 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         }
         if (_orientation == LayoutOrientation.Vertical)
             _mediaControl.ApplyVerticalTaskbarSide(_centerPx.X < PlacementArea.Left + PlacementArea.Width / 2);
-        var physical = new Int32Rect((int)Math.Round(PlacementArea.Left + bounds.Left * Dpi),
-            (int)Math.Round(PlacementArea.Top + bounds.Top * Dpi), (int)Math.Ceiling(bounds.Width * Dpi), (int)Math.Ceiling(bounds.Height * Dpi));
         if (_handle != nint.Zero && _nativeBoundsPx != physical)
         {
             if (IsEdgeFullyCollapsed)

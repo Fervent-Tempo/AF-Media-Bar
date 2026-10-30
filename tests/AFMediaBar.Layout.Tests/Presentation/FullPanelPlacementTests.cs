@@ -10,6 +10,31 @@ namespace AFMediaBar.Layout.Tests;
 [TestClass]
 public sealed class FullPanelPlacementTests
 {
+    [DataTestMethod]
+    [DataRow(FullPanelPlacementSide.Above)]
+    [DataRow(FullPanelPlacementSide.Below)]
+    [DataRow(FullPanelPlacementSide.Left)]
+    [DataRow(FullPanelPlacementSide.Right)]
+    public void PanelKeepsEntryCenterAcrossBarAndPanelSizeChanges(FullPanelPlacementSide side)
+    {
+        var work = new Rect(-1600, -200, 1600, 1200);
+        var vertical = side is FullPanelPlacementSide.Left or FullPanelPlacementSide.Right;
+        var entry = new Point(-780, 430);
+        foreach (var barLength in new[] { 280d, 521d, 700d })
+            foreach (var panelSize in new[] { new Size(300, 260), new Size(460, 360) })
+            {
+                var bar = vertical ? new Rect(-900, 150, 44, barLength) : new Rect(-1100, 200, barLength, 44);
+                var panel = FullPanelPlacementPolicy.PlacePanel(bar, panelSize, work, side, entry);
+                Assert.AreEqual(vertical ? entry.Y : entry.X,
+                    vertical ? panel.Top + panel.Height / 2 : panel.Left + panel.Width / 2, .001);
+                Assert.IsTrue(work.Contains(panel));
+                var edgeEntry = new Point(work.Left, work.Top);
+                var clamped = FullPanelPlacementPolicy.PlacePanel(bar, panelSize, work, side, edgeEntry);
+                Assert.IsTrue(work.Contains(clamped), "Screen boundaries take priority over centering on the entry.");
+                Assert.AreEqual(vertical ? work.Top : work.Left, vertical ? clamped.Top : clamped.Left);
+            }
+    }
+
     [TestMethod]
     public void ShortWorkAreaLimitsPanelHeightWithoutCoveringBar()
     {

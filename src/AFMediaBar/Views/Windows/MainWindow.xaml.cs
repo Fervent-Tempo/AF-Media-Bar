@@ -864,7 +864,7 @@ namespace AFMediaBar.Views.Windows
         private void TaskbarWindow_OpenFullPanelRequested(object? sender, FullPanelOpenRequestEventArgs e)
         {
             if (_isClosing || sender is not TaskbarWindow host || !_taskbarWindows.Contains(host)) return;
-            var panel = _fullPanels.Open(host.TargetMonitorDeviceId, e.Anchor, e.VerticalAnchor, e.EnsureOpen, null, e.PlacementSide);
+            var panel = _fullPanels.Open(host.TargetMonitorDeviceId, e.Anchor, e.VerticalAnchor, e.EnsureOpen, null, e.PlacementSide, e.EntryCenter);
             if (panel is not null) host.SetFullPanelOpen(panel.IsVisible);
         }
 

@@ -34,19 +34,19 @@ public static class FullPanelPlacementPolicy
         })));
 
     /// <summary>沿指定侧放置面板，并将位置限制在所属显示器工作区。</summary>
-    public static Rect PlacePanel(Rect anchor, Size panel, Rect workArea, FullPanelPlacementSide side)
+    public static Rect PlacePanel(Rect anchor, Size panel, Rect workArea, FullPanelPlacementSide side, Point? entryCenter = null)
     {
         var left = side switch
         {
             FullPanelPlacementSide.Left => anchor.Left - panel.Width - 8,
             FullPanelPlacementSide.Right => anchor.Right + 8,
-            _ => anchor.Left + (anchor.Width - panel.Width) / 2
+            _ => (entryCenter?.X ?? anchor.Left + anchor.Width / 2) - panel.Width / 2
         };
         var top = side switch
         {
             FullPanelPlacementSide.Above => anchor.Top - panel.Height - 8,
             FullPanelPlacementSide.Below => anchor.Bottom + 8,
-            _ => anchor.Top + (anchor.Height - panel.Height) / 2
+            _ => (entryCenter?.Y ?? anchor.Top + anchor.Height / 2) - panel.Height / 2
         };
         return new Rect(Math.Clamp(left, workArea.Left, Math.Max(workArea.Left, workArea.Right - panel.Width)),
             Math.Clamp(top, workArea.Top, Math.Max(workArea.Top, workArea.Bottom - panel.Height)), panel.Width, panel.Height);

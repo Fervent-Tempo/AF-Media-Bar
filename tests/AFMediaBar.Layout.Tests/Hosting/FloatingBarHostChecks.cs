@@ -58,6 +58,7 @@ internal static class FloatingBarHostChecks
             Assert.AreEqual(display.DpiX, AFMediaBar.Classes.Interop.NativeMethods.GetDpiForWindow(new WindowInteropHelper(window).Handle),
                 "注入的显示器快照必须与真实 HWND 的 DPI 一致。");
             VerifyPureMoves(window);
+            VerifyStableEntry(window);
             await VerifyContentResizePreservesPanelAsync(window);
             Assert.IsTrue(limits.Range.HasAvailableRange);
             var handle = new WindowInteropHelper(window).Handle;
@@ -73,6 +74,7 @@ internal static class FloatingBarHostChecks
             Assert.AreEqual(center, window.CenterPx);
             Assert.IsTrue(window.ActualHeight > window.ActualWidth);
             VerifyPureMoves(window);
+            VerifyStableEntry(window);
             await VerifyContentResizePreservesPanelAsync(window);
             Assert.AreNotEqual(0, AFMediaBar.Classes.Interop.NativeMethods.GetWindowLong(handle, -20) & 8);
             window.Suspend();
@@ -117,6 +119,49 @@ internal static class FloatingBarHostChecks
             SettingsManager.Current.FloatingBar = previous;
             applyVisibility.Invoke(window, null);
             if (wasObserving) timer.Start();
+        }
+    }
+
+    private static void VerifyStableEntry(FloatingBarWindow window)
+    {
+        var previous = SettingsManager.Current.FloatingBar;
+        var center = window.CenterPx;
+        var control = ((System.Windows.Controls.Grid)window.Content).Children.OfType<AFMediaBar.Components.TaskBarMediaControl>().Single();
+        var resize = typeof(FloatingBarWindow).GetMethod("ResizeContent", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var dpi = window.Monitor.DpiX / 96d;
+        FullPanelOpenRequestEventArgs? requested = null;
+        void Opened(object? sender, FullPanelOpenRequestEventArgs args) => requested = args;
+        window.OpenFullPanelRequested += Opened;
+        try
+        {
+            foreach (var alignment in Enum.GetValues<TaskbarBarPosition>())
+            {
+                SettingsManager.Current.FloatingBar = previous with { Profile = window.EffectiveSettings is { } settings
+                    ? BarDisplaySettings.Capture(settings) with { Position = alignment } : null };
+                window.RestoreCenter(new Point(window.Monitor.WorkArea.Left + window.Monitor.WorkArea.Width / 2,
+                    window.Monitor.WorkArea.Top + window.Monitor.WorkArea.Height / 2));
+                var minimum = Math.Max(300, control.GetMinimumPrimaryLength(dpi) + 20);
+                double? expected = null;
+                foreach (var length in new[] { minimum, minimum + 161, minimum + 2 })
+                {
+                    resize.Invoke(window, [new MediaBarSizeRequest(window.IsVerticalPresentation ? LayoutOrientation.Vertical : LayoutOrientation.Horizontal,
+                        window.IsVerticalPresentation ? 48 : length, window.IsVerticalPresentation ? length : 44, "entry-resize", false, true)]);
+                    window.UpdateLayout();
+                    var entry = control.GetFullPanelEntryScreenCenter();
+                    var primary = window.IsVerticalPresentation ? entry.Y : entry.X;
+                    if (expected is double previousEntry) Assert.AreEqual(previousEntry, primary, 1.01, $"{alignment}: floating resize moved the entry.");
+                    expected = primary;
+                    control.RequestOpenFullPanel();
+                    Assert.IsNotNull(requested?.EntryCenter, "Direct opening must carry the same entry anchor.");
+                    Assert.AreEqual(primary, (window.IsVerticalPresentation ? requested!.EntryCenter!.Value.Y : requested!.EntryCenter!.Value.X) * dpi, 1.01);
+                }
+            }
+        }
+        finally
+        {
+            window.OpenFullPanelRequested -= Opened;
+            SettingsManager.Current.FloatingBar = previous;
+            window.RestoreCenter(center);
         }
     }
 

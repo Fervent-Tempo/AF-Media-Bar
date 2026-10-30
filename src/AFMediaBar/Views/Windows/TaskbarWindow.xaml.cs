@@ -1516,8 +1516,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     }
 
     private void MediaControl_OpenFullPanelRequested(object? sender, EventArgs e) =>
-        OpenFullPanelRequested?.Invoke(this, new FullPanelOpenRequestEventArgs(
-            GetMediaBarScreenBounds(), IsVerticalPresentation, ensureOpen: false));
+        OpenFullPanelRequested?.Invoke(this, CreateFullPanelRequest(ensureOpen: false));
 
     private async void MediaControl_WheelRequested(object? sender, PlayerSurfaceWheelEventArgs e)
     {

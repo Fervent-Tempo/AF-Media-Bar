@@ -8,10 +8,12 @@ public enum FullPanelPlacementSide { Above, Below, Left, Right }
 
 /// <summary>屏幕 DIP 锚点及打开语义；仅打开请求不会切换关闭已有面板。</summary>
 public sealed class FullPanelOpenRequestEventArgs(Rect anchor, bool verticalAnchor, bool ensureOpen,
-    FullPanelPlacementSide? placementSide = null) : EventArgs
+    FullPanelPlacementSide? placementSide = null, Point? entryCenter = null) : EventArgs
 {
     public Rect Anchor { get; } = anchor;
     public bool VerticalAnchor { get; } = verticalAnchor;
     public bool EnsureOpen { get; } = ensureOpen;
     public FullPanelPlacementSide? PlacementSide { get; } = placementSide;
+    /// <summary>限位后的入口中心，采用与 Anchor 相同的屏幕 DIP 坐标。</summary>
+    public Point? EntryCenter { get; } = entryCenter;
 }

@@ -44,7 +44,7 @@ public sealed partial class FloatingBarWindow
             _externalFullPanelHandle.Reveal(new TrayIconBounds((int)Math.Floor(bar.Left), (int)Math.Floor(bar.Top),
                     (int)Math.Ceiling(bar.Right), (int)Math.Ceiling(bar.Bottom)),
                 geometry.VisualBounds, geometry.HitBounds, geometry.TransitBounds,
-                new FullPanelOpenRequestEventArgs(GetMediaBarScreenBounds(), IsVerticalPresentation, ensureOpen: true, side),
+                CreateFullPanelRequest(ensureOpen: true, side, geometry.VisualBounds),
                 IsVerticalPresentation, side is FullPanelPlacementSide.Below or FullPanelPlacementSide.Right,
                 PresentationSettings.TaskbarExperience.FullPanelEntryTrigger,
                 PresentationSettings.TaskbarExperience.FullPanelEntryHoverDelayMilliseconds,
@@ -69,9 +69,17 @@ public sealed partial class FloatingBarWindow
     {
         if (!IsOperational) return;
         if (IsEdgeConcealed) SetEdgeTarget(collapse: false, instant: true);
-        var side = FullPanelPlacementPolicy.ResolveSide(GetPhysicalBounds(), Monitor.WorkArea, IsVerticalPresentation);
-        OpenFullPanelRequested?.Invoke(this, new FullPanelOpenRequestEventArgs(GetMediaBarScreenBounds(),
-            IsVerticalPresentation, ensureOpen: false, side));
+        OpenFullPanelRequested?.Invoke(this, CreateFullPanelRequest(ensureOpen: false));
+    }
+
+    private FullPanelOpenRequestEventArgs CreateFullPanelRequest(bool ensureOpen, FullPanelPlacementSide? side = null, Rect? handleBounds = null)
+    {
+        var bar = GetPhysicalBounds();
+        side ??= FullPanelPlacementPolicy.ResolveSide(bar, Monitor.WorkArea, IsVerticalPresentation);
+        var visual = handleBounds ?? FullPanelPlacementPolicy.PlaceHandle(bar, bar, Monitor.WorkArea,
+            _mediaControl.GetFullPanelEntryScreenCenter(), side.Value, Dpi).VisualBounds;
+        var center = new Point((visual.Left + visual.Width / 2) / Dpi, (visual.Top + visual.Height / 2) / Dpi);
+        return new FullPanelOpenRequestEventArgs(GetMediaBarScreenBounds(), IsVerticalPresentation, ensureOpen, side, center);
     }
 
     internal void SetFullPanelOpen(bool open)

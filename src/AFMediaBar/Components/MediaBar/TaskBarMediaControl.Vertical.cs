@@ -62,6 +62,7 @@ public partial class TaskBarMediaControl
             HoverRevealHost.VerticalAlignment = VerticalAlignment.Center;
             TaskbarHoverContent.Margin = new Thickness(5, 0, 6, 0);
             TaskbarHoverActions.HorizontalAlignment = HorizontalAlignment.Left;
+            TaskbarHoverActions.VerticalAlignment = VerticalAlignment.Center;
             foreach (var surface in new FrameworkElement[] { TaskbarSpectrumHoverSurface, TaskbarPerformanceHoverSurface, TaskbarBatterySurface, TaskbarOutputDeviceHoverSurface, TaskbarInputDeviceHoverSurface, TaskbarVolumeHoverSurface, ResidentPreviousSurface, ResidentPlayPauseSurface, ResidentNextSurface })
                 surface.VerticalAlignment = VerticalAlignment.Center;
         }
@@ -264,10 +265,13 @@ public partial class TaskBarMediaControl
         }
         TaskbarHoverContent.Margin = _verticalTaskbarOnLeft ? new Thickness(2, 2, 8, 2) : new Thickness(8, 2, 2, 2);
         TaskbarHoverActions.HorizontalAlignment = HorizontalAlignment.Center;
+        TaskbarHoverActions.VerticalAlignment = VerticalAlignment.Top;
         TaskbarHoverLayer.Width = Math.Max(1, MainBorder.Width - 4);
         TaskbarHoverLayer.Height = Math.Max(1, SongInfoStackPanel.Height);
         TaskbarHoverActionsOffset.X = 0;
         TaskbarHoverActionsOffset.Y = 0;
+        var layout = ResolveVerticalLayout(MainBorder.Height);
+        ApplyHoverActionsGeometry(MainBorder.Height, layout.TextLeft, layout.TextWidth, 2, 2);
     }
 
     private static RECT GetPopupMonitorWorkArea(Point physicalPoint)

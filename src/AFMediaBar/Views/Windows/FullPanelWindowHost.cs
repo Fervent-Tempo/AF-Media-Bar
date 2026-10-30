@@ -17,7 +17,8 @@ public sealed class FullPanelWindowHost(Func<TaskbarFullPanelWindow> factory, Me
 
     public bool TryGet(string target, [NotNullWhen(true)] out TaskbarFullPanelWindow? window) => _windows.TryGetValue(target, out window);
 
-    public TaskbarFullPanelWindow? Open(string target, Rect anchor, bool vertical, bool ensureOpen, AppSettings? settings, FullPanelPlacementSide? side = null)
+    public TaskbarFullPanelWindow? Open(string target, Rect anchor, bool vertical, bool ensureOpen, AppSettings? settings,
+        FullPanelPlacementSide? side = null, Point? entryCenter = null)
     {
         if (_disposed) return null;
         if (!_windows.TryGetValue(target, out var panel))
@@ -28,8 +29,8 @@ public sealed class FullPanelWindowHost(Func<TaskbarFullPanelWindow> factory, Me
             panel.Closed += Closed;
         }
         panel.ApplyPresentationSettings(settings);
-        if (ensureOpen) panel.ShowNear(anchor, target, vertical, side);
-        else panel.ToggleNear(anchor, target, vertical, side);
+        if (ensureOpen) panel.ShowNear(anchor, target, vertical, side, entryCenter);
+        else panel.ToggleNear(anchor, target, vertical, side, entryCenter);
         return panel;
     }
 

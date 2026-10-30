@@ -54,6 +54,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     private int _volumeApplyVersion;
     private int _sectionAnimationVersion;
     private Rect? _anchor;
+    private Point? _entryCenter;
     private FullPanelPlacementSide? _placementSide;
     private string? _targetMonitorDeviceId;
 
@@ -93,7 +94,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         ApplySnapshot(_mediaSessionService.CurrentSnapshot ?? MediaSnapshot.Disconnected);
     }
 
-    public void ToggleNear(Rect anchor, string targetMonitorDeviceId, bool verticalAnchor = false, FullPanelPlacementSide? side = null)
+    public void ToggleNear(Rect anchor, string targetMonitorDeviceId, bool verticalAnchor = false, FullPanelPlacementSide? side = null, Point? entryCenter = null)
     {
         if (_isClosing)
             return;
@@ -104,16 +105,17 @@ public partial class TaskbarFullPanelWindow : FluentWindow
             return;
         }
 
-        ShowNear(anchor, targetMonitorDeviceId, verticalAnchor, side);
+        ShowNear(anchor, targetMonitorDeviceId, verticalAnchor, side, entryCenter);
     }
 
     /// <summary>外侧悬停入口只请求打开，重复请求不关闭已有面板。</summary>
-    public void ShowNear(Rect anchor, string targetMonitorDeviceId, bool verticalAnchor = false, FullPanelPlacementSide? side = null)
+    public void ShowNear(Rect anchor, string targetMonitorDeviceId, bool verticalAnchor = false, FullPanelPlacementSide? side = null, Point? entryCenter = null)
     {
         if (_isClosing || IsVisible) return;
 
         _isClosing = false;
         _anchor = anchor;
+        _entryCenter = entryCenter;
         _resizePlacement = null;
         _targetMonitorDeviceId = targetMonitorDeviceId;
         _verticalAnchor = verticalAnchor;
@@ -238,7 +240,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         var size = new Size(ActualWidth, ActualHeight);
         var bounds = _resizePlacement is { } placement
             ? FullPanelScalePolicy.PlaceResizeBounds(placement.Bounds, size, placement.Edge, placement.Side)
-            : FullPanelPlacementPolicy.PlacePanel(anchor, size, work, side);
+            : FullPanelPlacementPolicy.PlacePanel(anchor, size, work, side, _entryCenter);
         bounds.X = Math.Clamp(bounds.X, _panelWorkArea.Left, Math.Max(_panelWorkArea.Left, _panelWorkArea.Right - bounds.Width));
         bounds.Y = Math.Clamp(bounds.Y, _panelWorkArea.Top, Math.Max(_panelWorkArea.Top, _panelWorkArea.Bottom - bounds.Height));
         Left = bounds.Left;

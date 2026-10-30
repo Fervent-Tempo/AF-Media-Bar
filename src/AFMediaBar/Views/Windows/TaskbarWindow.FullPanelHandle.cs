@@ -58,7 +58,7 @@ public partial class TaskbarWindow
             }
             var taskbarHandle = _lastTaskbarHandle;
             _externalFullPanelHandle.Reveal(bar, geometry.VisualBounds, geometry.HitBounds, geometry.TransitBounds,
-                new FullPanelOpenRequestEventArgs(GetMediaBarScreenBounds(), vertical, ensureOpen: true, side), vertical, positive,
+                CreateFullPanelRequest(ensureOpen: true, side, geometry.VisualBounds, dpi), vertical, positive,
                 SettingsManager.Current.TaskbarExperience.FullPanelEntryTrigger,
                 SettingsManager.Current.TaskbarExperience.FullPanelEntryHoverDelayMilliseconds,
                 () => CanKeepExternalFullPanelHandle() && taskbarHandle == _lastTaskbarHandle &&
@@ -77,6 +77,28 @@ public partial class TaskbarWindow
     }
 
     private void ExternalHandle_MediaMouseLeave(object sender, MouseEventArgs e) => _externalHandleRequiresReentry = false;
+
+    private FullPanelOpenRequestEventArgs CreateFullPanelRequest(bool ensureOpen, FullPanelPlacementSide? side = null,
+        Rect? handleBounds = null, double dpi = 0)
+    {
+        if (handleBounds is null && _taskBarService.TryGetTaskbarRect(_lastTaskbarHandle, out var taskbar))
+        {
+            dpi = _taskBarService.GetTaskbarDpiScale(_lastTaskbarHandle);
+            if (dpi > 0)
+            {
+                var monitor = MonitorUtil.GetMonitor(_lastTaskbarHandle).monitorArea;
+                var attachment = new Rect(taskbar.Left, taskbar.Top, taskbar.Right - taskbar.Left, taskbar.Bottom - taskbar.Top);
+                var screen = new Rect(monitor.Left, monitor.Top, monitor.Right - monitor.Left, monitor.Bottom - monitor.Top);
+                side ??= FullPanelPlacementPolicy.ResolveSide(attachment, screen, IsVerticalPresentation);
+                var bar = GetMediaBarScreenPhysicalBounds();
+                handleBounds = FullPanelPlacementPolicy.PlaceHandle(new Rect(bar.Left, bar.Top, bar.Right - bar.Left, bar.Bottom - bar.Top),
+                    attachment, screen, MediaControl.GetFullPanelEntryScreenCenter(), side.Value, dpi).VisualBounds;
+            }
+        }
+        Point? center = handleBounds is Rect visual && dpi > 0
+            ? new Point((visual.Left + visual.Width / 2) / dpi, (visual.Top + visual.Height / 2) / dpi) : null;
+        return new FullPanelOpenRequestEventArgs(GetMediaBarScreenBounds(), IsVerticalPresentation, ensureOpen, side, center);
+    }
 
     private void ExternalHandle_OpenRequested(object? sender, FullPanelOpenRequestEventArgs e)
     {

@@ -207,6 +207,7 @@ public sealed class TaskbarArrangementPresentationTests
                 AssertMetadataSurvivesOrientationChanges();
                 AssertLyricsSurviveOrientationChanges();
                 AssertLyricsTimelineChangesResizeRepeatedText();
+                AssertFullPanelEntryFollowsStableActions();
                 control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
                 MetadataMarqueePresentationChecks.Verify();
             }
@@ -223,6 +224,91 @@ public sealed class TaskbarArrangementPresentationTests
         Assert.IsTrue(thread.Join(TimeSpan.FromSeconds(30)), "WPF layout did not finish");
         if (failure is not null)
             ExceptionDispatchInfo.Capture(failure).Throw();
+    }
+
+    private static void AssertFullPanelEntryFollowsStableActions()
+    {
+        var original = SettingsManager.Current.Clone();
+        var control = new TaskBarMediaControl { AllowRestConnectionTransition = false };
+        var actions = (StackPanel)control.FindName("TaskbarHoverActions");
+        var hover = (Grid)control.FindName("HoverRevealHost");
+        try
+        {
+            SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { HoverLayerEnabled = true };
+            control.AllowRestConnectionTransition = false;
+            control.UpdateSongInfo(MediaSnapshot.Disconnected with { IsConnected = true, Title = "Stable entry", Artist = "Artist" });
+            foreach (var vertical in new[] { false, true })
+                foreach (var alignment in Enum.GetValues<TaskbarBarPosition>())
+                    foreach (var dpi in new[] { 1d, 1.25, 1.5, 2d })
+                    {
+                        SettingsManager.Current.Position = alignment;
+                        control.ApplyLayout(WindowMode.Taskbar, vertical ? LayoutOrientation.Vertical : LayoutOrientation.Horizontal, 100, 100, 44);
+                        control.ApplyTaskbarExperienceSettings();
+                        MediaBarTestAccess.GetField("_isTaskbarHoverVisible", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(control, true);
+                        hover.Visibility = Visibility.Visible;
+                        var minimum = (int)Math.Ceiling(control.GetMinimumPrimaryLength(dpi) * dpi);
+                        double? expected = null;
+                        foreach (var lengthPx in new[] { minimum, minimum + 1, minimum + 2, minimum + 161 })
+                        {
+                            const long AnchorTwice = 2001;
+                            var origin = AFMediaBar.Classes.Services.TaskbarPlacementPolicy.Position(AnchorTwice, lengthPx, alignment);
+                            control.ApplyPlacementAnchor(origin, AnchorTwice, dpi);
+                            control.ApplyPrimaryLength(lengthPx / dpi);
+                            control.Width = vertical ? 44 : lengthPx / dpi;
+                            control.Height = vertical ? lengthPx / dpi : 44;
+                            if (!vertical) hover.Width = ((FrameworkElement)control.FindName("SongInfoStackPanel")).Width;
+                            control.Measure(new Size(control.Width, control.Height));
+                            control.Arrange(new Rect(0, 0, control.Width, control.Height));
+                            control.UpdateLayout();
+                            var buttonCenter = actions.TranslatePoint(new Point(actions.ActualWidth / 2, actions.ActualHeight / 2), control);
+                            var entryCenter = control.GetFullPanelEntryCenter();
+                            var primary = (vertical ? entryCenter.Y : entryCenter.X) * dpi + origin;
+                            Assert.AreEqual(vertical ? buttonCenter.Y : buttonCenter.X, vertical ? entryCenter.Y : entryCenter.X,
+                                1.01 / dpi, $"{vertical}/{alignment}/{dpi}: entry detached from hover actions.");
+                            if (expected is double previous) Assert.AreEqual(previous, primary, 1.01,
+                                $"{vertical}/{alignment}/{dpi}: length {lengthPx}, minimum {minimum}, text {((FrameworkElement)control.FindName("SongInfoStackPanel")).DesiredSize}, actions {actions.DesiredSize}: length moved the entry.");
+                            expected = primary;
+                        }
+                        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { HoverLayerEnabled = false };
+                        control.ApplyTaskbarExperienceSettings();
+                        double? fallback = null;
+                        foreach (var lengthPx in new[] { minimum, minimum + 161 })
+                        {
+                            var origin = AFMediaBar.Classes.Services.TaskbarPlacementPolicy.Position(2001, lengthPx, alignment);
+                            control.ApplyPlacementAnchor(origin, 2001, dpi);
+                            control.ApplyPrimaryLength(lengthPx / dpi);
+                            var entry = control.GetFullPanelEntryCenter();
+                            var primary = origin + (vertical ? entry.Y : entry.X) * dpi;
+                            if (fallback is double previous) Assert.AreEqual(previous, primary, 1.01, "Hidden hover layer must retain a stable entry anchor.");
+                            fallback = primary;
+                        }
+                        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { HoverLayerEnabled = true };
+                    }
+            var experience = SettingsManager.Current.TaskbarExperience;
+            var hidden = AFMediaBar.Classes.Services.ComponentLayoutPolicy.Resolve(SettingsManager.Current, BarLayoutState.Hover)
+                .Select(entry => entry with { IsVisible = false }).ToArray();
+            SettingsManager.Current.TaskbarExperience = AFMediaBar.Classes.Services.ComponentLayoutPolicy.Set(experience, BarLayoutState.Hover, hidden);
+            foreach (var vertical in new[] { false, true })
+                foreach (var alignment in Enum.GetValues<TaskbarBarPosition>())
+                {
+                    SettingsManager.Current.Position = alignment;
+                    control.ApplyLayout(WindowMode.Taskbar, vertical ? LayoutOrientation.Vertical : LayoutOrientation.Horizontal, 100, 100, 44);
+                    control.ApplyTaskbarExperienceSettings();
+                    var minimum = (int)Math.Ceiling(control.GetMinimumPrimaryLength(1) + 52);
+                    double? expected = null;
+                    foreach (var length in new[] { minimum, minimum + 161 })
+                    {
+                        var origin = AFMediaBar.Classes.Services.TaskbarPlacementPolicy.Position(2001, length, alignment);
+                        control.ApplyPlacementAnchor(origin, 2001, 1);
+                        control.ApplyPrimaryLength(length);
+                        var entry = control.GetFullPanelEntryCenter();
+                        var primary = origin + (vertical ? entry.Y : entry.X);
+                        if (expected is double previous) Assert.AreEqual(previous, primary, 1.01, "Hiding all buttons must not reattach the entry to the changing bar center.");
+                        expected = primary;
+                    }
+                }
+        }
+        finally { control.DisposePresentation(); SettingsManager.Replace(original); }
     }
     private static void AssertSmallArtworkLayout(TaskBarMediaControl control)
     {

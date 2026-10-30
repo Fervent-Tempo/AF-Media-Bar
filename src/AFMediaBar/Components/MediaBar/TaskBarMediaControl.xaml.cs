@@ -84,7 +84,6 @@ namespace AFMediaBar.Components
         /// extension, so the center holds for the whole animation; the two centers nearly coincide, leaving the
         /// resting behaviour unchanged.
         /// </summary>
-        internal Point GetFullPanelEntryScreenCenter() => PointToScreen(new Point(ActualWidth / 2, ActualHeight / 2));
 
         public void ApplyPresentationSettings(AppSettings? settings) => _presentationSettings = settings;
 
