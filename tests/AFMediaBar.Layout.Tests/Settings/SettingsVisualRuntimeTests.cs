@@ -18,6 +18,8 @@ using AFMediaBar.Classes.Services.Media.Smtc;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
+using AFMediaBar.Views.Windows;
+using System.Windows.Controls.Primitives;
 using AFMediaBar.ViewModels.Pages;
 using AFMediaBar.Views.Pages;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -52,6 +54,67 @@ public sealed class SettingsVisualRuntimeTests
     [TestMethod]
     public Task BackdropRefreshCoalescesAndClosingOrDisposalRejectsQueuedWork() =>
         RunIsolatedAsync(nameof(BackdropRefreshCoalescesAndClosingOrDisposalRejectsQueuedWork), WindowBackdropRefreshChecks.VerifyLiveSelection);
+
+    [TestMethod]
+    public Task OutsideClickDismissesInactiveWindowAndKeepsOwnedPopupClicks() =>
+        RunIsolatedAsync(nameof(OutsideClickDismissesInactiveWindowAndKeepsOwnedPopupClicks), app =>
+        {
+            // 不安装全局 Hook 或注入真实鼠标；使用实际 HWND 检查按下快照及其 UI 投递顺序。
+            using var input = new NativeMouseInputMonitor(null!);
+            var work = SystemParameters.WorkArea;
+            var surface = new Border { Background = Brushes.DodgerBlue };
+            var window = new Window { Content = surface, Left = work.Left + 80, Top = work.Top + 80,
+                Width = 180, Height = 100, ShowInTaskbar = false, ShowActivated = false, Topmost = true };
+            var popup = new Popup { PlacementTarget = surface, Placement = PlacementMode.Bottom, StaysOpen = true,
+                Child = new Border { Width = 100, Height = 40, Background = Brushes.DeepPink } };
+            var dismissals = 0;
+            using var dismissal = new WindowOutsideClickDismissal(window, input, () => dismissals++);
+            dismissal.RegisterPopup(popup);
+            void Pump() => app.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            void Press(Point point) => input.PublishButtonPress((int)point.X, (int)point.Y);
+            try
+            {
+                window.Show();
+                Pump();
+                Assert.IsFalse(window.IsActive, "The reproduction must start without activating the panel.");
+                var inside = surface.PointToScreen(new Point(20, 20));
+                var outside = new Point((work.Right - 5) * VisualTreeHelper.GetDpi(window).DpiScaleX,
+                    (work.Top + 5) * VisualTreeHelper.GetDpi(window).DpiScaleY);
+                Press(outside);
+                dismissal.Start();
+                Pump();
+                Assert.AreEqual(0, dismissals, "The click that preceded presentation must not close the new panel.");
+                Press(inside);
+                Pump();
+                Assert.AreEqual(0, dismissals);
+
+                popup.IsOpen = true;
+                Pump();
+                var popupPoint = popup.Child.PointToScreen(new Point(20, 20));
+                Press(popupPoint);
+                popup.IsOpen = false;
+                Pump();
+                Assert.AreEqual(0, dismissals, "Selecting a Popup item may close its HWND before the global press reaches the UI.");
+
+                Press(outside);
+                dismissal.Stop();
+                dismissal.Start();
+                Pump();
+                Assert.AreEqual(0, dismissals, "A late callback from the previous visible session must be rejected.");
+                popup.IsOpen = true;
+                Pump();
+                Press(outside);
+                Pump();
+                Assert.AreEqual(1, dismissals, "An external click must dismiss a window that never became active.");
+                popup.IsOpen = false;
+                dismissal.Start();
+                Press(outside);
+                window.Close();
+                Pump();
+                Assert.AreEqual(1, dismissals, "Closing must unsubscribe and reject already queued clicks.");
+            }
+            finally { popup.IsOpen = false; window.Close(); }
+        });
 
     [TestMethod]
     public Task DeferredPageActivationRejectsAnUnloadedVisit() =>

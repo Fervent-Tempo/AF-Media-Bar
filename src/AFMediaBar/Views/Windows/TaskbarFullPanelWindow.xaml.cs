@@ -8,6 +8,7 @@ using AFMediaBar.Resources;
 using AFMediaBar.ViewModels.Windows;
 using System.Diagnostics;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -22,6 +23,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 {
     private readonly FullPanelPresentationViewModel _presentation;
     private readonly AnchoredWindowPresentation _windowPresentation;
+    private readonly WindowOutsideClickDismissal _outsideClickDismissal;
     private AppSettings? _presentationSettings;
     private AppSettings PresentationSettings => _presentationSettings ?? SettingsManager.Current;
     public void ApplyPresentationSettings(AppSettings? settings)
@@ -64,10 +66,12 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         SystemMetricsMonitorService metricsMonitor,
         WindowAppearanceService appearanceService,
         IDisplayMonitorService displayMonitorService,
-        FullPanelPresentationViewModel presentation)
+        FullPanelPresentationViewModel presentation,
+        NativeMouseInputMonitor mouseInput)
     {
         InitializeComponent();
         _windowPresentation = new(this);
+        _outsideClickDismissal = new(this, mouseInput, RequestClose);
         // MoveToPoint 会先消费轨道点击；仍需暂停进度同步并保存这次定位意图。
         ProgressSlider.AddHandler(PreviewMouseLeftButtonDownEvent,
             new MouseButtonEventHandler(ProgressSlider_MouseLeftButtonDown), handledEventsToo: true);
@@ -134,6 +138,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
             var physicalAnchor = new Point((anchor.Left + anchor.Width / 2) * (monitor?.DpiX ?? 96) / 96d,
                 (anchor.Top + anchor.Height / 2) * (monitor?.DpiY ?? 96) / 96d);
             if (!await _windowPresentation.ShowAsync(physicalAnchor, () => PositionNear(anchor, targetMonitorDeviceId)) || _isClosing) return;
+            _outsideClickDismissal.Start();
             UpdateMetricsSubscription();
             _timer.Start();
             BeginOpenAnimation();
@@ -154,6 +159,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 
         var wasPreparing = _windowPresentation.IsPreparing;
         _windowPresentation.Cancel();
+        _outsideClickDismissal.Stop();
         _isClosing = true;
         CancelProgressSeek();
         _audioInteractionService.CancelDeviceOwner(this);
@@ -630,8 +636,20 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         string.Equals(expected.Artist, current.Artist, StringComparison.Ordinal);
 
 
-    private async void DeviceCombo_DropDownOpened(object sender, EventArgs e) => await RefreshAudioAsync();
-    private async void InputDeviceCombo_DropDownOpened(object sender, EventArgs e) => await RefreshAudioAsync();
+    private async void DeviceCombo_DropDownOpened(object sender, EventArgs e)
+    {
+        RegisterDevicePopup(DeviceCombo);
+        await RefreshAudioAsync();
+    }
+    private async void InputDeviceCombo_DropDownOpened(object sender, EventArgs e)
+    {
+        RegisterDevicePopup(InputDeviceCombo);
+        await RefreshAudioAsync();
+    }
+    private void RegisterDevicePopup(ComboBox combo)
+    {
+        if (combo.Template?.FindName("PART_Popup", combo) is Popup popup) _outsideClickDismissal.RegisterPopup(popup);
+    }
     private async void DeviceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     { if (!_isLoadingDevices && DeviceCombo.SelectedItem is AudioDeviceOption device) await SelectDeviceAsync(device); }
     private async void InputDeviceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -753,6 +771,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         _isClosing = true;
         _audioRefreshGeneration++;
         _windowPresentation.Dispose();
+        _outsideClickDismissal.Dispose();
         _audioInteractionService.DeviceSwitches.Updated -= OnAudioDeviceSwitchUpdated;
         _audioInteractionService.DeviceSwitches.Invalidated -= OnAudioDeviceInvalidated;
         _audioInteractionService.CancelDeviceOwner(this);

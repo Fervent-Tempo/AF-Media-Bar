@@ -12,12 +12,17 @@ public sealed record TrayWheelEventArgs(int Delta, bool IsShiftDown, bool IsLeft
 /// <summary>全局左键事件的屏幕坐标。/ Screen coordinates for a global left-button event.</summary>
 public sealed record NativeMouseButtonEventArgs(int ScreenX, int ScreenY);
 
+// 保存按下时的 HWND 所属链，避免 UI 收到通知前下拉窗口已关闭，导致内部点击被误判。
+internal sealed record NativeMousePressEventArgs(int ScreenX, int ScreenY, IReadOnlyList<nint> WindowChain, long CapturedAt);
+
 /// <summary>
 /// 通过低级鼠标钩子监听托盘滚轮和全局左键，不拦截系统输入。
 /// Watches tray-wheel and global left-button input without consuming system input.
 /// </summary>
 public sealed class NativeMouseInputMonitor : IDisposable
 {
+    private const int WmMiddleButtonDown = 0x0207;
+    private const int WmExtraButtonDown = 0x020B;
     private readonly ShellTrayIconService _trayIcon;
     private readonly NativeMethods.LowLevelMouseProc _callback;
     private readonly Dispatcher _dispatcher;
@@ -108,6 +113,7 @@ public sealed class NativeMouseInputMonitor : IDisposable
 
     public event EventHandler<TrayWheelEventArgs>? WheelChanged;
     public event EventHandler<NativeMouseButtonEventArgs>? LeftButtonPressed;
+    internal event EventHandler<NativeMousePressEventArgs>? ButtonPressed;
 
     /// <summary>
     /// 全局左键抬起（钩子线程观察到后投递到 UI 线程）。陈旧鼠标捕获存续期间 WPF 会把命中测试整体锁进捕获子树，
@@ -310,6 +316,8 @@ public sealed class NativeMouseInputMonitor : IDisposable
                         }
                     });
                 }
+                if (message is NativeMethods.WM_LBUTTONDOWN or NativeMethods.WM_RBUTTONDOWN or WmMiddleButtonDown or WmExtraButtonDown)
+                    PublishButtonPress(data.Point.X, data.Point.Y);
             }
         }
         catch (Exception exception)
@@ -372,6 +380,25 @@ public sealed class NativeMouseInputMonitor : IDisposable
         _dispatcher.BeginInvoke(callback, DispatcherPriority.Input);
     }
 
+    internal void PublishButtonPress(int screenX, int screenY)
+    {
+        var handlers = ButtonPressed;
+        if (_disposed || handlers is null) return;
+        var capturedAt = Stopwatch.GetTimestamp();
+        // 钩子线程只快照 USER32 的窗口身份，再交给 UI；不等待目标窗口或执行关闭逻辑。
+        var hit = NativeMethods.WindowFromPoint(new NativeMethods.POINT { X = screenX, Y = screenY });
+        var root = NativeMethods.GetAncestor(hit, NativeMethods.GA_ROOT);
+        var chain = new List<nint>();
+        const uint Owner = 4;
+        for (var current = root; current != nint.Zero && chain.Count < 32; current = NativeMethods.GetWindow(current, Owner))
+            chain.Add(current);
+        var args = new NativeMousePressEventArgs(screenX, screenY, chain.ToArray(), capturedAt);
+        Post(() =>
+        {
+            if (!_disposed) handlers(this, args);
+        });
+    }
+
     /// <summary>移除鼠标钩子并清理事件。/ Removes the mouse hook and clears events.</summary>
     public void Dispose()
     {
@@ -405,6 +432,7 @@ public sealed class NativeMouseInputMonitor : IDisposable
 
         WheelChanged = null;
         LeftButtonPressed = null;
+        ButtonPressed = null;
         LeftButtonReleased = null;
     }
 }
