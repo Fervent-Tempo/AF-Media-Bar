@@ -29,6 +29,11 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     /// <summary>与在线来源保持一致的门槛：标题对不上就不是同一首。</summary>
     private const int MinimumScore = 60;
 
+    /// <summary>算得上「有独立佐证」的下限：标题几乎一致，且歌手或时长里至少有一项也对得上。</summary>
+    private const double ConfidenceTitleFloor = 0.85;
+    private const double ConfidenceArtistFloor = 0.6;
+    private const double ConfidenceDurationFloor = 0.8;
+
     /// <summary>元数据只扫文件头部，整份歌词扫一遍没有意义。</summary>
     private const int MetadataScanBytes = 4096;
 
@@ -74,7 +79,11 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
 
         // 命中但没歌词不顶掉在线结果：这时当没找到，继续原有链路。
         if (best is not { Score: >= MinimumScore }) return null;
-        return new LyricsResult(LyricsSourceCatalog.LocalFile, best.Document) { MatchScore = best.Score };
+        return new LyricsResult(LyricsSourceCatalog.LocalFile, best.Document)
+        {
+            MatchScore = best.Score,
+            LowConfidence = best.LowConfidence
+        };
     }
 
     /// <summary>歌词文件在曲目里的角色。</summary>
@@ -152,15 +161,16 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         var metadata = ReadMetadata(text);
         var (fileTitle, fileArtist, fileDuration) = SplitFileName(request, baseName);
         var duration = metadata.Duration ?? fileDuration;
-        var score = Math.Max(
-            Score(request, metadata.Title, metadata.Artist, duration),
-            Score(request, fileTitle, fileArtist, duration));
-        if (score < MinimumScore) return null;
+        // 元数据和文件名是两条独立线索，各评一次取更强的一条：哪边写全了就用哪边，不要求两份写法一致。
+        var fromMetadata = Assess(request, metadata.Title, metadata.Artist, duration);
+        var fromFileName = Assess(request, fileTitle, fileArtist, duration);
+        var assessment = Stronger(fromMetadata, fromFileName);
+        if (assessment.Score < MinimumScore) return null;
 
         var (translation, romanization) = ReadCompanions(path, baseName);
         var document = LyricsTextParser.Parse(text, translation, romanization, request,
             request.DurationSeconds ?? duration, request.FilterInfoLines);
-        return new Candidate(path, score, document);
+        return new Candidate(path, assessment.Score, IsLowConfidence(fromMetadata, fromFileName), document);
     }
 
     /// <summary>按扩展名取文本：QRC/KRC 先解密，其余按编码探测。</summary>
@@ -256,7 +266,16 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         return (fileName, null, null);
     }
 
-    private static int Score(LyricsRequest request, string? title, string? artist, double? duration)
+    /// <summary>一条线索（元数据或文件名）的匹配结论：分数，以及各字段各自的证据强度。</summary>
+    private readonly record struct Assessment(int Score, double TitleScore, double? ArtistScore, double? DurationScore);
+
+    /// <summary>两条线索里取更强的一条：先比分数，同分时优先带歌手证据的那条。</summary>
+    private static Assessment Stronger(Assessment left, Assessment right) =>
+        right.Score > left.Score ? right
+        : right.Score == left.Score && left.ArtistScore is null && right.ArtistScore is not null ? right
+        : left;
+
+    private static Assessment Assess(LyricsRequest request, string? title, string? artist, double? duration)
     {
         var titleScore = Compare(request.Title, title);
         var artistScore = HasValue(request.Artist) && HasValue(artist) ? CompareArtist(request.Artist, artist) : (double?)null;
@@ -266,7 +285,20 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
             : (double?)null;
         var weight = 0.6 + (artistScore.HasValue ? 0.3 : 0) + (durationScore.HasValue ? 0.1 : 0);
         var sum = 0.6 * titleScore + (artistScore ?? 0) * 0.3 + (durationScore ?? 0) * 0.1;
-        return (int)Math.Round(100 * sum / weight);
+        return new Assessment((int)Math.Round(100 * sum / weight), titleScore, artistScore, durationScore);
+    }
+
+    /// <summary>
+    /// 只有标题一条线索时判为低置信度：同名翻唱、Live、同名片看起来都一样，得先让在线查一轮。
+    /// 标题可能写在 [ti:]，也可能只在文件名里；歌手同理，所以两条线索的证据合起来看。
+    /// </summary>
+    private static bool IsLowConfidence(Assessment metadata, Assessment filename)
+    {
+        var title = Math.Max(metadata.TitleScore, filename.TitleScore);
+        var artist = new[] { metadata.ArtistScore, filename.ArtistScore }.Max();
+        var duration = new[] { metadata.DurationScore, filename.DurationScore }.Max();
+        if (title < ConfidenceTitleFloor) return true;
+        return artist is { } matched ? matched < ConfidenceArtistFloor : duration is not >= ConfidenceDurationFloor;
     }
 
     /// <summary>
@@ -286,6 +318,8 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     /// <summary>同分时选内容更全的一份，再按路径稳定决胜，避免结果随枚举顺序变化。</summary>
     private static bool Better(Candidate candidate, Candidate current)
     {
+        // 有歌手或时长佐证的一方优先：只靠标题拿满分的同名翻唱，不该压过标题略差但歌手对得上的那份。
+        if (candidate.LowConfidence != current.LowConfidence) return !candidate.LowConfidence;
         if (candidate.Score != current.Score) return candidate.Score > current.Score;
         if (candidate.Document.Lines.Count != current.Document.Lines.Count) return candidate.Document.Lines.Count > current.Document.Lines.Count;
         return string.CompareOrdinal(candidate.Path, current.Path) < 0;
@@ -359,5 +393,5 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     [GeneratedRegex(@"^\[(?<key>ti|ar|al|length):(?<value>[^\]]*)\]", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
     private static partial Regex MetadataLine();
 
-    private sealed record Candidate(string Path, int Score, LyricDocument Document);
+    private sealed record Candidate(string Path, int Score, bool LowConfidence, LyricDocument Document);
 }

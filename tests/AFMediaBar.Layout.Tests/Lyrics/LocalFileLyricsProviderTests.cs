@@ -97,6 +97,8 @@ public sealed class LocalFileLyricsProviderTests
 
         Assert.IsNotNull(result);
         Assert.AreEqual(2, result.Document.Lines.Count);
+        // 歌手只是把别名塞进括号、顺序与请求相反，字符集合一致仍属独立佐证，不能被判成低置信度。
+        Assert.IsFalse(result.LowConfidence);
     }
 
     [TestMethod]
@@ -128,6 +130,49 @@ public sealed class LocalFileLyricsProviderTests
 
         Assert.IsNotNull(result);
         Assert.AreEqual("The story's little yellow flower", result.Document.Lines[0].Translation);
+    }
+
+    [TestMethod]
+    public async Task MarksTitleOnlyMatchAsLowConfidence()
+    {
+        // 请求没有歌手、文件也没写 [ar:] / [length:]：只有标题一条线索，同名翻唱无从区分。
+        File.WriteAllText(Path.Combine(_folder, "晴天.lrc"), "[00:01.00]故事的小黄花");
+        Enable(true, _folder);
+
+        var result = await new LocalFileLyricsProvider().GetLyricsAsync(Request("晴天", string.Empty), CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.IsTrue(result.LowConfidence);
+    }
+
+    [TestMethod]
+    public async Task ArtistOrDurationCorroborationClearsLowConfidence()
+    {
+        File.WriteAllText(Path.Combine(_folder, "晴天.lrc"), "[ar:周杰伦]\n[00:01.00]故事的小黄花");
+        Enable(true, _folder);
+        var byArtist = await new LocalFileLyricsProvider().GetLyricsAsync(Request("晴天", "周杰伦"), CancellationToken.None);
+        Assert.IsNotNull(byArtist);
+        Assert.IsFalse(byArtist.LowConfidence, "歌手对得上就属于有独立佐证。");
+
+        File.WriteAllText(Path.Combine(_folder, "晴天.lrc"), "[length:04:29]\n[00:01.00]故事的小黄花");
+        var byDuration = await new LocalFileLyricsProvider().GetLyricsAsync(
+            new LyricsRequest("晴天", string.Empty, string.Empty, 269.0, null), CancellationToken.None);
+        Assert.IsNotNull(byDuration);
+        Assert.IsFalse(byDuration.LowConfidence, "没有歌手时，时长对得上也算独立佐证。");
+    }
+
+    [TestMethod]
+    public async Task CorroboratedCopyWinsOverTitleOnlyCopy()
+    {
+        // 只靠标题拿满分的翻唱副本，不能压过标题一致且歌手对得上的原版。
+        File.WriteAllText(Path.Combine(_folder, "晴天.lrc"), "[00:01.00]翻唱版");
+        File.WriteAllText(Path.Combine(_folder, "周杰伦 - 晴天.lrc"), "[00:01.00]原版");
+        Enable(true, _folder);
+
+        var result = await new LocalFileLyricsProvider().GetLyricsAsync(Request("晴天", "周杰伦"), CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.AreEqual("原版", result.Document.Lines[0].Text);
     }
 
     [TestMethod]

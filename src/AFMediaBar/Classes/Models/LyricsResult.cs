@@ -32,6 +32,15 @@ public sealed record LyricsResult(string Source, LyricDocument Document)
     /// <summary>有效取词结果的状态；无歌词也保留曲目匹配分。</summary>
     public LyricsResultStatus Status { get; init; } = LyricsResultStatus.Available;
 
+    /// <summary>
+    /// 命中的证据只有标题、没有歌手或时长佐证：同名不同版本（翻唱、Live、同名片）无从区分。
+    /// 这类结果不直接短路在线搜索，在线都没结果时仍然会被采用。
+    /// The match rests on the title alone, with no artist or duration corroboration, so a cover or a same-titled
+    /// track cannot be ruled out. Such a result does not short-circuit the online lookup but is still used when
+    /// every online source comes back empty.
+    /// </summary>
+    public bool LowConfidence { get; init; }
+
     /// <summary>创建确认无歌词的结果；空文档沿用现有呈现与缓存接口。</summary>
     public static LyricsResult NoLyrics(string source, int score = 0) =>
         new(source, LyricDocument.Empty) { Status = LyricsResultStatus.NoLyrics, MatchScore = score };

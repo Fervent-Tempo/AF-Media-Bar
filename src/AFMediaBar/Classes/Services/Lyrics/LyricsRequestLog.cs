@@ -44,7 +44,8 @@ internal sealed class LyricsRequestLog(LyricsRequest request, LyricsSourceSettin
         log?.Info("Lyrics", $"取词结束: request={_id} title=\"{request.Title}\" artist=\"{request.Artist}\" " +
             $"playbackSource={request.PlaybackSourceId ?? "none"} rule={settings.Rule}/{settings.AttemptMode}/{settings.ResultMode} " +
             $"attempts=[{attempts}] source={result?.Source ?? "none"} score={result?.MatchScore.ToString() ?? "none"} " +
-            $"status={result?.Status.ToString() ?? "FailedOrUnmatched"} elapsed={Stopwatch.GetElapsedTime(_started).TotalMilliseconds:0}ms");
+            $"status={result?.Status.ToString() ?? "FailedOrUnmatched"}{(result?.LowConfidence == true ? " confidence=low" : string.Empty)} " +
+            $"elapsed={Stopwatch.GetElapsedTime(_started).TotalMilliseconds:0}ms");
         return result;
     }
 }

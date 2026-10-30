@@ -57,10 +57,12 @@ public sealed class LyricsService
         var started = Stopwatch.GetTimestamp();
         // 默认本地排在所有在线规则之前：命中就直接用，未命中或解析失败才继续在线链路。
         // 它不参与启用列表与排序，因此用户怎么排在线来源都不会把本地挤到后面。
+        LyricsResult? localFirst = null;
         if (!sourceSettings.LocalFallbackOnly)
         {
-            var localFirst = await TryLocalAsync(effectiveRequest, Remaining(started), trace, cancellationToken).ConfigureAwait(false);
-            if (IsAvailable(localFirst)) return trace.Finish(localFirst);
+            localFirst = await TryLocalAsync(effectiveRequest, Remaining(started), trace, cancellationToken).ConfigureAwait(false);
+            // 有歌手或时长佐证的命中直接采信；只靠标题命中的先让在线查一轮，同名翻唱才不会顶掉原版。
+            if (localFirst is { LowConfidence: false } confident && IsAvailable(confident)) return trace.Finish(confident);
         }
 
         var result = sourceSettings.Rule == LyricsSourceRule.Manual
@@ -73,6 +75,9 @@ public sealed class LyricsService
             var fallback = await TryLocalAsync(effectiveRequest, LocalFallbackBudget(started), trace, cancellationToken).ConfigureAwait(false);
             if (IsAvailable(fallback)) return trace.Finish(fallback);
         }
+
+        // 在线也没给出歌词时，低置信度的本地命中仍然比没有歌词强。
+        if (!IsAvailable(result) && IsAvailable(localFirst)) return trace.Finish(localFirst);
 
         return trace.Finish(result);
     }
