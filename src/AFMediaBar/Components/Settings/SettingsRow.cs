@@ -96,6 +96,16 @@ public class SettingsRow : HeaderedContentControl
         new PropertyMetadata(SettingsChipTone.Neutral));
 
     /// <summary>
+    /// 说明文本末尾的圆形提示：文字只在悬停时出现，为空时不显示图标。
+    /// A round hint at the end of the description: the text only appears on hover, and an empty value hides the icon.
+    /// </summary>
+    public static readonly DependencyProperty HintProperty = DependencyProperty.Register(
+        nameof(Hint),
+        typeof(string),
+        typeof(SettingsRow),
+        new PropertyMetadata(string.Empty));
+
+    /// <summary>
     /// 该行是否位于展开体内。子卡片使用较小的图标、圆角与内边距表达层级。
     /// </summary>
     public static readonly DependencyProperty IsNestedProperty = DependencyProperty.Register(
@@ -144,6 +154,13 @@ public class SettingsRow : HeaderedContentControl
     {
         get => (SettingsChipTone)GetValue(BadgeToneProperty);
         set => SetValue(BadgeToneProperty, value);
+    }
+
+    /// <summary>说明末尾的悬停提示文本。/ Hover text behind the round hint at the end of the description.</summary>
+    public string Hint
+    {
+        get => (string)GetValue(HintProperty);
+        set => SetValue(HintProperty, value);
     }
 
     /// <summary>是否嵌在展开器内部。/ Whether the row is nested inside an expander.</summary>

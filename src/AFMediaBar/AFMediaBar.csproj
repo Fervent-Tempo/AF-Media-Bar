@@ -61,6 +61,7 @@
     <PackageReference Include="F23.StringSimilarity" Version="7.0.1" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
     <PackageReference Include="MicaWPF" Version="7.1.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.14" />
     <PackageReference Include="WPF-UI" Version="4.2.0" />
     <PackageReference Include="WPF-UI.DependencyInjection" Version="4.2.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.1" />

@@ -33,6 +33,15 @@ public static class LyricsSourceCatalog
     public const string SodaMusic = "SodaMusic";
 
     /// <summary>
+    /// 本地歌词文件来源。它不在在线目录里，也不参与来源排序：默认先跑这一阶段，命中且置信就直接用；
+    /// 证据不足或开启了「仅在线未命中时使用」时，改由在线先查、本地兜底。
+    /// The local lyric-file source. It is not part of the online catalogue and never takes part in source ordering: it runs
+    /// first by default and is used directly when the hit is confident; otherwise the online sources go first and local
+    /// remains the fallback.
+    /// </summary>
+    public const string LocalFile = "LocalFile";
+
+    /// <summary>
     /// 来源展示与备用结果同分时的稳定顺序，不决定优先阶段。
     /// Stable display and fallback tie order; does not determine the preferred stage.
     /// </summary>

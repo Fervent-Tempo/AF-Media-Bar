@@ -11,7 +11,7 @@ public sealed class LyricsService
 {
     /// <summary>单源等待上限。/ Per-source wait limit.</summary>
     public static readonly TimeSpan DefaultPerSourceBudget = TimeSpan.FromSeconds(6);
-    /// <summary>包括优先阶段的总等待上限。/ Total wait limit including the preferred stage.</summary>
+    /// <summary>在线阶段（含优先源与备用源）的总等待上限；本地阶段有自己的一份预算，不占这里。/ Total wait limit for the online stage; the local stage has its own budget.</summary>
     public static readonly TimeSpan DefaultTotalBudget = TimeSpan.FromSeconds(12);
     /// <summary>手动规则的单源等待上限，不受默认整链预算限制。</summary>
     public static readonly TimeSpan DefaultManualPerSourceBudget = TimeSpan.FromSeconds(5);
@@ -20,6 +20,7 @@ public sealed class LyricsService
     private readonly TimeSpan _totalBudget;
     private readonly TimeSpan _manualPerSourceBudget;
     private readonly RepeatedFailureReporter _failures = new();
+    private readonly ILyricsProvider? _localProvider;
 
     /// <summary>使用默认预算创建协调器。/ Creates the coordinator with default budgets.</summary>
     public LyricsService(params ILyricsProvider[] providers) : this(DefaultPerSourceBudget, DefaultTotalBudget, providers) { }
@@ -27,6 +28,10 @@ public sealed class LyricsService
     /// <summary>使用显式预算创建协调器。/ Creates the coordinator with explicit wait budgets.</summary>
     public LyricsService(TimeSpan perSourceBudget, TimeSpan totalBudget, params ILyricsProvider[] providers)
         : this(perSourceBudget, totalBudget, DefaultManualPerSourceBudget, providers) { }
+
+    /// <summary>带本地来源的构造：本地默认先跑一次，保守模式改为在线全空之后兜底。/ Creates the coordinator with a local source that runs first by default and only as a fallback in conservative mode.</summary>
+    public LyricsService(TimeSpan perSourceBudget, TimeSpan totalBudget, ILyricsProvider? localProvider, params ILyricsProvider[] providers)
+        : this(perSourceBudget, totalBudget, DefaultManualPerSourceBudget, providers) => _localProvider = localProvider;
 
     internal LyricsService(TimeSpan perSourceBudget, TimeSpan totalBudget, TimeSpan manualPerSourceBudget, params ILyricsProvider[] providers)
     {
@@ -49,38 +54,89 @@ public sealed class LyricsService
         var sourceSettings = settings.LyricsSource.Normalize();
         var active = LyricsSourcePolicy.ResolveActive(_providers, sourceSettings);
         var trace = new LyricsRequestLog(effectiveRequest, sourceSettings, AppLogService.Current);
-        if (sourceSettings.Rule == LyricsSourceRule.Manual)
-            return await GetManualLyricsAsync(effectiveRequest, active, sourceSettings, trace, cancellationToken).ConfigureAwait(false);
+        // 默认本地排在所有在线规则之前：命中就直接用，未命中或解析失败才继续在线链路。
+        // 它不参与启用列表与排序，因此用户怎么排在线来源都不会把本地挤到后面。
+        // 开关关闭时整段跳过：不给它留预算，也不会在日志里留下一次空的本地尝试。
+        var useLocal = sourceSettings.LocalEnabled;
+        LyricsResult? localFirst = null;
+        if (useLocal && !sourceSettings.LocalFallbackOnly)
+        {
+            // 本地是独立阶段：用自己的单来源预算，耗时不计入在线总预算。
+            localFirst = await TryLocalAsync(effectiveRequest, _perSourceBudget, trace, cancellationToken).ConfigureAwait(false);
+            // 有歌手或时长佐证的命中直接采信；只靠标题命中的先让在线查一轮，同名翻唱才不会顶掉原版。
+            if (localFirst is { LowConfidence: false } confident && IsAvailable(confident)) return trace.Finish(confident);
+        }
+
+        // 在线阶段从本地结束后重新计时，本地扫目录再慢也不会吃掉在线的回退机会。
+        var onlineStarted = Stopwatch.GetTimestamp();
+        var result = sourceSettings.Rule == LyricsSourceRule.Manual
+            ? await GetManualLyricsAsync(effectiveRequest, active, sourceSettings, trace, cancellationToken).ConfigureAwait(false)
+            : await GetDefaultLyricsAsync(effectiveRequest, active, onlineStarted, trace, cancellationToken).ConfigureAwait(false);
+
+        // 保守模式：在线来源一个都没给出歌词时才用本地兜底，避免同名本地文件顶掉本来正常的在线歌词。
+        if (useLocal && sourceSettings.LocalFallbackOnly && !IsAvailable(result))
+        {
+            var fallback = await TryLocalAsync(effectiveRequest, _perSourceBudget, trace, cancellationToken).ConfigureAwait(false);
+            if (IsAvailable(fallback)) return trace.Finish(fallback);
+        }
+
+        // 在线也没给出歌词时，低置信度的本地命中仍然比没有歌词强。
+        if (!IsAvailable(result) && IsAvailable(localFirst)) return trace.Finish(localFirst);
+
+        return trace.Finish(result);
+    }
+
+    /// <summary>跑一次本地来源；未配置或没命中时返回 null。/ Runs the local source once and returns null when it is unconfigured or finds nothing.</summary>
+    private async Task<LyricsResult?> TryLocalAsync(LyricsRequest request, TimeSpan budget, LyricsRequestLog trace, CancellationToken cancellationToken)
+    {
+        if (_localProvider is not { } local) return null;
+        using var work = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        try
+        {
+            var result = await TryProviderAsync(local, request, budget, work.Token, trace).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            return result;
+        }
+        finally { work.Cancel(); }
+    }
+
+    private async Task<LyricsResult?> GetDefaultLyricsAsync(LyricsRequest request, IReadOnlyList<ILyricsProvider> active,
+        long started, LyricsRequestLog trace, CancellationToken cancellationToken)
+    {
         var plan = LyricsRetrievalPolicy.Plan(_providers, active);
-        var started = Stopwatch.GetTimestamp();
         using var work = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         LyricsResult? preferredResult = null;
         try
         {
             if (plan.Preferred is { } preferred)
             {
-                preferredResult = await TryProviderAsync(preferred, effectiveRequest, Remaining(started), work.Token, trace).ConfigureAwait(false);
+                preferredResult = await TryProviderAsync(preferred, request, Remaining(started), work.Token, trace).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
                 if (preferredResult is not null && preferredResult.MatchScore >= LyricsRetrievalPolicy.PreferredMinimumScore)
-                    return trace.Finish(preferredResult);
+                    return preferredResult;
             }
             cancellationToken.ThrowIfCancellationRequested();
             var budget = Remaining(started);
-            if (budget <= TimeSpan.Zero) return trace.Finish(preferredResult);
+            if (budget <= TimeSpan.Zero)
+            {
+                // 优先源可能用尽在线总预算：还有备用源时仍给一份单来源预算，否则「有回退」只是名义上的。
+                if (plan.Fallbacks.Count == 0) return preferredResult;
+                budget = _perSourceBudget;
+            }
             // 等的是各自受预算约束的包装任务，不会无限等待底层歌词库。
-            var tasks = plan.Fallbacks.Select(provider => TryProviderAsync(provider, effectiveRequest, budget, work.Token, trace)).ToArray();
+            var tasks = plan.Fallbacks.Select(provider => TryProviderAsync(provider, request, budget, work.Token, trace)).ToArray();
             var results = await Task.WhenAll(tasks).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             // Provider identity owns routing; a result's display/source label may differ from SourceName.
             var currentPlayback = plan.Preferred is { } currentPreferred &&
-                LyricsSourcePolicy.IsCurrentPlaybackSource(effectiveRequest.PlaybackSourceId, currentPreferred.SourceName)
+                LyricsSourcePolicy.IsCurrentPlaybackSource(request.PlaybackSourceId, currentPreferred.SourceName)
                 ? preferredResult : null;
             for (var index = 0; currentPlayback is null && index < plan.Fallbacks.Count; index++)
             {
-                if (LyricsSourcePolicy.IsCurrentPlaybackSource(effectiveRequest.PlaybackSourceId, plan.Fallbacks[index].SourceName))
+                if (LyricsSourcePolicy.IsCurrentPlaybackSource(request.PlaybackSourceId, plan.Fallbacks[index].SourceName))
                     currentPlayback = results[index];
             }
-            return trace.Finish(LyricsRetrievalPolicy.Select(results, preferredResult, currentPlayback));
+            return LyricsRetrievalPolicy.Select(results, preferredResult, currentPlayback);
         }
         finally { work.Cancel(); }
     }
@@ -99,10 +155,10 @@ public sealed class LyricsService
                     cancellationToken.ThrowIfCancellationRequested();
                     var result = await TryProviderAsync(provider, request, _manualPerSourceBudget, work.Token, trace).ConfigureAwait(false);
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (IsAvailable(result)) return trace.Finish(result);
+                    if (IsAvailable(result)) return result;
                     if (result?.Status == LyricsResultStatus.NoLyrics) noLyrics ??= result;
                 }
-                return trace.Finish(noLyrics);
+                return noLyrics;
             }
 
             var firstAvailable = new TaskCompletionSource<LyricsResult?>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -122,18 +178,18 @@ public sealed class LyricsService
                 await Task.WhenAny(firstAvailable.Task, all).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
                 if (firstAvailable.Task.IsCompletedSuccessfully)
-                    return trace.Finish(await firstAvailable.Task.ConfigureAwait(false));
+                    return await firstAvailable.Task.ConfigureAwait(false);
             }
             // 顺序等待已同时启动的任务；后序即使先返回，也不能越过仍在等待的前序来源。
             foreach (var task in tasks)
             {
                 var result = await task.ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
-                if (IsAvailable(result)) return trace.Finish(result);
+                if (IsAvailable(result)) return result;
                 if (result?.Status == LyricsResultStatus.NoLyrics) noLyrics ??= result;
             }
             cancellationToken.ThrowIfCancellationRequested();
-            return trace.Finish(noLyrics);
+            return noLyrics;
         }
         finally { work.Cancel(); }
     }

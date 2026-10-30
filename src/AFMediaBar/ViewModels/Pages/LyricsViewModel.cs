@@ -249,6 +249,52 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         ? "Lyrics.Sources.Result.SequentialHint" : SourceResultMode == LyricsSourceResultMode.FirstAvailable
             ? "Lyrics.Sources.Result.FirstAvailable.Description" : "Lyrics.Sources.Result.Ordered.Description");
 
+    /// <summary>是否优先读取本地歌词文件；关闭时不会碰任何目录。</summary>
+    public bool LocalLyricsEnabled
+    {
+        get => _configuration.Current.LyricsSource.LocalEnabled;
+        set => _configuration.SetLyricsSourceSettings(_configuration.Current.LyricsSource with { LocalEnabled = value });
+    }
+
+    /// <summary>已添加的本地歌词目录，按列表顺序查找。</summary>
+    public IReadOnlyList<string> LocalLyricsFolders => _configuration.Current.LyricsSource.LocalFolders ?? [];
+
+    /// <summary>只在在线来源都没找到时才用本地，避免同名文件顶掉正常的在线歌词。</summary>
+    public bool LocalLyricsFallbackOnly
+    {
+        get => _configuration.Current.LyricsSource.LocalFallbackOnly;
+        set => _configuration.SetLyricsSourceSettings(_configuration.Current.LyricsSource with { LocalFallbackOnly = value });
+    }
+
+    /// <summary>添加目录；空白与重复路径直接忽略，多选时一次写入，避免反复触发设置变更。</summary>
+    public void AddLocalLyricsFolders(IEnumerable<string> folders)
+    {
+        var current = LocalLyricsFolders;
+        var added = folders
+            .Select(folder => folder.Trim())
+            .Where(folder => folder.Length > 0 && !current.Contains(folder, StringComparer.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (added.Length == 0) return;
+        _configuration.SetLyricsSourceSettings(_configuration.Current.LyricsSource with
+        {
+            LocalFolders = [.. current, .. added]
+        });
+    }
+
+    /// <summary>移除目录。</summary>
+    public void RemoveLocalLyricsFolder(string folder)
+    {
+        var folders = LocalLyricsFolders;
+        if (!folders.Contains(folder, StringComparer.OrdinalIgnoreCase)) return;
+        _configuration.SetLyricsSourceSettings(_configuration.Current.LyricsSource with
+        {
+            LocalFolders = folders
+                .Where(item => !string.Equals(item, folder, StringComparison.OrdinalIgnoreCase))
+                .ToArray()
+        });
+    }
+
     private void RaiseSourceProperties()
     {
         OnPropertyChanged(nameof(SourceRule));
@@ -257,6 +303,9 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(SourceResultMode));
         OnPropertyChanged(nameof(SourceRuleDescription));
         OnPropertyChanged(nameof(SourceResultDescription));
+        OnPropertyChanged(nameof(LocalLyricsEnabled));
+        OnPropertyChanged(nameof(LocalLyricsFallbackOnly));
+        OnPropertyChanged(nameof(LocalLyricsFolders));
     }
 
     /// <summary>是否一个来源都没启用：此时不会请求任何歌词服务，页面用提示条说明后果。
