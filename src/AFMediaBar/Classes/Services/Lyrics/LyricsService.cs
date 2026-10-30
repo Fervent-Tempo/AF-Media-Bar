@@ -11,7 +11,7 @@ public sealed class LyricsService
 {
     /// <summary>单源等待上限。/ Per-source wait limit.</summary>
     public static readonly TimeSpan DefaultPerSourceBudget = TimeSpan.FromSeconds(6);
-    /// <summary>包括优先阶段的总等待上限。/ Total wait limit including the preferred stage.</summary>
+    /// <summary>在线阶段（含优先源与备用源）的总等待上限；本地阶段有自己的一份预算，不占这里。/ Total wait limit for the online stage; the local stage has its own budget.</summary>
     public static readonly TimeSpan DefaultTotalBudget = TimeSpan.FromSeconds(12);
     /// <summary>手动规则的单源等待上限，不受默认整链预算限制。</summary>
     public static readonly TimeSpan DefaultManualPerSourceBudget = TimeSpan.FromSeconds(5);
@@ -54,25 +54,27 @@ public sealed class LyricsService
         var sourceSettings = settings.LyricsSource.Normalize();
         var active = LyricsSourcePolicy.ResolveActive(_providers, sourceSettings);
         var trace = new LyricsRequestLog(effectiveRequest, sourceSettings, AppLogService.Current);
-        var started = Stopwatch.GetTimestamp();
         // 默认本地排在所有在线规则之前：命中就直接用，未命中或解析失败才继续在线链路。
         // 它不参与启用列表与排序，因此用户怎么排在线来源都不会把本地挤到后面。
         LyricsResult? localFirst = null;
         if (!sourceSettings.LocalFallbackOnly)
         {
-            localFirst = await TryLocalAsync(effectiveRequest, LocalStageBudget(started), trace, cancellationToken).ConfigureAwait(false);
+            // 本地是独立阶段：用自己的单来源预算，耗时不计入在线总预算。
+            localFirst = await TryLocalAsync(effectiveRequest, _perSourceBudget, trace, cancellationToken).ConfigureAwait(false);
             // 有歌手或时长佐证的命中直接采信；只靠标题命中的先让在线查一轮，同名翻唱才不会顶掉原版。
             if (localFirst is { LowConfidence: false } confident && IsAvailable(confident)) return trace.Finish(confident);
         }
 
+        // 在线阶段从本地结束后重新计时，本地扫目录再慢也不会吃掉在线的回退机会。
+        var onlineStarted = Stopwatch.GetTimestamp();
         var result = sourceSettings.Rule == LyricsSourceRule.Manual
             ? await GetManualLyricsAsync(effectiveRequest, active, sourceSettings, trace, cancellationToken).ConfigureAwait(false)
-            : await GetDefaultLyricsAsync(effectiveRequest, active, started, trace, cancellationToken).ConfigureAwait(false);
+            : await GetDefaultLyricsAsync(effectiveRequest, active, onlineStarted, trace, cancellationToken).ConfigureAwait(false);
 
         // 保守模式：在线来源一个都没给出歌词时才用本地兜底，避免同名本地文件顶掉本来正常的在线歌词。
         if (sourceSettings.LocalFallbackOnly && !IsAvailable(result))
         {
-            var fallback = await TryLocalAsync(effectiveRequest, LocalFallbackBudget(started), trace, cancellationToken).ConfigureAwait(false);
+            var fallback = await TryLocalAsync(effectiveRequest, _perSourceBudget, trace, cancellationToken).ConfigureAwait(false);
             if (IsAvailable(fallback)) return trace.Finish(fallback);
         }
 
@@ -106,17 +108,19 @@ public sealed class LyricsService
         {
             if (plan.Preferred is { } preferred)
             {
-                // 还有备用来源时，优先阶段只拿一半预算：优先源超时不能把备用来源的机会一起耗掉。
-                var preferredBudget = Remaining(started);
-                if (plan.Fallbacks.Count > 0) preferredBudget /= 2;
-                preferredResult = await TryProviderAsync(preferred, request, preferredBudget, work.Token, trace).ConfigureAwait(false);
+                preferredResult = await TryProviderAsync(preferred, request, Remaining(started), work.Token, trace).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
                 if (preferredResult is not null && preferredResult.MatchScore >= LyricsRetrievalPolicy.PreferredMinimumScore)
                     return preferredResult;
             }
             cancellationToken.ThrowIfCancellationRequested();
             var budget = Remaining(started);
-            if (budget <= TimeSpan.Zero) return preferredResult;
+            if (budget <= TimeSpan.Zero)
+            {
+                // 优先源可能用尽在线总预算：还有备用源时仍给一份单来源预算，否则「有回退」只是名义上的。
+                if (plan.Fallbacks.Count == 0) return preferredResult;
+                budget = _perSourceBudget;
+            }
             // 等的是各自受预算约束的包装任务，不会无限等待底层歌词库。
             var tasks = plan.Fallbacks.Select(provider => TryProviderAsync(provider, request, budget, work.Token, trace)).ToArray();
             var results = await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -190,21 +194,6 @@ public sealed class LyricsService
 
     private static bool IsAvailable(LyricsResult? result) =>
         result is { Status: LyricsResultStatus.Available, Document.Lines.Count: > 0 };
-
-    /// <summary>本地阶段最多用掉剩余总预算的一半，剩下留给在线来源。/ Caps the local stage at half of what remains.</summary>
-    private TimeSpan LocalStageBudget(long started)
-    {
-        var remaining = Remaining(started);
-        var half = (_totalBudget - Stopwatch.GetElapsedTime(started)) / 2;
-        return half < remaining ? half : remaining;
-    }
-
-    /// <summary>本地兜底至少有一份单来源预算：在线阶段可能已耗尽总预算，不能让已经找到文件的本地来源白等。</summary>
-    private TimeSpan LocalFallbackBudget(long started)
-    {
-        var remaining = Remaining(started);
-        return remaining > TimeSpan.Zero ? remaining : _perSourceBudget;
-    }
 
     private TimeSpan Remaining(long started)
     {

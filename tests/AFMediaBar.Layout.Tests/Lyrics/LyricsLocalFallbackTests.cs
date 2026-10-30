@@ -101,25 +101,39 @@ public sealed class LyricsLocalFallbackTests
     }
 
     [TestMethod]
-    public async Task LocalTimeoutStillLeavesBudgetForTheOnlineFallback()
+    public async Task LocalStageDoesNotConsumeTheOnlineBudget()
     {
-        // 本地与优先源都超时：预算不能被它们吃干，备用源必须还有机会被调用。
+        // 本地扫目录超时也不能吃掉在线预算：总预算与本地预算相同时，优先源仍应被调用。
         var local = new Provider(LyricsSourceCatalog.LocalFile, async token =>
         {
             await Task.Delay(500, token);
             return null;
         });
+        var preferred = Fixed(LyricsSourceCatalog.QQMusic, "Preferred");
+        var fallback = Fixed(LyricsSourceCatalog.Lrclib, "Fallback");
+        var service = new LyricsService(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100), local, preferred, fallback);
+
+        var result = await service.GetLyricsAsync(Request, CancellationToken.None);
+
+        Assert.AreEqual("Preferred", result?.Source);
+        Assert.AreEqual(1, preferred.Calls);
+    }
+
+    [TestMethod]
+    public async Task PreferredTimeoutStillLeavesTheFallbackItsBudget()
+    {
+        // 优先源用尽在线总预算时，备用源仍拿到一份单来源预算，不会被名义上的回退骗过去。
         var preferred = new Provider(LyricsSourceCatalog.QQMusic, async token =>
         {
             await Task.Delay(500, token);
             return null;
         });
-        var fallback = Fixed(LyricsSourceCatalog.Lrclib, "Online");
-        var service = new LyricsService(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(200), local, preferred, fallback);
+        var fallback = Fixed(LyricsSourceCatalog.Lrclib, "Fallback");
+        var service = new LyricsService(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100), preferred, fallback);
 
         var result = await service.GetLyricsAsync(Request, CancellationToken.None);
 
-        Assert.AreEqual("Online", result?.Source);
+        Assert.AreEqual("Fallback", result?.Source);
         Assert.AreEqual(1, fallback.Calls);
     }
 
