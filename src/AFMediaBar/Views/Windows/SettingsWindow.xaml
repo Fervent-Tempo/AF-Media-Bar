@@ -47,6 +47,7 @@
     <Grid>
         <ui:TitleBar
             x:Name="TitleBar"
+            Height="40"
             Title="{Binding ViewModel.ApplicationTitle}"
             Grid.Row="0"
             CloseWindowByDoubleClickOnIcon="True">
@@ -71,6 +72,7 @@
             PaneDisplayMode="Left"
             IsFooterSeparatorVisible="false"
             OpenPaneLength="228"
+            ItemTemplate="{StaticResource AfSettingsSidebarItemTemplate}"
             IsPaneOpen="True"
             TransitionDuration="180"
             TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}">
@@ -109,7 +111,7 @@
             </ui:NavigationView.AutoSuggestBox>
 
             <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem x:Name="UpdateNoticeNavItem" Click="UpdateNoticeNavItem_Click" TargetPageType="{x:Type pages:ReleaseHighlightsPage}">
+                <ui:NavigationViewItem x:Name="UpdateNoticeNavItem" FocusVisualStyle="{x:Null}" Click="UpdateNoticeNavItem_Click" TargetPageType="{x:Type pages:ReleaseHighlightsPage}">
                     <ui:NavigationViewItem.Content>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{DynamicResource Loc.Common.Page.ReleaseHighlights}" />

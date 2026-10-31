@@ -44,6 +44,7 @@ public sealed class SettingsVisualRuntimeTests
             VerifyNumericBinding(app);
             VerifyPageMarkup(app);
             VerifyCategoryAndPreviewRuntime();
+            SettingsSidebarVisualChecks.Verify(app);
             VerifyGeneratedRowSearch();
             VerifyMetricStylePicker();
             VerifyFullPanelMinimumSize();

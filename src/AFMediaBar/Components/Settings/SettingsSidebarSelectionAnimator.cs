@@ -107,10 +107,13 @@ public sealed class SettingsSidebarSelectionAnimator : IDisposable
             _targetBounds = Rect.Empty;
             return;
         }
+        // 一级菜单的实际高度包含展开子项，选中面只跟随模板中的标题行。
+        var row = item.Template?.FindName("MainBorder", item) as FrameworkElement ?? item;
+        if (row.ActualWidth < 8d || row.ActualHeight < 8d) return;
         Point origin;
-        try { origin = item.TranslatePoint(new Point(), _overlay); }
+        try { origin = row.TranslatePoint(new Point(), _overlay); }
         catch (InvalidOperationException) { return; }
-        var bounds = new Rect(origin.X + 2d, origin.Y + 2d, item.ActualWidth - 4d, item.ActualHeight - 4d);
+        var bounds = new Rect(origin.X + 2d, origin.Y + 2d, row.ActualWidth - 4d, row.ActualHeight - 4d);
         DependencyObject? ancestor = VisualTreeHelper.GetParent(item);
         while (ancestor is not null && ancestor is not ScrollViewer && !ReferenceEquals(ancestor, _navigation))
             ancestor = VisualTreeHelper.GetParent(ancestor);

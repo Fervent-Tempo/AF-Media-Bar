@@ -378,6 +378,7 @@ namespace AFMediaBar.Views.Windows
             {
                 var next = SettingsPageProvider.PageTypes.First(pair => pair.Value == destination.GetType()).Key;
                 SetDestination(new(next, null));
+                HighlightSidebarItem(destination.GetType());
             }
             ReplayPageReveal(args.Page as Page);
         }
@@ -521,19 +522,15 @@ namespace AFMediaBar.Views.Windows
                 }
                 var sectionItem = new NavigationViewItem
                 {
-                    Icon = new SymbolIcon(Enum.Parse<SymbolRegular>(section.IconName))
+                    Icon = new SymbolIcon(Enum.Parse<SymbolRegular>(section.IconName)),
+                    FocusVisualStyle = null,
+                    Command = new RelayCommand(() => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+                    {
+                        if (!_closed) NavigateSection(section.Id);
+                    })))
                 };
                 sectionItem.SetResourceReference(ContentControl.ContentProperty, "Loc." + section.TitleKey);
                 foreach (var page in pages) sectionItem.MenuItems.Add(CreateNavigationItem(page, includeIcon: false));
-                sectionItem.Click += (_, args) =>
-                {
-                    if (!ReferenceEquals(args.Source, sectionItem)) return;
-                    Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
-                    {
-                        if (_closed) return;
-                        NavigateSection(section.Id);
-                    }));
-                };
                 _sectionItems[section.Id] = sectionItem;
                 RootNavigation.MenuItems.Add(sectionItem);
             }
@@ -551,7 +548,8 @@ namespace AFMediaBar.Views.Windows
             var item = new NavigationViewItem
             {
                 TargetPageType = SettingsPageProvider.PageTypes[definition.Key],
-                NavigationCacheMode = NavigationCacheMode.Disabled
+                NavigationCacheMode = NavigationCacheMode.Disabled,
+                FocusVisualStyle = null
             };
             if (includeIcon) item.Icon = new SymbolIcon(Enum.Parse<SymbolRegular>(definition.IconName));
             item.SetResourceReference(ContentControl.ContentProperty, "Loc." + definition.TitleKey);

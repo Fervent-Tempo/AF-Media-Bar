@@ -368,6 +368,78 @@
         </Border>
     </ControlTemplate>
 
+    <Style x:Key="AfSettingsChevronSurfaceStyle" TargetType="Border">
+        <Setter Property="Width" Value="32"/>
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Background" Value="{DynamicResource AfSettingsInputBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <!-- 标题行与子项各自呈现，一级选中态不覆盖展开的列表。保留库所需的箭头命名部件。 -->
+    <ControlTemplate x:Key="AfSettingsSidebarItemTemplate" TargetType="{x:Type ui:NavigationViewItem}">
+        <Grid>
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+            <Border x:Name="MainBorder" MinHeight="40" Background="Transparent" CornerRadius="7" BorderBrush="Transparent" BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="40"/><ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ContentPresenter Content="{TemplateBinding Icon}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      TextElement.FontSize="16" TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    <ContentPresenter x:Name="ItemContent" Grid.Column="1" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      Margin="0,0,8,0" VerticalAlignment="Center" RecognizesAccessKey="True"
+                                      TextElement.FontSize="14" TextElement.Foreground="{TemplateBinding Foreground}"
+                                      TextElement.FontWeight="{TemplateBinding FontWeight}"/>
+                    <ContentPresenter x:Name="PART_InfoBadge" Grid.Column="2" Content="{TemplateBinding InfoBadge}" VerticalAlignment="Center"/>
+                    <Grid x:Name="PART_ChevronGrid" Grid.Column="3" Width="40" Margin="0,3,0,3" Visibility="Collapsed">
+                        <Border x:Name="ChevronSurface" Style="{StaticResource AfSettingsChevronSurfaceStyle}">
+                            <ui:SymbolIcon x:Name="ChevronIcon" Symbol="ChevronDown24" FontSize="16"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Border>
+            <ItemsControl x:Name="MenuItemsPresenter" Grid.Row="1" ItemsSource="{TemplateBinding MenuItems}"
+                          Margin="16,0,0,0" Visibility="Collapsed" Focusable="False" KeyboardNavigation.DirectionalNavigation="Contained">
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="{x:Type ui:NavigationViewItem}" BasedOn="{StaticResource {x:Type ui:NavigationViewItem}}">
+                        <Setter Property="Template" Value="{DynamicResource AfSettingsSidebarItemTemplate}"/>
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
+            </ItemsControl>
+        </Grid>
+        <ControlTemplate.Triggers>
+            <Trigger Property="HasMenuItems" Value="True"><Setter TargetName="PART_ChevronGrid" Property="Visibility" Value="Visible"/></Trigger>
+            <Trigger Property="IsExpanded" Value="True">
+                <Setter TargetName="MenuItemsPresenter" Property="Visibility" Value="Visible"/>
+                <Setter TargetName="ChevronIcon" Property="Symbol" Value="ChevronUp24"/>
+            </Trigger>
+            <Trigger SourceName="MainBorder" Property="IsMouseOver" Value="True">
+                <Setter TargetName="MainBorder" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}"/>
+            </Trigger>
+            <Trigger SourceName="PART_ChevronGrid" Property="IsMouseOver" Value="True">
+                <Setter TargetName="ChevronSurface" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="MainBorder" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}"/>
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter TargetName="MainBorder" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}"/>
+            </Trigger>
+            <DataTrigger Binding="{Binding IsPaneOpen, RelativeSource={RelativeSource AncestorType={x:Type ui:NavigationView}}}" Value="False">
+                <Setter TargetName="ItemContent" Property="Visibility" Value="Collapsed"/>
+                <Setter TargetName="PART_InfoBadge" Property="Visibility" Value="Collapsed"/>
+                <Setter TargetName="PART_ChevronGrid" Property="Visibility" Value="Collapsed"/>
+                <Setter TargetName="MenuItemsPresenter" Property="Visibility" Value="Collapsed"/>
+            </DataTrigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
     <ControlTemplate x:Key="AfSettingsExpanderToggleTemplate" TargetType="{x:Type ToggleButton}">
         <Border x:Name="HeaderSurface" Padding="{TemplateBinding Padding}" Background="Transparent" CornerRadius="8" BorderBrush="Transparent" BorderThickness="1">
             <Grid>
@@ -376,9 +448,8 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <ContentPresenter VerticalAlignment="Center" Content="{TemplateBinding Content}" />
-                <Border x:Name="ChevronSurface" Grid.Column="1" Width="32" Height="32" Margin="12,0,0,0"
-                        VerticalAlignment="Center" CornerRadius="6" Background="{DynamicResource AfSettingsInputBrush}"
-                        BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1">
+                <Border x:Name="ChevronSurface" Grid.Column="1" Style="{StaticResource AfSettingsChevronSurfaceStyle}" Margin="12,0,0,0"
+                        VerticalAlignment="Center">
                     <ui:SymbolIcon x:Name="ExpandChevron" FontSize="16" Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" Symbol="ChevronDown24" />
                 </Border>
@@ -639,39 +710,27 @@
         <Setter.Value>
             <ControlTemplate TargetType="{x:Type components:SettingsGroupStrip}">
                 <StackPanel Background="Transparent">
-                    <Grid Margin="0,0,0,10">
+                    <Grid Margin="0,0,0,8">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <ui:Button Command="{TemplateBinding BackCommand}" Style="{StaticResource AfSettingsIconButtonStyle}" Appearance="Transparent"
-                                Width="28" Height="34" Padding="0" Margin="0,0,8,0" VerticalAlignment="Center"
-                                ToolTip="{DynamicResource Loc.Integration.Back}" AutomationProperties.Name="{DynamicResource Loc.Integration.Back}">
-                            <ui:SymbolIcon Symbol="ArrowLeft24" FontSize="14"/>
-                        </ui:Button>
-                        <Grid x:Name="PageIcon" Grid.Column="1" Width="34" Height="34" Margin="0,0,12,0"
-                              VerticalAlignment="Center" TextElement.Foreground="{DynamicResource AfAccentBrush}">
-                            <Border Background="{DynamicResource AfAccentBrush}" CornerRadius="9" Opacity="0.16"/>
-                            <ContentControl HorizontalAlignment="Center" VerticalAlignment="Center" Content="{TemplateBinding PageIcon}" Focusable="False" KeyboardNavigation.IsTabStop="False"/>
-                        </Grid>
-                        <WrapPanel x:Name="TitlePath" Grid.Column="2" VerticalAlignment="Center">
+                        <WrapPanel x:Name="TitlePath" Grid.Column="0" VerticalAlignment="Center">
                             <Button x:Name="ParentLink" Command="{TemplateBinding ParentCommand}" Content="{TemplateBinding ParentTitle}"
                                     Padding="0" Background="Transparent" BorderThickness="1" BorderBrush="Transparent"
-                                    FontSize="30" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                    FontSize="28" FontWeight="{DynamicResource AppTextStrongFontWeight}"
                                     Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"
                                     FocusVisualStyle="{DynamicResource AfFocusVisualStyle}" Cursor="Hand">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
                                         <Border x:Name="LinkSurface" Background="Transparent" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="4">
-                                            <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                                            <TextBlock Text="{TemplateBinding Content}" FontSize="{TemplateBinding FontSize}"
+                                                       FontWeight="{TemplateBinding FontWeight}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center"/>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True"><Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/></Trigger>
@@ -682,12 +741,11 @@
                                 </Button.Template>
                             </Button>
                             <ui:SymbolIcon x:Name="ParentChevron" Symbol="ChevronRight24" FontSize="18" Margin="10,0" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                            <TextBlock FontSize="30" FontWeight="{DynamicResource AppTextStrongFontWeight}" VerticalAlignment="Center"
+                            <TextBlock FontSize="28" FontWeight="{DynamicResource AppTextStrongFontWeight}" VerticalAlignment="Center"
                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{TemplateBinding Title}" TextWrapping="Wrap"/>
                         </WrapPanel>
-                        <TextBlock x:Name="PageSubtitle" Grid.Row="1" Grid.Column="2" Margin="0,3,0,0" FontSize="13" LineHeight="20" LineStackingStrategy="BlockLineHeight" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{TemplateBinding Subtitle}" TextWrapping="Wrap"/>
-                        <ContentControl x:Name="PageStatus" Grid.Column="3" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource AfSettingsChipAccentStyle}" Content="{TemplateBinding StatusText}"/>
-                        <ContentPresenter Grid.Column="4" Content="{TemplateBinding HeaderActions}" Margin="12,0,0,0" VerticalAlignment="Center" x:Name="HeaderActions"/>
+                        <ContentControl x:Name="PageStatus" Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource AfSettingsChipAccentStyle}" Content="{TemplateBinding StatusText}"/>
+                        <ContentPresenter Grid.Column="2" Content="{TemplateBinding HeaderActions}" Margin="12,0,0,0" VerticalAlignment="Center" x:Name="HeaderActions"/>
                     </Grid>
                     <ScrollViewer x:Name="GroupTabsHost" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                         <Grid>
@@ -729,9 +787,6 @@
                         <Setter TargetName="ParentLink" Property="Visibility" Value="Collapsed"/>
                         <Setter TargetName="ParentChevron" Property="Visibility" Value="Collapsed"/>
                     </Trigger>
-                    <Trigger Property="Subtitle" Value="">
-                        <Setter TargetName="PageSubtitle" Property="Visibility" Value="Collapsed"/>
-                    </Trigger>
                     <Trigger Property="ShowGroupTabs" Value="False">
                         <Setter TargetName="GroupTabsHost" Property="Visibility" Value="Collapsed"/>
                     </Trigger>
@@ -745,10 +800,10 @@
                         <Setter TargetName="PageStatus" Property="Style" Value="{StaticResource AfSettingsChipAttentionStyle}"/>
                     </Trigger>
                     <Trigger Property="IsCompactHeader" Value="True">
-                        <Setter TargetName="HeaderActions" Property="Grid.Row" Value="2"/>
-                        <Setter TargetName="HeaderActions" Property="Grid.Column" Value="2"/>
+                        <Setter TargetName="HeaderActions" Property="Grid.Row" Value="1"/>
+                        <Setter TargetName="HeaderActions" Property="Grid.Column" Value="0"/>
                         <Setter TargetName="HeaderActions" Property="Grid.ColumnSpan" Value="3"/>
-                        <Setter TargetName="HeaderActions" Property="Margin" Value="0,12,0,0"/>
+                        <Setter TargetName="HeaderActions" Property="Margin" Value="0,8,0,0"/>
                         <Setter TargetName="PageStatus" Property="Visibility" Value="Collapsed"/>
                     </Trigger>
                 </ControlTemplate.Triggers>
@@ -937,8 +992,8 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True" ContentSource="Content" Margin="0,0,12,0"/>
-                        <Border Grid.Column="1" Width="22" Height="22">
-                            <ui:SymbolIcon Symbol="ArrowRight24" FontSize="16" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Style="{StaticResource AfSettingsChevronSurfaceStyle}">
+                            <ui:SymbolIcon Symbol="ChevronRight24" FontSize="16" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </Grid>
                 </Border>
@@ -1080,8 +1135,8 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <ContentPresenter ContentSource="Header" Margin="0,20,0,0"/>
-                    <Grid Grid.Row="1" Margin="0,18,0,0" x:Name="PART_Body">
+                    <ContentPresenter ContentSource="Header" Margin="0,12,0,0"/>
+                    <Grid Grid.Row="1" Margin="0,12,0,0" x:Name="PART_Body">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
