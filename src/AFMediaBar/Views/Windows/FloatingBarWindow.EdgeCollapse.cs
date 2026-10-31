@@ -14,11 +14,10 @@ public sealed partial class FloatingBarWindow
 {
     private readonly DispatcherTimer _edgeHoverTimer = new(DispatcherPriority.Input) { Interval = TimeSpan.FromMilliseconds(90) };
     private readonly DispatcherTimer _edgeMotionTimer = new(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
-    private readonly Border _edgeIndicator = new() { CornerRadius = new CornerRadius(2), BorderThickness = new Thickness(1), Visibility = Visibility.Collapsed };
+    private readonly Border _edgeIndicator = new() { CornerRadius = new CornerRadius(2), Visibility = Visibility.Collapsed };
     private readonly AdaptiveForegroundSamplingSession _edgeContrastSampling;
     private PlayerForegroundDecision? _edgeForegroundDecision;
     private readonly ColorTransitionBrush _edgeLineColor = new();
-    private readonly ColorTransitionBrush _edgeOutlineColor = new();
     private bool _edgeContrastReady;
     private long _edgeContrastRefreshTick;
     private FloatingBarDockEdge _dockEdge;
@@ -172,7 +171,6 @@ public sealed partial class FloatingBarWindow
         _edgeContrastReady = false;
         _edgeIndicator.Visibility = Visibility.Collapsed;
         _edgeLineColor.Finish();
-        _edgeOutlineColor.Finish();
         _edgeContrastSampling.Invalidate(clearDecision: false);
         _edgeContrastRefreshTick = 0;
         _edgeBodySuspended = IsEdgeFullyCollapsed;
@@ -191,10 +189,9 @@ public sealed partial class FloatingBarWindow
     {
         if (_isClosing) return;
         if (decision is not null) _edgeForegroundDecision = decision;
-        var brushes = HandleIndicatorAppearance.Resolve(_edgeForegroundDecision);
+        var brush = HandleIndicatorAppearance.Resolve(_edgeForegroundDecision);
         var duration = ColorTransitionBrush.ResolveDuration(_edgeContrastReady && IsEdgeFullyCollapsed && IsVisible && decision is not null);
-        _edgeIndicator.Background = _edgeLineColor.Apply(brushes.Line, duration);
-        _edgeIndicator.BorderBrush = _edgeOutlineColor.Apply(brushes.Outline, duration);
+        _edgeIndicator.Background = _edgeLineColor.Apply(brush, duration);
         if (decision is not null) _edgeContrastReady = true;
         _edgeIndicator.Visibility = IsEdgeConcealed && _edgeContrastReady ? Visibility.Visible : Visibility.Collapsed;
     }

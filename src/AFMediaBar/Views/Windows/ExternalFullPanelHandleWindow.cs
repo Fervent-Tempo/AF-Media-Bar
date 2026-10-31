@@ -27,9 +27,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     private static readonly TimeSpan PointerLeaveGrace = TimeSpan.FromMilliseconds(500);
     private readonly NativeMouseInputMonitor _input;
     private readonly Border _line;
-    private readonly Border _outline;
     private readonly ColorTransitionBrush _lineColor = new();
-    private readonly ColorTransitionBrush _outlineColor = new();
     private readonly Grid _marks;
     private readonly Border _visualHost;
     private readonly TranslateTransform _markTranslation = new();
@@ -78,11 +76,9 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         UseLayoutRounding = true;
         WindowHelper.SetNoActivate(this);
         _line = new Border { CornerRadius = new CornerRadius(2), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-        _outline = new Border { CornerRadius = new CornerRadius(3), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         _contrastSampling = new AdaptiveForegroundSamplingSession(sampler, Dispatcher, GetContrastBounds, ApplyContrast);
         // 极低 alpha 让整个按钮矩形可命中；窗口尺寸不包含媒体栏与过渡区域。
         _marks = new Grid { Opacity = 0, RenderTransform = _markTranslation };
-        _marks.Children.Add(_outline);
         _marks.Children.Add(_line);
         _visualHost = new Border { Child = _marks, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, ClipToBounds = true };
         var layout = new Grid();
@@ -137,8 +133,6 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         Height = vertical ? HitLengthDip : HitThicknessDip;
         _line.Width = vertical ? 4 : 28;
         _line.Height = vertical ? 28 : 4;
-        _outline.Width = vertical ? 6 : 30;
-        _outline.Height = vertical ? 30 : 6;
         _contrastReady = false;
         SetPresentation(0, 0, 0);
         var handle = new WindowInteropHelper(this).EnsureHandle();
@@ -262,7 +256,7 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     private Int32Rect? GetContrastBounds()
     {
         if (_disposed || !IsVisible) return null;
-        // 只取按钮透明边缘的背景，避开横杠及轮廓本身，避免颜色自反馈。
+        // 只取按钮透明边缘的背景，避开横杠本身，避免颜色自反馈。
         var scale = (_vertical ? _handleBounds.Width : _handleBounds.Height) / 8;
         return _vertical
             ? new Int32Rect((int)_handleBounds.Left, (int)Math.Round(_handleBounds.Top + 8 * scale),
@@ -275,10 +269,9 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     {
         if (_disposed) return;
         if (decision is not null) _foregroundDecision = decision;
-        var brushes = HandleIndicatorAppearance.Resolve(_foregroundDecision);
+        var brush = HandleIndicatorAppearance.Resolve(_foregroundDecision);
         var duration = ColorTransitionBrush.ResolveDuration(_contrastReady && !_isHiding && IsVisible && decision is not null);
-        _line.Background = _lineColor.Apply(brushes.Line, duration);
-        _outline.Background = _outlineColor.Apply(brushes.Outline, duration);
+        _line.Background = _lineColor.Apply(brush, duration);
     }
 
     private void RefreshContrast()
@@ -311,7 +304,6 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     private void StopInteraction()
     {
         _lineColor.Finish();
-        _outlineColor.Finish();
         _pointerTimer.Stop();
         _revealVersion++;
         _initialContrastCancellation?.Cancel();
@@ -340,7 +332,6 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
     {
         if (_isHiding) return;
         _lineColor.Finish();
-        _outlineColor.Finish();
         _canResumeDismissal = true;
         _isPressed = false;
         _contrastSampling.Invalidate(clearDecision: false);
