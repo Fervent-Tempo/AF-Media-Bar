@@ -397,6 +397,11 @@ namespace AFMediaBar.Views.Windows
         {
             var section = SettingsNavigationCatalog.Sections.FirstOrDefault(section => section.Id == sectionId);
             if (_closed || section is null) return;
+            if (_currentSectionId == sectionId)
+            {
+                ExpandCurrentSection();
+                return;
+            }
             _categoryPage.ShowSection(section, _contexts.Current.Mode);
             if (!RootNavigation.Navigate(typeof(SettingsCategoryPage))) RootNavigation.ReplaceContent(_categoryPage);
             SetDestination(new(null, section.Id));
@@ -529,6 +534,7 @@ namespace AFMediaBar.Views.Windows
                         if (!_closed) NavigateSection(section.Id);
                     })))
                 };
+                sectionItem.PreviewMouseLeftButtonDown += OnSectionPreviewMouseLeftButtonDown;
                 sectionItem.SetResourceReference(ContentControl.ContentProperty, "Loc." + section.TitleKey);
                 foreach (var page in pages) sectionItem.MenuItems.Add(CreateNavigationItem(page, includeIcon: false));
                 _sectionItems[section.Id] = sectionItem;
@@ -554,6 +560,19 @@ namespace AFMediaBar.Views.Windows
             if (includeIcon) item.Icon = new SymbolIcon(Enum.Parse<SymbolRegular>(definition.IconName));
             item.SetResourceReference(ContentControl.ContentProperty, "Loc." + definition.TitleKey);
             return item;
+        }
+
+        private void OnSectionPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs args)
+        {
+            if (_currentSectionId is not { } sectionId || !_sectionItems.TryGetValue(sectionId, out var current) ||
+                !ReferenceEquals(sender, current) ||
+                current.Template.FindName("MainBorder", current) is not FrameworkElement { IsMouseOver: true } ||
+                current.Template.FindName("PART_ChevronGrid", current) is not FrameworkElement chevron ||
+                args.GetPosition(current).X >= current.ActualWidth - chevron.ActualWidth) return;
+
+            // 当前分类标题保持不动；右侧箭头仍可独立收起或展开子项。
+            current.Focus();
+            args.Handled = true;
         }
 
         private void ExpandCurrentSection()

@@ -394,8 +394,8 @@
                                       TextElement.FontSize="14" TextElement.Foreground="{TemplateBinding Foreground}"
                                       TextElement.FontWeight="{TemplateBinding FontWeight}"/>
                     <ContentPresenter x:Name="PART_InfoBadge" Grid.Column="2" Content="{TemplateBinding InfoBadge}" VerticalAlignment="Center"/>
-                    <Grid x:Name="PART_ChevronGrid" Grid.Column="3" Width="40" Margin="0,3,0,3" Visibility="Collapsed">
-                        <Border x:Name="ChevronSurface" Style="{StaticResource AfSettingsChevronSurfaceStyle}">
+                    <Grid x:Name="PART_ChevronGrid" Grid.Column="3" Width="48" Background="Transparent" Visibility="Collapsed">
+                        <Border x:Name="ChevronSurface" Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
                             <ui:SymbolIcon x:Name="ChevronIcon" Symbol="ChevronDown24" FontSize="16"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
@@ -421,9 +421,6 @@
             </Trigger>
             <Trigger SourceName="MainBorder" Property="IsMouseOver" Value="True">
                 <Setter TargetName="MainBorder" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}"/>
-            </Trigger>
-            <Trigger SourceName="PART_ChevronGrid" Property="IsMouseOver" Value="True">
-                <Setter TargetName="ChevronSurface" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
             </Trigger>
             <Trigger Property="IsPressed" Value="True">
                 <Setter TargetName="MainBorder" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}"/>

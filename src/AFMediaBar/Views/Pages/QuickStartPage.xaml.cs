@@ -16,16 +16,13 @@ namespace AFMediaBar.Views.Pages;
 public partial class QuickStartPage : INavigableView<QuickStartViewModel>
 {
     private readonly DispatcherTimer _rotation = new(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(4) };
-    private readonly TranslateTransform _heroTranslate = new();
     private Window? _window;
     private ScrollViewer? _scroll;
     private bool _keyboardAction;
-    private int _featureIndex;
     public QuickStartViewModel ViewModel { get; }
     public QuickStartPage(QuickStartViewModel viewModel)
     {
         ViewModel = viewModel; DataContext = this; InitializeComponent();
-        HeroCopy.RenderTransform = _heroTranslate;
         _rotation.Tick += OnRotationTick;
     }
     private async void OnPageLoaded(object sender, RoutedEventArgs args)
@@ -43,8 +40,8 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
         ViewModel.PropertyChanged += OnModelChanged;
         _scroll = PageLayout.ScrollViewer;
         if (_scroll is not null) _scroll.ScrollChanged += OnScrollChanged;
-        _featureIndex = ViewModel.Features.IndexOf(ViewModel.SelectedFeature!);
         ApplyColumns(PageRoot.ActualWidth);
+        UpdateFeatureIndicator(animate: false);
         if (!await SettingsPageActivation.WaitForPresentationAsync(this)) return;
         await ViewModel.ActivateAsync();
         if (IsLoaded) UpdateRotation();
@@ -52,8 +49,8 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
     private void OnPageUnloaded(object sender, RoutedEventArgs args)
     {
         Detach(); ViewModel.Deactivate();
-        HeroCopy.BeginAnimation(OpacityProperty, null);
-        _heroTranslate.BeginAnimation(TranslateTransform.XProperty, null);
+        HeroText.BeginAnimation(OpacityProperty, null);
+        FeatureIndicatorTranslate.BeginAnimation(TranslateTransform.XProperty, null);
     }
     private void Detach()
     {
@@ -149,7 +146,16 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
         if (Dispatcher.CheckAccess()) UpdateRotation();
         else Dispatcher.InvokeAsync(UpdateRotation);
     }
-    private void OnMotionEnvironmentChanged(object? sender, PropertyChangedEventArgs args) => OnWindowStateChanged(sender, args);
+    private void OnMotionEnvironmentChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        OnWindowStateChanged(sender, args);
+        Dispatcher.InvokeAsync(() =>
+        {
+            if (!IsLoaded) return;
+            HeroText.BeginAnimation(OpacityProperty, null);
+            UpdateFeatureIndicator(animate: false);
+        });
+    }
     private void OnScrollChanged(object sender, ScrollChangedEventArgs args) => UpdateRotation();
     private void OnHeroPointerChanged(object sender, MouseEventArgs args) => UpdateRotation();
     private void OnRotationVisibilityChanged(object sender, DependencyPropertyChangedEventArgs args) => UpdateRotation();
@@ -165,27 +171,43 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
         if (args.PropertyName == nameof(ViewModel.SelectedFeature))
         {
             var motion = MotionPolicy.ResolveCurrent();
-            var index = ViewModel.Features.IndexOf(ViewModel.SelectedFeature!);
-            var direction = index >= 0 && _featureIndex >= 0 && index < _featureIndex ? -1d : 1d;
-            _featureIndex = index;
-            if (!_keyboardAction && motion.UseDecorativeEffects)
+            if (!_keyboardAction && motion.UseTransitions)
             {
-                // 淡入 + 12px 方向位移；动画结束回到本地值 0，不留下残留位移。
-                _heroTranslate.BeginAnimation(TranslateTransform.XProperty, null);
-                _heroTranslate.BeginAnimation(TranslateTransform.XProperty,
-                    new DoubleAnimation(12d * direction, 0d, motion.StandardDuration)
+                // 原位淡入保留文字的完整边界；圆点不参与正文动画。
+                var opacity = HeroText.HasAnimatedProperties ? HeroText.Opacity : .65d;
+                HeroText.BeginAnimation(OpacityProperty,
+                    new DoubleAnimation(opacity, 1d, motion.StandardDuration)
                     { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }, FillBehavior = FillBehavior.Stop });
-                HeroCopy.BeginAnimation(OpacityProperty,
-                    new DoubleAnimation(.65d, 1d, motion.StandardDuration) { FillBehavior = FillBehavior.Stop });
             }
             else
             {
-                _heroTranslate.BeginAnimation(TranslateTransform.XProperty, null);
-                HeroCopy.BeginAnimation(OpacityProperty, null);
+                HeroText.BeginAnimation(OpacityProperty, null);
             }
+            UpdateFeatureIndicator(animate: !_keyboardAction);
             _rotation.Stop();
         }
         UpdateRotation();
+    }
+    private void OnFeatureDotsSizeChanged(object sender, SizeChangedEventArgs args) => UpdateFeatureIndicator(animate: false);
+    private void UpdateFeatureIndicator(bool animate)
+    {
+        if (!IsLoaded) return;
+        var index = ViewModel.Features.IndexOf(ViewModel.SelectedFeature!);
+        var count = ViewModel.FeatureTabs.Count;
+        FeatureIndicator.Visibility = index >= 0 && count > 1 ? Visibility.Visible : Visibility.Collapsed;
+        if (index < 0 || count == 0 || FeatureDots.ActualWidth <= 0d) return;
+
+        // 固定按钮槽位中居中胶囊；集合刷新不重建这条过渡，连续切换从当前帧接续。
+        var step = FeatureDots.ActualWidth / count;
+        var target = index * step + (step - 4d - FeatureIndicator.Width) / 2d;
+        var current = FeatureIndicatorTranslate.X;
+        FeatureIndicatorTranslate.BeginAnimation(TranslateTransform.XProperty, null);
+        FeatureIndicatorTranslate.X = target;
+        var motion = MotionPolicy.ResolveCurrent();
+        if (animate && motion.UseDecorativeEffects)
+            FeatureIndicatorTranslate.BeginAnimation(TranslateTransform.XProperty,
+                new DoubleAnimation(current, target, motion.StandardDuration)
+                { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }, FillBehavior = FillBehavior.Stop });
     }
     private void UpdateRotation()
     {

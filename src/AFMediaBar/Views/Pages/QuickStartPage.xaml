@@ -114,7 +114,7 @@
             </Style.Triggers>
         </Style>
 
-        <!-- 轮播圆点：当前项拉成强调色胶囊，其余保持中性小圆点。 -->
+        <!-- 圆点使用固定间距，独立的强调色胶囊在选中项之间平移。 -->
         <Style x:Key="HomeDotButton" TargetType="{x:Type ui:Button}" BasedOn="{StaticResource HomeTextButton}">
             <Setter Property="Appearance" Value="Transparent" />
             <Setter Property="Background" Value="Transparent" />
@@ -122,6 +122,7 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="MinWidth" Value="20" />
+            <Setter Property="Width" Value="24" />
             <Setter Property="MinHeight" Value="20" />
             <Setter Property="Height" Value="20" />
             <Setter Property="Margin" Value="0,0,4,0" />
@@ -349,48 +350,51 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel x:Name="HeroCopy" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">
-                    <ItemsControl Margin="0,0,0,4" AlternationCount="2" ItemsSource="{Binding ViewModel.SelectedFeature.Tags}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Margin="0,0,6,6" Padding="8,2" CornerRadius="9"
-                                        Background="{DynamicResource SubtleFillColorSecondaryBrush}">
-                                    <TextBlock FontSize="11" Text="{Binding}">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType=ContentPresenter}}" Value="0">
-                                                        <Setter Property="Foreground" Value="{DynamicResource AfAccentBrush}" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <StackPanel x:Name="HeroText">
+                        <ItemsControl Margin="0,0,0,4" AlternationCount="2" ItemsSource="{Binding ViewModel.SelectedFeature.Tags}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,6,6" Padding="8,2" CornerRadius="9"
+                                            Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                        <TextBlock FontSize="11" Text="{Binding}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType=ContentPresenter}}" Value="0">
+                                                            <Setter Property="Foreground" Value="{DynamicResource AfAccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
-                    <TextBlock x:Name="HeroTitle" Margin="0,12,0,0" FontSize="24"
-                               FontWeight="{DynamicResource AppTextStrongFontWeight}" LineHeight="30" MaxHeight="90"
-                               TextTrimming="CharacterEllipsis" TextWrapping="Wrap"
-                               Text="{Binding ViewModel.SelectedFeature.Title}" />
-                    <TextBlock Style="{StaticResource HomeBody}" Margin="0,8,0,0" MaxHeight="60"
-                               TextTrimming="CharacterEllipsis" Text="{Binding ViewModel.SelectedFeature.Summary}" />
+                        <TextBlock x:Name="HeroTitle" Margin="0,12,0,0" FontSize="24"
+                                   FontWeight="{DynamicResource AppTextStrongFontWeight}" LineHeight="30" MaxHeight="90"
+                                   TextTrimming="CharacterEllipsis" TextWrapping="Wrap"
+                                   Text="{Binding ViewModel.SelectedFeature.Title}" />
+                        <TextBlock Style="{StaticResource HomeBody}" Margin="0,8,0,0" MaxHeight="60"
+                                   TextTrimming="CharacterEllipsis" Text="{Binding ViewModel.SelectedFeature.Summary}" />
 
-                    <WrapPanel Margin="0,18,0,0">
-                        <ui:Button Style="{StaticResource AfSettingsButtonStyle}" Appearance="Primary" MinHeight="36" Padding="14,8" Margin="0,0,8,6"
-                                   Click="OnReadMoreClick" Content="{DynamicResource Loc.Home.ReadMore}"
-                                   Icon="{ui:SymbolIcon ArrowRight24}" />
-                    </WrapPanel>
+                        <WrapPanel Margin="0,18,0,0">
+                            <ui:Button Style="{StaticResource AfSettingsButtonStyle}" Appearance="Primary" MinHeight="36" Padding="14,8" Margin="0,0,8,6"
+                                       Click="OnReadMoreClick" Content="{DynamicResource Loc.Home.ReadMore}"
+                                       Icon="{ui:SymbolIcon ArrowRight24}" />
+                        </WrapPanel>
+                    </StackPanel>
 
                     <Grid Margin="0,14,0,0" Visibility="{Binding ViewModel.HasMultipleFeatures, Converter={StaticResource HomeVisibility}}">
-                        <ItemsControl ItemsSource="{Binding ViewModel.FeatureTabs}">
+                        <ItemsControl x:Name="FeatureDots" HorizontalAlignment="Left" SizeChanged="OnFeatureDotsSizeChanged"
+                                      ItemsSource="{Binding ViewModel.FeatureTabs}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <StackPanel Orientation="Horizontal" />
@@ -402,26 +406,17 @@
                                                Command="{Binding DataContext.ViewModel.SelectFeatureCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                CommandParameter="{Binding}" ToolTip="{Binding AutomationName}"
                                                AutomationProperties.Name="{Binding AutomationName}">
-                                        <Border HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="Width" Value="8" />
-                                                    <Setter Property="Height" Value="8" />
-                                                    <Setter Property="CornerRadius" Value="4" />
-                                                    <Setter Property="Background" Value="{DynamicResource TextFillColorTertiaryBrush}" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                                                            <Setter Property="Width" Value="22" />
-                                                            <Setter Property="Background" Value="{DynamicResource AfAccentBrush}" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
-                                        </Border>
+                                        <Border Width="8" Height="8" CornerRadius="4" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                Background="{DynamicResource TextFillColorTertiaryBrush}" />
                                     </ui:Button>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                        <Border x:Name="FeatureIndicator" Width="22" Height="8" CornerRadius="4"
+                                HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False"
+                                Background="{DynamicResource AfAccentBrush}">
+                            <Border.RenderTransform><TranslateTransform x:Name="FeatureIndicatorTranslate" /></Border.RenderTransform>
+                        </Border>
                         <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                    Text="{Binding ViewModel.FeaturePosition}" />
