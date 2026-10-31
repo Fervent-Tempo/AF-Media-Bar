@@ -20,7 +20,7 @@ public sealed record HomeFeatureCard(string Id, string Badge, string Title, stri
 
 public sealed record HomeThreadCard(string Title, string Detail, string Url, string Number = "", string DateText = "", bool IsDraft = false);
 
-/// <summary>轮播圆点的一项：当前项显示为强调色胶囊，点击后切到该张并暂停轮播。</summary>
+/// <summary>轮播圆点的一项：当前项显示为强调色胶囊，点击后切到该张。</summary>
 public sealed record HomeFeatureTab(HomeFeatureCard Feature, bool IsCurrent, string AutomationName);
 
 /// <summary>先显示本地内容，再刷新公开动态；不上传任何使用资料。</summary>
@@ -51,7 +51,6 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     [ObservableProperty] private HomeFeatureCard? _selectedFeature;
     [ObservableProperty] private ImageSource? _featureImage;
     [ObservableProperty] private bool _isLoading;
-    [ObservableProperty] private bool _isRotationPaused;
     public ObservableCollection<HomeFeatureCard> Features { get; } = [];
     public ObservableCollection<HomeFeatureTab> FeatureTabs { get; } = [];
     public ObservableCollection<HomePlayerCard> Players { get; } = [];
@@ -76,7 +75,6 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     public string PlayerSupportCountText => Translations.Format("Home.Player.Count", SupportedPlayerCount);
     public string AdditionalPlayersText => _additionalPlayersText;
     public string FeaturePosition => $"{Math.Max(1, Features.IndexOf(SelectedFeature!)+1)} / {Features.Count}";
-    public string RotationText => Translations.Get(IsRotationPaused ? "Home.Rotation.Resume" : "Home.Rotation.Pause");
     public bool CanRefresh => !IsLoading && DateTimeOffset.UtcNow - _lastManualRefresh >= RefreshCooldown;
     public string RefreshHint => IsLoading ? Translations.Get("Home.Refreshing")
         : CanRefresh ? Translations.Get("Home.Refresh") : Translations.Get("Home.RefreshCooldown");
@@ -124,12 +122,11 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(PlayerFilter));
         ProjectSupport();
     }
-    /// <summary>圆点点击与主按钮共用同一暂停语义；参数来自 <see cref="FeatureTabs"/> 的当前快照。</summary>
+    /// <summary>参数来自 <see cref="FeatureTabs"/> 的当前快照；计时与交互暂停由页面负责。</summary>
     [RelayCommand] private void SelectFeature(HomeFeatureTab? tab)
     {
         if (tab is null || !Features.Contains(tab.Feature)) return;
         _featureWasChosen = true;
-        IsRotationPaused = true;
         SelectedFeature = tab.Feature;
     }
     private async Task LoadAsync(bool force)
@@ -178,15 +175,13 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         catch (Exception exception) { if (IsCurrent()) _log.Warn("Home", "首页刷新失败，保留可用内容", exception); }
         finally { if (IsCurrent()) IsLoading = false; }
     }
-    [RelayCommand] private void NextFeature() { _featureWasChosen = true; IsRotationPaused = true; Advance(1); }
-    [RelayCommand] private void PreviousFeature() { _featureWasChosen = true; IsRotationPaused = true; Advance(-1); }
-    [RelayCommand] private void ToggleRotation() => IsRotationPaused = !IsRotationPaused;
-    public void AdvanceAutomatically() { if (!IsRotationPaused) Advance(1); }
+    [RelayCommand] private void NextFeature() { _featureWasChosen = true; Advance(1); }
+    [RelayCommand] private void PreviousFeature() { _featureWasChosen = true; Advance(-1); }
+    public void AdvanceAutomatically() => Advance(1);
     private void Advance(int direction)
     {
         if (Features.Count > 1) SelectedFeature = Features[(Features.IndexOf(SelectedFeature!) + direction + Features.Count) % Features.Count];
     }
-    partial void OnIsRotationPausedChanged(bool value) => OnPropertyChanged(nameof(RotationText));
     partial void OnIsLoadingChanged(bool value) => NotifyRefreshState();
     partial void OnFeatureImageChanged(ImageSource? value) => OnPropertyChanged(nameof(HasFeatureImage));
     partial void OnSelectedFeatureChanged(HomeFeatureCard? value)
@@ -334,7 +329,7 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     {
         if (!_active || _disposed) return;
         ProjectFeatures(); ProjectPlayers(); ProjectSupport(); ProjectActivity();
-        ProjectFeatureTabs(); OnPropertyChanged(nameof(RotationText)); NotifyRefreshState();
+        ProjectFeatureTabs(); NotifyRefreshState();
     }
     public void Dispose() { if (_disposed) return; _disposed = true; Deactivate(); _refreshCooldownTimer.Stop(); _images.Clear(); }
 }

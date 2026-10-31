@@ -6,6 +6,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Loaded="OnPageLoaded"
     Unloaded="OnPageUnloaded"
+    IsVisibleChanged="OnRotationVisibilityChanged"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     ScrollViewer.CanContentScroll="False">
     <Page.Resources>
@@ -44,21 +45,77 @@
             <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
         </Style>
 
-        <!-- Hero 的暂停/上一张/下一张：36×36 透明图标按钮，悬停由既有模板提供。 -->
-        <Style x:Key="HomeIconButton" TargetType="{x:Type ui:Button}" BasedOn="{StaticResource AfSettingsIconButtonStyle}">
+        <!-- 文字、圆点和图片箭头共用中性反馈，内容前景色跟随主题。 -->
+        <Style x:Key="HomeTextButton" TargetType="{x:Type ui:Button}" BasedOn="{StaticResource AfSettingsButtonStyle}">
             <Setter Property="Appearance" Value="Transparent" />
             <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
             <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Width" Value="36" />
-            <Setter Property="Height" Value="36" />
-            <Setter Property="MinHeight" Value="36" />
-            <Setter Property="Margin" Value="0,0,6,6" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ui:Button}">
+                        <Grid>
+                            <Border x:Name="Surface" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" />
+                            <Border x:Name="HoverTint" Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="6"
+                                    Opacity="0" IsHitTestVisible="False" />
+                            <ContentPresenter ContentSource="Content" RecognizesAccessKey="True"
+                                              Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="HoverTint" Property="Opacity" Value="1" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="HoverTint" Property="Opacity" Value="1" />
+                                <Setter TargetName="HoverTint" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="HomeHeroArrow" TargetType="{x:Type ui:Button}" BasedOn="{StaticResource HomeTextButton}">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="{DynamicResource AfSettingsInputBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Visibility" Value="{Binding ViewModel.HasMultipleFeatures, Converter={StaticResource HomeVisibility}}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsMouseOver, ElementName=HeroVisual}" Value="True">
+                    <Setter Property="Opacity" Value="1" />
+                    <Setter Property="IsHitTestVisible" Value="True" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=HeroGrid}" Value="True">
+                    <Setter Property="Opacity" Value="1" />
+                    <Setter Property="IsHitTestVisible" Value="True" />
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
 
         <!-- 轮播圆点：当前项拉成强调色胶囊，其余保持中性小圆点。 -->
-        <Style x:Key="HomeDotButton" TargetType="{x:Type ui:Button}">
+        <Style x:Key="HomeDotButton" TargetType="{x:Type ui:Button}" BasedOn="{StaticResource HomeTextButton}">
             <Setter Property="Appearance" Value="Transparent" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
@@ -83,7 +140,7 @@
         </Style>
 
         <!-- 状态条的动作入口：透明文字按钮，hover 只加浅底，不铺强调色。 -->
-        <Style x:Key="HomeActionLink" TargetType="{x:Type components:SettingsNavigationButton}">
+        <Style x:Key="HomeActionLink" TargetType="{x:Type components:SettingsNavigationButton}" BasedOn="{StaticResource AfSettingsNavigationButtonStyle}">
             <Setter Property="Padding" Value="8,6" />
             <Setter Property="MinHeight" Value="32" />
             <Setter Property="FontSize" Value="13" />
@@ -121,21 +178,8 @@
             </Setter>
         </Style>
 
-        <!-- 普通文字按钮（查看所有播放器支持、项目动态行）：透明底 + 浅色悬停。 -->
-        <Style x:Key="HomeTextButton" TargetType="{x:Type ui:Button}">
-            <Setter Property="Appearance" Value="Transparent" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="8,6" />
-            <Setter Property="MinHeight" Value="32" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
-        </Style>
-
         <!-- 文字链接（查看全部）：透明底强调色文字，不占用按钮底色。 -->
-        <Style x:Key="HomeLink" TargetType="{x:Type ui:Anchor}">
+        <Style x:Key="HomeLink" TargetType="{x:Type ui:Anchor}" BasedOn="{StaticResource HomeTextButton}">
             <Setter Property="Appearance" Value="Transparent" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
@@ -222,57 +266,17 @@
             </Setter>
         </Style>
 
-        <!-- 教程/FAQ 展开器：无卡片底色，行与行之间用 1px 分隔线。 -->
-        <Style x:Key="HomeExpander" TargetType="{x:Type ui:CardExpander}">
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Padding" Value="0,12" />
-            <Setter Property="ContentPadding" Value="0,0,0,12" />
-            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-            <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type ui:CardExpander}">
-                        <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
-                            <StackPanel>
-                                <ToggleButton x:Name="ExpanderToggleButton" Padding="{TemplateBinding Padding}"
-                                              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                                              Foreground="{TemplateBinding Foreground}" Cursor="Hand"
-                                              FocusVisualStyle="{DynamicResource AfFocusVisualStyle}"
-                                              IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                                              Template="{StaticResource AfSettingsExpanderToggleTemplate}">
-                                    <ToggleButton.Content>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <ContentControl x:Name="ControlIcon" Margin="0,0,14,0" VerticalAlignment="Center"
-                                                            Content="{TemplateBinding Icon}" FontSize="18" Focusable="False"
-                                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                            Template="{StaticResource AfSettingsExpanderIconTemplate}" />
-                                            <ContentPresenter Grid.Column="1" VerticalAlignment="Center" Content="{TemplateBinding Header}" />
-                                        </Grid>
-                                    </ToggleButton.Content>
-                                </ToggleButton>
-                                <Border x:Name="ExpandedContent" Padding="{TemplateBinding ContentPadding}" Visibility="Collapsed">
-                                    <ContentPresenter Content="{TemplateBinding Content}"
-                                                      ContentTemplate="{TemplateBinding ContentTemplate}"
-                                                      HorizontalAlignment="Stretch" />
-                                </Border>
-                            </StackPanel>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsExpanded" Value="True">
-                                <Setter TargetName="ExpandedContent" Property="Visibility" Value="Visible" />
-                            </Trigger>
-                            <Trigger Property="Icon" Value="{x:Null}">
-                                <Setter TargetName="ControlIcon" Property="Visibility" Value="Collapsed" />
-                                <Setter TargetName="ControlIcon" Property="Margin" Value="0" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+        <Style x:Key="HomeExpander" TargetType="{x:Type ui:CardExpander}" BasedOn="{StaticResource AfSettingsExpanderStyle}">
+            <Setter Property="ContentPadding" Value="16,12,16,16" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style x:Key="HomeConfigureButton" TargetType="{x:Type components:SettingsNavigationButton}"
+               BasedOn="{StaticResource AfSettingsNavigationButtonStyle}">
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Background" Value="{DynamicResource AfSettingsInputBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}" />
         </Style>
 
         <!-- 项目动态行：整行可点，编号强调色、标题两行、元信息在小字行。 -->
@@ -289,7 +293,7 @@
                                    FontSize="12" Foreground="{DynamicResource AfAccentBrush}" Text="{Binding Number}" />
                         <StackPanel Grid.Column="1">
                             <TextBlock FontSize="14" LineHeight="20" MaxHeight="40" TextTrimming="CharacterEllipsis"
-                                       TextWrapping="Wrap" Text="{Binding Title}" />
+                                       TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding Title}" />
                             <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
                                 <ContentControl Margin="0,0,6,0" Content="{DynamicResource Loc.Home.Draft}"
                                                 Style="{StaticResource AfSettingsBadgeNeutralStyle}"
@@ -318,7 +322,7 @@
                         <ui:ProgressRing Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center"
                                          IsIndeterminate="True"
                                          Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource HomeVisibility}}" />
-                        <ui:Button Command="{Binding ViewModel.RefreshCommand}" Content="{DynamicResource Loc.Home.Refresh}"
+                        <ui:Button Style="{StaticResource AfSettingsButtonStyle}" Command="{Binding ViewModel.RefreshCommand}" Content="{DynamicResource Loc.Home.Refresh}"
                                    Icon="{ui:SymbolIcon ArrowSync24}" IsEnabled="{Binding ViewModel.CanRefresh}"
                                    ToolTip="{Binding ViewModel.RefreshHint}" ToolTipService.ShowOnDisabled="True"
                                    AutomationProperties.Name="{DynamicResource Loc.Home.Refresh}" />
@@ -404,7 +408,7 @@
             <!-- ② 整宽 Hero：左文案 36%，右图片 64%；无图时显示页面内静态演示场景。 -->
             <Grid x:Name="HeroGrid" Margin="0,28,0,0"
                   MouseEnter="OnHeroPointerChanged" MouseLeave="OnHeroPointerChanged"
-                  PreviewGotKeyboardFocus="OnHeroFocus" PreviewKeyDown="OnHeroKeyDown">
+                  IsKeyboardFocusWithinChanged="OnRotationVisibilityChanged" PreviewKeyDown="OnHeroKeyDown">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -451,50 +455,12 @@
                                TextTrimming="CharacterEllipsis" Text="{Binding ViewModel.SelectedFeature.Summary}" />
 
                     <WrapPanel Margin="0,18,0,0">
-                        <ui:Button Appearance="Primary" MinHeight="36" Padding="14,8" Margin="0,0,8,6"
+                        <ui:Button Style="{StaticResource AfSettingsButtonStyle}" Appearance="Primary" MinHeight="36" Padding="14,8" Margin="0,0,8,6"
                                    Click="OnReadMoreClick" Content="{DynamicResource Loc.Home.ReadMore}"
                                    Icon="{ui:SymbolIcon ArrowRight24}" />
-                        <ui:Button Style="{StaticResource HomeIconButton}" Command="{Binding ViewModel.ToggleRotationCommand}"
-                                   ToolTip="{Binding ViewModel.RotationText}"
-                                   AutomationProperties.Name="{Binding ViewModel.RotationText}">
-                            <Grid Width="16" Height="16">
-                                <ui:SymbolIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Symbol="Pause24">
-                                    <ui:SymbolIcon.Style>
-                                        <Style TargetType="ui:SymbolIcon">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding ViewModel.IsRotationPaused}" Value="True">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </ui:SymbolIcon.Style>
-                                </ui:SymbolIcon>
-                                <ui:SymbolIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Symbol="Play24">
-                                    <ui:SymbolIcon.Style>
-                                        <Style TargetType="ui:SymbolIcon">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding ViewModel.IsRotationPaused}" Value="True">
-                                                    <Setter Property="Visibility" Value="Visible" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </ui:SymbolIcon.Style>
-                                </ui:SymbolIcon>
-                            </Grid>
-                        </ui:Button>
-                        <ui:Button Style="{StaticResource HomeIconButton}" Command="{Binding ViewModel.PreviousFeatureCommand}"
-                                   IsEnabled="{Binding ViewModel.HasMultipleFeatures}" Icon="{ui:SymbolIcon Previous24}"
-                                   ToolTip="{DynamicResource Loc.Home.Previous}"
-                                   AutomationProperties.Name="{DynamicResource Loc.Home.Previous}" />
-                        <ui:Button Style="{StaticResource HomeIconButton}" Command="{Binding ViewModel.NextFeatureCommand}"
-                                   IsEnabled="{Binding ViewModel.HasMultipleFeatures}" Icon="{ui:SymbolIcon Next24}"
-                                   ToolTip="{DynamicResource Loc.Home.Next}"
-                                   AutomationProperties.Name="{DynamicResource Loc.Home.Next}" />
                     </WrapPanel>
 
-                    <Grid Margin="0,14,0,0">
+                    <Grid Margin="0,14,0,0" Visibility="{Binding ViewModel.HasMultipleFeatures, Converter={StaticResource HomeVisibility}}">
                         <ItemsControl ItemsSource="{Binding ViewModel.FeatureTabs}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -533,7 +499,7 @@
                     </Grid>
                 </StackPanel>
 
-                <!-- 外层：主题中性画框；内层：16:10 深色屏幕，承载完整图片或静态演示场景。 -->
+                <!-- 外层：主题中性画框；内层：16:9 深色屏幕，承载完整图片或静态演示场景。 -->
                 <Border x:Name="HeroVisual" Grid.Row="0" Grid.Column="2" Height="310" Padding="10"
                         VerticalAlignment="Center" Background="{DynamicResource CardBackground}"
                         BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1"
@@ -652,6 +618,16 @@
                                 </Grid>
                             </Grid>
                         </Border>
+                        <ui:Button Style="{StaticResource HomeHeroArrow}" HorizontalAlignment="Left"
+                                   Command="{Binding ViewModel.PreviousFeatureCommand}"
+                                   ToolTip="{DynamicResource Loc.Home.Previous}" AutomationProperties.Name="{DynamicResource Loc.Home.Previous}">
+                            <ui:SymbolIcon FontSize="24" Symbol="ChevronLeft24" />
+                        </ui:Button>
+                        <ui:Button Style="{StaticResource HomeHeroArrow}" HorizontalAlignment="Right"
+                                   Command="{Binding ViewModel.NextFeatureCommand}"
+                                   ToolTip="{DynamicResource Loc.Home.Next}" AutomationProperties.Name="{DynamicResource Loc.Home.Next}">
+                            <ui:SymbolIcon FontSize="24" Symbol="ChevronRight24" />
+                        </ui:Button>
                     </Grid>
                 </Border>
             </Grid>
@@ -789,8 +765,19 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Row="0" Grid.Column="0">
-                    <UniformGrid x:Name="TutorialsGrid" Columns="2">
-                        <ui:CardExpander Margin="0,0,16,0" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Desktop24}">
+                    <Grid x:Name="TutorialsGrid">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <ui:CardExpander Grid.Row="0" Grid.Column="0" Margin="0,0,12,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Desktop24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
@@ -804,10 +791,10 @@
                                 <components:SettingsNavigationButton Margin="0,12,0,0" HorizontalAlignment="Left"
                                                                      Destination="ScreenAndPlacement" GroupId="Common.Group.ChooseDisplayMode"
                                                                      Content="{DynamicResource Loc.Settings.Component.Configure}"
-                                                                     Style="{StaticResource HomeActionLink}" />
+                                                                     Style="{StaticResource HomeConfigureButton}" />
                             </StackPanel>
                         </ui:CardExpander>
-                        <ui:CardExpander Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Play24}">
+                        <ui:CardExpander Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Play24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
@@ -821,10 +808,10 @@
                                 <components:SettingsNavigationButton Margin="0,12,0,0" HorizontalAlignment="Left"
                                                                      Destination="MediaAndNotifications" GroupId="Common.MediaSource"
                                                                      Content="{DynamicResource Loc.Settings.Component.Configure}"
-                                                                     Style="{StaticResource HomeActionLink}" />
+                                                                     Style="{StaticResource HomeConfigureButton}" />
                             </StackPanel>
                         </ui:CardExpander>
-                        <ui:CardExpander Margin="0,0,16,0" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon TextQuote24}">
+                        <ui:CardExpander Grid.Row="1" Grid.Column="0" Margin="0,0,12,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon TextQuote24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
@@ -838,10 +825,10 @@
                                 <components:SettingsNavigationButton Margin="0,12,0,0" HorizontalAlignment="Left"
                                                                      Destination="Lyrics" GroupId="Common.Group.LyricsSources"
                                                                      Content="{DynamicResource Loc.Settings.Component.Configure}"
-                                                                     Style="{StaticResource HomeActionLink}" />
+                                                                     Style="{StaticResource HomeConfigureButton}" />
                             </StackPanel>
                         </ui:CardExpander>
-                        <ui:CardExpander Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Headphones24}">
+                        <ui:CardExpander Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Headphones24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
@@ -855,10 +842,10 @@
                                 <components:SettingsNavigationButton Margin="0,12,0,0" HorizontalAlignment="Left"
                                                                      Destination="DeviceManagement" GroupId="Common.OutputDevice"
                                                                      Content="{DynamicResource Loc.Settings.Component.Configure}"
-                                                                     Style="{StaticResource HomeActionLink}" />
+                                                                     Style="{StaticResource HomeConfigureButton}" />
                             </StackPanel>
                         </ui:CardExpander>
-                        <ui:CardExpander Margin="0,0,16,0" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon HandDraw24}">
+                        <ui:CardExpander Grid.Row="2" Grid.Column="0" Margin="0,0,12,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon HandDraw24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
@@ -872,10 +859,10 @@
                                 <components:SettingsNavigationButton Margin="0,12,0,0" HorizontalAlignment="Left"
                                                                      Destination="Interaction" GroupId="Interaction.Group.Wheel"
                                                                      Content="{DynamicResource Loc.Settings.Component.Configure}"
-                                                                     Style="{StaticResource HomeActionLink}" />
+                                                                     Style="{StaticResource HomeConfigureButton}" />
                             </StackPanel>
                         </ui:CardExpander>
-                    </UniformGrid>
+                    </Grid>
 
                     <StackPanel Margin="0,16,0,0">
                         <ui:CardExpander Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon QuestionCircle24}">

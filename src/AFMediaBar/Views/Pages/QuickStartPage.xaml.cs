@@ -15,7 +15,7 @@ namespace AFMediaBar.Views.Pages;
 /// <summary>原生首页布局与轮播呈现，不启动媒体或设备采样。</summary>
 public partial class QuickStartPage : INavigableView<QuickStartViewModel>
 {
-    private readonly DispatcherTimer _rotation = new(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(8) };
+    private readonly DispatcherTimer _rotation = new(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(4) };
     private readonly TranslateTransform _heroTranslate = new();
     private Window? _window;
     private ScrollViewer? _scroll;
@@ -32,7 +32,14 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
     {
         Detach();
         _window = Window.GetWindow(this);
-        if (_window is not null) { _window.Activated += OnWindowStateChanged; _window.Deactivated += OnWindowStateChanged; }
+        if (_window is not null)
+        {
+            _window.Activated += OnWindowStateChanged;
+            _window.Deactivated += OnWindowStateChanged;
+            _window.StateChanged += OnWindowStateChanged;
+        }
+        SystemParameters.StaticPropertyChanged += OnMotionEnvironmentChanged;
+        RenderCapability.TierChanged += OnWindowStateChanged;
         ViewModel.PropertyChanged += OnModelChanged;
         _scroll = PageLayout.ScrollViewer;
         if (_scroll is not null) _scroll.ScrollChanged += OnScrollChanged;
@@ -52,7 +59,15 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
     {
         _rotation.Stop();
         ViewModel.PropertyChanged -= OnModelChanged;
-        if (_window is not null) { _window.Activated -= OnWindowStateChanged; _window.Deactivated -= OnWindowStateChanged; _window = null; }
+        SystemParameters.StaticPropertyChanged -= OnMotionEnvironmentChanged;
+        RenderCapability.TierChanged -= OnWindowStateChanged;
+        if (_window is not null)
+        {
+            _window.Activated -= OnWindowStateChanged;
+            _window.Deactivated -= OnWindowStateChanged;
+            _window.StateChanged -= OnWindowStateChanged;
+            _window = null;
+        }
         if (_scroll is not null) { _scroll.ScrollChanged -= OnScrollChanged; _scroll = null; }
     }
     private void OnContentSizeChanged(object sender, SizeChangedEventArgs args) => ApplyColumns(args.NewSize.Width);
@@ -107,7 +122,15 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
         PlayerActions.Margin = narrow ? new Thickness(0, 10, 0, 0) : new Thickness(0);
         PlayerActionDivider.Visibility = narrow ? Visibility.Collapsed : Visibility.Visible;
         QuickLinks.Columns = width >= 900d ? 3 : width >= 560d ? 2 : 1;
-        TutorialsGrid.Columns = width >= 900d ? 2 : 1;
+        var tutorialColumns = width >= 900d ? 2 : 1;
+        TutorialsGrid.ColumnDefinitions[1].Width = new GridLength(tutorialColumns == 2 ? 1d : 0d, GridUnitType.Star);
+        for (var index = 0; index < TutorialsGrid.Children.Count; index++)
+        {
+            var card = (FrameworkElement)TutorialsGrid.Children[index];
+            Grid.SetColumn(card, index % tutorialColumns);
+            Grid.SetRow(card, index / tutorialColumns);
+            card.Margin = new Thickness(0, 0, tutorialColumns == 2 && index % 2 == 0 ? 12d : 0d, 8d);
+        }
         var helpWide = width >= 900d;
         HelpGap.Width = new GridLength(helpWide ? 28d : 0d);
         Grid.SetColumn(RuntimeHost, helpWide ? 2 : 0);
@@ -123,16 +146,15 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
         PullRequestsHost.Margin = communityWide ? new Thickness(0) : new Thickness(0, 20, 0, 0);
         UpdateRotation();
     }
-    private void OnWindowStateChanged(object? sender, EventArgs args) => UpdateRotation();
+    private void OnWindowStateChanged(object? sender, EventArgs args)
+    {
+        if (Dispatcher.CheckAccess()) UpdateRotation();
+        else Dispatcher.InvokeAsync(UpdateRotation);
+    }
+    private void OnMotionEnvironmentChanged(object? sender, PropertyChangedEventArgs args) => OnWindowStateChanged(sender, args);
     private void OnScrollChanged(object sender, ScrollChangedEventArgs args) => UpdateRotation();
     private void OnHeroPointerChanged(object sender, MouseEventArgs args) => UpdateRotation();
-    private void OnHeroFocus(object sender, KeyboardFocusChangedEventArgs args)
-    {
-        // 鼠标点击落在 Hero 内时焦点变化与悬停同时发生；这里不额外暂停，避免覆盖“暂停轮播”按钮的切换结果。
-        if (HeroGrid.IsMouseOver) return;
-        ViewModel.IsRotationPaused = true;
-        UpdateRotation();
-    }
+    private void OnRotationVisibilityChanged(object sender, DependencyPropertyChangedEventArgs args) => UpdateRotation();
     private void OnHeroKeyDown(object sender, KeyEventArgs args)
     {
         _keyboardAction = true;
@@ -169,8 +191,9 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
     }
     private void UpdateRotation()
     {
-        if (!IsLoaded || _window?.IsActive != true || ViewModel.IsRotationPaused || HeroGrid.IsMouseOver ||
-            !ViewModel.HasMultipleFeatures || !MotionPolicy.ResolveCurrent().UseContinuousMotion || _scroll is null)
+        if (!IsLoaded || !IsVisible || _window?.IsActive != true || _window.WindowState == WindowState.Minimized ||
+            HeroGrid.IsMouseOver || HeroGrid.IsKeyboardFocusWithin || !ViewModel.HasMultipleFeatures ||
+            !MotionPolicy.ResolveCurrent().UseContinuousMotion || _scroll is null || !_scroll.IsAncestorOf(HeroGrid))
         { _rotation.Stop(); return; }
         var bounds = HeroGrid.TransformToAncestor(_scroll).TransformBounds(new Rect(HeroGrid.RenderSize));
         if (!bounds.IntersectsWith(new Rect(0, 0, _scroll.ActualWidth, _scroll.ActualHeight))) { _rotation.Stop(); return; }
