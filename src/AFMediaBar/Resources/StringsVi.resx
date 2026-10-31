@@ -3333,7 +3333,7 @@ Mẫu bị loại: {3}; sự kiện: {4}</value></data>
   <data name="Settings.Preview.Title" xml:space="preserve"><value>Xem trước</value></data>
   <data name="Settings.Preview.Track" xml:space="preserve"><value>Bài hát mẫu</value></data>
   <data name="Settings.Preview.Artist" xml:space="preserve"><value>Nghệ sĩ mẫu</value></data>
-  <data name="Settings.Preview.Note" xml:space="preserve"><value>Dùng thiết lập hiện tại và dữ liệu mẫu cố định, vừa với vùng hiển thị. Không điều khiển trình phát hoặc thiết bị.</value></data>
+  <data name="Settings.Preview.Note" xml:space="preserve"><value>Dùng thiết lập hiện tại và dữ liệu mẫu cố định ở kích thước thực. Cuộn để xem nội dung ngoài vùng xem trước. Không điều khiển trình phát hoặc thiết bị.</value></data>
 <data name="Settings.Preview.Empty" xml:space="preserve"><value>Không giữ lại thành phần nào. Thanh sẽ ẩn khi không có nội dung phát.</value></data>
   <data name="Settings.Preview.Idle" xml:space="preserve"><value>Xem trước khi không phát</value></data>
   <data name="Settings.Personalization.Subtitle" xml:space="preserve"><value>Đặt chủ đề, chất liệu cửa sổ, màu nhấn và phông chữ.</value></data>

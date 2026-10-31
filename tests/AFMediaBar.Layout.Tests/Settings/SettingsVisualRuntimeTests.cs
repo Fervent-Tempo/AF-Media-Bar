@@ -12,6 +12,9 @@ using System.Windows.Threading;
 using System.Xml.Linq;
 using AFMediaBar.Resources;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Models.Layout;
+using AFMediaBar.Classes.Models.Settings;
+using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Components;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Media.Smtc;
@@ -40,6 +43,7 @@ public sealed class SettingsVisualRuntimeTests
         {
             VerifyNumericBinding(app);
             VerifyPageMarkup(app);
+            VerifyCategoryAndPreviewRuntime();
             VerifyGeneratedRowSearch();
             VerifyMetricStylePicker();
             VerifyFullPanelMinimumSize();
@@ -303,7 +307,7 @@ public sealed class SettingsVisualRuntimeTests
         var root = FindRepository();
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
         var eventNames = new HashSet<string> { "Loaded", "Unloaded", "Click", "SelectionChanged", "Checked", "Unchecked", "SizeChanged", "MouseLeftButtonDown", "KeyDown", "IsVisibleChanged", "PreviewKeyDown", "LostKeyboardFocus", "PreviewMouseWheel", "MouseEnter", "MouseLeave", "PreviewGotKeyboardFocus", "IsKeyboardFocusWithinChanged" };
-        foreach (var name in new[] { "QuickStart", "DisplayModes", "ScreenAndPlacement", "Appearance", "ApplicationAppearance", "RestState", "Interaction", "Lyrics", "ComponentsSettings", "FullPanel", "WidgetsSettings", "Spectrum", "Performance", "BluetoothBattery", "ExtraFeatures", "TrackNotifications", "Application", "Configuration", "Diagnostics", "MemoryTools", "DeviceManagement", "Experimental", "ReleaseHighlights", "About" })
+        foreach (var name in new[] { "QuickStart", "DisplayModes", "ScreenAndPlacement", "Appearance", "ApplicationAppearance", "RestState", "Interaction", "Lyrics", "ComponentsSettings", "FullPanel", "WidgetsSettings", "Spectrum", "Performance", "BluetoothBattery", "ExtraFeatures", "TrackNotifications", "Application", "Configuration", "Diagnostics", "MemoryTools", "DeviceManagement", "Experimental", "ReleaseHighlights", "About", "SettingsCategory" })
         {
             var document = XDocument.Load(Path.Combine(root, "src", "AFMediaBar", "Views", "Pages", name + "Page.xaml"));
             document.Root!.Attribute(x + "Class")!.Remove();
@@ -332,6 +336,62 @@ public sealed class SettingsVisualRuntimeTests
 
         // 新对话框不在页面清单里，按同一规则单独解析：资源键或遗漏的事件属性只会在运行时才炸。
         VerifyPlayerSupportDialogMarkup(root, eventNames);
+    }
+
+    // 这些视觉树按配置在运行时创建，页面标记检查无法覆盖频谱形状、原生图标和分类卡片资源。
+    private static void VerifyCategoryAndPreviewRuntime()
+    {
+        var previous = SettingsManager.Current;
+        var window = new Window { Width = 480, Height = 600, Left = -32000, Top = -32000,
+            ShowActivated = false, ShowInTaskbar = false };
+        try
+        {
+            var category = new SettingsCategoryPage();
+            foreach (var section in SettingsNavigationCatalog.Sections.Where(section => section.Pages.Count > 1))
+            {
+                category.ShowSection(section, SettingsMode.Taskbar);
+                category.Measure(new Size(800, 550));
+                var cards = ((Panel)((SettingsPageLayout)category.Content).Content).Children.OfType<SettingsNavigationButton>().ToArray();
+                CollectionAssert.AreEqual(section.Pages.ToArray(), cards.Select(card => card.Destination).ToArray());
+            }
+            SettingsManager.Current = new AppSettings
+            {
+                TaskbarExperience = TaskbarExperienceSettings.Default with { ComponentLayouts = new()
+                {
+                    Resident = [new(TaskbarRestComponent.Artwork, true), new(TaskbarRestComponent.MediaText, true),
+                        new(TaskbarRestComponent.Spectrum, true), new(TaskbarRestComponent.SystemMemory, true)],
+                    Hover = [new(TaskbarRestComponent.OutputDevice, true), new(TaskbarRestComponent.InputDevice, true), new(TaskbarRestComponent.Volume, true)]
+                } }
+            };
+            using var context = new SettingsPageContext();
+            using var localization = new LocalizationService();
+            using var model = new SettingsPreviewViewModel(new LegacySettingsConfiguration(context), localization);
+            var scene = new SettingsPreviewScene { DataContext = model };
+            window.Content = scene;
+            window.Show();
+            foreach (var orientation in new[] { LayoutOrientation.Horizontal, LayoutOrientation.Vertical })
+                foreach (var style in Enum.GetValues<SpectrumStyle>())
+                {
+                    context.Initialize(SettingsContext.Initial with { Orientation = orientation });
+                    SettingsManager.Current.SpectrumComponent = SettingsManager.Current.SpectrumComponent with { Style = style };
+                    model.ShowIdle = !model.ShowIdle;
+                    model.ShowIdle = false;
+                    window.UpdateLayout();
+                    Assert.IsNotNull(scene.Content);
+                    Assert.IsTrue(scene.DesiredSize.Width > 0 && scene.DesiredSize.Height > 0);
+                    var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(480, 600, 96, 96, PixelFormats.Pbgra32);
+                    bitmap.Render(scene);
+                }
+            foreach (var mode in new[] { SettingsPreviewMode.QuickControls, SettingsPreviewMode.FullPanel })
+            {
+                model.Mode = mode;
+                window.UpdateLayout();
+                Assert.IsNotNull(scene.Content);
+                var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(480, 600, 96, 96, PixelFormats.Pbgra32);
+                bitmap.Render(scene);
+            }
+        }
+        finally { window.Close(); SettingsManager.Current = previous; }
     }
 
     /// <summary>解析播放器支持对话框标记；内容与页面同样只保留纯标记、样式和运行时资源。</summary>

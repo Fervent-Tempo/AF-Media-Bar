@@ -435,7 +435,7 @@
                         MouseEnter="TaskbarOutputDeviceSurface_MouseEnter"
                         PreviewMouseWheel="TaskbarOutputDeviceSurface_PreviewMouseWheel"
                         MouseLeftButtonUp="TaskbarOutputDeviceSurface_MouseLeftButtonUp">
-                    <TextBlock x:Name="TaskbarOutputDeviceGlyph" Text="&#xE7F5;"
+                    <TextBlock x:Name="TaskbarOutputDeviceGlyph" Text="{x:Static local:MediaControlGlyphs.OutputDevice}"
                                FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                IsHitTestVisible="False" />
@@ -464,7 +464,7 @@
                         MouseEnter="TaskbarInputDeviceSurface_MouseEnter"
                         PreviewMouseWheel="TaskbarInputDeviceSurface_PreviewMouseWheel"
                         MouseLeftButtonUp="TaskbarInputDeviceSurface_MouseLeftButtonUp">
-                    <TextBlock x:Name="TaskbarInputDeviceGlyph" Text="&#xE720;"
+                    <TextBlock x:Name="TaskbarInputDeviceGlyph" Text="{x:Static local:MediaControlGlyphs.InputDevice}"
                                FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                IsHitTestVisible="False" />
@@ -493,7 +493,7 @@
                         MouseEnter="TaskbarVolumeSurface_MouseEnter"
                         PreviewMouseWheel="TaskbarVolumeSurface_PreviewMouseWheel"
                         MouseLeftButtonUp="TaskbarVolumeSurface_MouseLeftButtonUp">
-                    <TextBlock x:Name="TaskbarVolumeGlyph" Text="&#xE767;"
+                    <TextBlock x:Name="TaskbarVolumeGlyph" Text="{x:Static local:MediaControlGlyphs.Volume}"
                                FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                IsHitTestVisible="False" />
@@ -564,7 +564,7 @@
                                         Click="TaskbarDeviceButton_Click"
                                         MouseEnter="TaskbarDeviceButton_MouseEnter"
                                         PreviewMouseWheel="TaskbarDeviceButton_PreviewMouseWheel">
-                                    <TextBlock x:Name="TaskbarHoverDeviceGlyph" Text="&#xE7F5;" FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14" />
+                                    <TextBlock x:Name="TaskbarHoverDeviceGlyph" Text="{x:Static local:MediaControlGlyphs.OutputDevice}" FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14" />
                                 </Button>
                                 <Button x:Name="TaskbarInputDeviceButton"
                                         Style="{StaticResource TaskbarHoverButton}"
@@ -574,7 +574,7 @@
                                         Click="TaskbarInputDeviceButton_Click"
                                         MouseEnter="TaskbarInputDeviceButton_MouseEnter"
                                         PreviewMouseWheel="TaskbarInputDeviceButton_PreviewMouseWheel">
-                                    <TextBlock x:Name="TaskbarHoverInputDeviceGlyph" Text="&#xE720;" FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14" />
+                                    <TextBlock x:Name="TaskbarHoverInputDeviceGlyph" Text="{x:Static local:MediaControlGlyphs.InputDevice}" FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14" />
                                 </Button>
                                 <Button x:Name="TaskbarVolumeButton"
                                         Style="{StaticResource TaskbarHoverButton}"
@@ -583,7 +583,7 @@
                                         Click="TaskbarVolumeButton_Click"
                                         MouseEnter="TaskbarVolumeButton_MouseEnter"
                                         PreviewMouseWheel="TaskbarVolumeButton_PreviewMouseWheel">
-                                    <TextBlock x:Name="TaskbarHoverVolumeGlyph" Text="&#xE767;" FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14" />
+                                    <TextBlock x:Name="TaskbarHoverVolumeGlyph" Text="{x:Static local:MediaControlGlyphs.Volume}" FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14" />
                                 </Button>
                             </StackPanel>
                         </Grid>

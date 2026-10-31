@@ -19,7 +19,7 @@ namespace AFMediaBar.Components;
 public partial class TaskBarMediaControl
 {
     /// <summary>像素柱状图未点亮方块的相对不透明度；留一点亮度才看得出这是一列像素而不是空白。 / Relative opacity of an unlit pixel block; a little brightness is what makes the column read as pixels rather than as empty space.</summary>
-    private const double UnlitPixelOpacity = 0.16;
+    private const double UnlitPixelOpacity = SpectrumVisualFactory.UnlitPixelOpacity;
 
     private readonly List<SpectrumBarState> _spectrumBars = [];
     private readonly SpectrumPoint[] _waveformOutline = new SpectrumPoint[
@@ -341,27 +341,11 @@ public partial class TaskBarMediaControl
     private void BuildSpectrumBars(int bandCount, SpectrumStyle style, double contentHeight)
     {
         var initialScale = SpectrumPresentationPolicy.MinimumBarHeightDip / Math.Max(1, contentHeight);
-        var symmetric = SpectrumPresentationPolicy.IsSymmetric(style);
         var barStyle = (Style)FindResource("TaskbarSpectrumBar");
         var foreground = ResolveSpectrumBrush();
         for (var index = 0; index < bandCount; index++)
         {
-            var scale = new ScaleTransform(1, initialScale);
-            var bar = new Border
-            {
-                Style = barStyle,
-                Background = foreground,
-                Width = SpectrumPresentationPolicy.BarWidthDip,
-                Height = contentHeight,
-                // 对称柱状图以垂直中点为原点，因此音量升高时同时向上下延伸；贴底柱状图仍从底边向上长。
-                // The symmetric style scales about the vertical centre so a louder band grows both up and down, while the
-                // bottom-anchored style keeps growing from the bottom edge.
-                RenderTransformOrigin = symmetric ? new Point(0.5, 0.5) : new Point(0.5, 1),
-                RenderTransform = scale,
-                IsHitTestVisible = false
-            };
-            Canvas.SetLeft(bar, SpectrumPresentationPolicy.ResolveBarLeftDip(index));
-            Canvas.SetTop(bar, 0);
+            var (bar, scale) = SpectrumVisualFactory.CreateBar(index, contentHeight, style, foreground, initialScale, barStyle);
             TaskbarSpectrum.Children.Add(bar);
             _spectrumBars.Add(new SpectrumBarState(bar, scale));
         }
@@ -377,17 +361,7 @@ public partial class TaskBarMediaControl
             var column = new List<Border>(dotCount);
             for (var dotIndex = 0; dotIndex < dotCount; dotIndex++)
             {
-                var dot = new Border
-                {
-                    Style = pixelStyle,
-                    Background = foreground,
-                    Width = SpectrumPresentationPolicy.BarWidthDip,
-                    Height = SpectrumPresentationPolicy.PixelDotHeightDip,
-                    Opacity = UnlitPixelOpacity,
-                    IsHitTestVisible = false
-                };
-                Canvas.SetLeft(dot, SpectrumPresentationPolicy.ResolveBarLeftDip(index));
-                Canvas.SetTop(dot, SpectrumPresentationPolicy.ResolvePixelDotTopDip(dotIndex, contentHeight));
+                var dot = SpectrumVisualFactory.CreatePixel(index, dotIndex, contentHeight, foreground, pixelStyle);
                 TaskbarSpectrum.Children.Add(dot);
                 column.Add(dot);
             }
@@ -512,20 +486,7 @@ public partial class TaskBarMediaControl
         if (_spectrumWaveform is null || outline.Length == 0)
             return;
 
-        var points = new PointCollection(outline.Length);
-        foreach (var point in outline)
-            points.Add(new Point(point.X, point.Y));
-
-        var figure = new PathFigure
-        {
-            StartPoint = points[0],
-            IsClosed = true,
-            IsFilled = true
-        };
-        var segment = new PolyLineSegment { Points = points };
-        figure.Segments.Add(segment);
-        var geometry = new PathGeometry();
-        geometry.Figures.Add(figure);
+        var (geometry, segment) = SpectrumVisualFactory.CreateWaveform(outline);
         _spectrumWaveformSegment = segment;
         _spectrumWaveform.Data = geometry;
     }

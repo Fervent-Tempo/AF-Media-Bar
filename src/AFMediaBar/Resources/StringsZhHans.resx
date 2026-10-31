@@ -3293,7 +3293,7 @@
   <data name="Settings.Preview.Title" xml:space="preserve"><value>局部预览</value></data>
   <data name="Settings.Preview.Track" xml:space="preserve"><value>示例曲目</value></data>
   <data name="Settings.Preview.Artist" xml:space="preserve"><value>示例歌手</value></data>
-  <data name="Settings.Preview.Note" xml:space="preserve"><value>使用当前设置和固定示例数据；预览按可用区域缩放，不操作播放器或设备。</value></data>
+  <data name="Settings.Preview.Note" xml:space="preserve"><value>使用当前设置和固定示例数据；按实际尺寸显示，超出区域时可滚动查看，不操作播放器或设备。</value></data>
 <data name="Settings.Preview.Empty" xml:space="preserve"><value>未保留组件，没有媒体时媒体栏隐藏。</value></data>
   <data name="Settings.Preview.Idle" xml:space="preserve"><value>预览无媒体状态</value></data>
   <data name="Settings.Personalization.Subtitle" xml:space="preserve"><value>设置应用主题、窗口材质、强调色和字体。</value></data>

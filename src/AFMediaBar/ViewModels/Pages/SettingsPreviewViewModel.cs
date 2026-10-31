@@ -32,6 +32,9 @@ public sealed class SettingsPreviewViewModel : ObservableObject, IDisposable
     public TaskbarExperienceSettings Experience { get; private set; } = TaskbarExperienceSettings.Default;
     public AppearanceSettings Appearance { get; private set; } = AppearanceSettings.Default;
     public PerformanceComponentSettings Performance { get; private set; } = PerformanceComponentSettings.Default;
+    public SpectrumComponentSettings Spectrum { get; private set; } = SpectrumComponentSettings.Default;
+    public double LengthScale { get; private set; } = 1d;
+    public double ThicknessScale { get; private set; } = 1d;
     public bool IsVertical { get; private set; }
     public bool IsEmpty => Items.Count == 0;
     public string EmptyText => Translations.Get(IsRest ? "Settings.Preview.Empty" : "Settings.Preview.LayerDisabled");
@@ -54,6 +57,9 @@ public sealed class SettingsPreviewViewModel : ObservableObject, IDisposable
         Experience = current.TaskbarExperience.Normalize();
         Appearance = current.Appearance;
         Performance = current.PerformanceComponent.Normalize();
+        Spectrum = current.SpectrumComponent.Normalize();
+        LengthScale = current.LayoutLengthScalePercent / 100d;
+        ThicknessScale = current.LayoutThicknessScalePercent / 100d;
         IsVertical = _configuration.Context.Orientation == AFMediaBar.Classes.Models.Layout.LayoutOrientation.Vertical;
         var state = Mode == SettingsPreviewMode.QuickControls ? BarLayoutState.Hover : ShowIdle ? BarLayoutState.Idle : BarLayoutState.Resident;
         Items = (Mode == SettingsPreviewMode.QuickControls && !Experience.HoverLayerEnabled ? [] : ComponentLayoutPolicy.Resolve(current, state))

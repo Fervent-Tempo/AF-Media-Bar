@@ -3293,7 +3293,7 @@ Dropped samples: {3}; events: {4}</value></data>
   <data name="Settings.Preview.Title" xml:space="preserve"><value>Preview</value></data>
   <data name="Settings.Preview.Track" xml:space="preserve"><value>Sample track</value></data>
   <data name="Settings.Preview.Artist" xml:space="preserve"><value>Sample artist</value></data>
-  <data name="Settings.Preview.Note" xml:space="preserve"><value>Uses current settings and fixed sample data, fitted to the available space. It does not control players or devices.</value></data>
+  <data name="Settings.Preview.Note" xml:space="preserve"><value>Uses current settings and fixed sample data at actual size. Scroll to see content outside the preview area. It does not control players or devices.</value></data>
 <data name="Settings.Preview.Empty" xml:space="preserve"><value>No components retained. The bar is hidden without media.</value></data>
   <data name="Settings.Preview.Idle" xml:space="preserve"><value>Preview without media</value></data>
   <data name="Settings.Personalization.Subtitle" xml:space="preserve"><value>Set the application theme, window material, accent color, and fonts.</value></data>

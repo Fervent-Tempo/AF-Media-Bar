@@ -63,7 +63,7 @@ public sealed class SettingsPageLayout : HeaderedContentControl
         var width = Math.Min(1680d, Math.Max(0d, ActualWidth - 64d));
         var wide = Preview is not null && width >= 1000d;
         SetValue(PreviewColumnPropertyKey, new GridLength(wide ? Math.Clamp(width * .32d, 360d, 520d) : 0d));
-        SetValue(PreviewViewportHeightProperty, Math.Clamp(wide ? (_body?.ActualHeight ?? ActualHeight) - 210 : (_body?.ActualHeight ?? ActualHeight) * .45 - 160, 24d, 480d));
+        SetValue(PreviewViewportHeightProperty, Math.Clamp(wide ? (_body?.ActualHeight ?? ActualHeight) - 210 : (_body?.ActualHeight ?? ActualHeight) * .45, 120d, 480d));
         if (wide == IsWide) return;
         _changingLayout = true;
         SetValue(IsWidePropertyKey, wide);

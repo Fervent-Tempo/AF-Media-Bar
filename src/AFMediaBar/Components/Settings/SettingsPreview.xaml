@@ -13,9 +13,10 @@
                     </Style.Triggers>
                 </Style>
             </Border.Style>
-            <Viewbox Stretch="Uniform" StretchDirection="DownOnly" MaxHeight="{Binding PreviewViewportHeight, RelativeSource={RelativeSource AncestorType=components:SettingsPageLayout}, FallbackValue=360}">
-                <components:SettingsPreviewScene/>
-            </Viewbox>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" CanContentScroll="False"
+                          MaxHeight="{Binding PreviewViewportHeight, RelativeSource={RelativeSource AncestorType=components:SettingsPageLayout}, FallbackValue=360}">
+                <components:SettingsPreviewScene HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </ScrollViewer>
         </Border>
         <TextBlock Text="{Binding ScaleLabel}" Margin="0,10,0,0" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
             <TextBlock.Style>
