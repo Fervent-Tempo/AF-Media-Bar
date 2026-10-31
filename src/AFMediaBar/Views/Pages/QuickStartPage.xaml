@@ -139,43 +139,9 @@
             </Style.Triggers>
         </Style>
 
-        <!-- 状态条的动作入口：透明文字按钮，hover 只加浅底，不铺强调色。 -->
-        <Style x:Key="HomeActionLink" TargetType="{x:Type components:SettingsNavigationButton}" BasedOn="{StaticResource AfSettingsNavigationButtonStyle}">
-            <Setter Property="Padding" Value="8,6" />
-            <Setter Property="MinHeight" Value="32" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type components:SettingsNavigationButton}">
-                        <Border x:Name="Surface" Padding="{TemplateBinding Padding}" Background="Transparent"
-                                BorderBrush="Transparent" BorderThickness="1" CornerRadius="8">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <ContentPresenter VerticalAlignment="Center" ContentSource="Content" RecognizesAccessKey="True" />
-                                <ui:SymbolIcon Margin="5,0,0,0" VerticalAlignment="Center" FontSize="12"
-                                               Foreground="{TemplateBinding Foreground}" Symbol="ChevronRight24" />
-                            </StackPanel>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.5" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+        <Style x:Key="HomeActionLink" TargetType="{x:Type components:SettingsNavigationButton}"
+               BasedOn="{StaticResource AfSettingsNavigationButtonStyle}">
+            <Setter Property="FontSize" Value="13"/>
         </Style>
 
         <!-- 文字链接（查看全部）：透明底强调色文字，不占用按钮底色。 -->
@@ -223,47 +189,10 @@
             </Setter>
         </Style>
 
-        <!-- 常用设置磁贴：安静的行，用底部 1px 分隔线分组，不铺卡片底色。 -->
-        <Style x:Key="HomeQuickLink" TargetType="{x:Type components:SettingsNavigationButton}">
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="MinHeight" Value="56" />
-            <Setter Property="Padding" Value="0,10,6,10" />
-            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type components:SettingsNavigationButton}">
-                        <Border x:Name="Surface" Padding="{TemplateBinding Padding}" Background="Transparent"
-                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <ContentPresenter Margin="0,0,10,0" VerticalAlignment="Center" ContentSource="Content" RecognizesAccessKey="True" />
-                                <ui:SymbolIcon Grid.Column="1" VerticalAlignment="Center" FontSize="14"
-                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" Symbol="ChevronRight24" />
-                            </Grid>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.5" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+        <Style x:Key="HomeQuickLink" TargetType="{x:Type components:SettingsNavigationButton}"
+               BasedOn="{StaticResource AfSettingsCategoryCardStyle}">
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
         </Style>
 
         <Style x:Key="HomeExpander" TargetType="{x:Type ui:CardExpander}" BasedOn="{StaticResource AfSettingsExpanderStyle}">
