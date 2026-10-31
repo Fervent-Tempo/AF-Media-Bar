@@ -102,26 +102,22 @@
             </components:SettingsGroup>
             <components:SettingsGroup GroupId="Performance.Panel" Header="{DynamicResource Loc.Integration.Performance.Panel}">
                 <StackPanel>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Header="{DynamicResource Loc.Performance.Visual.Panel}" Icon="{ui:SymbolIcon DataUsage24}">
-                        <StackPanel>
-                            <components:SettingsCallout Text="{DynamicResource Loc.Performance.Visual.Description}" Margin="0,0,0,4"/>
-                            <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Media.Metric.SystemMemory.Title}" OptionId="metric:panel:SystemMemory">
-                                <components:MetricStylePicker Metric="SystemMemory" VisualStyle="{Binding ViewModel.Components.PanelSystemMemoryVisual, Mode=TwoWay}"/>
-                            </components:SettingsRow>
-                            <components:SettingsRow IsNested="True" Title="CPU" OptionId="metric:panel:SystemCpu">
-                                <components:MetricStylePicker Metric="SystemCpu" VisualStyle="{Binding ViewModel.Components.PanelSystemCpuVisual, Mode=TwoWay}"/>
-                            </components:SettingsRow>
-                            <components:SettingsRow IsNested="True" Title="GPU" OptionId="metric:panel:SystemGpu">
-                                <components:MetricStylePicker Metric="SystemGpu" VisualStyle="{Binding ViewModel.Components.PanelSystemGpuVisual, Mode=TwoWay}"/>
-                            </components:SettingsRow>
-                            <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Media.Metric.ProcessMemory.Title}" OptionId="metric:panel:ProcessMemory">
-                                <components:MetricStylePicker Metric="ProcessMemory" VisualStyle="{Binding ViewModel.Components.PanelProcessMemoryVisual, Mode=TwoWay}"/>
-                            </components:SettingsRow>
-                            <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Media.Metric.SystemNetwork.Title}" OptionId="metric:panel:SystemNetwork">
-                                <components:MetricStylePicker Metric="SystemNetwork" VisualStyle="{Binding ViewModel.Components.PanelSystemNetworkVisual, Mode=TwoWay}"/>
-                            </components:SettingsRow>
-                        </StackPanel>
-                    </ui:CardExpander>
+                    <components:SettingsCallout Text="{DynamicResource Loc.Performance.Visual.Description}" Margin="0,0,0,4"/>
+                    <components:SettingsRow Title="{DynamicResource Loc.Media.Metric.SystemMemory.Title}" OptionId="metric:panel:SystemMemory">
+                        <components:MetricStylePicker Metric="SystemMemory" VisualStyle="{Binding ViewModel.Components.PanelSystemMemoryVisual, Mode=TwoWay}"/>
+                    </components:SettingsRow>
+                    <components:SettingsRow Title="CPU" OptionId="metric:panel:SystemCpu">
+                        <components:MetricStylePicker Metric="SystemCpu" VisualStyle="{Binding ViewModel.Components.PanelSystemCpuVisual, Mode=TwoWay}"/>
+                    </components:SettingsRow>
+                    <components:SettingsRow Title="GPU" OptionId="metric:panel:SystemGpu">
+                        <components:MetricStylePicker Metric="SystemGpu" VisualStyle="{Binding ViewModel.Components.PanelSystemGpuVisual, Mode=TwoWay}"/>
+                    </components:SettingsRow>
+                    <components:SettingsRow Title="{DynamicResource Loc.Media.Metric.ProcessMemory.Title}" OptionId="metric:panel:ProcessMemory">
+                        <components:MetricStylePicker Metric="ProcessMemory" VisualStyle="{Binding ViewModel.Components.PanelProcessMemoryVisual, Mode=TwoWay}"/>
+                    </components:SettingsRow>
+                    <components:SettingsRow Title="{DynamicResource Loc.Media.Metric.SystemNetwork.Title}" OptionId="metric:panel:SystemNetwork">
+                        <components:MetricStylePicker Metric="SystemNetwork" VisualStyle="{Binding ViewModel.Components.PanelSystemNetworkVisual, Mode=TwoWay}"/>
+                    </components:SettingsRow>
                 </StackPanel>
             </components:SettingsGroup>
         </StackPanel>
