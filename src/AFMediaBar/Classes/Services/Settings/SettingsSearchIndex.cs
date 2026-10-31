@@ -191,7 +191,8 @@ public static class SettingsSearchIndex
             "Common.HoverLayer",
             "Search.DisplayModes.HoverLayer.Description",
             language,
-            ["悬停", "悬停层", "懸停層", "快捷控制", "hover", "hover layer", "quick controls", "鼠标", "按钮", "播放暂停", "上一首", "下一首", "输出设备", "音量", "进度"]),
+            ["悬停", "悬停层", "懸停層", "快捷控制", "hover", "hover layer", "quick controls", "鼠标", "按钮", "播放暂停", "上一首", "下一首", "输出设备", "音量", "进度",
+                "对齐", "對齊", "按钮对齐", "按鈕對齊", "悬停按钮对齐", "alignment", "button alignment", "靠左", "靠右", "居中", "置中", "自动", "自動", "automatic"]),
         Create(
             SettingsPageKey.Components,
             "Common.FullLayer",

@@ -41,7 +41,7 @@ public partial class TaskBarMediaControl
         var actions = Math.Ceiling(MeasureHoverActionsPrimaryLength() * scale);
         var left = Math.Ceiling(layout.TextLeft * scale) + Math.Ceiling((_isVertical ? 2 : TaskbarHoverContent.Margin.Left) * scale);
         var right = Math.Ceiling((baseLength - layout.TextLeft - layout.TextWidth) * scale) + Math.Ceiling((_isVertical ? 2 : TaskbarHoverContent.Margin.Right) * scale);
-        var minimum = TaskbarArrangementPolicy.MinimumLength(left, right, actions, PresentationSettings.Position);
+        var minimum = TaskbarArrangementPolicy.MinimumLength(left, right, actions, ResolvedTaskbarHoverAlignment);
         return Math.Max(Math.Ceiling(_minimumPrimaryLength * scale), minimum) / scale;
     }
 
@@ -57,7 +57,8 @@ public partial class TaskBarMediaControl
     internal TaskbarContentArrangement ResolvedTaskbarArrangement => TaskbarArrangementPolicy.ResolveContent(
         PresentationSettings.TaskbarExperience.Normalize().Arrangement, PresentationSettings.Position);
 
-    private TaskbarBarPosition ResolvedTaskbarHoverAlignment => PresentationSettings.Position;
+    private TaskbarBarPosition ResolvedTaskbarHoverAlignment =>
+        PresentationSettings.TaskbarExperience.Normalize().HoverAlignment ?? PresentationSettings.Position;
 
     private double MeasureHoverActionsPrimaryLength()
     {
@@ -107,21 +108,38 @@ public partial class TaskBarMediaControl
         var textLeftPx = (int)Math.Round(textLeft * dpiScale);
         var origin = _taskbarAnchorTwicePx.HasValue ? _taskbarPrimaryPositionPx : 0;
         var alignment = ResolvedTaskbarHoverAlignment;
+        var position = PresentationSettings.Position;
         double absolute;
-        if (alignment == TaskbarBarPosition.Center)
+        if (alignment == position)
         {
-            var anchor = _taskbarAnchorTwicePx ?? (long)Math.Round(primaryLength * dpiScale);
-            absolute = Math.Floor((anchor - actionsPx) / 2.0);
+            // 自动（或显式值恰好等于媒体栏位置）沿用既有锚点算法，保持默认呈现不变。
+            if (alignment == TaskbarBarPosition.Center)
+            {
+                var anchor = _taskbarAnchorTwicePx ?? (long)Math.Round(primaryLength * dpiScale);
+                absolute = Math.Floor((anchor - actionsPx) / 2.0);
+            }
+            else
+            {
+                // Use a canonical fixed-width layout, rather than subtracting changing widths.
+                // This also avoids a one-pixel ties-to-even oscillation at the right anchor.
+                var anchor = _taskbarAnchorTwicePx.HasValue ? _taskbarAnchorTwicePx.Value / 2.0
+                    : alignment == TaskbarBarPosition.End ? Math.Round(primaryLength * dpiScale) : 0;
+                absolute = alignment == TaskbarBarPosition.End
+                    ? anchor - Math.Ceiling(Math.Round(referenceTrailing * dpiScale, 6)) - trailingPx - actionsPx
+                    : anchor + Math.Ceiling(Math.Round(referenceLeading * dpiScale, 6)) + leadingPx;
+            }
         }
         else
         {
-            // Use a canonical fixed-width layout, rather than subtracting changing widths.
-            // This also avoids a one-pixel ties-to-even oscillation at the right anchor.
-            var anchor = _taskbarAnchorTwicePx.HasValue ? _taskbarAnchorTwicePx.Value / 2.0
-                : alignment == TaskbarBarPosition.End ? Math.Round(primaryLength * dpiScale) : 0;
-            absolute = alignment == TaskbarBarPosition.End
-                ? anchor - Math.Ceiling(Math.Round(referenceTrailing * dpiScale, 6)) - trailingPx - actionsPx
-                : anchor + Math.Ceiling(Math.Round(referenceLeading * dpiScale, 6)) + leadingPx;
+            // 独立对齐与媒体栏位置不同：宿主锚点只描述媒体栏位置，这里按栏首尾重新取边。
+            var start = (double)origin;
+            var end = origin + Math.Round(primaryLength * dpiScale);
+            absolute = alignment switch
+            {
+                TaskbarBarPosition.End => end - Math.Ceiling(Math.Round(referenceTrailing * dpiScale, 6)) - trailingPx - actionsPx,
+                TaskbarBarPosition.Center => Math.Floor((start + end - actionsPx) / 2.0),
+                _ => start + Math.Ceiling(Math.Round(referenceLeading * dpiScale, 6)) + leadingPx
+            };
         }
         if (!hasActions)
         {

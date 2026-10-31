@@ -850,6 +850,15 @@
   <data name="DisplayModes.Hover.Row.Spacing.Title" xml:space="preserve">
     <value>Khoảng cách nút di chuột</value>
   </data>
+  <data name="DisplayModes.Hover.Row.Alignment.Description" xml:space="preserve">
+    <value>Đặt các nút di chuột ở bên trái, chính giữa hoặc bên phải. Tự động sẽ theo vị trí thanh media; căn chỉnh nút không thay đổi cách bố trí ảnh bìa hay nội dung khác.</value>
+  </data>
+  <data name="DisplayModes.Hover.Row.Alignment.Title" xml:space="preserve">
+    <value>Căn chỉnh nút di chuột</value>
+  </data>
+  <data name="DisplayModes.Hover.Alignment.Automatic" xml:space="preserve">
+    <value>Tự động</value>
+  </data>
   <data name="DisplayModes.Island.Group.Description" xml:space="preserve">
     <value>Cài đặt giao diện cho Dynamic Island; không ảnh hưởng đến Taskbar.</value>
   </data>

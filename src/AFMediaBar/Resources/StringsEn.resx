@@ -1102,6 +1102,15 @@
   <data name="DisplayModes.Hover.Row.Spacing.Title" xml:space="preserve">
     <value>Hover button spacing</value>
   </data>
+  <data name="DisplayModes.Hover.Row.Alignment.Description" xml:space="preserve">
+    <value>Place hover buttons on the left, in the center, or on the right. Automatic follows the bar position; button alignment does not change the arrangement of artwork or other content.</value>
+  </data>
+  <data name="DisplayModes.Hover.Row.Alignment.Title" xml:space="preserve">
+    <value>Hover button alignment</value>
+  </data>
+  <data name="DisplayModes.Hover.Alignment.Automatic" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
   <data name="DisplayModes.Rest.Row.DeviceButton.Description" xml:space="preserve">
     <value>Keep the device button visible, using text space; click to choose or scroll to switch devices.</value>
   </data>

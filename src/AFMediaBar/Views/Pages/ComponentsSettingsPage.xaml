@@ -23,6 +23,14 @@
                     <AdornerDecorator>
                         <ItemsControl ItemsSource="{Binding ViewModel.Layers.HoverLayoutEntries}" Style="{StaticResource AfSettingsSortableListStyle}" ItemTemplate="{StaticResource AfSettingsComponentRowTemplate}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layers.ReorderLayoutCommand}"/>
                     </AdornerDecorator>
+                    <components:SettingsRow Title="{DynamicResource Loc.DisplayModes.Hover.Row.Alignment.Title}" Description="{DynamicResource Loc.DisplayModes.Hover.Row.Alignment.Description}" Icon="{ui:SymbolIcon ArrowMove24}" OptionId="hover:alignment">
+                        <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedIndex="{Binding ViewModel.Layers.TaskbarHoverAlignmentIndex, Mode=TwoWay}">
+                            <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Hover.Alignment.Automatic}"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.Common.AlignLeft}"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.Common.AlignCenter}"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.Common.AlignRight}"/>
+                        </ComboBox>
+                    </components:SettingsRow>
                 </StackPanel>
             </components:SettingsGroup>
             <components:SettingsGroup GroupId="Appearance.Group.InteractionButtons" Header="{DynamicResource Loc.Appearance.Group.InteractionButtons}" Icon="{ui:SymbolIcon CursorClick24}">

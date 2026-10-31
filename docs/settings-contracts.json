@@ -219,6 +219,7 @@
       },
       "fullPanelEntryVisible": "v1.2.0",
       "fullPanelEntryTrigger": "v1.6.0",
+      "hoverAlignment": "unreleased",
       "hoverButtonSpacingDip": "v1.3.0",
       "hoverControls": {
         "$release": "v1.2.0",
@@ -1054,7 +1055,8 @@
     "TaskbarBarPosition": {
       "paths": [
         "settings.position",
-        "settings.floatingBar.profile.position"
+        "settings.floatingBar.profile.position",
+        "settings.taskbarExperience.hoverAlignment"
       ],
       "members": {
         "Start": {

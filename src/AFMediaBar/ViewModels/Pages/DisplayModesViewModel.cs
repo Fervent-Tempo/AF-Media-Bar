@@ -431,6 +431,36 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>悬停按钮的独立对齐；null 表示跟随媒体栏位置，不改变内容排布方向。</summary>
+    public TaskbarBarPosition? HoverAlignment
+    {
+        get => _configuration.Current.TaskbarExperience.Normalize().HoverAlignment;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { HoverAlignment = value });
+    }
+
+    /// <summary>界面选择序号不参与存储，自动项仍写入 null。</summary>
+    public int TaskbarHoverAlignmentIndex
+    {
+        get => HoverAlignment switch
+        {
+            TaskbarBarPosition.Start => 1,
+            TaskbarBarPosition.Center => 2,
+            TaskbarBarPosition.End => 3,
+            _ => 0
+        };
+        set
+        {
+            if (value is < 0 or > 3) return;
+            HoverAlignment = value switch
+            {
+                1 => TaskbarBarPosition.Start,
+                2 => TaskbarBarPosition.Center,
+                3 => TaskbarBarPosition.End,
+                _ => null
+            };
+        }
+    }
+
     public bool IsTaskbarPositionLocked
     {
         get => _configuration.Current.TaskbarBarPositionLocked;
@@ -606,7 +636,12 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
                 if (e.PropertyName == nameof(AppSettings.TaskbarExperience))
                     RaiseExperience();
                 else
+                {
                     OnPropertyChanged(nameof(TaskbarArrangement));
+                    // 自动项在外部位置变化后仍是自动；通知一次，让下拉框按同一值重读而不是保留旧输入。
+                    OnPropertyChanged(nameof(HoverAlignment));
+                    OnPropertyChanged(nameof(TaskbarHoverAlignmentIndex));
+                }
             }
             finally { _isRefreshing = false; }
         }
@@ -744,6 +779,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(TaskbarArrangementOverride));
         OnPropertyChanged(nameof(TaskbarArrangementIndex));
         OnPropertyChanged(nameof(TaskbarArrangement));
+        OnPropertyChanged(nameof(HoverAlignment));
+        OnPropertyChanged(nameof(TaskbarHoverAlignmentIndex));
         OnPropertyChanged(nameof(HoverLayerEnabled));
         OnPropertyChanged(nameof(FullPanelEntryVisible));
         OnPropertyChanged(nameof(FullPanelEntryTriggerIndex));

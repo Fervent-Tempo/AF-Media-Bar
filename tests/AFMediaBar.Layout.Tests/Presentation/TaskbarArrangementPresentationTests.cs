@@ -208,6 +208,7 @@ public sealed class TaskbarArrangementPresentationTests
                 AssertLyricsSurviveOrientationChanges();
                 AssertLyricsTimelineChangesResizeRepeatedText();
                 AssertFullPanelEntryFollowsStableActions();
+                AssertExplicitHoverAlignmentKeepsButtonsStable(control, hover);
                 control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
                 MetadataMarqueePresentationChecks.Verify();
             }
@@ -310,6 +311,54 @@ public sealed class TaskbarArrangementPresentationTests
         }
         finally { control.DisposePresentation(); SettingsManager.Replace(original); }
     }
+    /// <summary>显式悬停对齐必须让真实按钮留在文字区内，并保持重复布局稳定。</summary>
+    private static void AssertExplicitHoverAlignmentKeepsButtonsStable(TaskBarMediaControl control, Grid hover)
+    {
+        var original = SettingsManager.Current.Clone();
+        var layer = (Border)control.FindName("TaskbarHoverLayer")!;
+        var buttons = new[] { "TaskbarPreviousButton", "TaskbarPlayPauseButton", "TaskbarNextButton", "TaskbarDeviceButton", "TaskbarVolumeButton" }
+            .Select(name => (Button)control.FindName(name)).ToArray();
+        try
+        {
+            SettingsManager.Current.Position = TaskbarBarPosition.Center;
+            const double Width = 620.25;
+            const long AnchorTwice = 2000;
+            var left = AFMediaBar.Classes.Services.TaskbarPlacementPolicy.Position(AnchorTwice, (int)Math.Round(Width), TaskbarBarPosition.Center);
+            foreach (var hoverAlignment in new[] { TaskbarBarPosition.Start, TaskbarBarPosition.End })
+            {
+                SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+                { HoverAlignment = hoverAlignment, HoverLayerEnabled = true, Arrangement = TaskbarContentArrangement.Left };
+                control.ApplyTaskbarExperienceSettings();
+                control.RefreshDesiredSize();
+                MediaBarTestAccess.GetField("_isTaskbarHoverVisible", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(control, true);
+                hover.Visibility = Visibility.Visible;
+                control.ApplyPlacementAnchor(left, AnchorTwice, 1);
+                double? anchor = null;
+                for (var frame = 0; frame < 24; frame++)
+                {
+                    control.ApplyPrimaryLength(Width);
+                    hover.Width = ((FrameworkElement)control.FindName("SongInfoStackPanel")).Width;
+                    control.Width = Width;
+                    control.Measure(new Size(Width, 44));
+                    control.Arrange(new Rect(0, 0, Width, 44));
+                    control.UpdateLayout();
+                    var point = ((Button)control.FindName("TaskbarPlayPauseButton")).TranslatePoint(new Point(), control).X;
+                    if (anchor is { } expected)
+                        Assert.AreEqual(expected, point, 0.01, $"{hoverAlignment}: repeated layout moved the hover button at frame {frame}");
+                    anchor = point;
+                    foreach (var button in buttons)
+                    {
+                        if (button.Visibility != Visibility.Visible) continue;
+                        var origin = button.TranslatePoint(new Point(), layer);
+                        Assert.IsTrue(origin.X >= -0.01 && origin.X + button.ActualWidth <= layer.ActualWidth + 0.01,
+                            $"{hoverAlignment}: {button.Name} escaped the hover text region ({origin.X} + {button.ActualWidth} > {layer.ActualWidth}).");
+                    }
+                }
+            }
+        }
+        finally { SettingsManager.Replace(original); }
+    }
+
     private static void AssertSmallArtworkLayout(TaskBarMediaControl control)
     {
         var original = SettingsManager.Current;

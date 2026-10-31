@@ -1102,6 +1102,15 @@
   <data name="DisplayModes.Hover.Row.Spacing.Title" xml:space="preserve">
     <value>懸停按鈕間距</value>
   </data>
+  <data name="DisplayModes.Hover.Row.Alignment.Description" xml:space="preserve">
+    <value>選擇懸停按鈕靠左、置中或靠右顯示。預設跟隨媒體列位置；按鈕對齊不改變封面及其他內容的排列。</value>
+  </data>
+  <data name="DisplayModes.Hover.Row.Alignment.Title" xml:space="preserve">
+    <value>懸停按鈕對齊</value>
+  </data>
+  <data name="DisplayModes.Hover.Alignment.Automatic" xml:space="preserve">
+    <value>自動</value>
+  </data>
   <data name="DisplayModes.Rest.Row.DeviceButton.Description" xml:space="preserve">
     <value>常駐輸出裝置按鈕，佔用文字空間；點擊選裝置，捲動切換。</value>
   </data>

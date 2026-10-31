@@ -190,6 +190,9 @@ public readonly record struct TaskbarExperienceSettings(
     /// <summary>用户手动选择的内容排布；null 表示跟随任务栏对齐。</summary>
     public TaskbarContentArrangement? Arrangement { get; init; }
 
+    /// <summary>悬停按钮的独立对齐；null 表示跟随媒体栏位置，不改变内容排布方向。</summary>
+    public TaskbarBarPosition? HoverAlignment { get; init; }
+
     /// <summary>静置层是否显示播放态频谱。 / Whether the rest layer shows the playing spectrum.</summary>
     public bool SpectrumVisible { get; init; } = true;
 
@@ -345,6 +348,7 @@ public readonly record struct TaskbarExperienceSettings(
             ContentLayout = Enum.IsDefined(ContentLayout) ? ContentLayout : defaults.ContentLayout,
             MediaTextAlignment = Enum.IsDefined(MediaTextAlignment) ? MediaTextAlignment : defaults.MediaTextAlignment,
             Arrangement = Arrangement is { } arrangement && Enum.IsDefined(arrangement) ? arrangement : null,
+            HoverAlignment = HoverAlignment is { } hoverAlignment && Enum.IsDefined(hoverAlignment) ? hoverAlignment : null,
             FullPanel = FullPanel.Normalize(),
             ComponentLayouts = ComponentLayouts?.Normalize(),
             LengthMode = Enum.IsDefined(LengthMode) ? LengthMode : defaults.LengthMode,
