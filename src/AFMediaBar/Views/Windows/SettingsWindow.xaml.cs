@@ -32,6 +32,7 @@ namespace AFMediaBar.Views.Windows
     {
         private Panel? _transitionContent;
         private readonly SettingsSidebarSelectionAnimator _sidebarSelection;
+        private readonly SettingsSidebarExpansionAnimator _sidebarExpansion;
         private readonly AppIconService _appIconService;
         private readonly IServiceScope _sessionScope;
         private readonly SettingsContextService _contexts;
@@ -95,6 +96,7 @@ namespace AFMediaBar.Views.Windows
             InitializeComponent();
             SourceInitialized += OnInitialWindowSize;
             _sidebarSelection = new SettingsSidebarSelectionAnimator(RootNavigation, SidebarSelectionOverlay);
+            _sidebarExpansion = new SettingsSidebarExpansionAnimator(RootNavigation);
             SettingsResetDialog.SetHost(RootContentDialog, _contexts.CancellationToken);
             ArtistSeparatorsEditor.SetHost(RootContentDialog, _contexts.CancellationToken);
             PlayerSupportDialog.SetHost(RootContentDialog, _contexts.CancellationToken);
@@ -329,6 +331,7 @@ namespace AFMediaBar.Views.Windows
             PlayerSupportDialog.ClearHost(RootContentDialog);
             _sessionScope.Dispose();
             _sidebarSelection.Dispose();
+            _sidebarExpansion.Dispose();
             SettingsRevealAnimator.Cancel(_transitionContent);
             _transitionContent = null;
             RootNavigation.Navigated -= OnNavigated;
@@ -547,6 +550,8 @@ namespace AFMediaBar.Views.Windows
             if (_currentSectionId is { } sectionId && _sectionItems.TryGetValue(sectionId, out var selectedSection))
                 _sidebarSelection.Highlight(selectedSection);
             else HighlightSidebarItem(SettingsPageProvider.PageTypes[_currentPage]);
+            // 菜单项已重建：重新挂接展开动画，旧项订阅与时钟在重挂接时释放。
+            _sidebarExpansion.Sync();
         }
 
         private static NavigationViewItem CreateNavigationItem(SettingsPageDefinition definition, bool includeIcon = true)

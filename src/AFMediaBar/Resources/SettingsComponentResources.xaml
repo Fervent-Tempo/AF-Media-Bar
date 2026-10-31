@@ -398,12 +398,17 @@
                         <Border x:Name="ChevronSurface" Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
                             <ui:SymbolIcon x:Name="ChevronIcon" Symbol="ChevronDown24" FontSize="16"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                           RenderTransformOrigin="0.5,0.5"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                                <ui:SymbolIcon.RenderTransform>
+                                    <RotateTransform Angle="0"/>
+                                </ui:SymbolIcon.RenderTransform>
+                            </ui:SymbolIcon>
                         </Border>
                     </Grid>
                 </Grid>
             </Border>
-            <ItemsControl x:Name="MenuItemsPresenter" Grid.Row="1" ItemsSource="{TemplateBinding MenuItems}"
+            <ItemsControl x:Name="MenuItemsPresenter" Grid.Row="1" ItemsSource="{TemplateBinding MenuItems}" ClipToBounds="True"
                           Margin="16,0,0,0" Visibility="Collapsed" Focusable="False" KeyboardNavigation.DirectionalNavigation="Contained">
                 <ItemsControl.ItemContainerStyle>
                     <Style TargetType="{x:Type ui:NavigationViewItem}" BasedOn="{StaticResource {x:Type ui:NavigationViewItem}}">
@@ -417,7 +422,6 @@
             <Trigger Property="HasMenuItems" Value="True"><Setter TargetName="PART_ChevronGrid" Property="Visibility" Value="Visible"/></Trigger>
             <Trigger Property="IsExpanded" Value="True">
                 <Setter TargetName="MenuItemsPresenter" Property="Visibility" Value="Visible"/>
-                <Setter TargetName="ChevronIcon" Property="Symbol" Value="ChevronUp24"/>
             </Trigger>
             <Trigger SourceName="MainBorder" Property="IsMouseOver" Value="True">
                 <Setter TargetName="MainBorder" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}"/>
