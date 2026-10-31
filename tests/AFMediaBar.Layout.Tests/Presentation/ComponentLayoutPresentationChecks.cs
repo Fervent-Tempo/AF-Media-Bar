@@ -50,7 +50,7 @@ internal static class ComponentLayoutPresentationChecks
                         var artwork = (Border)control.FindName("SongImageBorder");
                         var handlePoint = handle.TranslatePoint(new Point(), control);
                         var coverPoint = artwork.TranslatePoint(new Point(), control);
-                        Assert.AreEqual(12d, vertical ? handle.Height : handle.Width, .01);
+                        Assert.AreEqual(24d, vertical ? handle.Height : handle.Width, .01);
                         Assert.IsTrue(control.IsBarDragHandleHit(handle));
                         Assert.IsFalse(control.IsBarDragHandleHit(artwork));
                         if (vertical) Assert.IsTrue(handlePoint.Y > coverPoint.Y, "竖向手柄始终在底端。");

@@ -19,7 +19,7 @@ public static class ComponentLayoutPolicy
         } };
     }
 
-    public const double HandleLength = 12;
+    public const double HandleLength = 24;
     public static IReadOnlyList<TaskbarRestComponent> MetricComponents { get; } =
         [TaskbarRestComponent.SystemMemory, TaskbarRestComponent.SystemCpu, TaskbarRestComponent.SystemGpu, TaskbarRestComponent.ProcessMemory, TaskbarRestComponent.SystemNetwork];
     public static IReadOnlyList<TaskbarRestComponent> TransportComponents { get; } =

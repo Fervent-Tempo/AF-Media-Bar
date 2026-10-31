@@ -60,9 +60,15 @@ public partial class TaskBarMediaControl
 
     private void InitializeComponentLayoutInput()
     {
+        var handleStyle = new Style(typeof(Border));
+        handleStyle.Setters.Add(new Setter(Border.BackgroundProperty, Brushes.Transparent));
+        var hover = new Trigger { Property = IsMouseOverProperty, Value = true };
+        hover.Setters.Add(new Setter(Border.BackgroundProperty, new DynamicResourceExtension("TaskbarHoverButtonOverBrush")));
+        handleStyle.Triggers.Add(hover);
         _barMoveHandle = new Border
         {
-            Background = Brushes.Transparent,
+            Style = handleStyle,
+            CornerRadius = new CornerRadius(4),
             Opacity = 0,
             Visibility = Visibility.Collapsed,
             HorizontalAlignment = HorizontalAlignment.Left,
@@ -70,7 +76,7 @@ public partial class TaskBarMediaControl
             Child = new TextBlock
             {
                 Text = "⠿",
-                FontSize = 12,
+                FontSize = 16,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 IsHitTestVisible = false
@@ -174,6 +180,8 @@ public partial class TaskBarMediaControl
                 }, HandoffBehavior.SnapshotAndReplace);
         }
         var locked = PresentationSettings.TaskbarBarPositionLocked;
+        if (_barDragActive) _barMoveHandle.SetResourceReference(Border.BackgroundProperty, "TaskbarHoverButtonPressedBrush");
+        else _barMoveHandle.ClearValue(Border.BackgroundProperty);
         _barMoveHandle.Cursor = locked ? Cursors.No : Cursors.SizeAll;
         _barMoveHandle.ToolTip = Translations.Get(locked ? "ComponentLayout.Locked" : "ComponentLayout.Move");
         System.Windows.Automation.AutomationProperties.SetName(_barMoveHandle, _barMoveHandle.ToolTip.ToString());
@@ -185,6 +193,7 @@ public partial class TaskBarMediaControl
         if (_barMoveHandle is null) return;
         _barMoveHandle.BeginAnimation(OpacityProperty, null);
         _barMoveHandle.Opacity = 0;
+        _barMoveHandle.ClearValue(Border.BackgroundProperty);
     }
     private void PlaceBarMoveHandle(TaskbarRestLayout layout, double crossSize)
     {
