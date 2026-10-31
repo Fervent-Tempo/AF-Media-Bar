@@ -123,12 +123,10 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
         PlayerActionDivider.Visibility = narrow ? Visibility.Collapsed : Visibility.Visible;
         QuickLinks.Columns = width >= 900d ? 3 : width >= 560d ? 2 : 1;
         var tutorialColumns = width >= 900d ? 2 : 1;
-        TutorialsGrid.ColumnDefinitions[1].Width = new GridLength(tutorialColumns == 2 ? 1d : 0d, GridUnitType.Star);
+        TutorialsGrid.Columns = tutorialColumns;
         for (var index = 0; index < TutorialsGrid.Children.Count; index++)
         {
             var card = (FrameworkElement)TutorialsGrid.Children[index];
-            Grid.SetColumn(card, index % tutorialColumns);
-            Grid.SetRow(card, index / tutorialColumns);
             card.Margin = new Thickness(0, 0, tutorialColumns == 2 && index % 2 == 0 ? 12d : 0d, 8d);
         }
         var helpWide = width >= 900d;

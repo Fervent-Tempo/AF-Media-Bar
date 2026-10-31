@@ -765,19 +765,8 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Row="0" Grid.Column="0">
-                    <Grid x:Name="TutorialsGrid">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <ui:CardExpander Grid.Row="0" Grid.Column="0" Margin="0,0,12,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Desktop24}">
+                    <components:ColumnFlowPanel x:Name="TutorialsGrid" Columns="2">
+                        <ui:CardExpander Margin="0,0,12,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Desktop24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
@@ -794,7 +783,7 @@
                                                                      Style="{StaticResource HomeConfigureButton}" />
                             </StackPanel>
                         </ui:CardExpander>
-                        <ui:CardExpander Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Play24}">
+                        <ui:CardExpander Margin="0,0,0,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Play24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
@@ -811,7 +800,7 @@
                                                                      Style="{StaticResource HomeConfigureButton}" />
                             </StackPanel>
                         </ui:CardExpander>
-                        <ui:CardExpander Grid.Row="1" Grid.Column="0" Margin="0,0,12,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon TextQuote24}">
+                        <ui:CardExpander Margin="0,0,12,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon TextQuote24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
@@ -828,7 +817,7 @@
                                                                      Style="{StaticResource HomeConfigureButton}" />
                             </StackPanel>
                         </ui:CardExpander>
-                        <ui:CardExpander Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Headphones24}">
+                        <ui:CardExpander Margin="0,0,0,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Headphones24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
@@ -845,7 +834,7 @@
                                                                      Style="{StaticResource HomeConfigureButton}" />
                             </StackPanel>
                         </ui:CardExpander>
-                        <ui:CardExpander Grid.Row="2" Grid.Column="0" Margin="0,0,12,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon HandDraw24}">
+                        <ui:CardExpander Margin="0,0,12,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon HandDraw24}">
                             <ui:CardExpander.Header>
                                 <StackPanel>
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
@@ -862,7 +851,7 @@
                                                                      Style="{StaticResource HomeConfigureButton}" />
                             </StackPanel>
                         </ui:CardExpander>
-                    </Grid>
+                    </components:ColumnFlowPanel>
 
                     <StackPanel Margin="0,16,0,0">
                         <ui:CardExpander Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon QuestionCircle24}">
