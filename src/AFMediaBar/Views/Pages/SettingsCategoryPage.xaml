@@ -1,0 +1,12 @@
+<Page x:Class="AFMediaBar.Views.Pages.SettingsCategoryPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:components="clr-namespace:AFMediaBar.Components"
+      Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
+    <components:SettingsPageLayout x:Name="PageLayout">
+        <components:SettingsPageLayout.Header>
+            <components:SettingsGroupStrip x:Name="CategoryHeader" ShowGroupTabs="False"/>
+        </components:SettingsPageLayout.Header>
+        <StackPanel x:Name="PageRoot"/>
+    </components:SettingsPageLayout>
+</Page>

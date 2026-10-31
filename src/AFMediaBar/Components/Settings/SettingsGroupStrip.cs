@@ -40,9 +40,12 @@ public class SettingsGroupStrip : Control
     public static readonly DependencyProperty HeaderActionsProperty = DependencyProperty.Register(
         nameof(HeaderActions), typeof(object), typeof(SettingsGroupStrip), new PropertyMetadata(null));
     public object? HeaderActions { get => GetValue(HeaderActionsProperty); set => SetValue(HeaderActionsProperty, value); }
-    public static readonly DependencyProperty BreadcrumbProperty = DependencyProperty.Register(
-        nameof(Breadcrumb), typeof(string), typeof(SettingsGroupStrip), new PropertyMetadata(string.Empty));
-    public string Breadcrumb { get => (string)GetValue(BreadcrumbProperty); set => SetValue(BreadcrumbProperty, value); }
+    public static readonly DependencyProperty ParentTitleProperty = DependencyProperty.Register(
+        nameof(ParentTitle), typeof(string), typeof(SettingsGroupStrip), new PropertyMetadata(string.Empty));
+    public string ParentTitle { get => (string)GetValue(ParentTitleProperty); set => SetValue(ParentTitleProperty, value); }
+    public static readonly DependencyProperty ParentCommandProperty = DependencyProperty.Register(
+        nameof(ParentCommand), typeof(ICommand), typeof(SettingsGroupStrip), new PropertyMetadata(null));
+    public ICommand? ParentCommand { get => (ICommand?)GetValue(ParentCommandProperty); set => SetValue(ParentCommandProperty, value); }
     public static readonly DependencyProperty BackCommandProperty = DependencyProperty.Register(
         nameof(BackCommand), typeof(ICommand), typeof(SettingsGroupStrip), new PropertyMetadata(null));
     public ICommand? BackCommand { get => (ICommand?)GetValue(BackCommandProperty); set => SetValue(BackCommandProperty, value); }

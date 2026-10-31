@@ -10,7 +10,7 @@ using Wpf.Ui.Abstractions;
 namespace AFMediaBar.Views.Windows;
 
 /// <summary>Context-aware page resolver. View types stay out of the domain page catalog.</summary>
-public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INavigationViewPageProvider, IDisposable
+public sealed class SettingsPageProvider(SettingsPageScopeCache cache, SettingsCategoryPage categoryPage) : INavigationViewPageProvider, IDisposable
 {
     /// <summary>View-layer mapping for semantic navigation and search destinations.</summary>
     public static IReadOnlyDictionary<SettingsPageKey, Type> PageTypes { get; } = new Dictionary<SettingsPageKey, Type>
@@ -47,6 +47,7 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache) : INaviga
     /// <inheritdoc />
     public object? GetPage(Type pageType)
     {
+        if (pageType == typeof(SettingsCategoryPage)) return categoryPage;
         pageType = ResolvePageType(pageType);
         var match = PageTypes.FirstOrDefault(pair => pair.Value == pageType);
         if (match.Value is null || SettingsPageCatalog.Find(match.Key, _context.Mode) is not { } definition) return null;

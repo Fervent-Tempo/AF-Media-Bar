@@ -4,36 +4,36 @@ using AFMediaBar.Classes.Models.Settings;
 namespace AFMediaBar.Classes.Services.Settings;
 
 /// <summary>Semantic settings destination with ownership, label, icon name, and sidebar placement.</summary>
-public sealed record SettingsPageDefinition(SettingsPageKey Key, string TitleKey, string IconName, bool IsGlobal, bool IsFooter = false, bool HasModeContent = false);
+public sealed record SettingsPageDefinition(SettingsPageKey Key, string TitleKey, string IconName, bool IsGlobal, bool IsFooter = false, bool HasModeContent = false, string? DescriptionKey = null);
 
 /// <summary>One source of truth for current page composition and future display-family availability.</summary>
 public static class SettingsPageCatalog
 {
     private static readonly IReadOnlyList<SettingsPageDefinition> TaskbarPages = Array.AsReadOnly(new[]
     {
-        new SettingsPageDefinition(SettingsPageKey.QuickStart, "Settings.Section.Start", "Sparkle24", true),
-        new SettingsPageDefinition(SettingsPageKey.ScreenAndPlacement, "Common.Page.ScreenAndPlacement", "Desktop24", true, HasModeContent: true),
-        new SettingsPageDefinition(SettingsPageKey.RestState, "Common.Page.RestState", "Layer24", false),
-        new SettingsPageDefinition(SettingsPageKey.Appearance, "Settings.Page.BarAppearance", "PaintBrush24", false),
-        new SettingsPageDefinition(SettingsPageKey.Components, "Settings.Page.QuickControls", "HandDraw24", false),
-        new SettingsPageDefinition(SettingsPageKey.FullPanel, "Settings.Page.FullPanel", "WindowConsole20", false),
-        new SettingsPageDefinition(SettingsPageKey.Widgets, "Settings.Page.NoteAndLaunch", "MusicNote220", true),
-        new SettingsPageDefinition(SettingsPageKey.Spectrum, "Settings.Page.Spectrum", "DataBarVertical24", true),
-        new SettingsPageDefinition(SettingsPageKey.Performance, "Settings.Page.Performance", "Gauge24", true),
-        new SettingsPageDefinition(SettingsPageKey.BluetoothBattery, "Settings.Page.BluetoothBattery", "Bluetooth24", true),
-        new SettingsPageDefinition(SettingsPageKey.ApplicationAppearance, "Common.Page.ApplicationAppearance", "Color24", true),
-        new SettingsPageDefinition(SettingsPageKey.Lyrics, "Settings.Page.TextAndLyrics", "TextQuote24", false),
-        new SettingsPageDefinition(SettingsPageKey.Interaction, "Settings.Page.InteractionAndHotkeys", "HandDraw24", false),
-        new SettingsPageDefinition(SettingsPageKey.DeviceManagement, "Settings.Page.AudioDevices", "Headphones24", true),
-        new SettingsPageDefinition(SettingsPageKey.MediaAndNotifications, "Settings.Page.MediaSource", "MusicNote220", true),
-        new SettingsPageDefinition(SettingsPageKey.TrackNotifications, "Settings.Page.TrackNotifications", "Alert24", true),
-        new SettingsPageDefinition(SettingsPageKey.Application, "Settings.Page.GeneralAndUpdates", "Settings24", true),
-        new SettingsPageDefinition(SettingsPageKey.Configuration, "Settings.Page.Configuration", "Save24", true),
-        new SettingsPageDefinition(SettingsPageKey.Diagnostics, "Settings.Page.Diagnostics", "Bug24", true),
-        new SettingsPageDefinition(SettingsPageKey.MemoryTools, "Settings.Page.MemoryTools", "ArrowMinimize24", true),
-        new SettingsPageDefinition(SettingsPageKey.Experimental, "Common.Page.Experimental", "Beaker24", true),
-        new SettingsPageDefinition(SettingsPageKey.ReleaseHighlights, "Common.Page.ReleaseHighlights", "Sparkle24", true, true),
-        new SettingsPageDefinition(SettingsPageKey.About, "Common.Page.About", "QuestionCircle24", true, true)
+        new SettingsPageDefinition(SettingsPageKey.QuickStart, "Settings.Section.Start", "Sparkle24", true, DescriptionKey: "Home.Description"),
+        new SettingsPageDefinition(SettingsPageKey.ScreenAndPlacement, "Common.Page.ScreenAndPlacement", "Desktop24", true, HasModeContent: true, DescriptionKey: "Settings.Page.ScreenAndPlacement.Description"),
+        new SettingsPageDefinition(SettingsPageKey.RestState, "Common.Page.RestState", "Layer24", false, DescriptionKey: "Settings.RestState.Description"),
+        new SettingsPageDefinition(SettingsPageKey.Appearance, "Settings.Page.BarAppearance", "PaintBrush24", false, DescriptionKey: "Settings.Page.Appearance.Description"),
+        new SettingsPageDefinition(SettingsPageKey.Components, "Settings.Page.QuickControls", "HandDraw24", false, DescriptionKey: "Settings.Page.QuickControls.Description"),
+        new SettingsPageDefinition(SettingsPageKey.FullPanel, "Settings.Page.FullPanel", "WindowConsole20", false, DescriptionKey: "Settings.Page.FullPanel.Description"),
+        new SettingsPageDefinition(SettingsPageKey.Widgets, "Settings.Page.NoteAndLaunch", "MusicNote220", true, DescriptionKey: "Settings.Page.WidgetsSettings.Description"),
+        new SettingsPageDefinition(SettingsPageKey.Spectrum, "Settings.Page.Spectrum", "DataBarVertical24", true, DescriptionKey: "Settings.Page.Spectrum.Description"),
+        new SettingsPageDefinition(SettingsPageKey.Performance, "Settings.Page.Performance", "Gauge24", true, DescriptionKey: "Settings.Page.Performance.Description"),
+        new SettingsPageDefinition(SettingsPageKey.BluetoothBattery, "Settings.Page.BluetoothBattery", "Bluetooth24", true, DescriptionKey: "Settings.Page.BluetoothBattery.Description"),
+        new SettingsPageDefinition(SettingsPageKey.ApplicationAppearance, "Common.Page.ApplicationAppearance", "Color24", true, DescriptionKey: "Settings.Personalization.Subtitle"),
+        new SettingsPageDefinition(SettingsPageKey.Lyrics, "Settings.Page.TextAndLyrics", "TextQuote24", false, DescriptionKey: "Settings.Page.Lyrics.Description"),
+        new SettingsPageDefinition(SettingsPageKey.Interaction, "Settings.Page.InteractionAndHotkeys", "HandDraw24", false, DescriptionKey: "Settings.Page.Interaction.Description"),
+        new SettingsPageDefinition(SettingsPageKey.DeviceManagement, "Settings.Page.AudioDevices", "Headphones24", true, DescriptionKey: "Settings.Page.DeviceManagement.Description"),
+        new SettingsPageDefinition(SettingsPageKey.MediaAndNotifications, "Settings.Page.MediaSource", "MusicNote220", true, DescriptionKey: "Settings.Page.ExtraFeatures.Description"),
+        new SettingsPageDefinition(SettingsPageKey.TrackNotifications, "Settings.Page.TrackNotifications", "Alert24", true, DescriptionKey: "Settings.Page.TrackNotifications.Description"),
+        new SettingsPageDefinition(SettingsPageKey.Application, "Settings.Page.GeneralAndUpdates", "Settings24", true, DescriptionKey: "Settings.Page.Application.Description"),
+        new SettingsPageDefinition(SettingsPageKey.Configuration, "Settings.Page.Configuration", "Save24", true, DescriptionKey: "Settings.Page.Configuration.Description"),
+        new SettingsPageDefinition(SettingsPageKey.Diagnostics, "Settings.Page.Diagnostics", "Bug24", true, DescriptionKey: "Settings.Page.Diagnostics.Description"),
+        new SettingsPageDefinition(SettingsPageKey.MemoryTools, "Settings.Page.MemoryTools", "ArrowMinimize24", true, DescriptionKey: "Settings.Page.MemoryTools.Description"),
+        new SettingsPageDefinition(SettingsPageKey.Experimental, "Common.Page.Experimental", "Beaker24", true, DescriptionKey: "Settings.Page.Experimental.Description"),
+        new SettingsPageDefinition(SettingsPageKey.ReleaseHighlights, "Common.Page.ReleaseHighlights", "Sparkle24", true, true, DescriptionKey: "Settings.Page.ReleaseHighlights.Description"),
+        new SettingsPageDefinition(SettingsPageKey.About, "Common.Page.About", "QuestionCircle24", true, true, DescriptionKey: "Settings.Page.About.Description")
     });
 
     /// <summary>Only hosts implemented in this release can become active settings contexts.</summary>

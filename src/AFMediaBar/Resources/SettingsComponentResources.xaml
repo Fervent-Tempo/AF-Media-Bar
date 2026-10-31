@@ -639,37 +639,55 @@
         <Setter.Value>
             <ControlTemplate TargetType="{x:Type components:SettingsGroupStrip}">
                 <StackPanel Background="Transparent">
-                    <Grid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" Margin="0,0,0,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <Button Command="{TemplateBinding BackCommand}" Background="Transparent" BorderThickness="0" Padding="4" Margin="0,0,12,0" ToolTip="{DynamicResource Loc.Integration.Back}">
-                            <ui:SymbolIcon Symbol="ArrowLeft24" FontSize="14"/>
-                        </Button>
-                        <TextBlock Grid.Column="1" Text="{TemplateBinding Breadcrumb}" FontSize="12" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
-                    </Grid>
                     <Grid Margin="0,0,0,10">
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Grid x:Name="PageIcon" Width="34" Height="34" Margin="0,0,12,0" VerticalAlignment="Top" TextElement.Foreground="{DynamicResource AfAccentBrush}">
+                        <ui:Button Command="{TemplateBinding BackCommand}" Style="{StaticResource AfSettingsIconButtonStyle}" Appearance="Transparent"
+                                Width="28" Height="34" Padding="0" Margin="0,0,8,0" VerticalAlignment="Center"
+                                ToolTip="{DynamicResource Loc.Integration.Back}" AutomationProperties.Name="{DynamicResource Loc.Integration.Back}">
+                            <ui:SymbolIcon Symbol="ArrowLeft24" FontSize="14"/>
+                        </ui:Button>
+                        <Grid x:Name="PageIcon" Grid.Column="1" Width="34" Height="34" Margin="0,0,12,0"
+                              VerticalAlignment="Center" TextElement.Foreground="{DynamicResource AfAccentBrush}">
                             <Border Background="{DynamicResource AfAccentBrush}" CornerRadius="9" Opacity="0.16"/>
                             <ContentControl HorizontalAlignment="Center" VerticalAlignment="Center" Content="{TemplateBinding PageIcon}" Focusable="False" KeyboardNavigation.IsTabStop="False"/>
                         </Grid>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock FontSize="30" FontWeight="{DynamicResource AppTextStrongFontWeight}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{TemplateBinding Title}"/>
-                            <TextBlock x:Name="PageSubtitle" Margin="0,3,0,0" FontSize="13" LineHeight="20" LineStackingStrategy="BlockLineHeight" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{TemplateBinding Subtitle}" TextWrapping="Wrap"/>
-                        </StackPanel>
-                        <ContentControl x:Name="PageStatus" Grid.Column="2" Margin="12,4,0,0" VerticalAlignment="Top" Style="{StaticResource AfSettingsChipAccentStyle}" Content="{TemplateBinding StatusText}"/>
-                        <ContentPresenter Grid.Column="3" Content="{TemplateBinding HeaderActions}" Margin="12,0,0,0" VerticalAlignment="Top" x:Name="HeaderActions"/>
+                        <WrapPanel x:Name="TitlePath" Grid.Column="2" VerticalAlignment="Center">
+                            <Button x:Name="ParentLink" Command="{TemplateBinding ParentCommand}" Content="{TemplateBinding ParentTitle}"
+                                    Padding="0" Background="Transparent" BorderThickness="1" BorderBrush="Transparent"
+                                    FontSize="30" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"
+                                    FocusVisualStyle="{DynamicResource AfFocusVisualStyle}" Cursor="Hand">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="LinkSurface" Background="Transparent" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="4">
+                                            <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/></Trigger>
+                                            <Trigger Property="IsPressed" Value="True"><Setter Property="Opacity" Value="0.65"/></Trigger>
+                                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="LinkSurface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}"/></Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <ui:SymbolIcon x:Name="ParentChevron" Symbol="ChevronRight24" FontSize="18" Margin="10,0" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock FontSize="30" FontWeight="{DynamicResource AppTextStrongFontWeight}" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{TemplateBinding Title}" TextWrapping="Wrap"/>
+                        </WrapPanel>
+                        <TextBlock x:Name="PageSubtitle" Grid.Row="1" Grid.Column="2" Margin="0,3,0,0" FontSize="13" LineHeight="20" LineStackingStrategy="BlockLineHeight" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{TemplateBinding Subtitle}" TextWrapping="Wrap"/>
+                        <ContentControl x:Name="PageStatus" Grid.Column="3" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource AfSettingsChipAccentStyle}" Content="{TemplateBinding StatusText}"/>
+                        <ContentPresenter Grid.Column="4" Content="{TemplateBinding HeaderActions}" Margin="12,0,0,0" VerticalAlignment="Center" x:Name="HeaderActions"/>
                     </Grid>
                     <ScrollViewer x:Name="GroupTabsHost" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                         <Grid>
@@ -707,6 +725,10 @@
                     <Border x:Name="PART_Divider" Height="1" Margin="0,6,0,0" HorizontalAlignment="Stretch" Background="{DynamicResource DividerStrokeColorDefaultBrush}" Opacity="0"/>
                 </StackPanel>
                 <ControlTemplate.Triggers>
+                    <Trigger Property="ParentTitle" Value="">
+                        <Setter TargetName="ParentLink" Property="Visibility" Value="Collapsed"/>
+                        <Setter TargetName="ParentChevron" Property="Visibility" Value="Collapsed"/>
+                    </Trigger>
                     <Trigger Property="Subtitle" Value="">
                         <Setter TargetName="PageSubtitle" Property="Visibility" Value="Collapsed"/>
                     </Trigger>
@@ -723,8 +745,8 @@
                         <Setter TargetName="PageStatus" Property="Style" Value="{StaticResource AfSettingsChipAttentionStyle}"/>
                     </Trigger>
                     <Trigger Property="IsCompactHeader" Value="True">
-                        <Setter TargetName="HeaderActions" Property="Grid.Row" Value="1"/>
-                        <Setter TargetName="HeaderActions" Property="Grid.Column" Value="1"/>
+                        <Setter TargetName="HeaderActions" Property="Grid.Row" Value="2"/>
+                        <Setter TargetName="HeaderActions" Property="Grid.Column" Value="2"/>
                         <Setter TargetName="HeaderActions" Property="Grid.ColumnSpan" Value="3"/>
                         <Setter TargetName="HeaderActions" Property="Margin" Value="0,12,0,0"/>
                         <Setter TargetName="PageStatus" Property="Visibility" Value="Collapsed"/>
@@ -941,6 +963,16 @@
 </Style>
     <!-- 行内关联入口低于开关的视觉权重，焦点边框仍保持可见。 -->
     <Style TargetType="{x:Type components:SettingsNavigationButton}" BasedOn="{StaticResource AfSettingsNavigationButtonStyle}"/>
+    <Style x:Key="AfSettingsCategoryCardStyle" TargetType="{x:Type components:SettingsNavigationButton}"
+           BasedOn="{StaticResource AfSettingsNavigationButtonStyle}">
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="MinHeight" Value="72"/>
+        <Setter Property="Padding" Value="20,16"/>
+        <Setter Property="Margin" Value="0,0,0,4"/>
+        <Setter Property="Background" Value="{DynamicResource AfSettingsCardBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}"/>
+    </Style>
     <Style x:Key="AfSettingsRelatedLinkStyle" TargetType="{x:Type components:SettingsNavigationButton}"
            BasedOn="{StaticResource AfSettingsNavigationButtonStyle}">
         <Setter Property="Padding" Value="8,6" />

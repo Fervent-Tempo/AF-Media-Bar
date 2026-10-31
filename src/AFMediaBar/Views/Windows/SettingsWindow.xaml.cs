@@ -40,12 +40,16 @@ namespace AFMediaBar.Views.Windows
         private SettingsContext _displayedContext = SettingsContext.Initial;
         private SettingsMode? _navigationMode;
         private SettingsPageKey _currentPage = SettingsPageKey.QuickStart;
-        private readonly Dictionary<string, SettingsPageKey> _lastSectionPages = new();
+        private readonly SettingsCategoryPage _categoryPage;
+        private string? _currentSectionId;
         private readonly Dictionary<string, NavigationViewItem> _sectionItems = new();
         private bool _closed;
         private bool _returning;
-        private readonly Stack<SettingsPageKey> _history = new();
+        private readonly Stack<NavigationDestination> _history = new();
+        private sealed record NavigationDestination(SettingsPageKey? Page, string? SectionId);
+        private NavigationDestination CurrentDestination => new(_currentSectionId is null ? _currentPage : null, _currentSectionId);
         public RelayCommand GoBackCommand { get; }
+        public RelayCommand GoToParentCommand { get; }
 
         public SettingsWindowViewModel ViewModel { get; }
 
@@ -76,11 +80,16 @@ namespace AFMediaBar.Views.Windows
             ViewModel = viewModel;
             FocusSearchCommand = new RelayCommand(FocusSearch);
             GoBackCommand = new RelayCommand(GoBack, () => _history.Count > 0);
+            GoToParentCommand = new RelayCommand(() =>
+            {
+                if (SettingsNavigationCatalog.SectionFor(_currentPage) is { } section) NavigateSection(section.Id);
+            });
             _appIconService = appIconService;
             _log = log;
             _sessionScope = scopeFactory.CreateScope();
             _contexts = _sessionScope.ServiceProvider.GetRequiredService<SettingsContextService>();
             _pages = _sessionScope.ServiceProvider.GetRequiredService<SettingsPageProvider>();
+            _categoryPage = _sessionScope.ServiceProvider.GetRequiredService<SettingsCategoryPage>();
             DataContext = this;
 
             InitializeComponent();
@@ -363,20 +372,42 @@ namespace AFMediaBar.Views.Windows
 
         private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
         {
-            if (args.Page is Page destination)
+            if (args.Page is SettingsCategoryPage category)
+                SetDestination(new(null, category.SectionId));
+            else if (args.Page is Page destination)
             {
                 var next = SettingsPageProvider.PageTypes.First(pair => pair.Value == destination.GetType()).Key;
-                if (next != _currentPage && !_returning) _history.Push(_currentPage);
-                _currentPage = next;
-                GoBackCommand.NotifyCanExecuteChanged();
-                Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(UpdatePageHeader));
-                if (SettingsNavigationCatalog.SectionFor(_currentPage) is { } section)
-                    _lastSectionPages[section.Id] = _currentPage;
-                ExpandCurrentSection();
+                SetDestination(new(next, null));
             }
+            ReplayPageReveal(args.Page as Page);
+        }
+
+        private void SetDestination(NavigationDestination next)
+        {
+            if (next != CurrentDestination && !_returning) _history.Push(CurrentDestination);
+            if (next.Page is { } page) _currentPage = page;
+            _currentSectionId = next.SectionId;
+            GoBackCommand.NotifyCanExecuteChanged();
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(UpdatePageHeader));
+            ExpandCurrentSection();
+        }
+
+        private void NavigateSection(string sectionId)
+        {
+            var section = SettingsNavigationCatalog.Sections.FirstOrDefault(section => section.Id == sectionId);
+            if (_closed || section is null) return;
+            _categoryPage.ShowSection(section, _contexts.Current.Mode);
+            if (!RootNavigation.Navigate(typeof(SettingsCategoryPage))) RootNavigation.ReplaceContent(_categoryPage);
+            SetDestination(new(null, section.Id));
+            if (_sectionItems.TryGetValue(section.Id, out var item)) _sidebarSelection.Highlight(item);
+            ReplayPageReveal(_categoryPage);
+        }
+
+        private void ReplayPageReveal(Page? page)
+        {
             SettingsRevealAnimator.Cancel(_transitionContent);
             _transitionContent = null;
-            if (args.Page is Page page &&
+            if (page is not null &&
                 (page.FindName("PageScroll") as ScrollViewer ?? (page.FindName("PageLayout") as SettingsPageLayout)?.ScrollViewer) is { Content: Panel content })
             {
                 _transitionContent = content;
@@ -386,11 +417,15 @@ namespace AFMediaBar.Views.Windows
 
         private void GoBack()
         {
-            while (_history.TryPop(out var page))
+            while (_history.TryPop(out var destination))
             {
-                if (SettingsPageCatalog.Find(page, _contexts.Current.Mode) is null) continue;
+                if (destination.Page is { } page && SettingsPageCatalog.Find(page, _contexts.Current.Mode) is null) continue;
                 _returning = true;
-                try { Navigate(SettingsPageProvider.PageTypes[page]); }
+                try
+                {
+                    if (destination.SectionId is { } sectionId) NavigateSection(sectionId);
+                    else if (destination.Page is { } key) Navigate(SettingsPageProvider.PageTypes[key]);
+                }
                 finally { _returning = false; GoBackCommand.NotifyCanExecuteChanged(); }
                 return;
             }
@@ -406,12 +441,19 @@ namespace AFMediaBar.Views.Windows
         private void UpdatePageHeader()
         {
             if (_closed || FindDescendant<SettingsGroupStrip>(RootNavigation) is not { } strip) return;
+            strip.BackCommand = GoBackCommand;
+            if (_currentSectionId is not null)
+            {
+                strip.ParentTitle = string.Empty;
+                strip.ParentCommand = null;
+                strip.StatusText = string.Empty;
+                return;
+            }
             var definition = SettingsPageCatalog.Find(_currentPage, _contexts.Current.Mode);
             if (definition is null) return;
             var section = SettingsNavigationCatalog.SectionFor(_currentPage);
-            var pageTitle = Translations.Get(definition.TitleKey);
-            strip.Breadcrumb = section is null || section.Pages.Count == 1 ? pageTitle : $"{Translations.Get(section.TitleKey)} › {pageTitle}";
-            strip.BackCommand = GoBackCommand;
+            strip.ParentTitle = section is null || section.Pages.Count == 1 ? string.Empty : Translations.Get(section.TitleKey);
+            strip.ParentCommand = GoToParentCommand;
             strip.StatusText = _currentPage == SettingsPageKey.QuickStart || definition.IsFooter ? string.Empty :
                 Translations.Get(definition.IsGlobal && !definition.HasModeContent ? "Integration.Scope.Shared" :
                     _contexts.Current.Mode == SettingsMode.FloatingBar ? "Integration.Mode.Floating" : "Integration.Mode.Taskbar");
@@ -472,7 +514,7 @@ namespace AFMediaBar.Views.Windows
                 var pages = section.Pages.Select(key => definitions.FirstOrDefault(page => page.Key == key))
                     .OfType<SettingsPageDefinition>().ToArray();
                 if (pages.Length == 0) continue;
-                if (pages.Length == 1 && section.Id == "start")
+                if (pages.Length == 1)
                 {
                     RootNavigation.MenuItems.Add(CreateNavigationItem(pages[0]));
                     continue;
@@ -486,13 +528,10 @@ namespace AFMediaBar.Views.Windows
                 sectionItem.Click += (_, args) =>
                 {
                     if (!ReferenceEquals(args.Source, sectionItem)) return;
-                    var destination = _lastSectionPages.TryGetValue(section.Id, out var last) && pages.Any(page => page.Key == last)
-                        ? last : pages[0].Key;
                     Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
                     {
                         if (_closed) return;
-                        Navigate(SettingsPageProvider.PageTypes[destination]);
-                        ExpandCurrentSection();
+                        NavigateSection(section.Id);
                     }));
                 };
                 _sectionItems[section.Id] = sectionItem;
@@ -502,7 +541,9 @@ namespace AFMediaBar.Views.Windows
                 RootNavigation.FooterMenuItems.Add(definition.Key == SettingsPageKey.ReleaseHighlights
                     ? UpdateNoticeNavItem : CreateNavigationItem(definition));
             ExpandCurrentSection();
-            HighlightSidebarItem(SettingsPageProvider.PageTypes[_currentPage]);
+            if (_currentSectionId is { } sectionId && _sectionItems.TryGetValue(sectionId, out var selectedSection))
+                _sidebarSelection.Highlight(selectedSection);
+            else HighlightSidebarItem(SettingsPageProvider.PageTypes[_currentPage]);
         }
 
         private static NavigationViewItem CreateNavigationItem(SettingsPageDefinition definition, bool includeIcon = true)
@@ -519,7 +560,7 @@ namespace AFMediaBar.Views.Windows
 
         private void ExpandCurrentSection()
         {
-            var current = SettingsNavigationCatalog.SectionFor(_currentPage)?.Id;
+            var current = _currentSectionId ?? SettingsNavigationCatalog.SectionFor(_currentPage)?.Id;
             foreach (var (id, item) in _sectionItems) item.IsExpanded = id == current;
         }
 
@@ -559,7 +600,12 @@ namespace AFMediaBar.Views.Windows
             _pages.SetContext(_contexts.Current);
             RebuildNavigation();
             var definition = SettingsPageCatalog.Find(_currentPage, _contexts.Current.Mode);
-            if (definition is null) Navigate(typeof(ScreenAndPlacementPage));
+            if (_currentSectionId is { } sectionId)
+            {
+                var section = SettingsNavigationCatalog.Sections.First(section => section.Id == sectionId);
+                _categoryPage.ShowSection(section, _contexts.Current.Mode);
+            }
+            else if (definition is null) Navigate(typeof(ScreenAndPlacementPage));
             else if (contextChanged && (!definition.IsGlobal || definition.HasModeContent))
             {
                 var content = (UIElement)_pages.GetPage(SettingsPageProvider.PageTypes[_currentPage])!;
