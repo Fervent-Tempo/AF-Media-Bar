@@ -117,10 +117,12 @@ public sealed class MetricPresenter : Grid
             chart.VisualStyle = VisualStyle;
             chart.Width = double.NaN; chart.Height = double.NaN; chart.Margin = new Thickness(2);
             chart.Opacity = 1;
-            name.FontSize = Compact ? 11 : 12; readout.FontSize = size;
-            if (Compact && network && ActualHeight > 0) name.FontSize = Math.Clamp(plotHeight / 1.2, 10, 11);
+            // 单字母标识与读数使用同一字号和字重，不再单独缩小或淡化；两者作为一个整体居中。
+            // The single-letter marker shares the readout's size and weight instead of being smaller and dimmer; both are centered as one group.
+            name.FontSize = readout.FontSize = size;
+            name.FontWeight = readout.FontWeight;
             name.TextAlignment = readout.TextAlignment = TextAlignment.Center;
-            name.Opacity = SystemParameters.HighContrast ? 1 : 0.78;
+            name.Opacity = 1;
             readout.SetValue(Typography.NumeralAlignmentProperty, FontNumeralAlignment.Tabular);
             name.Text = label; readout.Text = value;
             name.Width = readout.Width = double.NaN;
@@ -149,8 +151,9 @@ public sealed class MetricPresenter : Grid
                 name.Margin = new Thickness(2, 2, 2, 0); readout.Margin = new Thickness(2, 0, 2, 2);
                 if (Compact && !Vertical && plotHeight < 33)
                 {
-                    // 异常长读数回退两行时保留原字号，避免在较矮卡片内互相覆盖。
-                    name.FontSize = 10; readout.FontSize = 12;
+                    // 异常长读数回退两行时标识仍与读数同字号；取较小值避免在较矮卡片内互相覆盖。
+                    // The marker keeps the same size as the readout when a long value wraps; both shrink so two lines fit the short card.
+                    name.FontSize = readout.FontSize = 10;
                     name.Margin = readout.Margin = new Thickness(2, 0, 2, 0);
                 }
             }
