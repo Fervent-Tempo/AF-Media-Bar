@@ -112,6 +112,8 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
             HeroTitle.LineHeight = wide ? 34d : 30d;
             HeroTitle.MaxHeight = wide ? 102d : 90d;
         }
+        // 文案行数变化只影响正文区域，位置胶囊始终贴齐固定区域底部。
+        HeroCopy.Height = narrow ? 340d : HeroVisual.Height;
         Grid.SetRow(PlayerActions, narrow ? 1 : 0);
         Grid.SetColumn(PlayerActions, narrow ? 0 : 1);
         Grid.SetColumnSpan(PlayerActions, narrow ? 2 : 1);

@@ -349,8 +349,12 @@
                     <ColumnDefinition Width="64*" />
                 </Grid.ColumnDefinitions>
 
-                <StackPanel x:Name="HeroCopy" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">
-                    <StackPanel x:Name="HeroText">
+                <Grid x:Name="HeroCopy" Grid.Row="0" Grid.Column="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel x:Name="HeroText" VerticalAlignment="Center">
                         <ItemsControl Margin="0,0,0,4" AlternationCount="2" ItemsSource="{Binding ViewModel.SelectedFeature.Tags}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -392,7 +396,7 @@
                         </WrapPanel>
                     </StackPanel>
 
-                    <Grid Margin="0,14,0,0" Visibility="{Binding ViewModel.HasMultipleFeatures, Converter={StaticResource HomeVisibility}}">
+                    <Grid Grid.Row="1" Margin="0,14,0,0" Visibility="{Binding ViewModel.HasMultipleFeatures, Converter={StaticResource HomeVisibility}}">
                         <ItemsControl x:Name="FeatureDots" HorizontalAlignment="Left" SizeChanged="OnFeatureDotsSizeChanged"
                                       ItemsSource="{Binding ViewModel.FeatureTabs}">
                             <ItemsControl.ItemsPanel>
@@ -421,7 +425,7 @@
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                    Text="{Binding ViewModel.FeaturePosition}" />
                     </Grid>
-                </StackPanel>
+                </Grid>
 
                 <!-- 外层：主题中性画框；内层：16:9 深色屏幕，承载完整图片或静态演示场景。 -->
                 <Border x:Name="HeroVisual" Grid.Row="0" Grid.Column="2" Height="310" Padding="10"
