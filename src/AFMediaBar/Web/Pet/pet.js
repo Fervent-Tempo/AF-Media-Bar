@@ -69,7 +69,7 @@
     if (changed) { selected = next; age = 0; scheduleNatural(); }
     const p = motion.target(selected, looping ? age : 0);
     const animatedPose = full && (looping || state.hovered);
-    document.getElementById("outfit").setAttribute("opacity", (1 - clamp(p.morph * 1.8)) * Math.max(0, Math.cos(values.yaw.x * Math.PI / 180)));
+    document.getElementById("outfit").setAttribute("opacity", (1 - clamp(p.morph * 1.8, 0, 1)) * Math.max(0, Math.cos(values.yaw.x * Math.PI / 180)));
     const beat = full ? clamp(Number(state.beat) || 0, 0, 1) : 0;
     const targets = {
       eyeX: state.gazeX + (looping ? p.gazeX * 0.2 : 0),

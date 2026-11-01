@@ -1,17 +1,19 @@
 // 合成原创短音节；后台任务串行拥有 WASAPI 输出，取消不阻塞 UI。
 using System.IO;
+using Microsoft.Extensions.Hosting;
 using NAudio.Wave;
 using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.Classes.Services;
 
 /// <summary>本地叽喳发声，替换当前片段，失败不影响文字。</summary>
-public sealed class PetVoiceService : IDisposable
+public sealed class PetVoiceService : IHostedService, IDisposable
 {
     private CancellationTokenSource? _cancellation;
     private Task _work = Task.CompletedTask;
     private bool _disposed;
-    public bool IsSpeaking => !_work.IsCompleted;
+    private long _quietUntil;
+    public bool IsSpeaking => !_work.IsCompleted || Environment.TickCount64 < Interlocked.Read(ref _quietUntil);
 
     public void Play(bool preview = false)
     {
@@ -24,7 +26,7 @@ public sealed class PetVoiceService : IDisposable
         _work = PlayAsync(_work, cancellation, settings.VoiceVolume, preview);
     }
 
-    private static async Task PlayAsync(Task previous, CancellationTokenSource cancellation, double volume, bool preview)
+    private async Task PlayAsync(Task previous, CancellationTokenSource cancellation, double volume, bool preview)
     {
         try
         {
@@ -46,7 +48,7 @@ public sealed class PetVoiceService : IDisposable
         }
         catch (OperationCanceledException) { }
         catch (Exception error) { AppLogService.Current?.Warn("PetVoice", error.Message); }
-        finally { cancellation.Dispose(); }
+        finally { Interlocked.Exchange(ref _quietUntil, Environment.TickCount64 + 300); cancellation.Dispose(); }
     }
 
     internal static byte[] CreatePcm(double volume)
@@ -67,6 +69,13 @@ public sealed class PetVoiceService : IDisposable
             bytes[i * 2 + 1] = (byte)(value >> 8);
         }
         return bytes;
+    }
+
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        Stop();
+        await _work.WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public void Stop()

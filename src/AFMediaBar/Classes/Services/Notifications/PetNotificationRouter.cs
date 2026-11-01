@@ -7,13 +7,14 @@ namespace AFMediaBar.Classes.Services;
 /// <summary>宠物接收失败时立即回退系统通知，保留原点击契约。</summary>
 public sealed class PetNotificationRouter(ShellTrayIconService shell, PetCompanionService pet) : ISystemNotificationService
 {
+    private event Action<ShellNotificationTarget>? _clicked;
     public event Action<ShellNotificationTarget>? NotificationClicked
     {
-        add => shell.NotificationClicked += value;
-        remove => shell.NotificationClicked -= value;
+        add { _clicked += value; shell.NotificationClicked += value; }
+        remove { _clicked -= value; shell.NotificationClicked -= value; }
     }
 
     public bool TryShowNotification(string title, string message, ShellNotificationTarget target = ShellNotificationTarget.None) =>
-        (target is ShellNotificationTarget.None or ShellNotificationTarget.MemoryResult && pet.TryNotify(title, message)) ||
+        (target is ShellNotificationTarget.None or ShellNotificationTarget.MemoryResult && pet.TryNotify(title, message, target == ShellNotificationTarget.MemoryResult ? () => _clicked?.Invoke(target) : null)) ||
         shell.TryShowNotification(title, message, target);
 }

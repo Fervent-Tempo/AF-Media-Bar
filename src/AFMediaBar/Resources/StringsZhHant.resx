@@ -3231,9 +3231,9 @@
   <data name="Widgets.Pet.Overflow" xml:space="preserve"><value>允許超出列邊界</value></data>
   <data name="Widgets.Pet.Overflow.Description" xml:space="preserve"><value>放大的寵物向螢幕內側伸出；隨媒體列一起移動和隱藏，不增加工作列厚度。</value></data>
   <data name="Widgets.Pet.Animation" xml:space="preserve"><value>動畫狀態</value></data>
-  <data name="Widgets.Pet.Animation.Description" xml:space="preserve"><value>自動輪換只包含生命週期和表情；形變及產品狀態可手動選擇，僅作為動畫顯示。</value></data>
+  <data name="Widgets.Pet.Animation.Description" xml:space="preserve"><value>指定動作優先；自動模式由「跟隨播放狀態」決定。形變與產品狀態仍可手動預覽。</value></data>
   <data name="Widgets.Pet.Preview" xml:space="preserve"><value>展開動畫預覽</value></data>
-  <data name="Widgets.Pet.Animation.auto" xml:space="preserve"><value>自動輪換生命週期與表情</value></data>
+  <data name="Widgets.Pet.Animation.auto" xml:space="preserve"><value>自動（跟隨狀態或輪播）</value></data>
   <data name="Widgets.Pet.Animation.sleeping" xml:space="preserve"><value>生命週期 · 睡眠</value></data>
   <data name="Widgets.Pet.Animation.waking" xml:space="preserve"><value>生命週期 · 甦醒</value></data>
   <data name="Widgets.Pet.Animation.idle" xml:space="preserve"><value>生命週期 · 待機</value></data>
@@ -3284,4 +3284,30 @@
   <data name="Widgets.Pet.Say.Hello0" xml:space="preserve"><value>我在這裡，隨時準備陪你聽歌。</value></data>
   <data name="Widgets.Pet.Say.Hello1" xml:space="preserve"><value>今天想聽什麼？</value></data>
   <data name="Widgets.Pet.Say.Hello2" xml:space="preserve"><value>點到我啦！放首喜歡的歌吧。</value></data>
+  <data name="Widgets.Pet.Appearance" xml:space="preserve"><value>外觀</value></data>
+  <data name="Widgets.Pet.Behavior" xml:space="preserve"><value>動作與律動</value></data>
+  <data name="Widgets.Pet.Dialogue" xml:space="preserve"><value>對話與聲音</value></data>
+  <data name="Widgets.Pet.Outfit" xml:space="preserve"><value>裝扮</value></data>
+  <data name="Widgets.Pet.Outfit.original" xml:space="preserve"><value>原版</value></data>
+  <data name="Widgets.Pet.Outfit.headphones" xml:space="preserve"><value>耳機</value></data>
+  <data name="Widgets.Pet.Outfit.badge" xml:space="preserve"><value>AF 徽章</value></data>
+  <data name="Widgets.Pet.Outfit.spectrum" xml:space="preserve"><value>頻譜胸燈</value></data>
+  <data name="Widgets.Pet.FollowPlayback" xml:space="preserve"><value>跟隨播放狀態</value></data>
+  <data name="Widgets.Pet.FollowPlayback.Description" xml:space="preserve"><value>自動模式下隨播放、暫停和切歌變換動作。關閉後恢復動作輪播。</value></data>
+  <data name="Widgets.Pet.MusicMotionEnabled" xml:space="preserve"><value>隨音樂律動</value></data>
+  <data name="Widgets.Pet.MusicMotionEnabled.Description" xml:space="preserve"><value>使用現有頻譜擷取來源，回應低頻鼓點；暫停或隱藏時停止。</value></data>
+  <data name="Widgets.Pet.MusicSensitivity" xml:space="preserve"><value>律動靈敏度</value></data>
+  <data name="Widgets.Pet.VoiceEnabled" xml:space="preserve"><value>點擊說話時發聲</value></data>
+  <data name="Widgets.Pet.VoiceEnabled.Description" xml:space="preserve"><value>原創嘰喳短音，不朗讀文字；自動通知保持安靜。</value></data>
+  <data name="Widgets.Pet.VoiceVolume" xml:space="preserve"><value>發聲音量</value></data>
+  <data name="Widgets.Pet.NotificationsEnabled" xml:space="preserve"><value>由寵物顯示應用通知</value></data>
+  <data name="Widgets.Pet.NotificationsEnabled.Description" xml:space="preserve"><value>接收切歌、電量和操作結果。寵物不可見或氣泡忙碌時使用原通知；需要操作的提示仍由原視窗顯示。</value></data>
+  <data name="Widgets.Pet.Demo.Play" xml:space="preserve"><value>示範播放</value></data>
+  <data name="Widgets.Pet.Demo.Speak" xml:space="preserve"><value>說一句</value></data>
+  <data name="Widgets.Pet.Demo.Notify" xml:space="preserve"><value>示範通知</value></data>
+  <data name="Widgets.Pet.Demo.Voice" xml:space="preserve"><value>試聽聲音</value></data>
+  <data name="Widgets.Pet.Demo.Message" xml:space="preserve"><value>這是一條寵物通知預覽。</value></data>
+  <data name="Widgets.Pet.Close" xml:space="preserve"><value>關閉</value></data>
+  <data name="Widgets.Pet.Notifications" xml:space="preserve"><value>通知</value></data>
+  <data name="Widgets.Pet.Details" xml:space="preserve"><value>查看詳情</value></data>
 </root>

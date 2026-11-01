@@ -136,64 +136,99 @@
                     </StackPanel>
                 </components:SettingsGroup>
 
-                <components:SettingsGroup GroupId="Widgets.Pet" Header="{DynamicResource Loc.Widgets.Pet}"
-                    Description="{DynamicResource Loc.Widgets.Pet.Description}" Icon="{ui:SymbolIcon Emoji24}">
+                <components:SettingsGroup GroupId="Widgets.Pet" Header="{DynamicResource Loc.Widgets.Pet}" Description="{DynamicResource Loc.Widgets.Pet.Description}" Icon="{ui:SymbolIcon Emoji24}">
                     <StackPanel>
-                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Visible}"
-                            Description="{DynamicResource Loc.Widgets.Pet.Visible.Description}" Icon="{ui:SymbolIcon Eye24}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetVisible, Mode=TwoWay}" />
+                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Visible}" Description="{DynamicResource Loc.Widgets.Pet.Visible.Description}" Icon="{ui:SymbolIcon Eye24}">
+                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetVisible, Mode=TwoWay}"/>
                         </components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Idle}"
-                            Description="{DynamicResource Loc.Widgets.Pet.Idle.Description}" Icon="{ui:SymbolIcon WeatherSunny24}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetIdleAnimationsEnabled, Mode=TwoWay}" />
-                        </components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Size}"
-                            Description="{DynamicResource Loc.Widgets.Pet.Size.Description}" Icon="{ui:SymbolIcon ArrowSort24}">
-                            <components:SettingsNumericEditor Value="{Binding ViewModel.Components.PetSizeDip, Mode=TwoWay}"
-                                Minimum="20" Maximum="160" Step="2" Unit="{DynamicResource Loc.Settings.Numeric.Dip}" />
-                        </components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Overflow}"
-                            Description="{DynamicResource Loc.Widgets.Pet.Overflow.Description}" Icon="{ui:SymbolIcon Window24}">
-                            <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetAllowOverflow, Mode=TwoWay}" />
-                        </components:SettingsRow>
-                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Animation}"
-                            Description="{DynamicResource Loc.Widgets.Pet.Animation.Description}" Icon="{ui:SymbolIcon Emoji24}">
-                            <ComboBox ItemsSource="{Binding ViewModel.Components.PetAnimations}" DisplayMemberPath="DisplayName"
-                                SelectedValuePath="Id" SelectedValue="{Binding ViewModel.Components.PetAnimation, Mode=TwoWay}"
-                                MinWidth="{StaticResource AfSettingsSelectMinWidth}" MaxWidth="{StaticResource AfSettingsSelectLongMaxWidth}" />
-                        </components:SettingsRow>
-                        <Expander Header="{DynamicResource Loc.Widgets.Pet.Preview}" Margin="12,4"
-                            Expanded="PetPreviewExpanded" Collapsed="PetPreviewCollapsed">
-                            <Border Width="136" Height="136" Background="Transparent"
-                                MouseEnter="PetPreviewMouseEnter" MouseLeave="PetPreviewMouseLeave"
-                                MouseMove="PetPreviewMouseMove" MouseDown="PetPreviewMouseDown">
-                                <components:PetView x:Name="PetPreview" Width="120" Height="120" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Expander x:Name="PetPreviewExpander" Header="{DynamicResource Loc.Widgets.Pet.Preview}" Margin="12,4" Expanded="PetPreviewExpanded" Collapsed="PetPreviewCollapsed">
+                            <Border Width="136" Height="136" Background="Transparent" MouseEnter="PetPreviewMouseEnter" MouseLeave="PetPreviewMouseLeave" MouseMove="PetPreviewMouseMove" MouseDown="PetPreviewMouseDown">
+                                <components:PetView x:Name="PetPreview" Width="120" Height="120" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Expander>
-                        <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Color}" Description="{Binding ViewModel.Components.PetColorStatus}"
-                            Icon="{ui:SymbolIcon Color24}">
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Margin="0,4">
+                            <ui:CardExpander.Header>
+                                <TextBlock Text="{DynamicResource Loc.Widgets.Pet.Appearance}" Style="{StaticResource AfSettingsRowTitleStyle}"/>
+                            </ui:CardExpander.Header>
                             <StackPanel>
-                                <WrapPanel Margin="0,0,0,8">
-                                    <Button Background="#FFFFFF" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
-                                        ToolTip="#FFFFFF" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#FFFFFF" />
-                                    <Button Background="#1C1D21" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
-                                        ToolTip="#1C1D21" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#1C1D21" />
-                                    <Button Background="#0078D4" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
-                                        ToolTip="#0078D4" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#0078D4" />
-                                    <Button Background="#42CBA6" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
-                                        ToolTip="#42CBA6" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#42CBA6" />
-                                    <Button Background="#F7C948" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0"
-                                        ToolTip="#F7C948" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#F7C948" />
-                                    <Button Background="#84282B" Style="{StaticResource AfSettingsColorSwatchStyle}"
-                                        ToolTip="#84282B" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#84282B" />
-                                </WrapPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <ui:TextBox Width="120" MaxLength="9" Text="{Binding ViewModel.Components.PetFillColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <ui:Button Margin="8,0,0,0" Content="{DynamicResource Loc.Widgets.Pet.Color.Reset}"
-                                        Command="{Binding ViewModel.Components.ResetPetFillColorCommand}" Style="{StaticResource AfSettingsButtonStyle}" />
-                                </StackPanel>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Outfit}">
+                                    <ComboBox ItemsSource="{Binding ViewModel.Components.PetOutfits}" DisplayMemberPath="DisplayName" SelectedValuePath="Id" SelectedValue="{Binding ViewModel.Components.PetOutfit, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}"/>
+                                </components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Size}" Description="{DynamicResource Loc.Widgets.Pet.Size.Description}" Icon="{ui:SymbolIcon ArrowSort24}">
+                                    <components:SettingsNumericEditor Value="{Binding ViewModel.Components.PetSizeDip, Mode=TwoWay}" Minimum="20" Maximum="160" Step="2" Unit="{DynamicResource Loc.Settings.Numeric.Dip}"/>
+                                </components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Overflow}" Description="{DynamicResource Loc.Widgets.Pet.Overflow.Description}" Icon="{ui:SymbolIcon Window24}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetAllowOverflow, Mode=TwoWay}"/>
+                                </components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Color}" Description="{Binding ViewModel.Components.PetColorStatus}" Icon="{ui:SymbolIcon Color24}">
+                                    <StackPanel>
+                                        <WrapPanel Margin="0,0,0,8">
+                                            <Button Background="#FFFFFF" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0" ToolTip="#FFFFFF" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#FFFFFF"/>
+                                            <Button Background="#1C1D21" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0" ToolTip="#1C1D21" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#1C1D21"/>
+                                            <Button Background="#0078D4" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0" ToolTip="#0078D4" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#0078D4"/>
+                                            <Button Background="#42CBA6" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0" ToolTip="#42CBA6" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#42CBA6"/>
+                                            <Button Background="#F7C948" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0" ToolTip="#F7C948" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#F7C948"/>
+                                            <Button Background="#84282B" Style="{StaticResource AfSettingsColorSwatchStyle}" ToolTip="#84282B" Command="{Binding ViewModel.Components.SetPetFillColorCommand}" CommandParameter="#84282B"/>
+                                        </WrapPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <ui:TextBox Width="120" MaxLength="9" Text="{Binding ViewModel.Components.PetFillColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <ui:Button Margin="8,0,0,0" Content="{DynamicResource Loc.Widgets.Pet.Color.Reset}" Command="{Binding ViewModel.Components.ResetPetFillColorCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </components:SettingsRow>
                             </StackPanel>
-                        </components:SettingsRow>
+                        </ui:CardExpander>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Margin="0,4">
+                            <ui:CardExpander.Header>
+                                <TextBlock Text="{DynamicResource Loc.Widgets.Pet.Behavior}" Style="{StaticResource AfSettingsRowTitleStyle}"/>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.FollowPlayback}" Description="{DynamicResource Loc.Widgets.Pet.FollowPlayback.Description}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetFollowPlayback, Mode=TwoWay}"/>
+                                </components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Idle}" Description="{DynamicResource Loc.Widgets.Pet.Idle.Description}" Icon="{ui:SymbolIcon WeatherSunny24}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetIdleAnimationsEnabled, Mode=TwoWay}"/>
+                                </components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Animation}" Description="{DynamicResource Loc.Widgets.Pet.Animation.Description}" Icon="{ui:SymbolIcon Emoji24}">
+                                    <ComboBox ItemsSource="{Binding ViewModel.Components.PetAnimations}" DisplayMemberPath="DisplayName" SelectedValuePath="Id" SelectedValue="{Binding ViewModel.Components.PetAnimation, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}" MaxWidth="{StaticResource AfSettingsSelectLongMaxWidth}"/>
+                                </components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.MusicMotionEnabled}" Description="{DynamicResource Loc.Widgets.Pet.MusicMotionEnabled.Description}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetMusicMotionEnabled, Mode=TwoWay}"/>
+                                </components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.MusicSensitivity}">
+                                    <components:SettingsNumericEditor Value="{Binding ViewModel.Components.PetMusicSensitivity, Mode=TwoWay}" Minimum="25" Maximum="200" Step="5" Unit="{DynamicResource Loc.Settings.Numeric.Percent}"/>
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Margin="0,4">
+                            <ui:CardExpander.Header>
+                                <TextBlock Text="{DynamicResource Loc.Widgets.Pet.Dialogue}" Style="{StaticResource AfSettingsRowTitleStyle}"/>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.VoiceEnabled}" Description="{DynamicResource Loc.Widgets.Pet.VoiceEnabled.Description}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetVoiceEnabled, Mode=TwoWay}"/>
+                                </components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.VoiceVolume}">
+                                    <components:SettingsNumericEditor Value="{Binding ViewModel.Components.PetVoiceVolume, Mode=TwoWay}" Minimum="0" Maximum="100" Step="5" Unit="{DynamicResource Loc.Settings.Numeric.Percent}"/>
+                                </components:SettingsRow>
+                                <WrapPanel Style="{StaticResource AfSettingsStandaloneActionsStyle}">
+                                    <ui:Button Content="{DynamicResource Loc.Widgets.Pet.Demo.Play}" Click="PetDemoPlay" Style="{StaticResource AfSettingsButtonStyle}" Margin="4"/>
+                                    <ui:Button Content="{DynamicResource Loc.Widgets.Pet.Demo.Speak}" Click="PetDemoSpeak" Style="{StaticResource AfSettingsButtonStyle}" Margin="4"/>
+                                    <ui:Button Content="{DynamicResource Loc.Widgets.Pet.Demo.Notify}" Click="PetDemoNotify" Style="{StaticResource AfSettingsButtonStyle}" Margin="4"/>
+                                    <ui:Button Content="{DynamicResource Loc.Widgets.Pet.Demo.Voice}" Click="PetDemoVoice" Style="{StaticResource AfSettingsButtonStyle}" Margin="4"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </ui:CardExpander>
+                        <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Margin="0,4">
+                            <ui:CardExpander.Header>
+                                <TextBlock Text="{DynamicResource Loc.Widgets.Pet.Notifications}" Style="{StaticResource AfSettingsRowTitleStyle}"/>
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.NotificationsEnabled}" Description="{DynamicResource Loc.Widgets.Pet.NotificationsEnabled.Description}">
+                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetNotificationsEnabled, Mode=TwoWay}"/>
+                                </components:SettingsRow>
+                            </StackPanel>
+                        </ui:CardExpander>
                     </StackPanel>
                 </components:SettingsGroup>
                 <components:SettingsGroup GroupId="Widgets.Spectrum" Header="{DynamicResource Loc.Widgets.Spectrum}"

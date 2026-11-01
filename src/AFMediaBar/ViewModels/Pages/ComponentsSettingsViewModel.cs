@@ -301,6 +301,51 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
         set { if (value is not null) _configuration.SetPetComponent(_configuration.Current.PetComponent with { Animation = value }); }
     }
 
+    public bool PetFollowPlayback
+    {
+        get => _configuration.Current.PetComponent.FollowPlayback;
+        set => _configuration.SetPetComponent(_configuration.Current.PetComponent with { FollowPlayback = value });
+    }
+
+    public bool PetMusicMotionEnabled
+    {
+        get => _configuration.Current.PetComponent.MusicMotionEnabled;
+        set => _configuration.SetPetComponent(_configuration.Current.PetComponent with { MusicMotionEnabled = value });
+    }
+
+    public double PetMusicSensitivity
+    {
+        get => _configuration.Current.PetComponent.MusicSensitivity;
+        set => _configuration.SetPetComponent(_configuration.Current.PetComponent with { MusicSensitivity = value });
+    }
+
+    public bool PetVoiceEnabled
+    {
+        get => _configuration.Current.PetComponent.VoiceEnabled;
+        set => _configuration.SetPetComponent(_configuration.Current.PetComponent with { VoiceEnabled = value });
+    }
+
+    public double PetVoiceVolume
+    {
+        get => _configuration.Current.PetComponent.VoiceVolume;
+        set => _configuration.SetPetComponent(_configuration.Current.PetComponent with { VoiceVolume = value });
+    }
+
+    public bool PetNotificationsEnabled
+    {
+        get => _configuration.Current.PetComponent.NotificationsEnabled;
+        set => _configuration.SetPetComponent(_configuration.Current.PetComponent with { NotificationsEnabled = value });
+    }
+
+    public string PetOutfit
+    {
+        get => _configuration.Current.PetComponent.Outfit;
+        set => _configuration.SetPetComponent(_configuration.Current.PetComponent with { Outfit = value });
+    }
+
+    public IReadOnlyList<PetAnimationOption> PetOutfits => new[] { "original", "headphones", "badge", "spectrum" }
+        .Select(id => new PetAnimationOption(id, Translations.Get("Widgets.Pet.Outfit." + id))).ToArray();
+
     public PetComponentSettings PetSettings => _configuration.Current.PetComponent;
     public IReadOnlyList<PetAnimationOption> PetAnimations => PetAnimationCatalog.Ids
         .Select(id => new PetAnimationOption(id, Translations.Get("Widgets.Pet.Animation." + id))).ToArray();

@@ -145,7 +145,14 @@
       "idleAnimationsEnabled": "unreleased",
       "sizeDip": "unreleased",
       "allowOverflow": "unreleased",
-      "animation": "unreleased"
+      "animation": "unreleased",
+      "followPlayback": "unreleased",
+      "musicMotionEnabled": "unreleased",
+      "musicSensitivity": "unreleased",
+      "notificationsEnabled": "unreleased",
+      "voiceEnabled": "unreleased",
+      "voiceVolume": "unreleased",
+      "outfit": "unreleased"
     },
     "quickLaunch": {
       "$release": "v1.2.0",

@@ -16,11 +16,18 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
     public WidgetsSettingsViewModel ViewModel { get; }
     private readonly PetWebEnvironment? _petEnvironment;
     private bool _petPreviewExpanded;
+    private readonly PetVoiceService? _petVoice;
+    private readonly AFMediaBar.Components.PetSpeechBubble _petBubble = new();
+    private void PetDemoPlay(object sender, RoutedEventArgs args) { PetPreviewExpander.IsExpanded = true; PetPreview.SetContext("listening", 0.8); }
+    private void PetDemoSpeak(object sender, RoutedEventArgs args) { PetPreviewExpander.IsExpanded = true; PetPreview.SetContext("happy", 0); _petBubble.Show((FrameworkElement)sender, AFMediaBar.Resources.Translations.Get("Widgets.Pet.Say.Hello0")); }
+    private void PetDemoNotify(object sender, RoutedEventArgs args) { PetPreviewExpander.IsExpanded = true; PetPreview.SetContext("notifying", 0); _petBubble.Show((FrameworkElement)sender, AFMediaBar.Resources.Translations.Get("Widgets.Pet.Demo.Message")); }
+    private void PetDemoVoice(object sender, RoutedEventArgs args) => _petVoice?.Play(true);
 
-    public WidgetsSettingsPage(WidgetsSettingsViewModel viewModel, PetWebEnvironment? petEnvironment = null)
+    public WidgetsSettingsPage(WidgetsSettingsViewModel viewModel, PetWebEnvironment? petEnvironment = null, PetVoiceService? petVoice = null)
     {
         ViewModel = viewModel;
         _petEnvironment = petEnvironment;
+        _petVoice = petVoice;
         DataContext = this;
         InitializeComponent();
         Loaded += (_, _) =>
@@ -31,6 +38,8 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
         Unloaded += (_, _) =>
         {
             ViewModel.Components.PropertyChanged -= PreviewSettingsChanged;
+            _petBubble.Close();
+            _petVoice?.Stop();
             PetPreview.SetPresentation(false, false);
         };
     }

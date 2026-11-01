@@ -3231,9 +3231,9 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Widgets.Pet.Overflow" xml:space="preserve"><value>Allow overflow beyond the bar</value></data>
   <data name="Widgets.Pet.Overflow.Description" xml:space="preserve"><value>The larger pet extends toward the screen interior and moves and hides with the media bar, without increasing taskbar thickness.</value></data>
   <data name="Widgets.Pet.Animation" xml:space="preserve"><value>Animation state</value></data>
-  <data name="Widgets.Pet.Animation.Description" xml:space="preserve"><value>Automatic cycling includes lifecycle and reactions. Morphs and product states are manual visual animations only.</value></data>
+  <data name="Widgets.Pet.Animation.Description" xml:space="preserve"><value>A selected motion takes priority. Auto follows playback when enabled, otherwise cycles moods. Morphs remain available for preview.</value></data>
   <data name="Widgets.Pet.Preview" xml:space="preserve"><value>Expand animation preview</value></data>
-  <data name="Widgets.Pet.Animation.auto" xml:space="preserve"><value>Cycle lifecycle and reactions</value></data>
+  <data name="Widgets.Pet.Animation.auto" xml:space="preserve"><value>Auto (playback or mood cycle)</value></data>
   <data name="Widgets.Pet.Animation.sleeping" xml:space="preserve"><value>Lifecycle · Sleeping</value></data>
   <data name="Widgets.Pet.Animation.waking" xml:space="preserve"><value>Lifecycle · Waking</value></data>
   <data name="Widgets.Pet.Animation.idle" xml:space="preserve"><value>Lifecycle · Idle</value></data>
@@ -3284,4 +3284,30 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Widgets.Pet.Say.Hello0" xml:space="preserve"><value>I am here, ready for some music.</value></data>
   <data name="Widgets.Pet.Say.Hello1" xml:space="preserve"><value>What would you like to listen to today?</value></data>
   <data name="Widgets.Pet.Say.Hello2" xml:space="preserve"><value>Hello there! Put on a favourite song.</value></data>
+  <data name="Widgets.Pet.Appearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="Widgets.Pet.Behavior" xml:space="preserve"><value>Motion and music</value></data>
+  <data name="Widgets.Pet.Dialogue" xml:space="preserve"><value>Dialogue and voice</value></data>
+  <data name="Widgets.Pet.Outfit" xml:space="preserve"><value>Outfit</value></data>
+  <data name="Widgets.Pet.Outfit.original" xml:space="preserve"><value>Original</value></data>
+  <data name="Widgets.Pet.Outfit.headphones" xml:space="preserve"><value>Headphones</value></data>
+  <data name="Widgets.Pet.Outfit.badge" xml:space="preserve"><value>AF badge</value></data>
+  <data name="Widgets.Pet.Outfit.spectrum" xml:space="preserve"><value>Spectrum lights</value></data>
+  <data name="Widgets.Pet.FollowPlayback" xml:space="preserve"><value>Follow playback</value></data>
+  <data name="Widgets.Pet.FollowPlayback.Description" xml:space="preserve"><value>In auto mode, react to playback and track changes. Turn off to cycle moods.</value></data>
+  <data name="Widgets.Pet.MusicMotionEnabled" xml:space="preserve"><value>Move with music</value></data>
+  <data name="Widgets.Pet.MusicMotionEnabled.Description" xml:space="preserve"><value>React to bass pulses from the existing spectrum source. Stop when paused or hidden.</value></data>
+  <data name="Widgets.Pet.MusicSensitivity" xml:space="preserve"><value>Music sensitivity</value></data>
+  <data name="Widgets.Pet.VoiceEnabled" xml:space="preserve"><value>Voice on click</value></data>
+  <data name="Widgets.Pet.VoiceEnabled.Description" xml:space="preserve"><value>Original chirps rather than spoken words. Automatic notifications stay silent.</value></data>
+  <data name="Widgets.Pet.VoiceVolume" xml:space="preserve"><value>Voice volume</value></data>
+  <data name="Widgets.Pet.NotificationsEnabled" xml:space="preserve"><value>Show app notifications through the pet</value></data>
+  <data name="Widgets.Pet.NotificationsEnabled.Description" xml:space="preserve"><value>Show track, battery and result messages. Use original notifications when unavailable or busy; actionable prompts retain their original window.</value></data>
+  <data name="Widgets.Pet.Demo.Play" xml:space="preserve"><value>Preview playback</value></data>
+  <data name="Widgets.Pet.Demo.Speak" xml:space="preserve"><value>Say hello</value></data>
+  <data name="Widgets.Pet.Demo.Notify" xml:space="preserve"><value>Preview notification</value></data>
+  <data name="Widgets.Pet.Demo.Voice" xml:space="preserve"><value>Preview voice</value></data>
+  <data name="Widgets.Pet.Demo.Message" xml:space="preserve"><value>This is a pet notification preview.</value></data>
+  <data name="Widgets.Pet.Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Widgets.Pet.Notifications" xml:space="preserve"><value>Notifications</value></data>
+  <data name="Widgets.Pet.Details" xml:space="preserve"><value>View details</value></data>
 </root>

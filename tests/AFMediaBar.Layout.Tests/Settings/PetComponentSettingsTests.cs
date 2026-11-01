@@ -39,6 +39,12 @@ public sealed class PetComponentSettingsTests
                 editor.PetSizeDip = 96;
                 editor.PetAllowOverflow = true;
                 editor.PetAnimation = "radar";
+                editor.PetOutfit = "badge";
+                editor.PetVoiceEnabled = true;
+                editor.PetVoiceVolume = 35;
+                editor.PetNotificationsEnabled = true;
+                editor.PetMusicSensitivity = 150;
+                editor.PetFollowPlayback = false;
                 Assert.AreEqual("#FFCC00", SettingsManager.Current.PetComponent.FillColorHex);
                 var copy = JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(SettingsManager.Current.Clone()))!.Normalize();
                 Assert.AreEqual(SettingsManager.Current.PetComponent, copy.PetComponent);
@@ -67,6 +73,12 @@ public sealed class PetComponentSettingsTests
         Assert.AreEqual("auto", (new PetComponentSettings { Animation = "unknown" }).Normalize().Animation);
         Assert.AreEqual("writing", (new PetComponentSettings { Animation = "writing" }).Normalize().Animation);
         Assert.IsFalse(new PetComponentSettings().AllowOverflow);
+        Assert.AreEqual("original", (new PetComponentSettings { Outfit = "unknown" }).Normalize().Outfit);
+        Assert.AreEqual(20d, (new PetComponentSettings { VoiceVolume = double.NaN }).Normalize().VoiceVolume);
+        Assert.AreEqual(100d, (new PetComponentSettings { VoiceVolume = 500 }).Normalize().VoiceVolume);
+        Assert.AreEqual(25d, (new PetComponentSettings { MusicSensitivity = -1 }).Normalize().MusicSensitivity);
+        Assert.IsFalse(new PetComponentSettings().VoiceEnabled);
+        Assert.IsFalse(new PetComponentSettings().NotificationsEnabled);
     }
 
     [TestMethod]

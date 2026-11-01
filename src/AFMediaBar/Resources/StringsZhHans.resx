@@ -3231,9 +3231,9 @@
   <data name="Widgets.Pet.Overflow" xml:space="preserve"><value>允许超出栏边界</value></data>
   <data name="Widgets.Pet.Overflow.Description" xml:space="preserve"><value>放大的宠物向屏幕内侧伸出；随媒体栏一起移动和隐藏，不增加任务栏厚度。</value></data>
   <data name="Widgets.Pet.Animation" xml:space="preserve"><value>动画状态</value></data>
-  <data name="Widgets.Pet.Animation.Description" xml:space="preserve"><value>自动轮换仅包含生命周期和表情；形变及产品状态可手动选择，仅作为动画显示。</value></data>
+  <data name="Widgets.Pet.Animation.Description" xml:space="preserve"><value>指定动作优先；自动模式由“跟随播放状态”决定。形变和产品状态仍可手动预览。</value></data>
   <data name="Widgets.Pet.Preview" xml:space="preserve"><value>展开动画预览</value></data>
-  <data name="Widgets.Pet.Animation.auto" xml:space="preserve"><value>自动轮换生命周期与表情</value></data>
+  <data name="Widgets.Pet.Animation.auto" xml:space="preserve"><value>自动（跟随状态或轮播）</value></data>
   <data name="Widgets.Pet.Animation.sleeping" xml:space="preserve"><value>生命周期 · 睡眠</value></data>
   <data name="Widgets.Pet.Animation.waking" xml:space="preserve"><value>生命周期 · 苏醒</value></data>
   <data name="Widgets.Pet.Animation.idle" xml:space="preserve"><value>生命周期 · 待机</value></data>
@@ -3284,4 +3284,30 @@
   <data name="Widgets.Pet.Say.Hello0" xml:space="preserve"><value>我在这里，随时准备陪你听歌。</value></data>
   <data name="Widgets.Pet.Say.Hello1" xml:space="preserve"><value>今天想听什么？</value></data>
   <data name="Widgets.Pet.Say.Hello2" xml:space="preserve"><value>点到我啦！放首喜欢的歌吧。</value></data>
+  <data name="Widgets.Pet.Appearance" xml:space="preserve"><value>外观</value></data>
+  <data name="Widgets.Pet.Behavior" xml:space="preserve"><value>动作与律动</value></data>
+  <data name="Widgets.Pet.Dialogue" xml:space="preserve"><value>对话与声音</value></data>
+  <data name="Widgets.Pet.Outfit" xml:space="preserve"><value>装扮</value></data>
+  <data name="Widgets.Pet.Outfit.original" xml:space="preserve"><value>原版</value></data>
+  <data name="Widgets.Pet.Outfit.headphones" xml:space="preserve"><value>耳机</value></data>
+  <data name="Widgets.Pet.Outfit.badge" xml:space="preserve"><value>AF 徽章</value></data>
+  <data name="Widgets.Pet.Outfit.spectrum" xml:space="preserve"><value>频谱胸灯</value></data>
+  <data name="Widgets.Pet.FollowPlayback" xml:space="preserve"><value>跟随播放状态</value></data>
+  <data name="Widgets.Pet.FollowPlayback.Description" xml:space="preserve"><value>自动模式下随播放、暂停和切歌变换动作。关闭后恢复动作轮播。</value></data>
+  <data name="Widgets.Pet.MusicMotionEnabled" xml:space="preserve"><value>随音乐律动</value></data>
+  <data name="Widgets.Pet.MusicMotionEnabled.Description" xml:space="preserve"><value>使用现有频谱采集来源，响应低频鼓点；暂停或隐藏时停止。</value></data>
+  <data name="Widgets.Pet.MusicSensitivity" xml:space="preserve"><value>律动灵敏度</value></data>
+  <data name="Widgets.Pet.VoiceEnabled" xml:space="preserve"><value>点击说话时发声</value></data>
+  <data name="Widgets.Pet.VoiceEnabled.Description" xml:space="preserve"><value>原创叽喳短音，不朗读文字；自动通知保持安静。</value></data>
+  <data name="Widgets.Pet.VoiceVolume" xml:space="preserve"><value>发声音量</value></data>
+  <data name="Widgets.Pet.NotificationsEnabled" xml:space="preserve"><value>由宠物显示应用通知</value></data>
+  <data name="Widgets.Pet.NotificationsEnabled.Description" xml:space="preserve"><value>接收切歌、电量和操作结果。宠物不可见或气泡忙碌时使用原通知；需要操作的提示仍由原窗口显示。</value></data>
+  <data name="Widgets.Pet.Demo.Play" xml:space="preserve"><value>演示播放</value></data>
+  <data name="Widgets.Pet.Demo.Speak" xml:space="preserve"><value>说一句</value></data>
+  <data name="Widgets.Pet.Demo.Notify" xml:space="preserve"><value>演示通知</value></data>
+  <data name="Widgets.Pet.Demo.Voice" xml:space="preserve"><value>试听声音</value></data>
+  <data name="Widgets.Pet.Demo.Message" xml:space="preserve"><value>这是一条宠物通知预览。</value></data>
+  <data name="Widgets.Pet.Close" xml:space="preserve"><value>关闭</value></data>
+  <data name="Widgets.Pet.Notifications" xml:space="preserve"><value>通知</value></data>
+  <data name="Widgets.Pet.Details" xml:space="preserve"><value>查看详情</value></data>
 </root>

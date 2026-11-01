@@ -80,7 +80,7 @@ public sealed partial class FloatingBarWindow
         UpdateEdgeObservation();
         if (!_edgeHoverTimer.IsEnabled) return;
         RefreshEdgeContrast();
-        if (_edgeHoldCount > 0 || _isFullPanelOpen || _compactFlyout.IsVisible || _dragPending)
+        if (_mediaControl.IsPetBubbleOpen || _edgeHoldCount > 0 || _isFullPanelOpen || _compactFlyout.IsVisible || _dragPending)
         {
             SetEdgeTarget(collapse: false);
             return;

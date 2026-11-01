@@ -3269,9 +3269,9 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Widgets.Pet.Overflow" xml:space="preserve"><value>Cho phép hiển thị vượt biên</value></data>
   <data name="Widgets.Pet.Overflow.Description" xml:space="preserve"><value>Thú cưng lớn hơn vươn vào phía trong màn hình, di chuyển và ẩn cùng thanh phương tiện mà không tăng độ dày thanh tác vụ.</value></data>
   <data name="Widgets.Pet.Animation" xml:space="preserve"><value>Trạng thái hoạt ảnh</value></data>
-  <data name="Widgets.Pet.Animation.Description" xml:space="preserve"><value>Chế độ tự động luân phiên vòng đời và biểu cảm. Biến hình và trạng thái sản phẩm được chọn thủ công, chỉ là hoạt ảnh.</value></data>
+  <data name="Widgets.Pet.Animation.Description" xml:space="preserve"><value>Ưu tiên chuyển động đã chọn. Tự động theo trạng thái phát khi bật, nếu không sẽ luân phiên biểu cảm. Vẫn có thể xem thử biến hình.</value></data>
   <data name="Widgets.Pet.Preview" xml:space="preserve"><value>Mở bản xem trước hoạt ảnh</value></data>
-  <data name="Widgets.Pet.Animation.auto" xml:space="preserve"><value>Luân phiên vòng đời và biểu cảm</value></data>
+  <data name="Widgets.Pet.Animation.auto" xml:space="preserve"><value>Tự động (phát nhạc hoặc biểu cảm)</value></data>
   <data name="Widgets.Pet.Animation.sleeping" xml:space="preserve"><value>Vòng đời · Ngủ</value></data>
   <data name="Widgets.Pet.Animation.waking" xml:space="preserve"><value>Vòng đời · Thức dậy</value></data>
   <data name="Widgets.Pet.Animation.idle" xml:space="preserve"><value>Vòng đời · Nghỉ</value></data>
@@ -3322,4 +3322,30 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Widgets.Pet.Say.Hello0" xml:space="preserve"><value>Mình ở đây, sẵn sàng nghe nhạc cùng bạn.</value></data>
   <data name="Widgets.Pet.Say.Hello1" xml:space="preserve"><value>Hôm nay bạn muốn nghe gì?</value></data>
   <data name="Widgets.Pet.Say.Hello2" xml:space="preserve"><value>Chào bạn! Bật một bài yêu thích nhé.</value></data>
+  <data name="Widgets.Pet.Appearance" xml:space="preserve"><value>Ngoại hình</value></data>
+  <data name="Widgets.Pet.Behavior" xml:space="preserve"><value>Chuyển động và âm nhạc</value></data>
+  <data name="Widgets.Pet.Dialogue" xml:space="preserve"><value>Hội thoại và âm thanh</value></data>
+  <data name="Widgets.Pet.Outfit" xml:space="preserve"><value>Trang phục</value></data>
+  <data name="Widgets.Pet.Outfit.original" xml:space="preserve"><value>Nguyên bản</value></data>
+  <data name="Widgets.Pet.Outfit.headphones" xml:space="preserve"><value>Tai nghe</value></data>
+  <data name="Widgets.Pet.Outfit.badge" xml:space="preserve"><value>Huy hiệu AF</value></data>
+  <data name="Widgets.Pet.Outfit.spectrum" xml:space="preserve"><value>Đèn phổ âm</value></data>
+  <data name="Widgets.Pet.FollowPlayback" xml:space="preserve"><value>Theo trạng thái phát</value></data>
+  <data name="Widgets.Pet.FollowPlayback.Description" xml:space="preserve"><value>Ở chế độ tự động, phản ứng khi phát, tạm dừng và đổi bài. Tắt để luân phiên biểu cảm.</value></data>
+  <data name="Widgets.Pet.MusicMotionEnabled" xml:space="preserve"><value>Chuyển động theo nhạc</value></data>
+  <data name="Widgets.Pet.MusicMotionEnabled.Description" xml:space="preserve"><value>Phản ứng với nhịp trầm từ nguồn phổ âm hiện tại. Dừng khi tạm dừng hoặc ẩn.</value></data>
+  <data name="Widgets.Pet.MusicSensitivity" xml:space="preserve"><value>Độ nhạy nhịp điệu</value></data>
+  <data name="Widgets.Pet.VoiceEnabled" xml:space="preserve"><value>Phát âm khi nhấp</value></data>
+  <data name="Widgets.Pet.VoiceEnabled.Description" xml:space="preserve"><value>Tiếng líu lo nguyên bản, không đọc văn bản. Thông báo tự động không phát âm.</value></data>
+  <data name="Widgets.Pet.VoiceVolume" xml:space="preserve"><value>Âm lượng</value></data>
+  <data name="Widgets.Pet.NotificationsEnabled" xml:space="preserve"><value>Hiện thông báo qua thú cưng</value></data>
+  <data name="Widgets.Pet.NotificationsEnabled.Description" xml:space="preserve"><value>Hiện đổi bài, pin và kết quả. Dùng thông báo gốc khi thú cưng ẩn hoặc bận; lời nhắc cần thao tác vẫn dùng cửa sổ gốc.</value></data>
+  <data name="Widgets.Pet.Demo.Play" xml:space="preserve"><value>Xem thử phát nhạc</value></data>
+  <data name="Widgets.Pet.Demo.Speak" xml:space="preserve"><value>Chào một câu</value></data>
+  <data name="Widgets.Pet.Demo.Notify" xml:space="preserve"><value>Xem thử thông báo</value></data>
+  <data name="Widgets.Pet.Demo.Voice" xml:space="preserve"><value>Nghe thử</value></data>
+  <data name="Widgets.Pet.Demo.Message" xml:space="preserve"><value>Đây là bản xem thử thông báo.</value></data>
+  <data name="Widgets.Pet.Close" xml:space="preserve"><value>Đóng</value></data>
+  <data name="Widgets.Pet.Notifications" xml:space="preserve"><value>Thông báo</value></data>
+  <data name="Widgets.Pet.Details" xml:space="preserve"><value>Xem chi tiết</value></data>
 </root>

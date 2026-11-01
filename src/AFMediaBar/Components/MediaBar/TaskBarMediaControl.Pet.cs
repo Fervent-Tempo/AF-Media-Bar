@@ -11,6 +11,7 @@ namespace AFMediaBar.Components;
 public partial class TaskBarMediaControl
 {
     private readonly PetSpeechBubble _petBubble = new();
+    public bool IsPetBubbleOpen => _petBubble.IsOpen;
     private Point? _petPressPoint;
     private PetCompanionService? _petCompanion;
     private IDisposable? _petContextLease;
@@ -68,7 +69,7 @@ public partial class TaskBarMediaControl
             TaskbarPet.SetPresentation(active, visible);
         }
         if (active && _petCompanion is not null)
-            _petContextLease ??= _petCompanion.Subscribe((animation, beat) => ActivePet.SetContext(animation, beat), text => _petBubble.Show(ActivePet, text, false));
+            _petContextLease ??= _petCompanion.Subscribe((animation, beat) => ActivePet.SetContext(animation, beat), (text, activation) => _petBubble.Show(ActivePet, text, false, activation));
         if (active && _petInput is not null)
         {
             if (!ReferenceEquals(_petLeaseView, ActivePet))

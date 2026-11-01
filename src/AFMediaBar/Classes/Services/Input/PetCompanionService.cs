@@ -12,14 +12,16 @@ public sealed class PetCompanionService : IDisposable
 {
     private readonly PetVoiceService _voice;
     private readonly AudioMonitorService _audio;
-    private readonly List<Func<string, bool>> _messages = [];
+    private readonly List<Func<string, Action?, bool>> _messages = [];
     private readonly IDisplayMonitorService _display;
     private int _phraseIndex;
     private long _reactionUntil;
+    private string _reactionAnimation = "notifying";
 
     public string Speak()
     {
         _voice.Play();
+        _reactionAnimation = "happy";
         _reactionUntil = Environment.TickCount64 + 1800;
         Publish();
         return _snapshot.IsConnected && !string.IsNullOrWhiteSpace(_snapshot.Title)
@@ -27,13 +29,15 @@ public sealed class PetCompanionService : IDisposable
             : Translations.Get("Widgets.Pet.Say.Hello" + (_phraseIndex++ % 3));
     }
 
-    public bool TryNotify(string title, string message)
+    public bool TryNotify(string title, string message, Action? activation = null)
     {
         if (_disposed || !_dispatcher.CheckAccess() || !SettingsManager.Current.PetComponent.NotificationsEnabled ||
             _display.IsForegroundWindowFullscreen()) return false;
         foreach (var present in _messages.ToArray())
         {
-            if (!present(title + "\n" + message)) continue;
+            try { if (!present(title + "\n" + message, activation)) continue; }
+            catch (Exception error) { AppLogService.Current?.Warn("Pet", error.Message); continue; }
+            _reactionAnimation = "notifying";
             _reactionUntil = Environment.TickCount64 + 1800;
             Publish();
             return true;
@@ -74,7 +78,7 @@ public sealed class PetCompanionService : IDisposable
         _snapshot = snapshot;
     }
 
-    public IDisposable Subscribe(Action<string, double> view, Func<string, bool>? message = null)
+    public IDisposable Subscribe(Action<string, double> view, Func<string, Action?, bool>? message = null)
     {
         _dispatcher.VerifyAccess();
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -88,9 +92,9 @@ public sealed class PetCompanionService : IDisposable
     private void Publish()
     {
         var now = Environment.TickCount64;
-        var animation = now < _reactionUntil ? "notifying" : now < _happyUntil ? "happy" : _snapshot.IsPlaying ? "listening" :
+        var animation = now < _reactionUntil ? _reactionAnimation : now < _happyUntil ? "happy" : _snapshot.IsPlaying ? "listening" :
             !_snapshot.IsConnected && now - _idleSince > 30000 ? "drowsy" : "idle";
-        foreach (var view in _views.ToArray()) view(animation, _beat);
+        foreach (var view in _views.ToArray()) view(animation, now < _reactionUntil || now < _happyUntil ? 0 : _beat);
     }
 
     private async void OnTick(object? sender, EventArgs args)
@@ -98,7 +102,7 @@ public sealed class PetCompanionService : IDisposable
         if (_disposed || _pending) return;
         var generation = _generation;
         var settings = SettingsManager.Current.PetComponent.Normalize();
-        _beat *= 0.68;
+        _beat = _beat < 0.005 ? 0 : _beat * 0.68;
         if (!_voice.IsSpeaking && settings.MusicMotionEnabled && _snapshot.IsPlaying && !SystemParameters.HighContrast && MotionPolicy.ResolveCurrent().Mode == MotionMode.Full)
         {
             _pending = true;
@@ -123,7 +127,7 @@ public sealed class PetCompanionService : IDisposable
         if (!_disposed && generation == _generation) Publish();
     }
 
-    private sealed class Lease(PetCompanionService owner, Action<string, double> view, Func<string, bool>? message) : IDisposable
+    private sealed class Lease(PetCompanionService owner, Action<string, double> view, Func<string, Action?, bool>? message) : IDisposable
     {
         private bool _released;
         public void Dispose()
