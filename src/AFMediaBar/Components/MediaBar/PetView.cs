@@ -152,7 +152,8 @@ public sealed class PetView : Grid, IDisposable
         var colors = PetVisualDefinition.Colors(_settings);
         var state = new PetWebState(_gaze.X, _gaze.Y, _hovered, _blinkSequence, _pressSequence,
             colors.Body, colors.Eyes, colors.HighContrast, _settings.IdleAnimationsEnabled,
-            MotionPolicy.ResolveCurrent().Mode, _active, _settings.Animation == "auto" && _settings.FollowPlayback ? _contextAnimation ?? "idle" : _settings.Animation, _beat);
+            MotionPolicy.ResolveCurrent().Mode, _active, _settings.Animation == "auto" && _settings.FollowPlayback ? _contextAnimation ?? "idle" : _settings.Animation, _beat, _settings.Outfit,
+            SystemParameters.HighContrast ? colors.Eyes : AFMediaBar.Classes.Utils.ColorHex.Format(SystemParameters.WindowGlassColor));
         if (state == _lastState) return;
         _lastState = state;
         _renderer.Present(state);

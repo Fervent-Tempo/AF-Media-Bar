@@ -7,7 +7,7 @@ namespace AFMediaBar.Components;
 internal sealed record PetWebState(
     double GazeX, double GazeY, bool Hovered, long BlinkSequence, long PressSequence,
     string BodyColor, string EyeColor, bool HighContrast, bool IdleAnimationsEnabled, MotionMode Motion, bool Active,
-    string Animation = "auto", double Beat = 0);
+    string Animation = "auto", double Beat = 0, string Outfit = "original", string Accent = "#0078D4");
 
 internal interface IPetWebRenderer : IDisposable
 {

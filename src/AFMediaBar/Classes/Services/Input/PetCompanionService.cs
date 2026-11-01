@@ -10,6 +10,7 @@ namespace AFMediaBar.Classes.Services;
 /// <summary>将播放状态和共享频谱变成宠物的呈现输入。</summary>
 public sealed class PetCompanionService : IDisposable
 {
+    private readonly PetVoiceService _voice;
     private readonly AudioMonitorService _audio;
     private readonly List<Func<string, bool>> _messages = [];
     private readonly IDisplayMonitorService _display;
@@ -18,6 +19,7 @@ public sealed class PetCompanionService : IDisposable
 
     public string Speak()
     {
+        _voice.Play();
         _reactionUntil = Environment.TickCount64 + 1800;
         Publish();
         return _snapshot.IsConnected && !string.IsNullOrWhiteSpace(_snapshot.Title)
@@ -52,8 +54,9 @@ public sealed class PetCompanionService : IDisposable
     private double _beat;
     private long _lastBeat;
 
-    public PetCompanionService(AudioMonitorService audio, IDisplayMonitorService display)
+    public PetCompanionService(AudioMonitorService audio, IDisplayMonitorService display, PetVoiceService voice)
     {
+        _voice = voice;
         _audio = audio;
         _display = display;
         _dispatcher = Application.Current.Dispatcher;
@@ -96,7 +99,7 @@ public sealed class PetCompanionService : IDisposable
         var generation = _generation;
         var settings = SettingsManager.Current.PetComponent.Normalize();
         _beat *= 0.68;
-        if (settings.MusicMotionEnabled && _snapshot.IsPlaying && !SystemParameters.HighContrast && MotionPolicy.ResolveCurrent().Mode == MotionMode.Full)
+        if (!_voice.IsSpeaking && settings.MusicMotionEnabled && _snapshot.IsPlaying && !SystemParameters.HighContrast && MotionPolicy.ResolveCurrent().Mode == MotionMode.Full)
         {
             _pending = true;
             try
@@ -129,7 +132,7 @@ public sealed class PetCompanionService : IDisposable
             _released = true;
             owner._views.Remove(view);
             if (message is not null) owner._messages.Remove(message);
-            if (owner._views.Count == 0) { owner._generation++; owner._timer.Stop(); owner._beat = owner._average = 0; }
+            if (owner._views.Count == 0) { owner._generation++; owner._timer.Stop(); owner._voice.Stop(); owner._beat = owner._average = 0; }
         }
     }
 

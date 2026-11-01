@@ -69,6 +69,7 @@
     if (changed) { selected = next; age = 0; scheduleNatural(); }
     const p = motion.target(selected, looping ? age : 0);
     const animatedPose = full && (looping || state.hovered);
+    document.getElementById("outfit").setAttribute("opacity", (1 - clamp(p.morph * 1.8)) * Math.max(0, Math.cos(values.yaw.x * Math.PI / 180)));
     const beat = full ? clamp(Number(state.beat) || 0, 0, 1) : 0;
     const targets = {
       eyeX: state.gazeX + (looping ? p.gazeX * 0.2 : 0),
@@ -79,6 +80,7 @@
       lift: full && state.hovered ? 0.6 : 0, squash: full && now < pressUntil ? 1 : 0,
       morph: p.morph, effect: p.effect ? (["humming", "notifying"].includes(p.effect) ? 1 : p.morph) : 0, lid: p.lid
     };
+    document.getElementById("outfit-bars").setAttribute("transform", `translate(0 ${53 * (1 - (1 + beat * 0.25))}) scale(1 ${1 + beat * 0.25})`);
     targets.y -= beat * 3.2;
     targets.sy += beat * 0.045;
     targets.sx -= beat * 0.025;
@@ -158,6 +160,10 @@
     if (message?.type !== "state" || !message.state) return;
     const previous = state; state = message.state;
     body.setAttribute("fill", state.bodyColor);
+    const outfit = document.getElementById("outfit");
+    outfit.setAttribute("stroke", state.highContrast ? state.eyeColor : state.accent || state.eyeColor);
+    for (const id of ["headphones", "badge", "spectrum"])
+      document.getElementById("outfit-" + id).style.display = state.outfit === id ? "" : "none";
     body.setAttribute("stroke", state.highContrast ? state.eyeColor : "none");
     body.setAttribute("stroke-width", "1.5");
     for (const eye of eyeNodes) eye.setAttribute("fill", state.eyeColor);

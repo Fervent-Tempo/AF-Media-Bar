@@ -208,6 +208,7 @@ namespace AFMediaBar
                 services.AddSingleton<ShellTrayIconService>();
                 services.AddSingleton<ISystemNotificationService, PetNotificationRouter>();
                 services.AddSingleton<NativeMouseInputMonitor>();
+                services.AddSingleton<PetVoiceService>();
                 services.AddSingleton<PetCompanionService>();
                 services.AddSingleton<PetInputService>();
                 services.AddSingleton<PetWebEnvironment>();

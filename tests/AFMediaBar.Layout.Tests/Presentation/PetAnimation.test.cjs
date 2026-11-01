@@ -183,3 +183,17 @@ test("reduced motion disables idle and body movement while preserving click feed
   assert.match(p.nodes.get("gaze").attributes.transform, /translate\(4 0\)/);
   assert.match(p.nodes.get("lids").attributes.transform, /scale\(1 0\.08\)/);
 });
+
+// 律动输入必须遵守系统减少动画设置，并能恢复静止。
+test("music pulse moves the pet, settles, and respects reduced motion", () => {
+  const p = page();
+  p.receive({ animation: "idle", idleAnimationsEnabled: false, beat: 1 }, true);
+  p.advance(700);
+  assert.doesNotMatch(p.nodes.get("pose").attributes.transform, /scale\(1 1\)/);
+  p.receive({ beat: 0 });
+  p.advance(4000);
+  assert.match(p.nodes.get("pose").attributes.transform, /scale\(1 1\)/);
+  p.receive({ beat: 1, motion: 2 });
+  p.advance(100);
+  assert.match(p.nodes.get("pose").attributes.transform, /scale\(1 1\)/);
+});

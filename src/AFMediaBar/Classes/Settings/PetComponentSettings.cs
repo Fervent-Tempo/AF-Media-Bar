@@ -12,6 +12,9 @@ public sealed record PetComponentSettings
     public bool IdleAnimationsEnabled { get; init; } = true;
     public double SizeDip { get; init; } = DefaultSizeDip;
     public bool AllowOverflow { get; init; }
+    public string Outfit { get; init; } = "original";
+    public bool VoiceEnabled { get; init; }
+    public double VoiceVolume { get; init; } = 20;
     public bool NotificationsEnabled { get; init; }
     public bool FollowPlayback { get; init; } = true;
     public bool MusicMotionEnabled { get; init; } = true;
@@ -20,6 +23,8 @@ public sealed record PetComponentSettings
 
     public PetComponentSettings Normalize() => this with
     {
+        Outfit = Outfit is "headphones" or "badge" or "spectrum" ? Outfit : "original",
+        VoiceVolume = double.IsFinite(VoiceVolume) ? Math.Clamp(VoiceVolume, 0, 100) : 20,
         MusicSensitivity = double.IsFinite(MusicSensitivity) ? Math.Clamp(MusicSensitivity, 25, 200) : 100,
         FillColorHex = ColorHex.TryParse(FillColorHex, out var color) ? ColorHex.Format(color) : DefaultFillColorHex,
         SizeDip = double.IsFinite(SizeDip) ? Math.Clamp(SizeDip, 20, 160) : DefaultSizeDip,
