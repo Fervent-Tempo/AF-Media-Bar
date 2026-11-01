@@ -1,36 +1,38 @@
-# 快速开始内容维护
+# 维护快速开始轮播
 
-首页首先使用内置内容和本地缓存，再异步刷新公开资料。GitHub统计只读，不依赖使用统计；main中不包含统计上传。
+轮播已经通过 `HomeContentService` 读取远程 JSON。主地址为本仓库 `release-metadata` 分支的 `home/catalogue.json`，备用地址是 jsDelivr 上的同一文件：
 
-## 精选图文
+- `https://raw.githubusercontent.com/Fervent-Tempo/AF-Media-Bar/release-metadata/home/catalogue.json`
+- `https://cdn.jsdelivr.net/gh/Fervent-Tempo/AF-Media-Bar@release-metadata/home/catalogue.json`
 
-线上目录地址为仓库`release-metadata`分支的`home/catalogue.json`，另有现有jsDelivr来源回退。目录尚未发布或网络失败时继续显示内置资料，不影响其它设置。维护文件并发布目录属于单独操作，本轮没有推送线上资料。
+有有效目录时，轮播只展示目录中的条目，顺序与文件一致，最多显示前五条。没有可用目录时，才使用版本亮点和内置介绍。联网失败或目录格式错误时保留上一次有效缓存，首次离线使用内置内容。
 
-```json
-{
-  "schemaVersion": 1,
-  "items": [
-    {
-      "id": "feature-example",
-      "kind": "development",
-      "version": null,
-      "image": null,
-      "url": "https://github.com/Fervent-Tempo/AF-Media-Bar",
-      "localizations": {
-        "zh-Hans": { "title": "功能名称", "summary": "简要说明作用与适用条件。" },
-        "en": { "title": "Feature name", "summary": "A short description and its conditions." }
-      }
-    }
-  ],
-  "support": []
-}
-```
+## 发布与更新
 
-- 类型仅为`release`、`feature`、`development`；未正式发布的内容必须使用`development`。正式版本摘要以现有版本目录为主，不按程序中写死的版本号生成。
-- 每个条目使用固定且唯一的id。目录最多30条，首页最多显示5张；标题和说明保持简洁。建议提供简中、繁中、英文、越南文，缺译显示原文标识。
-- 链接只允许本项目GitHub HTTPS地址；图片只允许本仓库的raw或jsDelivr地址。图片采用PNG/JPEG等WPF支持的静态格式，最大2 MiB、边长4096像素；本地最多缓存10张，使用1600像素展示解码。
-- 应用不执行目录中的HTML、脚本或本地命令。目录不能改变安装状态、统计同意或上传地址。
-- 两张内置开发截图来自原生设置验收，不代表已经正式发布；正式发布前应更新图文与标签。
+1. 复制 [目录示例](examples/home-catalogue.json) 到 `release-metadata` 分支的 `home/catalogue.json`。示例包含四种界面语言和现有截图地址，可按需删改条目。
+2. 在该分支提交并推送目录。之后修改同一文件即可调整显示内容，无需重新发布程序。
+3. 在快速开始点击「刷新动态」。自动读取的缓存有效期为六小时；手动刷新跳过该缓存期限，但请求和按钮仍有五分钟冷却。刚更新时 CDN 也可能仍返回缓存。
+
+本文和示例不自动发布远程目录。仅提交到主分支的示例不会使在线目录生效。
+
+## 条目字段
+
+| 字段 | 规则 |
+| --- | --- |
+| `schemaVersion` | 固定为 `1` |
+| `items` | 1–30 个条目；前五条用于轮播 |
+| `id` | 目录内唯一、稳定的标识，最多 64 个字符；修改文案时保留该标识 |
+| `kind` | `release`、`feature` 或 `development`，决定标签 |
+| `version` | 可选版本号，不含 `v` 前缀 |
+| `image` | 可选 HTTPS 图片地址，只接受本仓库的 raw.githubusercontent.com 或 jsDelivr 地址；缺省显示内置示意预览 |
+| `url` | 可选详情地址，只接受本 GitHub 仓库及其子路径；不提供时进入仓库首页 |
+| `localizations` | `zh-Hans`、`zh-Hant`、`en`、`vi`；每种语言包含 `title` 和 `summary` |
+
+未正式发布的内容使用 `development` 标签。标题最多 180 个字符，摘要最多 1000 个字符。缺少当前语言时优先使用简体中文，再使用目录中的第一种语言，并显示原文标签。建议同时维护四种语言，摘要保持简短。
+
+图片使用 WPF 支持的静态格式（如 PNG/JPEG），最大 2 MiB、边长 4096 像素；客户端最多缓存十张，展示解码宽度为 1600 像素。
+
+图片可放在同一分支的 `home/images/` 中，引用对应 raw 地址。替换图片时使用新文件名或带版本的地址，避免旧图片缓存继续命中。目录不会执行命令、安装插件或读取用户使用数据。
 
 ## 播放器支持说明
 
@@ -44,4 +46,4 @@
 
 Issue搜索明确排除PR；近7天按创建时间统计所有状态。PR只称“开放”，草稿单独标记，不声称可以合并。条目只显示编号、原始标题和日期，不执行其正文。
 
-页面离开取消等待，服务由应用容器拥有。轮播只在首页主卡可见、窗口激活且允许连续动效时运行；键盘聚焦或手动切换后需主动恢复。
+页面离开取消等待，服务由应用容器拥有。轮播只在首页主卡可见、窗口激活且允许连续动效时运行；鼠标悬停或键盘聚焦时暂停，离开后重新计时。手动切换不会永久暂停。

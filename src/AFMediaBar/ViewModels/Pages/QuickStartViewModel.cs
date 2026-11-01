@@ -227,7 +227,9 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     {
         var oldId = SelectedFeature?.Id;
         var items = new List<HomeFeatureCard>();
-        if (_releaseData.FirstOrDefault() is { } latest)
+        // 有有效远程目录时完全按目录展示；内置介绍和版本亮点只作为无目录时的回退。
+        var useFallback = _catalogue.Items.Count == 0;
+        if (useFallback && _releaseData.FirstOrDefault() is { } latest)
         {
             var (copy, original) = ReleaseHighlightsPolicy.ResolveText(latest, Language);
             var source = _releaseIsCached
@@ -246,18 +248,21 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
                 (original ? " · " + Translations.Get("Home.Original") : ""), copy.Title, copy.Summary, item.Url ?? HomeContentPolicy.RepositoryUrl, item.Image)
                 { Tags = FeatureTags("Home.Kind." + item.Kind, item.Version, original ? Translations.Get("Home.Original") : null) });
         }
-        items.Add(new("settings", Translations.Get("Home.Kind.development"), Translations.Get("Home.Feature.Settings"),
-            Translations.Get("Home.Feature.Settings.Body"), HomeContentPolicy.RepositoryUrl, "pack://application:,,,/AFMediaBar;component/Assets/Home/settings.png")
-            { Tags = FeatureTags("Home.Kind.development", null, null) });
-        items.Add(new("panel", Translations.Get("Home.Kind.development"), Translations.Get("Home.Feature.Panel"),
-            Translations.Get("Home.Feature.Panel.Body"), HomeContentPolicy.RepositoryUrl, "pack://application:,,,/AFMediaBar;component/Assets/Home/panel.png")
-            { Tags = FeatureTags("Home.Kind.development", null, null) });
-        items.Add(new("layers", Translations.Get("Home.Kind.feature"), Translations.Get("Start.Overview"),
-            Translations.Get("Start.Intro.Description"), HomeContentPolicy.RepositoryUrl, null)
-            { Tags = FeatureTags("Home.Kind.feature", null, null) });
+        if (useFallback)
+        {
+            items.Add(new("settings", Translations.Get("Home.Kind.development"), Translations.Get("Home.Feature.Settings"),
+                Translations.Get("Home.Feature.Settings.Body"), HomeContentPolicy.RepositoryUrl, "pack://application:,,,/AFMediaBar;component/Assets/Home/settings.png")
+                { Tags = FeatureTags("Home.Kind.development", null, null) });
+            items.Add(new("panel", Translations.Get("Home.Kind.development"), Translations.Get("Home.Feature.Panel"),
+                Translations.Get("Home.Feature.Panel.Body"), HomeContentPolicy.RepositoryUrl, "pack://application:,,,/AFMediaBar;component/Assets/Home/panel.png")
+                { Tags = FeatureTags("Home.Kind.development", null, null) });
+            items.Add(new("layers", Translations.Get("Home.Kind.feature"), Translations.Get("Start.Overview"),
+                Translations.Get("Start.Intro.Description"), HomeContentPolicy.RepositoryUrl, null)
+                { Tags = FeatureTags("Home.Kind.feature", null, null) });
+        }
         Features.Clear(); foreach (var item in items.DistinctBy(item => item.Id).Take(5)) Features.Add(item);
-        SelectedFeature = !_hasShownLatest && !_featureWasChosen && _releaseData.Count > 0 ? Features.First() : Features.FirstOrDefault(item => item.Id == oldId) ?? Features.First();
-        if (_releaseData.Count > 0) _hasShownLatest = true;
+        SelectedFeature = useFallback && !_hasShownLatest && !_featureWasChosen && _releaseData.Count > 0 ? Features.First() : Features.FirstOrDefault(item => item.Id == oldId) ?? Features.First();
+        if (useFallback && _releaseData.Count > 0) _hasShownLatest = true;
         ProjectFeatureTabs();
         OnPropertyChanged(nameof(HasMultipleFeatures)); OnPropertyChanged(nameof(FeaturePosition));
     }

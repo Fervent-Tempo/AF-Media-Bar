@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "settings",
+      "kind": "development",
+      "image": "https://raw.githubusercontent.com/Fervent-Tempo/AF-Media-Bar/main/src/AFMediaBar/Assets/Home/settings.png",
+      "url": "https://github.com/Fervent-Tempo/AF-Media-Bar",
+      "localizations": {
+        "zh-Hans": {
+          "title": "原生设置中心",
+          "summary": "按对象组织设置，合并组件显隐与排序；支持搜索定位和局部预览。此功能尚未正式发布。"
+        },
+        "zh-Hant": {
+          "title": "原生設定中心",
+          "summary": "依物件組織設定，合併元件顯示與排序；支援搜尋定位與局部預覽。此功能尚未正式發行。"
+        },
+        "en": {
+          "title": "Native settings centre",
+          "summary": "Organise settings by task, edit component visibility and order together, and preview changes. Not yet released."
+        },
+        "vi": {
+          "title": "Trung tâm cài đặt gốc",
+          "summary": "Sắp xếp cài đặt theo tác vụ, chỉnh hiển thị và thứ tự thành phần cùng nhau, rồi xem trước thay đổi. Chưa phát hành chính thức."
+        }
+      }
+    },
+    {
+      "id": "panel",
+      "kind": "development",
+      "image": "https://raw.githubusercontent.com/Fervent-Tempo/AF-Media-Bar/main/src/AFMediaBar/Assets/Home/panel.png",
+      "url": "https://github.com/Fervent-Tempo/AF-Media-Bar",
+      "localizations": {
+        "zh-Hans": {
+          "title": "紧凑完整面板",
+          "summary": "三状态组件布局、独立指标样式和75%—200%面板缩放。此功能尚未正式发布。"
+        },
+        "zh-Hant": {
+          "title": "精簡完整面板",
+          "summary": "三狀態元件配置、獨立指標樣式與75%—200%面板縮放。此功能尚未正式發行。"
+        },
+        "en": {
+          "title": "Compact full panel",
+          "summary": "Three component layouts, separate metric styles and 75%–200% panel scaling. Not yet released."
+        },
+        "vi": {
+          "title": "Bảng đầy đủ gọn hơn",
+          "summary": "Ba bố cục thành phần, kiểu chỉ số riêng và tỷ lệ bảng 75%–200%. Chưa phát hành chính thức."
+        }
+      }
+    }
+  ]
+}
