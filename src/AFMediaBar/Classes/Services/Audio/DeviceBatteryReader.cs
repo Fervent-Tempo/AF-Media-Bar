@@ -13,6 +13,7 @@ public sealed class DeviceBatteryReader
     private readonly Dictionary<string, IDeviceBatteryProvider> _sessions = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly AppLogService? _log;
+    public bool HadDiscoveryFailures { get; private set; }
     public DeviceBatteryReader(IEnumerable<IDeviceBatteryProvider>? providers = null, AppLogService? log = null)
     { _providers = providers?.ToArray() ?? [new BluetoothBatteryReader()]; _log = log; }
 
@@ -23,11 +24,12 @@ public sealed class DeviceBatteryReader
         {
             var result = new List<BluetoothBatteryDevice>();
             var succeeded = false;
+            HadDiscoveryFailures = false;
             foreach (var provider in _providers)
             {
                 token.ThrowIfCancellationRequested();
                 try { result.AddRange(await provider.GetDevicesAsync(token).ConfigureAwait(false)); succeeded = true; }
-                catch (Exception error) when (!token.IsCancellationRequested) { _log?.Warn("Battery", provider.Id + " 目录不可用", error); }
+                catch (Exception error) when (!token.IsCancellationRequested) { HadDiscoveryFailures = true; _log?.Warn("Battery", provider.Id + " 目录不可用", error); }
             }
             token.ThrowIfCancellationRequested();
             if (!succeeded) throw new InvalidOperationException("没有可用的设备电量目录。");

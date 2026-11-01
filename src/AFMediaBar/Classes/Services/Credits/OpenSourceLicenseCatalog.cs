@@ -39,7 +39,11 @@ public static class OpenSourceLicenseCatalog
     /// <summary>
     /// 第三方源码的许可信息，按来源项目登记。
     /// </summary>
-    public static IReadOnlyList<LicenseEntry> DerivedCode { get; } = [];
+    public static IReadOnlyList<LicenseEntry> DerivedCode { get; } =
+    [
+        new("Voltide", "73f16fd", "MIT", "https://github.com/sdparklab/Voltide"),
+        new("InphicBatteryTray", "86c8cd0", "MIT", "https://github.com/Tan-TanZi/InphicBatteryTray")
+    ];
 
     /// <summary>完整的许可清单：包在前、衍生代码在后。/ The complete catalog: packages first, derived code after.</summary>
     public static IReadOnlyList<LicenseEntry> All { get; } =

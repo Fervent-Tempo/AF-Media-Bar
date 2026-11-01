@@ -57,8 +57,8 @@ internal static class HidBatteryProtocol
                 if (frame.Length != 17 || frame[0] != 8 || frame[1] != 4 || Sum(frame[1..]) != 0x4D) return null;
                 percent = frame[6]; charging = frame[7] switch { 0 => false, 1 => true, _ => null }; break;
             case HidBatteryKind.AtkHeadset:
-                if (frame.Length != 64 || frame[0] != 0x55 || frame[1] != 0x65 || frame[3] is not (2 or 3 or 4)) return null;
-                percent = frame[2]; charging = frame[3] == 3; break;
+                if (frame.Length != 64 || frame[0] != 0x55 || frame[1] != 0x65 || frame[3] is not (2 or 3 or 4 or 0x1A)) return null;
+                percent = frame[2]; charging = frame[3] == 0x1A ? null : frame[3] == 3; break;
             case HidBatteryKind.Inphic9:
                 if (frame.Length != 33 || frame[0] != 0x0C || frame[1] != 1 || frame[2] != 0x20 || frame[4] != sequence || frame[6] == 0 || frame[0x15] == 0) return null;
                 percent = frame[0x12]; charging = frame[0x13] == 2; break;

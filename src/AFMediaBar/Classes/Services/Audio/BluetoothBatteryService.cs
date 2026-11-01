@@ -48,11 +48,11 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
     public IDisposable AcquireOverviewSession()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (Interlocked.Increment(ref _overviewCount) == 1) Interlocked.Exchange(ref _forceRefresh, 1);
+        if (Interlocked.Increment(ref _overviewCount) == 1) Interlocked.Increment(ref _forceRefresh);
         Invalidate();
         return new Lease(() => { Interlocked.Decrement(ref _overviewCount); Invalidate(); });
     }
-    public void RequestRefresh() { Interlocked.Exchange(ref _forceRefresh, 1); Invalidate(); }
+    public void RequestRefresh() { Interlocked.Increment(ref _forceRefresh); Invalidate(); }
     private void Invalidate()
     {
         if (_disposed) return;
@@ -80,6 +80,7 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
         IReadOnlyList<BluetoothBatteryDevice> catalog = [];
         var nextDiscovery = DateTimeOffset.MinValue;
         var catalogVersion = -1;
+        var appliedRefresh = -1;
         try
         {
             while (!token.IsCancellationRequested)
@@ -110,20 +111,25 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
                     }
                     else
                     {
+                        // 概览关闭先释放非主设备监听，不等可能耗时的 HID++ 目录查询。
+                        if (!overview)
+                            await reader.ReleaseExceptAsync(catalog.Where(d => d.Matches(main)).Select(d => d.Id).ToHashSet(StringComparer.OrdinalIgnoreCase)).ConfigureAwait(false);
                         if (observers.Count == 0) CreateObservers(observers);
                         if (main != _selectedId || config.Widget.LowThreshold != _threshold)
                         {
                             _selectedId = main; _threshold = config.Widget.LowThreshold; _lowVisible = false;
                             _alerts.ResetBaseline();
                         }
-                        var force = Interlocked.Exchange(ref _forceRefresh, 0) != 0;
+                        var refresh = Volatile.Read(ref _forceRefresh);
+                        var force = refresh != appliedRefresh;
                         if (force || DateTimeOffset.UtcNow >= nextDiscovery || version != catalogVersion)
                         {
                             await PublishAsync(version, cycle.Token, () => { IsRefreshing = true; });
                             catalog = await reader.GetDevicesAsync(cycle.Token).ConfigureAwait(false);
                             catalogVersion = version;
                             nextDiscovery = DateTimeOffset.UtcNow.AddSeconds(60);
-                            await PublishAsync(version, cycle.Token, () => { LastDiscoveryFailed = false; });
+                            var failed = reader.HadDiscoveryFailures;
+                            await PublishAsync(version, cycle.Token, () => { LastDiscoveryFailed = failed; });
                         }
                         var targets = catalog.Where(d => overview || d.Matches(main)).ToArray();
                         await reader.ReleaseExceptAsync(targets.Select(d => d.Id).ToHashSet(StringComparer.OrdinalIgnoreCase)).ConfigureAwait(false);
@@ -168,6 +174,7 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
                         await PublishAsync(version, cycle.Token, () =>
                         {
                             Readings = results.ToArray(); IsRefreshing = false;
+                            appliedRefresh = refresh;
                             var selected = results.FirstOrDefault(r => r.DeviceId == main);
                             cache.Publish(selected);
                             if (selected?.IsRealtime == true)

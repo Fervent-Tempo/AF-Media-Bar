@@ -28,7 +28,8 @@ public sealed class HidBatteryProvider(AppLogService log) : IDeviceBatteryProvid
         if (h.VendorId == 0x046D && h.UsagePage == 0xFF00 && h.Usage == 2 && h.InputLength == 20 && h.OutputLength == 20) return HidBatteryKind.Logitech;
         if (h.VendorId == 0x3554 && h.ProductId == 0xFA09 && h.UsagePage == 0xFF02 && h.Usage == 2 && h.InputLength == 20 && h.OutputLength == 20) return HidBatteryKind.Mchose;
         if (h.VendorId == 0x0B05 && h.ProductId == 0x1ACE && h.UsagePage == 0xFF00 && h.InputLength == 64 && h.OutputLength == 64) return HidBatteryKind.Rog;
-        if (h.VendorId == 0x1532 && RazerReceivers.Contains(h.ProductId) && h.FeatureLength == 91 && h.UsagePage >= 0xFF00) return HidBatteryKind.RazerMouse;
+        // 部分雷蛇将 Feature 放在鼠标集合；这里只发白名单电量 Feature，绝不读取该集合的输入报告。
+        if (h.VendorId == 0x1532 && RazerReceivers.Contains(h.ProductId) && h.FeatureLength == 91) return HidBatteryKind.RazerMouse;
         if (h.VendorId == 0x1532 && h.ProductId == 0x0555 && h.UsagePage == 0xFF00 && h.InputLength == 64 && h.OutputLength == 64) return HidBatteryKind.RazerHeadset;
         if (h.VendorId == 0x373B && h.ProductId == 0x1278 && h.UsagePage == 0xFF02 && h.Usage == 2 && h.InputLength == 17 && h.OutputLength == 17) return HidBatteryKind.AtkMouse;
         if (h.VendorId == 0x373B && h.ProductId == 0x1262 && h.UsagePage == 0xFF90 && h.InputLength == 64 && h.OutputLength == 64) return HidBatteryKind.AtkHeadset;
@@ -45,7 +46,7 @@ public sealed class HidBatteryProvider(AppLogService log) : IDeviceBatteryProvid
         var endpoints = await Task.Run(() => BatteryHidTransport.Enumerate(timeout.Token), timeout.Token).ConfigureAwait(false);
         var targets = new Dictionary<string, Target>(StringComparer.OrdinalIgnoreCase);
         var devices = new List<BluetoothBatteryDevice>();
-        foreach (var endpoint in endpoints.OrderBy(h => h.Path, StringComparer.OrdinalIgnoreCase))
+        foreach (var endpoint in endpoints.OrderBy(h => h.UsagePage >= 0xFF00 ? 0 : 1).ThenBy(h => h.Path, StringComparer.OrdinalIgnoreCase))
         {
             timeout.Token.ThrowIfCancellationRequested();
             var kind = Match(endpoint);
@@ -115,8 +116,7 @@ public sealed class HidBatteryProvider(AppLogService log) : IDeviceBatteryProvid
             value = await QueryFeatureAsync(transport, target, sequence, 0x80, token).ConfigureAwait(false);
             if (value is not null)
             {
-                var charge = await QueryFeatureAsync(transport, target, ++sequence, 0x84, token).ConfigureAwait(false);
-                value = value with { Charging = charge?.Percent switch { 0 => false, 1 => true, _ => null } };
+                value = value with { Charging = await ReadChargingAsync(() => QueryFeatureAsync(transport, target, ++sequence, 0x84, token), token).ConfigureAwait(false) };
             }
         }
         else if (target.Kind == HidBatteryKind.Inphic9)
@@ -129,8 +129,7 @@ public sealed class HidBatteryProvider(AppLogService log) : IDeviceBatteryProvid
             value = await QueryInputAsync(transport, target.Kind, 0x21, token).ConfigureAwait(false);
             if (value is not null && target.Kind == HidBatteryKind.RazerHeadset)
             {
-                var charge = await QueryInputAsync(transport, target.Kind, 0x2A, token).ConfigureAwait(false);
-                value = value with { Charging = charge?.Percent switch { 0 => false, 1 => true, _ => null } };
+                value = value with { Charging = await ReadChargingAsync(() => QueryInputAsync(transport, target.Kind, 0x2A, token), token).ConfigureAwait(false) };
             }
         }
         return SnapshotFor(device, selectedId, value);
@@ -138,6 +137,12 @@ public sealed class HidBatteryProvider(AppLogService log) : IDeviceBatteryProvid
     private static BluetoothBatterySnapshot SnapshotFor(BluetoothBatteryDevice device, string id, HidBatteryValue? value) =>
         new(id, value?.Percent, BluetoothBatterySource.Hid, value is not null, value is not null, value is not null ? DateTimeOffset.UtcNow : null)
         { DeviceName = device.DisplayName, Transport = device.Transport, Protocol = device.Protocol, IsCharging = value?.Charging };
+    private async Task<bool?> ReadChargingAsync(Func<Task<HidBatteryValue?>> read, CancellationToken token)
+    {
+        try { return (await read().ConfigureAwait(false))?.Percent switch { 0 => false, 1 => true, _ => null }; }
+        catch (Exception error) when (!token.IsCancellationRequested)
+        { log.Warn("Battery", "充电状态不可用，保留有效电量", error); return null; }
+    }
     private static async Task<HidBatteryValue?> QueryInputAsync(BatteryHidTransport transport, HidBatteryKind kind, byte field, CancellationToken token)
     {
         for (var attempt = 0; attempt < 2; attempt++)
@@ -146,7 +151,7 @@ public sealed class HidBatteryProvider(AppLogService log) : IDeviceBatteryProvid
             var deadline = Environment.TickCount64 + 1200;
             while (Environment.TickCount64 < deadline)
             {
-                var frame = await transport.ReadAsync((int)Math.Min(200, deadline - Environment.TickCount64), token).ConfigureAwait(false);
+                var frame = await transport.ReadAsync((int)Math.Clamp(deadline - Environment.TickCount64, 1, 200), token).ConfigureAwait(false);
                 if (frame is not null && HidBatteryProtocol.Parse(kind, frame, 1, field) is { } value) return value;
             }
             await Task.Delay(120, token).ConfigureAwait(false);
@@ -176,7 +181,7 @@ public sealed class HidBatteryProvider(AppLogService log) : IDeviceBatteryProvid
         var deadline = Environment.TickCount64 + 450;
         while (Environment.TickCount64 < deadline)
         {
-            var frame = await transport.ReadAsync((int)Math.Min(100, deadline - Environment.TickCount64), token).ConfigureAwait(false);
+            var frame = await transport.ReadAsync((int)Math.Clamp(deadline - Environment.TickCount64, 1, 100), token).ConfigureAwait(false);
             if (frame is null) continue;
             if (HidBatteryProtocol.MatchesLogitech(frame, slot, feature, request[3])) return frame;
             if (frame.Length >= 6 && frame[0] == 0x11 && frame[1] == slot && frame[2] == 0xFF && frame[3] == feature && frame[4] == request[3]) return null;

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
+using AFMediaBar.Classes.Models;
 
 namespace AFMediaBar.Classes.Interop;
 
@@ -10,7 +11,8 @@ namespace AFMediaBar.Classes.Interop;
 public sealed record BatteryHidEndpoint(string Path, ushort VendorId, ushort ProductId, ushort UsagePage, ushort Usage,
     int InputLength, int OutputLength, int FeatureLength, string Name, string Serial, Guid? ContainerId, bool IsBluetooth)
 {
-    public string PhysicalId => !string.IsNullOrWhiteSpace(Serial) ? $"{VendorId:X4}:{ProductId:X4}:{Serial}" : ContainerId?.ToString("D") ?? Path.ToUpperInvariant();
+    public string PhysicalId => AudioDeviceIdentity.PhysicalContainer(ContainerId)?.ToString("D") ??
+        (!string.IsNullOrWhiteSpace(Serial) ? $"{VendorId:X4}:{ProductId:X4}:{Serial}" : Path.ToUpperInvariant());
 }
 
 /// <summary>后台使用的共享 HID 句柄；调用方串行访问，Dispose 前结束所有传输。</summary>
@@ -71,14 +73,15 @@ public sealed class BatteryHidTransport : IDisposable
             }
             token.ThrowIfCancellationRequested();
             if (operation is 1 or SetFeatureCode or SetOutputCode) return report;
-            // Feature IOCTL 的部分驱动不返回长度；其报告按描述符长度分配。
-            var length = operation == GetFeatureCode && transferred == 0 ? report.Length : Math.Min((int)transferred, report.Length);
+            // 未编号 Feature 的字节计数不包含前导 0 报告编号，Windows 缓冲区仍包含它。
+            var length = operation == GetFeatureCode ? FeatureResultLength((int)transferred, report.Length, report[0]) : Math.Min((int)transferred, report.Length);
             if (length <= 0) return null;
             var result = new byte[length]; Marshal.Copy(buffer, result, 0, length); return result;
         }
         finally { Marshal.FreeHGlobal(overlapped); Marshal.FreeHGlobal(buffer); }
     }
     public void Dispose() => _handle.Dispose();
+    internal static int FeatureResultLength(int count, int capacity, byte reportId) => count <= 0 ? 0 : Math.Min(capacity, count + (reportId == 0 ? 1 : 0));
 
     public static IReadOnlyList<BatteryHidEndpoint> Enumerate(CancellationToken token)
     {
@@ -116,7 +119,7 @@ public sealed class BatteryHidTransport : IDisposable
                     var buffer = new byte[16];
                     Guid? container = null;
                     if (SetupDiGetDeviceProperty(set, ref info, ref key, out var type, buffer, 16, out var count, 0) && type == 13 && count == 16)
-                    { var id = new Guid(buffer); if (id != Guid.Empty) container = id; }
+                    { container = AudioDeviceIdentity.PhysicalContainer(new Guid(buffer)); }
                     var instance = new StringBuilder(512);
                     SetupDiGetDeviceInstanceId(set, ref info, instance, instance.Capacity, out _);
                     var isBluetooth = path.Contains("BTH", StringComparison.OrdinalIgnoreCase) || instance.ToString().Contains("BTH", StringComparison.OrdinalIgnoreCase);
