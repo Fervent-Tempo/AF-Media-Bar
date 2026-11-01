@@ -208,6 +208,7 @@ namespace AFMediaBar
                 services.AddSingleton<ShellTrayIconService>();
                 services.AddSingleton<ISystemNotificationService>(sp => sp.GetRequiredService<ShellTrayIconService>());
                 services.AddSingleton<NativeMouseInputMonitor>();
+                services.AddSingleton<PetCompanionService>();
                 services.AddSingleton<PetInputService>();
                 services.AddSingleton<PetWebEnvironment>();
                 services.AddSingleton<NativeWindowBackdropAdapter>();
@@ -603,9 +604,15 @@ namespace AFMediaBar
             // 在组合根接通快照输入，避免媒体服务、剪枝参与者和频谱之间形成构造依赖环。
             var audioMonitor = Services.GetRequiredService<AudioMonitorService>();
             _spectrumMediaSessions = Services.GetRequiredService<MediaSessionService>();
-            _spectrumSnapshotHandler = (_, snapshot) => audioMonitor.UpdateMediaSource(snapshot);
+            var pet = Services.GetRequiredService<PetCompanionService>();
+            _spectrumSnapshotHandler = (_, snapshot) =>
+            {
+                audioMonitor.UpdateMediaSource(snapshot);
+                pet.UpdateSnapshot(snapshot);
+            };
             _spectrumMediaSessions.SnapshotChanged += _spectrumSnapshotHandler;
             audioMonitor.UpdateMediaSource(_spectrumMediaSessions.CurrentSnapshot ?? MediaSnapshot.Disconnected);
+            pet.UpdateSnapshot(_spectrumMediaSessions.CurrentSnapshot ?? MediaSnapshot.Disconnected);
         }
 
         private void DetachSpectrumMediaSource()

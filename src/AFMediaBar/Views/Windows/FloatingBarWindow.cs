@@ -114,6 +114,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         QuickLaunchService? quickLaunch = null,
         QuickLaunchIconService? quickLaunchIcons = null,
         PetInputService? petInput = null,
+        PetCompanionService? petCompanion = null,
         PetWebEnvironment? petWebEnvironment = null)
     {
         _quickLaunch = quickLaunch;
@@ -138,7 +139,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         ShowActivated = false;
         WindowHelper.SetNoActivate(this);
         _mediaControl.BindBatterySource(batterySource);
-        if (petInput is not null) _mediaControl.BindPetInput(petInput, petWebEnvironment);
+        if (petInput is not null) _mediaControl.BindPetInput(petInput, petWebEnvironment, petCompanion);
         InitializeEdgeCollapse();
         PresentationSettings = ProjectSettings();
         _centerPx = new Point(monitor.WorkArea.Left + monitor.WorkArea.Width / 2,

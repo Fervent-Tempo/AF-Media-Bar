@@ -10,6 +10,8 @@ namespace AFMediaBar.Components;
 
 public partial class TaskBarMediaControl
 {
+    private PetCompanionService? _petCompanion;
+    private IDisposable? _petContextLease;
     private PetInputService? _petInput;
     private IDisposable? _petLease;
     private PetView? _petLeaseView;
@@ -23,11 +25,12 @@ public partial class TaskBarMediaControl
         ? PresentationSettings.PetComponent.SizeDip : PetInlineSize) + TaskbarWidgetPadding * 2;
     private PetView ActivePet => _petOverflow?.IsVisible == true ? _petOverflow.View : TaskbarPet;
 
-    public void BindPetInput(PetInputService source, PetWebEnvironment? environment = null)
+    public void BindPetInput(PetInputService source, PetWebEnvironment? environment = null, PetCompanionService? companion = null)
     {
         if (_petDisposed) return;
         _petLease?.Dispose();
         _petLease = null;
+        _petCompanion = companion;
         _petInput = source;
         _petEnvironment = environment;
         ReleasePetOverflow();
@@ -58,6 +61,8 @@ public partial class TaskBarMediaControl
             TaskbarPet.Visibility = Visibility.Visible;
             TaskbarPet.SetPresentation(active, visible);
         }
+        if (active && _petCompanion is not null)
+            _petContextLease ??= _petCompanion.Subscribe((animation, beat) => ActivePet.SetContext(animation, beat));
         if (active && _petInput is not null)
         {
             if (!ReferenceEquals(_petLeaseView, ActivePet))
@@ -74,6 +79,8 @@ public partial class TaskBarMediaControl
 
     private void SuspendPetPresentation()
     {
+        _petContextLease?.Dispose();
+        _petContextLease = null;
         _petLease?.Dispose();
         _petLease = null;
         _petLeaseView = null;

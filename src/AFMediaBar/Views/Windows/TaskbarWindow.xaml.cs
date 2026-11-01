@@ -168,6 +168,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         QuickLaunchService? quickLaunch = null,
         QuickLaunchIconService? quickLaunchIcons = null,
         PetInputService? petInput = null,
+        PetCompanionService? petCompanion = null,
         PetWebEnvironment? petWebEnvironment = null)
     {
         _quickLaunch = quickLaunch;
@@ -181,7 +182,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         InitializeExternalFullPanelHandle(externalFullPanelHandleFactory);
         DataContext = ViewModel;
         MediaControl.BindBatterySource(batterySource);
-        if (petInput is not null) MediaControl.BindPetInput(petInput, petWebEnvironment);
+        if (petInput is not null) MediaControl.BindPetInput(petInput, petWebEnvironment, petCompanion);
         ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
         appearanceService.Attach(PlayerMenu, this);
         PlayerMenu.OpenSettingsRequested += PlayerMenu_OpenSettingsRequested;

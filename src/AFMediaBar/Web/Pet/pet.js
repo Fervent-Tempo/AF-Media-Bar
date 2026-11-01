@@ -69,6 +69,7 @@
     if (changed) { selected = next; age = 0; scheduleNatural(); }
     const p = motion.target(selected, looping ? age : 0);
     const animatedPose = full && (looping || state.hovered);
+    const beat = full ? clamp(Number(state.beat) || 0, 0, 1) : 0;
     const targets = {
       eyeX: state.gazeX + (looping ? p.gazeX * 0.2 : 0),
       eyeY: state.gazeY + (looping ? p.gazeY * 0.2 : 0) - (full && state.hovered ? 0.5 : 0),
@@ -78,6 +79,10 @@
       lift: full && state.hovered ? 0.6 : 0, squash: full && now < pressUntil ? 1 : 0,
       morph: p.morph, effect: p.effect ? (["humming", "notifying"].includes(p.effect) ? 1 : p.morph) : 0, lid: p.lid
     };
+    targets.y -= beat * 3.2;
+    targets.sy += beat * 0.045;
+    targets.sx -= beat * 0.025;
+    targets.turn += beat * 4;
     targets.yaw = looping ? motion.unwrapTurn(turn, targets.yaw, values.yaw.x, changed || !wasLooping)
       : Math.round(values.yaw.x / 360) * 360;
     wasLooping = looping;

@@ -27,6 +27,15 @@ public sealed class PetView : Grid, IDisposable
     private Point? _pointer;
     private Vector _gaze;
     private PetWebState? _lastState;
+    private string? _contextAnimation;
+    private double _beat;
+
+    internal void SetContext(string animation, double beat)
+    {
+        _contextAnimation = animation;
+        _beat = beat;
+        SendState();
+    }
 
     public PetView() : this(null) { }
     internal PetView(Func<IPetWebRenderer>? createRenderer)
@@ -143,7 +152,7 @@ public sealed class PetView : Grid, IDisposable
         var colors = PetVisualDefinition.Colors(_settings);
         var state = new PetWebState(_gaze.X, _gaze.Y, _hovered, _blinkSequence, _pressSequence,
             colors.Body, colors.Eyes, colors.HighContrast, _settings.IdleAnimationsEnabled,
-            MotionPolicy.ResolveCurrent().Mode, _active, _settings.Animation);
+            MotionPolicy.ResolveCurrent().Mode, _active, _settings.Animation == "auto" && _settings.FollowPlayback ? _contextAnimation ?? "idle" : _settings.Animation, _beat);
         if (state == _lastState) return;
         _lastState = state;
         _renderer.Present(state);

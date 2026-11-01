@@ -12,10 +12,14 @@ public sealed record PetComponentSettings
     public bool IdleAnimationsEnabled { get; init; } = true;
     public double SizeDip { get; init; } = DefaultSizeDip;
     public bool AllowOverflow { get; init; }
+    public bool FollowPlayback { get; init; } = true;
+    public bool MusicMotionEnabled { get; init; } = true;
+    public double MusicSensitivity { get; init; } = 100;
     public string Animation { get; init; } = "auto";
 
     public PetComponentSettings Normalize() => this with
     {
+        MusicSensitivity = double.IsFinite(MusicSensitivity) ? Math.Clamp(MusicSensitivity, 25, 200) : 100,
         FillColorHex = ColorHex.TryParse(FillColorHex, out var color) ? ColorHex.Format(color) : DefaultFillColorHex,
         SizeDip = double.IsFinite(SizeDip) ? Math.Clamp(SizeDip, 20, 160) : DefaultSizeDip,
         Animation = PetAnimationCatalog.Ids.Contains(Animation, StringComparer.Ordinal) ? Animation : "auto"
