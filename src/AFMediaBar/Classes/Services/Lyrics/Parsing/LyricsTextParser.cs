@@ -5,6 +5,13 @@ using Lyricify.Lyrics.Models;
 
 namespace AFMediaBar.Classes.Services.Lyrics;
 
+/// <summary>解析结果、"是否由纯音乐标记确认无歌词"以及是否含正文；只供取词侧区分状态。</summary>
+/// <remarks>
+/// A parse result plus whether an instrumental marker confirmed no lyrics and whether any catalogued line is body;
+/// only the retrieval side uses these flags.
+/// </remarks>
+internal readonly record struct LyricsParseResult(LyricDocument Document, bool NoLyricsConfirmed, bool HasBody);
+
 /// <summary>
 /// 把任意来源的原始歌词文本解析成统一的歌词文档。
 /// Parses raw lyric text from any source into the unified lyric document.
@@ -38,19 +45,34 @@ public static class LyricsTextParser
     /// <param name="durationSeconds">曲目时长（秒），用于补齐末行结束时间 / Track duration in seconds, used to complete the last line's end.</param>
     /// <param name="filterInfoLines">是否丢弃作者、作曲、制作等信息行 / Whether credit lines such as writer, composer, and producer are dropped.</param>
     /// <returns>歌词文档；无法识别、解析失败、没有时间轴或只剩占位文本时返回空行文档，界面因此回落到标题与歌手。
+    /// 纯音乐载荷也返回空文档，但其确认状态经 <see cref="ParseCore"/> 交给取词侧，以便来源报告"确认无歌词"。
     /// The lyric document; an unrecognized, unparsable, untimed, or placeholder-only input yields a document without lines, so
-    /// the UI falls back to title and artist.</returns>
+    /// the UI falls back to title and artist. An instrumental-only payload also yields an empty document, but its confirmation
+    /// reaches the retrieval provider through <see cref="ParseCore"/> so the source can report a confirmed no-lyrics result.</returns>
     public static LyricDocument Parse(
         string? rawText,
         string? translationText = null,
         string? romanizationText = null,
         LyricsRequest? request = null,
         double? durationSeconds = null,
-        bool filterInfoLines = true)
+        bool filterInfoLines = true) =>
+        ParseCore(rawText, translationText, romanizationText, request, durationSeconds, filterInfoLines).Document;
+
+    /// <summary>
+    /// 解析歌词文本，并额外报告确认无歌词与是否含正文。
+    /// Parses lyric text and additionally reports a no-lyrics confirmation and whether the document contains body lines.
+    /// </summary>
+    internal static LyricsParseResult ParseCore(
+        string? rawText,
+        string? translationText,
+        string? romanizationText,
+        LyricsRequest? request,
+        double? durationSeconds,
+        bool filterInfoLines)
     {
         if (string.IsNullOrWhiteSpace(rawText))
         {
-            return LyricDocument.Empty;
+            return new LyricsParseResult(LyricDocument.Empty, false, false);
         }
 
         // 只用枚举名做格式标识：库的显示名辅助在不同版本里位置不同，诊断不依赖它。
@@ -58,14 +80,36 @@ public static class LyricsTextParser
         // must not depend on it.
         var (data, rawType) = ParsePayload(rawText);
         if (rawType == LyricsRawTypes.Unknown)
-            return LyricDocument.Empty;
+            return new LyricsParseResult(LyricDocument.Empty, false, false);
         var formatName = rawType.ToString();
         if (data?.Lines is not { Count: > 0 })
         {
-            return new LyricDocument([], LyricsSyncType.Unsynced, formatName);
+            return new LyricsParseResult(new LyricDocument([], LyricsSyncType.Unsynced, formatName), false, false);
         }
 
         var track = CreateTrackMetadata(request, durationSeconds);
+        var syncType = ResolveSyncType(data);
+        var kinds = ClassifyLines(data.Lines);
+        // 逐行信息行判定同时服务"确认无歌词"和"是否含正文"；位置推断会把正文首尾误标为信息行，这里不使用。
+        // The direct per-line info decision serves both confirmation and body detection; positional inference would mislabel
+        // body lines at the edges and is deliberately not used here.
+        var directInfoLines = ResolveDirectInfoLines(data.Lines, track);
+        var hasBody = false;
+
+        // 网易云纯音乐载荷是"署名行 + 纯音乐提示"：署名比例过高时信息行过滤会整体放弃，占位提示再被丢弃，
+        // 剩余署名就会被当成歌词。只有明确纯音乐标记且其余可呈现行全是署名时才确认无歌词；正文永远优先。
+        // A NetEase instrumental payload is credit lines plus an instrumental marker: when credits exceed the anti-deletion
+        // share the filter is abandoned and the placeholder is dropped, leaving credits as lyrics. Confirmation therefore
+        // requires an explicit instrumental marker and no body among the presentable lines; a real lyric always wins.
+        if (kinds.Contains(LyricPlaceholderKind.Instrumental) &&
+            LyricNoLyricsPolicy.ConfirmsNoLyrics(kinds, directInfoLines))
+        {
+            return new LyricsParseResult(
+                new LyricDocument([], syncType == LyricsSyncType.Unknown ? LyricsSyncType.Unsynced : syncType, formatName),
+                true,
+                false);
+        }
+
         var dropMask = filterInfoLines ? ResolveDropMask(data.Lines, track) : new bool[data.Lines.Count];
         var translations = ParseTimestampedText(translationText);
         var romanizations = ParseTimestampedText(romanizationText);
@@ -90,22 +134,29 @@ public static class LyricsTextParser
             }
 
             var start = startMilliseconds / 1000d;
-            var text = line.SubLine is not null ? line.FullText : line.Text;
+            var text = ResolveLineText(line);
             if (string.IsNullOrWhiteSpace(text))
             {
                 continue;
             }
 
-            // "暂无歌词"一类的占位行不是歌词：它带着时间戳通过解析后，会成为静置层唯一的一句歌词。
-            // A placeholder line such as "暂无歌词" is not a lyric: it passes parsing with a timestamp and would then be the only
-            // line the rest layer shows.
-            if (LyricPlaceholderPolicy.IsPlaceholder(text))
+            // 空行、暂无需歌词提示和纯音乐标记都不是歌词正文：它们带着时间戳通过解析后也不能进入文档。
+            // Blank lines, transient placeholders, generic no-lyrics placeholders, and instrumental markers are not lyric
+            // body: even when they pass parsing with a timestamp, they must not enter the document.
+            if (kinds[i] != LyricPlaceholderKind.None)
             {
                 continue;
             }
 
             var translation = ResolveInlineTranslation(line);
             var romanization = ResolveInlineRomanization(line);
+            if (directInfoLines is null || !directInfoLines[i])
+            {
+                // 分类不可用时按正文处理，宁可显示也不误清空。
+                // When classification is unavailable, treat the line as body so the lyric is kept rather than cleared.
+                hasBody = true;
+            }
+
             drafts.Add(new LyricLineDraft(
                 start,
                 line.EndTime is { } endMilliseconds ? endMilliseconds / 1000d : null,
@@ -116,15 +167,70 @@ public static class LyricsTextParser
                 line.SubLine is not null));
         }
 
-        var syncType = ResolveSyncType(data);
         if (drafts.Count == 0)
         {
-            return new LyricDocument([], syncType == LyricsSyncType.Unknown ? LyricsSyncType.Unsynced : syncType, formatName);
+            return new LyricsParseResult(
+                new LyricDocument([], syncType == LyricsSyncType.Unknown ? LyricsSyncType.Unsynced : syncType, formatName),
+                false,
+                false);
         }
 
         var resolvedDuration = durationSeconds ?? request?.DurationSeconds ?? 0d;
         var lines = LyricTimingPolicy.Resolve(drafts, resolvedDuration);
-        return new LyricDocument(lines, syncType == LyricsSyncType.Unknown ? InferSyncType(lines) : syncType, formatName);
+        return new LyricsParseResult(
+            new LyricDocument(lines, syncType == LyricsSyncType.Unknown ? InferSyncType(lines) : syncType, formatName),
+            false,
+            hasBody);
+    }
+
+    /// <summary>逐行分类占位文本；无法参与呈现的行按空行处理，不参与正文或标记统计。</summary>
+    private static LyricPlaceholderKind[] ClassifyLines(List<ILineInfo> lines)
+    {
+        var kinds = new LyricPlaceholderKind[lines.Count];
+        for (var index = 0; index < lines.Count; index++)
+        {
+            var text = ResolveLineText(lines[index]);
+            kinds[index] = IsPresentableLine(lines[index], text)
+                ? LyricPlaceholderPolicy.Classify(text)
+                : LyricPlaceholderKind.Blank;
+        }
+
+        return kinds;
+    }
+
+    private static string? ResolveLineText(ILineInfo line) => line.SubLine is not null ? line.FullText : line.Text;
+
+    private static bool IsPresentableLine(ILineInfo line, string? text) =>
+        line is not SyllableLineInfo { Syllables: not { Count: > 0 } } &&
+        line.StartTime is not null &&
+        !string.IsNullOrWhiteSpace(text);
+
+    /// <summary>
+    /// 逐行调用信息行判定，不做标题/结尾的位置推断；分类不可用或行数不一致时返回 null。
+    /// Classifies each line directly without the heading/ending positional inference; returns null when classification
+    /// is unavailable or the result length does not match.
+    /// </summary>
+    private static bool[]? ResolveDirectInfoLines(List<ILineInfo> lines, ITrackMetadata track)
+    {
+        try
+        {
+            var flags = new bool[lines.Count];
+            for (var index = 0; index < lines.Count; index++)
+            {
+                // 位置推断会把正文前后的行强行标成信息行，确认无歌词时必须使用逐行判定。
+                // Positional inference would force lines before or after the body to look like credits; confirmation must
+                // use the direct per-line decision.
+                flags[index] = InfoLines.IsInfoLine(ResolveLineText(lines[index]) ?? string.Empty, track);
+            }
+
+            return flags;
+        }
+        catch
+        {
+            // 信息行判定失败只是显示优化，不能据此清空歌词。
+            // Info-line classification is only a presentation nicety; its failure must never clear the lyrics.
+            return null;
+        }
     }
 
     /// <summary>

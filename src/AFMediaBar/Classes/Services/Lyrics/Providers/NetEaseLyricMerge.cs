@@ -20,11 +20,14 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 ///   lyrics.
 ///
 /// 因此主文本取自新端点的逐字字段**只在它确实被识别成逐字格式时**，否则回落到旧端点的行级正文；译文与音译分别取
-/// 两个端点的并集（逐字优先）。主文本候选按顺序尝试，第一个能产出非空行的胜出，仅在明确无歌词标记时返回无歌词结果，否则全部为空视为失败。
+/// 两个端点的并集（逐字优先）。候选按"含正文 > 纯音乐确认 > 仅署名兜底"选择，不能因另一端点只返回署名而显示署名或覆盖确认；
+/// 全部候选为空时，接口的 Nolyric 或解析层的纯音乐确认才返回无歌词结果，否则视为失败。
 /// The main text therefore comes from the new endpoint's syllable field only when that field really is recognized as a syllable
 /// format, and otherwise falls back to the legacy endpoint's line-level body; translation and romanization take the union of
-/// both endpoints with the syllable variant first. Candidates are tried in order and the first one that yields lines wins; when
-/// every candidate is empty, explicit no-lyrics markers yield a valid no-lyrics result; otherwise the lookup fails.
+/// both endpoints with the syllable variant first. Candidates resolve as body first, then an instrumental confirmation, then a
+/// credit-only fallback, so a credit-only payload from the other endpoint never shows credits or overrides the confirmation;
+/// when every candidate is empty, the endpoint's Nolyric flag or the parser's instrumental confirmation yields no lyrics,
+/// otherwise the lookup fails.
 /// </summary>
 public static class NetEaseLyricMerge
 {
@@ -45,24 +48,57 @@ public static class NetEaseLyricMerge
     {
         var translation = Normalize(wordLevel?.Ytlrc?.Lyric) ?? Normalize(legacy?.Tlyric?.Lyric);
         var romanization = Normalize(wordLevel?.Yromalrc?.Lyric) ?? Normalize(legacy?.Romalrc?.Lyric);
+        var instrumentalConfirmed = false;
+        LyricsResult? creditOnlyFallback = null;
+        LyricsResult? bodyResult = null;
 
         foreach (var candidate in EnumerateMainTexts(legacy, wordLevel))
         {
-            var document = LyricsTextParser.Parse(
+            var parsed = LyricsTextParser.ParseCore(
                 candidate,
                 translation,
                 romanization,
                 request,
                 request.DurationSeconds,
                 request.FilterInfoLines);
-            if (document.Lines.Count > 0)
+            instrumentalConfirmed |= parsed.NoLyricsConfirmed;
+            if (parsed.Document.Lines.Count == 0)
             {
-                return new LyricsResult(sourceName, document);
+                continue;
             }
+
+            var result = new LyricsResult(sourceName, parsed.Document);
+            if (parsed.HasBody)
+            {
+                // 正文候选优先：另一端点只返回署名时，不能让它覆盖纯音乐确认或真正带正文的候选。
+                // A body candidate wins: a credit-only payload from the other endpoint must not override an instrumental
+                // confirmation or another candidate that really carries lyrics.
+                bodyResult ??= result;
+                break;
+            }
+
+            creditOnlyFallback ??= result;
+        }
+
+        if (bodyResult is not null)
+        {
+            return bodyResult;
+        }
+
+        if (instrumentalConfirmed)
+        {
+            return LyricsResult.NoLyrics(sourceName);
+        }
+
+        if (creditOnlyFallback is not null)
+        {
+            return creditOnlyFallback;
         }
 
         // 无歌词是歌曲身份已确认后的有效结果；不能丢掉它让低分来源覆盖。
         // 空白正文或解析失败本身不足以证明纯音乐，必须有成功响应的明确标记。
+        // No lyrics is a valid result once the track identity is confirmed; dropping it would let a low-score source win.
+        // Empty text or a parse failure alone does not prove the track is instrumental; an explicit successful marker is required.
         return legacy is { Code: 200, Nolyric: true } || wordLevel is { Code: 200, Nolyric: true }
             ? LyricsResult.NoLyrics(sourceName)
             : null;

@@ -1,5 +1,30 @@
 namespace AFMediaBar.Classes.Services.Lyrics;
 
+/// <summary>占位行的处理类别：空行、普通无歌词提示、纯音乐提示和临时状态。</summary>
+/// <remarks>
+/// 临时状态（歌词加载中/制作中）只丢弃、不能被当作"确认无歌词"缓存；纯音乐标记是 #267 中唯一允许确认无歌词的证据，
+/// 普通的"暂无歌词"仍只按占位行丢弃。
+/// Transient states are dropped but never cached as confirmed no lyrics; only the pure-instrumental markers may confirm
+/// no lyrics for #267, while a generic "暂无歌词" placeholder is still only dropped.
+/// </remarks>
+internal enum LyricPlaceholderKind
+{
+    /// <summary>不是占位文本。/ Not a placeholder.</summary>
+    None,
+
+    /// <summary>空行或空白行。/ Blank or whitespace-only line.</summary>
+    Blank,
+
+    /// <summary>普通"暂无歌词"一类占位提示，不用于确认无歌词。/ Generic "no lyrics" placeholder; not used to confirm.</summary>
+    NoLyricsPlaceholder,
+
+    /// <summary>明确的纯音乐提示，可确认无歌词。/ Explicit instrumental marker, may confirm no lyrics.</summary>
+    Instrumental,
+
+    /// <summary>歌词加载中/制作中一类临时状态，不能确认无歌词。/ Transient loading or production state.</summary>
+    Transient
+}
+
 /// <summary>
 /// 歌词占位文本的识别：来源用一行字表示"这首歌没有歌词"，那种行不是歌词，不能占着静置层的歌词位置。
 /// Recognition of placeholder lyric text: a source sometimes answers with a single line that means "this song has no lyrics",
@@ -19,7 +44,8 @@ public static class LyricPlaceholderPolicy
     /// Maximum length in characters for a line containing a marker to still count as a placeholder; longer lines are left alone.</summary>
     public const int MaximumContainedMarkerLength = 24;
 
-    private static readonly string[] Markers =
+    /// <summary>普通的"暂无歌词"一类占位；不含纯音乐与临时状态，避免与专用清单重复维护。</summary>
+    private static readonly string[] NoLyricsPlaceholderMarkers =
     [
         "暂无歌词",
         "暫無歌詞",
@@ -27,19 +53,29 @@ public static class LyricPlaceholderPolicy
         "该歌曲暂无歌词",
         "該歌曲暫無歌詞",
         "此歌曲暂无歌词",
-        "歌词加载中",
-        "歌詞載入中",
-        "歌词制作中",
+        "no lyrics",
+        "lyrics not available",
+        "no lyrics available",
+        "lyrics unavailable"
+    ];
+
+    /// <summary>明确的纯音乐标记；只有这些标记可以参与"确认无歌词"（#267）。</summary>
+    private static readonly string[] InstrumentalMarkers =
+    [
         "純音樂，請欣賞",
         "纯音乐，请欣赏",
         "纯音乐请欣赏",
         "此歌曲为没有填词的纯音乐",
         "此歌曲為沒有填詞的純音樂",
-        "instrumental",
-        "no lyrics",
-        "lyrics not available",
-        "no lyrics available",
-        "lyrics unavailable"
+        "instrumental"
+    ];
+
+    /// <summary>临时状态：只丢弃占位行，不能确认无歌词，否则会把暂时失败永久缓存。</summary>
+    private static readonly string[] TransientMarkers =
+    [
+        "歌词加载中",
+        "歌詞載入中",
+        "歌词制作中"
     ];
 
     /// <summary>
@@ -48,20 +84,44 @@ public static class LyricPlaceholderPolicy
     /// </summary>
     /// <param name="text">行文本 / Line text.</param>
     /// <returns>是占位文本时为 true / True when the text is a placeholder.</returns>
-    public static bool IsPlaceholder(string? text)
+    public static bool IsPlaceholder(string? text) => Classify(text) != LyricPlaceholderKind.None;
+
+    /// <summary>
+    /// 区分空行、普通占位、纯音乐标记与临时状态；空行不算纯音乐标记。
+    /// Classifies blank lines, generic placeholders, instrumental markers, and transient states; blank lines are not markers.
+    /// </summary>
+    internal static LyricPlaceholderKind Classify(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
-            return true;
+            return LyricPlaceholderKind.Blank;
         }
 
         var normalized = Normalize(text);
         if (normalized.Length == 0)
         {
-            return true;
+            return LyricPlaceholderKind.Blank;
         }
 
-        foreach (var marker in Markers)
+        if (Matches(normalized, TransientMarkers))
+        {
+            return LyricPlaceholderKind.Transient;
+        }
+
+        if (Matches(normalized, InstrumentalMarkers))
+        {
+            return LyricPlaceholderKind.Instrumental;
+        }
+
+        return Matches(normalized, NoLyricsPlaceholderMarkers)
+            ? LyricPlaceholderKind.NoLyricsPlaceholder
+            : LyricPlaceholderKind.None;
+    }
+
+    /// <summary>整行等于某个标记，或短行包含某个标记。</summary>
+    private static bool Matches(string normalized, IReadOnlyList<string> markers)
+    {
+        foreach (var marker in markers)
         {
             if (normalized.Equals(Normalize(marker), StringComparison.OrdinalIgnoreCase))
             {
@@ -74,7 +134,7 @@ public static class LyricPlaceholderPolicy
             return false;
         }
 
-        foreach (var marker in Markers)
+        foreach (var marker in markers)
         {
             if (normalized.Contains(Normalize(marker), StringComparison.OrdinalIgnoreCase))
             {
