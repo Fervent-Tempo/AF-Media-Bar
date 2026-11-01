@@ -23,6 +23,16 @@ public sealed record HomeThreadCard(string Title, string Detail, string Url, str
 /// <summary>轮播圆点的一项：当前项显示为强调色胶囊，点击后切到该张。</summary>
 public sealed record HomeFeatureTab(HomeFeatureCard Feature, bool IsCurrent, string AutomationName);
 
+/// <summary>来源卡片的图标呈现状态，不改变会话与支持能力。</summary>
+public sealed partial class HomePlayerTile(HomePlayerCard player) : ObservableObject
+{
+    public HomePlayerCard Player { get; } = player;
+    public string Name => Player.Name;
+    public string Status => Player.Status;
+    public bool IsCurrent => Player.IsCurrent;
+    [ObservableProperty] private ImageSource? _icon;
+}
+
 /// <summary>先显示本地内容，再刷新公开动态；不上传任何使用资料。</summary>
 public partial class QuickStartViewModel : ObservableObject, IDisposable
 {
@@ -32,6 +42,8 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     private readonly IHomeMediaState _media;
     private readonly LocalizationService _localization;
     private readonly AppLogService _log;
+    private readonly QuickLaunchIconService _icons;
+    private readonly MediaSourceActivationService _sources;
     private readonly DispatcherTimer _refreshCooldownTimer = new(DispatcherPriority.Background) { Interval = RefreshCooldown };
     private readonly System.Windows.Threading.Dispatcher _dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
     private CancellationTokenSource? _request;
@@ -54,7 +66,7 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     public ObservableCollection<HomeFeatureCard> Features { get; } = [];
     public ObservableCollection<HomeFeatureTab> FeatureTabs { get; } = [];
     public ObservableCollection<HomePlayerCard> Players { get; } = [];
-    public ObservableCollection<HomePlayerCard> VisiblePlayers { get; } = [];
+    public ObservableCollection<HomePlayerTile> VisiblePlayers { get; } = [];
     public ObservableCollection<PlayerSupportProfile> SupportedPlayers { get; } = [];
     public ObservableCollection<HomeThreadCard> Issues { get; } = [];
     public ObservableCollection<HomeThreadCard> PullRequests { get; } = [];
@@ -83,9 +95,11 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         : Translations.Get("Home.Unavailable");
     public string PlayerFilter { get => _playerFilter; set { if (SetProperty(ref _playerFilter, value)) ProjectSupport(); } }
     public QuickStartViewModel(ReleaseHighlightsService releases, HomeContentService home, IHomeMediaState media,
-        LocalizationService localization, AppLogService log, SettingsPreviewViewModel preview)
+        LocalizationService localization, AppLogService log, SettingsPreviewViewModel preview,
+        QuickLaunchIconService icons, MediaSourceActivationService sources)
     {
         _releases = releases; _home = home; _media = media; _localization = localization; _log = log; Preview = preview;
+        _icons = icons; _sources = sources;
         _refreshCooldownTimer.Tick += OnRefreshCooldownElapsed;
         ProjectFeatures(); ProjectPlayers(); ProjectSupport();
     }
@@ -136,6 +150,8 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         var request = _request = new CancellationTokenSource();
         var token = request.Token;
         var generation = ++_generation;
+        _playerSignature = string.Empty;
+        ProjectPlayers();
         if (SelectedFeature is { } selected && !_images.ContainsKey(selected.ImageUrl ?? string.Empty))
             _ = LoadImageAsync(selected, token);
         bool IsCurrent() => _active && !_disposed && !token.IsCancellationRequested && generation == _generation;
@@ -269,12 +285,28 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         if (_playerSignature == signature) return;
         _playerSignature = signature;
         Players.Clear(); foreach (var item in PlayerSupportCatalog.Describe(_media.Sessions, _media.Snapshot)) Players.Add(item);
-        VisiblePlayers.Clear(); foreach (var player in Players.Take(2)) VisiblePlayers.Add(player);
+        VisiblePlayers.Clear(); foreach (var player in Players.Take(2)) VisiblePlayers.Add(new(player));
+        if (_active && _request is { } request)
+            foreach (var tile in VisiblePlayers) _ = LoadPlayerIconAsync(tile, request.Token, _generation);
         var additional = Players.Count - VisiblePlayers.Count;
         _additionalPlayersText = additional > 0 ? Translations.Format("Home.Player.More", additional) : string.Empty;
         OnPropertyChanged(nameof(AdditionalPlayersText));
         OnPropertyChanged(nameof(HasAdditionalPlayers));
         OnPropertyChanged(nameof(HasPlayers));
+    }
+    private async Task LoadPlayerIconAsync(HomePlayerTile tile, CancellationToken token, int generation)
+    {
+        try
+        {
+            // 进程路径和 Shell 图标均在后台读取，不激活或启动来源应用。
+            var source = await Task.Run(() => _sources.Describe(tile.Player.SourceId), token);
+            if (!source.CanQuickLaunch) return;
+            var icon = await _icons.GetAsync(new(source.SourceId, source.DisplayName, source.LaunchKind!.Value, source.LaunchTarget!), token);
+            if (_active && !_disposed && !token.IsCancellationRequested && generation == _generation && VisiblePlayers.Contains(tile))
+                tile.Icon = icon;
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception exception) { _log.Warn("Home", "读取来源应用图标失败，保留默认图标", exception); }
     }
     private static IReadOnlyList<string> FeatureTags(string kindKey, string? version, string? source)
     {

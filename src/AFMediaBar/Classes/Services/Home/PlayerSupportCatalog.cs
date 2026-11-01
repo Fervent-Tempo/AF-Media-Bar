@@ -18,6 +18,8 @@ public sealed record PlayerSupportProfile(string Key, string Name, string Notes,
 
 public sealed record HomePlayerCard(string Key, string Name, string Status, string Capabilities, string Notes)
 {
+    /// <summary>实际会话的应用标识，用于读取本地应用图标。</summary>
+    public string SourceId { get; init; } = string.Empty;
     /// <summary>状态种类，供页面选择状态徽章样式。</summary>
     public PlayerStatusKind StatusKind { get; init; }
 
@@ -82,6 +84,7 @@ public static class PlayerSupportCatalog
             result.Add(new(key, profile?.Name ?? MediaSourceNameFormatter.GetDisplayName(session.SourceId, Translations.Get("Start.OtherSmtc")),
                 Translations.Get(status), capabilities, profile?.Notes ?? Translations.Get("Home.Player.Smtc"))
             {
+                SourceId = session.SourceId,
                 StatusKind = kind,
                 IsCurrent = isCurrent,
                 CapabilityItems = isCurrent ? DescribeCapabilities(current!) : []
