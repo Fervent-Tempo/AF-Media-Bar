@@ -276,32 +276,42 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Border Style="{StaticResource HomeIconTile}">
-                            <Grid>
-                                <Image Width="26" Height="26" Source="{Binding ViewModel.VisiblePlayers[0].Icon}" Stretch="Uniform" />
-                                <ui:SymbolIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18"
-                                               Foreground="{DynamicResource AfAccentBrush}" Symbol="MusicNote124">
-                                    <ui:SymbolIcon.Style>
-                                        <Style TargetType="ui:SymbolIcon">
+                        <Border Margin="0,0,12,0">
+                            <Border.Style>
+                                <Style TargetType="Border" BasedOn="{StaticResource HomeIconTile}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ViewModel.HasPlayers}" Value="True">
                                             <Setter Property="Visibility" Value="Collapsed" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding ViewModel.VisiblePlayers[0].Icon}" Value="{x:Null}">
-                                                    <Setter Property="Visibility" Value="Visible" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding ViewModel.HasPlayers}" Value="False">
-                                                    <Setter Property="Visibility" Value="Visible" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </ui:SymbolIcon.Style>
-                                </ui:SymbolIcon>
-                            </Grid>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <ui:SymbolIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18"
+                                           Foreground="{DynamicResource AfAccentBrush}" Symbol="MusicNote124" />
                         </Border>
-                        <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                        <StackPanel VerticalAlignment="Center">
                             <ItemsControl ItemsSource="{Binding ViewModel.VisiblePlayers}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Margin="0,1" Orientation="Horizontal">
+                                            <Border Style="{StaticResource HomeIconTile}" Width="28" Height="28" Margin="0,0,8,0">
+                                                <Grid>
+                                                    <Image Width="22" Height="22" Source="{Binding Icon}" Stretch="Uniform" />
+                                                    <ui:SymbolIcon HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18"
+                                                                   Foreground="{DynamicResource AfAccentBrush}" Symbol="MusicNote124">
+                                                        <ui:SymbolIcon.Style>
+                                                            <Style TargetType="ui:SymbolIcon">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Icon}" Value="{x:Null}">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </ui:SymbolIcon.Style>
+                                                    </ui:SymbolIcon>
+                                                </Grid>
+                                            </Border>
                                             <TextBlock VerticalAlignment="Center" FontSize="15"
                                                        FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{Binding Name}" />
                                             <ContentControl Margin="8,0,0,0" VerticalAlignment="Center"
