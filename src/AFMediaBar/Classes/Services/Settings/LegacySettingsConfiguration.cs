@@ -129,6 +129,7 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
     public void SetInteractionSettings(GlobalInteractionSettings value) => Update(current => current.Interaction = value);
     public void SetAllowBrowserAndVideoLyrics(bool value) { if (IsActive) SettingsManager.Current.AllowBrowserAndVideoLyrics = value; }
     public void SetLyricsInfoLineFilterEnabled(bool value) { if (IsActive) SettingsManager.Current.LyricsInfoLineFilterEnabled = value; }
+    public void SetLyricsInstrumentalTitleOnlyEnabled(bool value) { if (IsActive) SettingsManager.Current.LyricsInstrumentalTitleOnlyEnabled = value; }
     public void SetLyricsSourceSettings(LyricsSourceSettings value) { if (IsActive) SettingsManager.Current.LyricsSource = value; }
     public void SetLyricsArtistSeparators(string value) { if (IsActive) SettingsManager.Current.LyricsArtistSeparators = value; }
     public void SetTrackChangeNotificationSettings(TrackChangeNotificationSettings value) { if (IsActive) SettingsManager.Current.TrackChangeNotification = value; }

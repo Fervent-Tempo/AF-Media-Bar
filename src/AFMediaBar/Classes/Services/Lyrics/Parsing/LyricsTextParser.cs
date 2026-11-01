@@ -95,24 +95,44 @@ public static class LyricsTextParser
         // body lines at the edges and is deliberately not used here.
         var directInfoLines = ResolveDirectInfoLines(data.Lines, track);
         var hasBody = false;
+        var translations = ParseTimestampedText(translationText);
+        var romanizations = ParseTimestampedText(romanizationText);
+        var resolvedDuration = durationSeconds ?? request?.DurationSeconds ?? 0d;
 
         // 网易云纯音乐载荷是"署名行 + 纯音乐提示"：署名比例过高时信息行过滤会整体放弃，占位提示再被丢弃，
-        // 剩余署名就会被当成歌词。只有明确纯音乐标记且其余可呈现行全是署名时才确认无歌词；正文永远优先。
+        // 剩余署名就会被当成歌词。只有明确纯音乐标记且其余可呈现行全是署名时才走纯音乐分支；正文永远优先。
         // A NetEase instrumental payload is credit lines plus an instrumental marker: when credits exceed the anti-deletion
-        // share the filter is abandoned and the placeholder is dropped, leaving credits as lyrics. Confirmation therefore
-        // requires an explicit instrumental marker and no body among the presentable lines; a real lyric always wins.
+        // share the filter is abandoned and the placeholder is dropped, leaving credits as lyrics. Only an explicit marker
+        // with no body enters the instrumental branch; a real lyric always wins.
         if (kinds.Contains(LyricPlaceholderKind.Instrumental) &&
             LyricNoLyricsPolicy.ConfirmsNoLyrics(kinds, directInfoLines))
         {
-            return new LyricsParseResult(
-                new LyricDocument([], syncType == LyricsSyncType.Unknown ? LyricsSyncType.Unsynced : syncType, formatName),
-                true,
-                false);
+            if (request?.HideInstrumentalLyrics == true)
+            {
+                // 用户选择纯音乐只显示标题：不显示提示行，按确认无歌词缓存。
+                // The user asked for title-only instrumental tracks: hide the notice and cache a confirmed no-lyrics result.
+                return new LyricsParseResult(
+                    new LyricDocument([], syncType == LyricsSyncType.Unknown ? LyricsSyncType.Unsynced : syncType, formatName),
+                    true,
+                    false);
+            }
+
+            // 默认只呈现"纯音乐，请欣赏"这一行；署名不进入文档，也不受信息行防误删阈值影响。
+            // By default only the "纯音乐，请欣赏" line is presented; credits never enter the document, regardless of the
+            // anti-deletion threshold that otherwise keeps a few flagged lines.
+            var markerDrafts = CreateInstrumentalDrafts(data.Lines, kinds, translations, romanizations);
+            if (markerDrafts.Count > 0)
+            {
+                var markerLines = LyricTimingPolicy.Resolve(markerDrafts, resolvedDuration);
+                return new LyricsParseResult(
+                    new LyricDocument(markerLines,
+                        syncType == LyricsSyncType.Unknown ? InferSyncType(markerLines) : syncType, formatName),
+                    false,
+                    false);
+            }
         }
 
         var dropMask = filterInfoLines ? ResolveDropMask(data.Lines, track) : new bool[data.Lines.Count];
-        var translations = ParseTimestampedText(translationText);
-        var romanizations = ParseTimestampedText(romanizationText);
         var drafts = new List<LyricLineDraft>(data.Lines.Count);
 
         for (var i = 0; i < data.Lines.Count; i++)
@@ -175,12 +195,50 @@ public static class LyricsTextParser
                 false);
         }
 
-        var resolvedDuration = durationSeconds ?? request?.DurationSeconds ?? 0d;
         var lines = LyricTimingPolicy.Resolve(drafts, resolvedDuration);
         return new LyricsParseResult(
             new LyricDocument(lines, syncType == LyricsSyncType.Unknown ? InferSyncType(lines) : syncType, formatName),
             false,
             hasBody);
+    }
+
+    /// <summary>
+    /// 只把纯音乐提示行转成歌词行；署名与普通占位不进入结果。
+    /// Converts only the instrumental notice lines into lyric lines; credits and other placeholders never enter the result.
+    /// </summary>
+    private static List<LyricLineDraft> CreateInstrumentalDrafts(
+        List<ILineInfo> lines,
+        LyricPlaceholderKind[] kinds,
+        IReadOnlyList<(double Start, string Text)> translations,
+        IReadOnlyList<(double Start, string Text)> romanizations)
+    {
+        var drafts = new List<LyricLineDraft>();
+        for (var index = 0; index < lines.Count; index++)
+        {
+            if (kinds[index] != LyricPlaceholderKind.Instrumental || lines[index].StartTime is not { } startMilliseconds)
+            {
+                continue;
+            }
+
+            var line = lines[index];
+            var start = startMilliseconds / 1000d;
+            var text = ResolveLineText(line);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                continue;
+            }
+
+            drafts.Add(new LyricLineDraft(
+                start,
+                line.EndTime is { } endMilliseconds ? endMilliseconds / 1000d : null,
+                text,
+                ResolveWords(line),
+                ResolveInlineTranslation(line) ?? FindNearbyText(translations, start),
+                ResolveInlineRomanization(line) ?? FindNearbyText(romanizations, start),
+                line.SubLine is not null));
+        }
+
+        return drafts;
     }
 
     /// <summary>逐行分类占位文本；无法参与呈现的行按空行处理，不参与正文或标记统计。</summary>

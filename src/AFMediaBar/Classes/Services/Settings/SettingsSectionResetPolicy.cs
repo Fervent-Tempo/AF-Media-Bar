@@ -58,6 +58,7 @@ internal static class SettingsSectionResetPolicy
                 next.LyricsCharacterSpacingPercent = defaults.LyricsCharacterSpacingPercent;
                 next.LyricsLineGapPercent = defaults.LyricsLineGapPercent;
                 next.LyricsInfoLineFilterEnabled = defaults.LyricsInfoLineFilterEnabled;
+                next.LyricsInstrumentalTitleOnlyEnabled = defaults.LyricsInstrumentalTitleOnlyEnabled;
                 next.LyricsFuriganaFilterEnabled = defaults.LyricsFuriganaFilterEnabled;
                 next.LyricsBracketSymbolsHidden = defaults.LyricsBracketSymbolsHidden;
                 next.LyricsChineseConversion = defaults.LyricsChineseConversion;

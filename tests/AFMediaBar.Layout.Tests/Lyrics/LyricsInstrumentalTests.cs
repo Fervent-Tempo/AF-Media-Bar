@@ -21,13 +21,24 @@ public sealed class LyricsInstrumentalTests
     [DataTestMethod]
     [DataRow(true)]
     [DataRow(false)]
-    public void InstrumentalCreditsOnlyAreConfirmedNoLyrics(bool filterInfoLines)
+    public void InstrumentalCreditsShowOnlyTheNoticeLine(bool filterInfoLines)
     {
         var result = Resolve(InstrumentalPayload, filterInfoLines);
 
         Assert.IsNotNull(result);
+        Assert.AreEqual(LyricsResultStatus.Available, result.Status);
+        Assert.AreEqual(1, result.Document.Lines.Count, "纯音乐只应显示提示行，不能显示署名。");
+        Assert.AreEqual("纯音乐，请欣赏", result.Document.Lines[0].Text);
+    }
+
+    [TestMethod]
+    public void InstrumentalTitleOnlyOptionHidesTheNotice()
+    {
+        var result = Resolve(InstrumentalPayload, filterInfoLines: true, hideInstrumentalLyrics: true);
+
+        Assert.IsNotNull(result);
         Assert.AreEqual(LyricsResultStatus.NoLyrics, result.Status);
-        Assert.AreEqual(0, result.Document.Lines.Count, "纯音乐载荷不能把署名当作歌词。");
+        Assert.AreEqual(0, result.Document.Lines.Count, "开启纯音乐只显示标题后不应保留提示行。");
     }
 
     [TestMethod]
@@ -59,7 +70,10 @@ public sealed class LyricsInstrumentalTests
             [00:00.00] 作词 : 张三
             [00:01.00] 作曲 : 李四
             """;
-        var request = new LyricsRequest("神圣之门", "麻枝准", string.Empty, 240d, null, true);
+        var request = new LyricsRequest("神圣之门", "麻枝准", string.Empty, 240d, null, true)
+        {
+            HideInstrumentalLyrics = true
+        };
         var legacy = new LyricResult
         {
             Code = 200,
@@ -108,9 +122,12 @@ public sealed class LyricsInstrumentalTests
         Assert.IsTrue(result.Document.Lines.Count > 0, "临时占位行只丢弃，不能把同一候选中的署名一并清空。");
     }
 
-    private static LyricsResult? Resolve(string payload, bool filterInfoLines)
+    private static LyricsResult? Resolve(string payload, bool filterInfoLines, bool hideInstrumentalLyrics = false)
     {
-        var request = new LyricsRequest("神圣之门", "麻枝准", string.Empty, 240d, null, filterInfoLines);
+        var request = new LyricsRequest("神圣之门", "麻枝准", string.Empty, 240d, null, filterInfoLines)
+        {
+            HideInstrumentalLyrics = hideInstrumentalLyrics
+        };
         var legacy = new LyricResult
         {
             Code = 200,

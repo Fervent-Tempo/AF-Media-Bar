@@ -60,6 +60,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private int _lyricsFixedWidthDip = LyricsFixedWidth.DefaultDip;
     private bool _lyricsLongLineScrollEnabled = true;
     private bool _lyricsInfoLineFilterEnabled = true;
+    private bool _lyricsInstrumentalTitleOnlyEnabled;
     private bool _lyricsFuriganaFilterEnabled;
     private bool _lyricsBracketSymbolsHidden = true;
     private LyricsChineseConversionMode _lyricsChineseConversion = LyricsChineseConversionMode.None;
@@ -157,6 +158,17 @@ public sealed class AppSettings : INotifyPropertyChanged
 
     /// <summary>是否丢弃作者、作曲、制作等信息行。/ Whether credit lines such as writer, composer, and producer are dropped.</summary>
     public bool LyricsInfoLineFilterEnabled { get => _lyricsInfoLineFilterEnabled; set => Set(ref _lyricsInfoLineFilterEnabled, value); }
+
+    /// <summary>
+    /// 纯音乐曲目是否只显示标题和歌手，不显示“纯音乐，请欣赏”提示行；默认关闭，即显示该提示行。
+    /// Whether an instrumental track only shows title and artist instead of the "纯音乐，请欣赏" notice line; off by default, so the
+    /// notice is shown.
+    /// </summary>
+    public bool LyricsInstrumentalTitleOnlyEnabled
+    {
+        get => _lyricsInstrumentalTitleOnlyEnabled;
+        set => Set(ref _lyricsInstrumentalTitleOnlyEnabled, value);
+    }
 
     /// <summary>仅在显示时隐藏括号内的日语假名，不修改来源歌词。</summary>
     public bool LyricsFuriganaFilterEnabled { get => _lyricsFuriganaFilterEnabled; set => Set(ref _lyricsFuriganaFilterEnabled, value); }
@@ -338,6 +350,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         LyricsFixedWidthDip = LyricsFixedWidthDip,
         LyricsLongLineScrollEnabled = LyricsLongLineScrollEnabled,
         LyricsInfoLineFilterEnabled = LyricsInfoLineFilterEnabled,
+        LyricsInstrumentalTitleOnlyEnabled = LyricsInstrumentalTitleOnlyEnabled,
         LyricsFuriganaFilterEnabled = LyricsFuriganaFilterEnabled,
         LyricsBracketSymbolsHidden = LyricsBracketSymbolsHidden,
         LyricsChineseConversion = LyricsChineseConversion,

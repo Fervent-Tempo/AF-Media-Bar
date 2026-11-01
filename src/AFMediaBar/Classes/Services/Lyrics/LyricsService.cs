@@ -49,6 +49,7 @@ public sealed class LyricsService
         var effectiveRequest = request with
         {
             FilterInfoLines = settings.LyricsInfoLineFilterEnabled,
+            HideInstrumentalLyrics = settings.LyricsInstrumentalTitleOnlyEnabled,
             ArtistSeparators = settings.LyricsArtistSeparators
         };
         var sourceSettings = settings.LyricsSource.Normalize();

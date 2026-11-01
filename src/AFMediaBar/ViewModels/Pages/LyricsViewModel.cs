@@ -1,4 +1,4 @@
-﻿using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Models;
 using System.Collections.ObjectModel;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Services;
@@ -169,6 +169,13 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
     {
         get => _configuration.Current.LyricsInfoLineFilterEnabled;
         set { _configuration.SetLyricsInfoLineFilterEnabled(value); OnPropertyChanged(); }
+    }
+
+    /// <summary>纯音乐曲目是否只显示标题和歌手，不显示“纯音乐，请欣赏”提示行。/ Whether instrumental tracks only show title and artist.</summary>
+    public bool InstrumentalTitleOnlyEnabled
+    {
+        get => _configuration.Current.LyricsInstrumentalTitleOnlyEnabled;
+        set { _configuration.SetLyricsInstrumentalTitleOnlyEnabled(value); OnPropertyChanged(); }
     }
 
     public bool FuriganaFilterEnabled

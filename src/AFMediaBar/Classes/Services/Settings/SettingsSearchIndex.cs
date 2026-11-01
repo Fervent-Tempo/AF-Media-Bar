@@ -260,7 +260,8 @@ public static class SettingsSearchIndex
             "Lyrics.Group.Presentation",
             "Search.Lyrics.Presentation.Description",
             language,
-            ["逐字", "擦亮", "karaoke", "署名", "作词", "作曲", "透明度", "行距", "字距", "字间距", "spacing", "line gap", "character spacing", "繁简", "简繁", "繁体", "简体", "conversion", "traditional", "simplified"]),
+            ["逐字", "擦亮", "karaoke", "署名", "作词", "作曲", "透明度", "行距", "字距", "字间距", "spacing", "line gap", "character spacing", "繁简", "简繁", "繁体", "简体", "conversion", "traditional", "simplified",
+                "纯音乐", "純音樂", "instrumental", "标题", "標題", "title", "提示行", "notice"]),
         Create(
             SettingsPageKey.Lyrics,
             "Common.Group.LyricsSources",

@@ -272,6 +272,9 @@
                     <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.InfoLines.Description}" Icon="{ui:SymbolIcon TextGrammarWand24}" Title="{DynamicResource Loc.Lyrics.Row.InfoLines.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.InfoLineFilterEnabled, Mode=TwoWay}"/>
                     </components:SettingsRow>
+                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.InstrumentalTitleOnly.Description}" Icon="{ui:SymbolIcon MusicNote220}" Title="{DynamicResource Loc.Lyrics.Row.InstrumentalTitleOnly.Title}" KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.InstrumentalTitleOnlyEnabled, Mode=TwoWay}"/>
+                    </components:SettingsRow>
                     <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.FuriganaFilter.Description}" Icon="{ui:SymbolIcon TextGrammarWand24}" Title="{DynamicResource Loc.Lyrics.Row.FuriganaFilter.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.FuriganaFilterEnabled, Mode=TwoWay}"/>
                     </components:SettingsRow>

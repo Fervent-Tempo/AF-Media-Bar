@@ -1405,6 +1405,12 @@
   <data name="Lyrics.Row.InfoLines.Title" xml:space="preserve">
     <value>过滤署名行</value>
   </data>
+  <data name="Lyrics.Row.InstrumentalTitleOnly.Description" xml:space="preserve">
+    <value>默认显示“纯音乐，请欣赏”；开启后纯音乐曲目不显示歌词行，只显示标题和歌手。</value>
+  </data>
+  <data name="Lyrics.Row.InstrumentalTitleOnly.Title" xml:space="preserve">
+    <value>纯音乐只显示标题</value>
+  </data>
   <data name="Lyrics.Row.ChineseConversion.Title" xml:space="preserve">
     <value>歌词繁简转换</value>
   </data>

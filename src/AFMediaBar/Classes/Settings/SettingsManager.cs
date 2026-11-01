@@ -69,6 +69,7 @@ public static class SettingsManager
     public static void SetLyricsFixedWidthEnabled(bool enabled) => Current.LyricsFixedWidthEnabled = enabled;
     public static void SetLyricsFixedWidthDip(int dip) => Current.LyricsFixedWidthDip = LyricsFixedWidth.Normalize(dip);
     public static void SetLyricsInfoLineFilterEnabled(bool enabled) => Current.LyricsInfoLineFilterEnabled = enabled;
+    public static void SetLyricsInstrumentalTitleOnlyEnabled(bool enabled) => Current.LyricsInstrumentalTitleOnlyEnabled = enabled;
     public static void SetLyricsChineseConversion(LyricsChineseConversionMode mode) => Current.LyricsChineseConversion = mode;
     public static void SetLyricsSourceSettings(LyricsSourceSettings settings) => Current.LyricsSource = settings;
     /// <summary>保存自定义艺术家分隔符，触发歌词重新匹配。</summary>
@@ -317,6 +318,7 @@ public static class SettingsManager
         next.LyricsCharacterSpacingPercent = defaults.LyricsCharacterSpacingPercent;
         next.LyricsLineGapPercent = defaults.LyricsLineGapPercent;
         next.LyricsInfoLineFilterEnabled = defaults.LyricsInfoLineFilterEnabled;
+        next.LyricsInstrumentalTitleOnlyEnabled = defaults.LyricsInstrumentalTitleOnlyEnabled;
         next.LyricsFuriganaFilterEnabled = defaults.LyricsFuriganaFilterEnabled;
         next.LyricsBracketSymbolsHidden = defaults.LyricsBracketSymbolsHidden;
         next.LyricsChineseConversion = defaults.LyricsChineseConversion;
@@ -379,6 +381,7 @@ public static class SettingsManager
             case nameof(AppSettings.LyricsLongLineScrollEnabled):
             case nameof(AppSettings.LyricsChineseConversion):
             case nameof(AppSettings.LyricsInfoLineFilterEnabled):
+            case nameof(AppSettings.LyricsInstrumentalTitleOnlyEnabled):
             case nameof(AppSettings.LyricsFuriganaFilterEnabled):
             case nameof(AppSettings.LyricsBracketSymbolsHidden):
             case nameof(AppSettings.LyricsArtistSeparators):

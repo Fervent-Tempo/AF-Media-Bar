@@ -34,6 +34,7 @@ public static class LyricsCacheInvalidationPolicy
 
         return propertyName is nameof(AppSettings.AllowBrowserAndVideoLyrics) or
             nameof(AppSettings.LyricsArtistSeparators) or
-            nameof(AppSettings.LyricsSource) or nameof(AppSettings.LyricsInfoLineFilterEnabled);
+            nameof(AppSettings.LyricsSource) or nameof(AppSettings.LyricsInfoLineFilterEnabled) or
+            nameof(AppSettings.LyricsInstrumentalTitleOnlyEnabled);
     }
 }

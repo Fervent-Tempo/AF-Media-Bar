@@ -22,4 +22,7 @@ public sealed record LyricsRequest(
 {
     /// <summary>本次取词固定的自定义分隔符，每行一项；不改变播放器原始艺术家文本。</summary>
     public string ArtistSeparators { get; init; } = string.Empty;
+
+    /// <summary>纯音乐曲目是否不显示“纯音乐，请欣赏”提示行，只保留标题和歌手。</summary>
+    public bool HideInstrumentalLyrics { get; init; }
 }
