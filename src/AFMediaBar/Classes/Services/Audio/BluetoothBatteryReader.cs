@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Abstractions;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Devices.Enumeration;
@@ -11,11 +12,16 @@ using Windows.Storage.Streams;
 namespace AFMediaBar.Classes.Services.Audio;
 
 /// <summary>标准系统属性及 BLE 电量读取，不主动连接、配对或发送厂商命令。</summary>
-public sealed class BluetoothBatteryReader
+public sealed class BluetoothBatteryReader : IDeviceBatteryProvider
 {
+    private readonly Dictionary<string, (int Percent, DateTimeOffset At)> _observed = new(StringComparer.OrdinalIgnoreCase);
+    public string Id => "bluetooth";
+    public Task<IReadOnlyList<BluetoothBatteryDevice>> GetDevicesAsync(CancellationToken token) => ListPairedAsync(token);
+    public Task ReleaseAsync(string deviceId) { _observed.Remove(deviceId); return Task.CompletedTask; }
     private sealed class PnpBattery
     {
         public int? Percent;
+        public DateTimeOffset? Timestamp;
         public HashSet<string> Addresses { get; } = new(StringComparer.OrdinalIgnoreCase);
     }
     public static readonly string[] DeviceProperties = ["System.Devices.Aep.ContainerId", "System.Devices.Aep.DeviceAddress", "System.Devices.Aep.IsConnected"];
@@ -53,20 +59,30 @@ public sealed class BluetoothBatteryReader
     {
         int? percent = null;
         BluetoothBatterySource? source = null;
-        if (device.IsConnected && device.ContainerId is { } container)
-        {
-            var properties = await Task.Run(() => ReadPnp([container], token), token).ConfigureAwait(false);
-            percent = properties.GetValueOrDefault(container)?.Percent;
-            if (percent is not null) source = BluetoothBatterySource.WindowsProperty;
-        }
-        if (device.IsConnected && percent is null)
+        DateTimeOffset? timestamp = null;
+        if (device.IsConnected)
             foreach (var peer in device.Peers.Where(peer => peer.IsLowEnergy && peer.IsConnected))
             {
                 percent = await ReadGattAsync(peer.Id, token).ConfigureAwait(false);
-                if (percent is not null) { source = BluetoothBatterySource.BleGatt; break; }
+                if (percent is not null) { source = BluetoothBatterySource.BleGatt; timestamp = DateTimeOffset.UtcNow; break; }
             }
-        return new(selectedId, percent, source, device.IsConnected, percent is not null,
-            percent is not null ? DateTimeOffset.UtcNow : null) { DeviceName = device.DisplayName };
+        if (device.IsConnected && percent is null && device.ContainerId is { } container)
+        {
+            var properties = await Task.Run(() => ReadPnp([container], token), token).ConfigureAwait(false);
+            var property = properties.GetValueOrDefault(container);
+            percent = property?.Percent;
+            timestamp = property?.Timestamp;
+            if (percent is not null) source = BluetoothBatterySource.WindowsProperty;
+        }
+        var freshnessKnown = timestamp is not null;
+        if (percent is { } observed && timestamp is null)
+        {
+            if (!_observed.TryGetValue(device.Id, out var previous) || previous.Percent != observed)
+                _observed[device.Id] = (observed, DateTimeOffset.UtcNow);
+            timestamp = _observed[device.Id].At;
+        }
+        return new(selectedId, percent, source, device.IsConnected, percent is not null, timestamp)
+        { DeviceName = device.DisplayName, FreshnessKnown = freshnessKnown };
     }
 
     private static async Task<int?> ReadGattAsync(string deviceId, CancellationToken token)
@@ -112,6 +128,7 @@ public sealed class BluetoothBatteryReader
             var containerKey = new DevPropKey { FormatId = new("8C7ED206-3F8A-4827-B3AB-AE9E1FAEFC6C"), Id = 2 };
             // 驱动提供的属性并非统一电量协议；缺失或类型不符时交给 BLE/未知回退。
             var batteryKey = new DevPropKey { FormatId = new("104EA319-6EE2-4701-BD47-8DDBF425BBE5"), Id = 2 };
+            var timestampKey = new DevPropKey { FormatId = batteryKey.FormatId, Id = 3 };
             for (uint index = 0; ; index++)
             {
                 token.ThrowIfCancellationRequested();
@@ -131,7 +148,15 @@ public sealed class BluetoothBatteryReader
                 if (SetupDiGetDeviceProperty(set, ref info, ref batteryKey, out type, buffer, buffer.Length, out size, 0))
                 {
                     var value = type == 3 && size == 1 ? buffer[0] : type == 7 && size == 4 ? (long)BitConverter.ToUInt32(buffer) : -1;
-                    if (value is >= 0 and <= 100 && node.Percent is null) node.Percent = (int)value;
+                    if (value is < 0 or > 100) continue;
+                    DateTimeOffset? timestamp = null;
+                    if (SetupDiGetDeviceProperty(set, ref info, ref timestampKey, out type, buffer, buffer.Length, out size, 0) && type == 16 && size == 8)
+                    {
+                        try { timestamp = DateTimeOffset.FromFileTime(BitConverter.ToInt64(buffer)); }
+                        catch (ArgumentOutOfRangeException) { }
+                    }
+                    if (node.Percent is null || timestamp is not null && (node.Timestamp is null || timestamp > node.Timestamp))
+                    { node.Percent = (int)value; node.Timestamp = timestamp; }
                 }
             }
         }

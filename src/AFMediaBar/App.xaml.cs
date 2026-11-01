@@ -179,6 +179,8 @@ namespace AFMediaBar
                 services.AddSingleton<AudioPlatformService>();
                 services.AddSingleton<BluetoothBatteryCache>();
                 services.AddSingleton<BluetoothBatteryReader>();
+                services.AddSingleton<IDeviceBatteryProvider>(sp => sp.GetRequiredService<BluetoothBatteryReader>());
+                services.AddSingleton<DeviceBatteryReader>();
                 services.AddSingleton<BluetoothBatteryService>();
                 services.AddHostedService(sp => sp.GetRequiredService<BluetoothBatteryService>());
                 services.AddSingleton<AudioDeviceService>();
