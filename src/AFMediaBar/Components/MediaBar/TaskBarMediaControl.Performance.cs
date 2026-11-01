@@ -1,6 +1,8 @@
 // 呈现共享性能快照；指标卡片在主布局中独立排列，不创建采样器或计时器。
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
@@ -15,6 +17,7 @@ public partial class TaskBarMediaControl
     private PerformanceComponentSettings _performanceSettings;
     private int _performanceCycleIndex;
     private double _performanceWidth = 80;
+    private long? _performanceHistoryHiddenAt;
     private double PreferredPerformanceHeight => 28;
     public PerformanceComponentSettings EffectivePerformanceSettings => PresentationSettings.PerformanceComponent with
     {
@@ -72,9 +75,10 @@ public partial class TaskBarMediaControl
     public void ApplyPerformanceSnapshot(SystemMetricsSnapshot snapshot, int cycleIndex, bool canOpenTaskManager)
     {
         _performanceCycleIndex = cycleIndex;
+        var active = UpdatePerformanceHistoryVisibility(IsPerformanceComponentVisible);
         foreach (var pair in _metricPresenters)
         {
-            if (IsPerformanceComponentVisible && EffectivePerformanceSettings.Metrics!.Contains(pair.Key)) pair.Value.ApplySnapshot(snapshot);
+            if (active && EffectivePerformanceSettings.Metrics!.Contains(pair.Key)) pair.Value.ApplySnapshot(snapshot);
             var surface = _metricSurfaces[pair.Key];
             surface.ToolTip = pair.Value.ToolTip;
             System.Windows.Automation.AutomationProperties.SetName(surface, System.Windows.Automation.AutomationProperties.GetName(pair.Value));
@@ -118,5 +122,27 @@ public partial class TaskBarMediaControl
         TaskbarPerformanceHoverSurface.Visibility = Visibility.Collapsed;
         TaskbarPerformanceSurface.Visibility = Visibility.Collapsed;
     }
-    private void ClearPerformanceHistory() { foreach (var presenter in _metricPresenters.Values) presenter.Reset(); }
+    /// <summary>
+    /// 记录趋势历史在"继续采样"与"停止采样"之间的切换，并返回这次是否应继续采样。
+    /// 组件隐藏、宿主挂起、显示关闭/睡眠剪枝都只暂停采样；停止时间超过保留期后在恢复时清空历史，不创建计时器。
+    /// </summary>
+    private bool UpdatePerformanceHistoryVisibility(bool componentVisible)
+    {
+        if (!componentVisible || _isHostVisibilitySuspended || _backgroundPruneLevel >= MemoryPruneLevel.DisplayOff)
+        {
+            _performanceHistoryHiddenAt ??= Stopwatch.GetTimestamp();
+            return false;
+        }
+        // 短暂无媒体或短暂隐藏只保留有界历史，恢复后仍从同一时间轴续画。
+        if (_performanceHistoryHiddenAt is long hiddenAt && Stopwatch.GetElapsedTime(hiddenAt).TotalSeconds >= MetricHistory.RetentionSeconds)
+            ClearPerformanceHistory();
+        _performanceHistoryHiddenAt = null;
+        return true;
+    }
+
+    private void ClearPerformanceHistory()
+    {
+        foreach (var presenter in _metricPresenters.Values) presenter.Reset();
+        _performanceHistoryHiddenAt = null;
+    }
 }

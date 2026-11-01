@@ -1076,14 +1076,16 @@ public partial class TaskBarMediaControl
         }
 
         /// <summary>
-        /// 收集原地放大期间需要避让的元素并准备它们的推挤变换：文字区、文字悬停块、静置层四个小组件、静置进度条
-        /// 与悬停层宿主都住在封面旁的内容侧（封面在首端时在右、右侧展开时在左），封面放大时把它们整体沿主轴
-        /// 推开同样的量（符号见 <see cref="ArtworkZoomPushSign"/>），放大于是读作"推开布局"而不是"盖在文字上"。
+        /// 收集原地放大期间需要避让的元素并准备它们的推挤变换：文字区、文字悬停块、静置层的全部组件（含运行期创建的
+        /// 性能指标表面、电量与拖动条手柄）、静置进度条与悬停层宿主都住在封面旁的内容侧（封面在首端时在右、右侧展开时在左），
+        /// 封面放大时把它们整体沿主轴推开同样的量（符号见 <see cref="ArtworkZoomPushSign"/>），放大于是读作"推开布局"
+        /// 而不是"盖在文字上"。
         /// 渲染变换不参与布局，位置引擎随时重写 Canvas.SetLeft/Margin 也冲不掉推挤。文字区的推挤走专用支，不与入场动画
         /// 共用实例——否则换歌恰逢悬停时入场动画会整体换掉 RenderTransform、抹掉推挤，标题/艺术家因此停止随放大移动
         /// （BUG 2 的根因）。
         /// Collects the elements that must yield during the in-place zoom and prepares their push transforms: the text
-        /// region, its hover block, the rest layer's four widgets, the rest progress, and the hover-layer host all live on
+        /// region, its hover block, every rest-layer component (including the runtime-created performance metric surfaces,
+        /// the battery, and the drag handle), the rest progress, and the hover-layer host all live on
         /// the artwork's content side (right of it with left-side expansion, left of it with right-side expansion), and
         /// shifting them along the primary axis by the same amount (sign per <see cref="ArtworkZoomPushSign"/>) makes the
         /// zoom read as "pushing the layout apart" rather than "covering the text". A render transform stays out of layout,
@@ -1160,7 +1162,9 @@ public partial class TaskBarMediaControl
             return _songInfoPushTransform;
         }
 
-        /// <summary>沿主轴随封面放大避让的呈现和命中表面；文字入场与封面推挤使用独立变换。</summary>
+        /// <summary>
+        /// 沿主轴随封面放大避让的呈现和命中表面（含运行期动态创建的静置层组件）；文字入场与封面推挤使用独立变换。
+        /// </summary>
         internal IEnumerable<UIElement> ArtworkZoomPushElements()
         {
             yield return _owner.SongInfoStackPanel;
@@ -1168,12 +1172,18 @@ public partial class TaskBarMediaControl
             yield return _owner.TaskbarRestProgress;
             yield return _owner.TaskbarSpectrumHoverSurface;
             yield return _owner.TaskbarPerformanceHoverSurface;
+            // 性能指标表面由 ConfigurePerformance 在运行期按指标各建一个：轮换显示当前指标、并排显示全部已开启指标，
+            // 两套呈现共用这批元素，因此必须逐个登记，否则它们停在原位被放大的封面盖住。
+            foreach (var surface in _owner._metricSurfaces.Values) yield return surface;
+            yield return _owner.TaskbarBatterySurface;
             yield return _owner.TaskbarOutputDeviceHoverSurface;
             yield return _owner.TaskbarVolumeHoverSurface;
             yield return _owner.TaskbarInputDeviceHoverSurface;
             yield return _owner.ResidentPreviousSurface;
             yield return _owner.ResidentPlayPauseSurface;
             yield return _owner.ResidentNextSurface;
+            // 拖动条手柄在组件输入初始化时才创建，创建之前不存在。
+            if (_owner._barMoveHandle is { } handle) yield return handle;
             yield return _owner.HoverRevealHost;
         }
 

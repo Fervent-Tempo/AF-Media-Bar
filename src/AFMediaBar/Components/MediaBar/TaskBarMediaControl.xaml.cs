@@ -211,6 +211,7 @@ namespace AFMediaBar.Components
         /// <summary>宿主最终关闭时释放控件级呈现资源；普通卸载仍允许重新加载。</summary>
         internal void DisposePresentation()
         {
+            ClearPerformanceHistory();
             DisposeComponentLayoutInput();
             FinishColorTransitions();
             SuspendQuickLaunchPresentation();
@@ -1347,7 +1348,7 @@ namespace AFMediaBar.Components
             // hover all belong to the outer one, otherwise the surface's one-DIP padding is not clickable and hover flickers at the edges.
             var performanceVisible = Visible(TaskbarRestComponent.Performance) || ComponentLayoutPolicy.MetricComponents.Any(Visible);
             IsPerformanceComponentVisible = performanceVisible;
-            if (!performanceVisible) ClearPerformanceHistory();
+            UpdatePerformanceHistoryVisibility(performanceVisible);
             var outputDeviceVisible = Visible(TaskbarRestComponent.OutputDevice);
             var inputDeviceVisible = Visible(TaskbarRestComponent.InputDevice);
             var volumeVisible = Visible(TaskbarRestComponent.Volume);
@@ -1566,6 +1567,8 @@ namespace AFMediaBar.Components
         public void ApplyBackgroundPruneLevel(MemoryPruneLevel level)
         {
             _backgroundPruneLevel = level;
+            // 显示关闭与睡眠期间指标订阅也会停；趋势历史在这里转入隐藏态，恢复时按同一保留期判定是否清空。
+            UpdatePerformanceHistoryVisibility(IsPerformanceComponentVisible);
             if (level >= MemoryPruneLevel.DisplayOff)
             {
                 SettleTaskbarPointerVisuals();
@@ -1585,7 +1588,6 @@ namespace AFMediaBar.Components
             _isHostVisibilitySuspended = suspended;
             if (suspended)
             {
-                ClearPerformanceHistory();
                 FinishColorTransitions();
                 SuspendQuickLaunchPresentation();
                 SettleTaskbarPointerVisuals();
@@ -1608,6 +1610,7 @@ namespace AFMediaBar.Components
                 if (SongImageBorder.IsMouseOver) QuickLaunchHoverChanged?.Invoke(true);
             }
 
+            UpdatePerformanceHistoryVisibility(IsPerformanceComponentVisible);
             ApplyTimerSuspensionState();
             _lyrics.UpdateWebLyricsPowerState();
             _lyrics.UpdateWebLyricsPresentation(allowTransition: false);

@@ -1,4 +1,4 @@
-// 纯 WPF 指标绘制；宿主投递共享快照，本控件不创建计时器，卸载或隐藏时释放历史。
+// 纯 WPF 指标绘制；宿主投递共享快照，本控件不创建计时器，卸载时释放历史，短暂隐藏由宿主按保留期决定是否清空。
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Documents;
@@ -35,10 +35,12 @@ public sealed class MetricChart : FrameworkElement
         Unloaded += (_, _) => Reset();
     }
 
-    public void ApplySample(double? value)
+    public void ApplySample(double? value) => ApplySample(value, Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency);
+
+    internal void ApplySample(double? value, double time)
     {
         _value = value is double number && double.IsFinite(number) && number >= 0 ? number : null;
-        _history.Add(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency, _value);
+        _history.Add(time, _value);
         InvalidateVisual();
     }
 

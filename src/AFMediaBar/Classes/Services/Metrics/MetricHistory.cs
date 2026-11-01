@@ -1,10 +1,12 @@
-// 单个呈现会话的有界历史；调用方传入单调时间，隐藏后清空，不持有计时器或采样资源。
+// 单个呈现会话的有界历史；调用方传入单调时间并负责生命周期，不持有计时器或采样资源。
 namespace AFMediaBar.Classes.Services;
 
 /// <summary>维护一分钟趋势与相对标尺；缺失样本保留为断点。</summary>
 public sealed class MetricHistory
 {
     public const double WindowSeconds = 60;
+    /// <summary>隐藏后保留趋势历史的最长秒数；任务栏与完整面板共用，超期在下次恢复展示时清空。</summary>
+    public const double RetentionSeconds = 30;
     public const int MaximumSamples = 128;
     private readonly List<(double Time, double? Value)> _samples = [];
     public IReadOnlyList<(double Time, double? Value)> Samples => _samples;

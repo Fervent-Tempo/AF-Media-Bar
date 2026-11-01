@@ -14,6 +14,7 @@ using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
+using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Components;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -147,6 +148,7 @@ public sealed class ArtworkZoomLifecycleTests
         MediaBarTestAccess.GetField("_webLyricsGraphicsDisabled", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(control, true);
         var window = Window.GetWindow(control)!;
         SettingsManager.Current.Interaction = SettingsManager.Current.Interaction with { ArtworkHoverMode = ArtworkHoverMode.Zoom };
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with { PerformanceVisible = true };
         var snapshot = MediaSnapshot.Disconnected with
         {
             IsConnected = true,
@@ -155,72 +157,150 @@ public sealed class ArtworkZoomLifecycleTests
             Title = "Track",
             Artwork = BitmapSource.Create(2, 2, 96, 96, PixelFormats.Bgra32, null, new byte[16], 8)
         };
-        foreach (var mode in new[] { WindowMode.Taskbar, WindowMode.FloatingBar })
-            foreach (var orientation in new[] { LayoutOrientation.Horizontal, LayoutOrientation.Vertical })
+        // 性能组件在轮换与并排下呈现的元素集不同：轮换只显示当前指标的动态表面，并排显示全部已开启指标。
+        // 两种显示模式 × 任务栏/浮动栏 × 横向/竖向共八种呈现都必须随封面推挤，只覆盖一种模式会漏掉另一套元素。
+        foreach (var displayMode in new[] { PerformanceDisplayMode.Cycle, PerformanceDisplayMode.Parallel })
+        {
+            SettingsManager.Current.PerformanceComponent = SettingsManager.Current.PerformanceComponent with
             {
-                control.ApplyLayout(mode, orientation, 100, 100, 48);
-                control.ApplyPrimaryLength(500);
-                window.Width = orientation == LayoutOrientation.Vertical ? 48 : 500;
-                window.Height = orientation == LayoutOrientation.Vertical ? 500 : 44;
-                control.UpdateSongInfo(snapshot);
-                window.UpdateLayout();
-                Invoke(control, "AnimateArtworkHover", true, true);
-                var popup = GetPopup(control);
-                var artwork = (Border)control.FindName("SongImageBorder");
-                var scale = (ScaleTransform)control.FindName("SongImageScale");
-                Assert.IsFalse(control.CaptureArtworkPointer(control), "主树的文字或空白不能被放大层抢走输入。");
-                var presses = 0;
-                var releases = 0;
-                var moves = 0;
-                var clicks = 0;
-                MouseEventArgs? requestedMove = null;
-                void Press(object sender, MouseButtonEventArgs args) { presses++; Assert.IsTrue(control.CaptureArtworkPointer(artwork)); }
-                void Move(object sender, MouseEventArgs args) { if (ReferenceEquals(args, requestedMove)) moves++; }
-                void Release(object sender, MouseButtonEventArgs args) { releases++; control.ReleaseArtworkPointerCapture(); }
-                void Click(object? sender, EventArgs args)
+                DisplayMode = displayMode,
+                Metrics = [MetricKind.SystemMemory, MetricKind.SystemCpu]
+            };
+            foreach (var mode in new[] { WindowMode.Taskbar, WindowMode.FloatingBar })
+                foreach (var orientation in new[] { LayoutOrientation.Horizontal, LayoutOrientation.Vertical })
                 {
-                    clicks++;
-                    snapshot = snapshot with { IsPlaying = !snapshot.IsPlaying };
+                    control.ApplyLayout(mode, orientation, 100, 100, 48);
+                    control.ApplyPrimaryLength(500);
+                    var vertical = orientation == LayoutOrientation.Vertical;
+                    window.Width = vertical ? 48 : 500;
+                    window.Height = vertical ? 500 : 44;
                     control.UpdateSongInfo(snapshot);
-                }
-                control.ArtworkPointerPressed += Press;
-                control.ArtworkPointerMoved += Move;
-                control.ArtworkPointerReleased += Release;
-                control.TogglePlayPauseRequested += Click;
-                try
-                {
-                    for (var click = 0; click < 2; click++)
+                    window.UpdateLayout();
+
+                    var context = $"{displayMode}/{mode}/{orientation}";
+                    // 先确认该呈现真的以对应显示模式展示了性能组件，否则跟随断言没有覆盖对象。
+                    var performanceSurfaces = VisibleMetricSurfaces(control);
+                    Assert.AreEqual(displayMode == PerformanceDisplayMode.Parallel ? 2 : 1, performanceSurfaces.Count,
+                        $"{context}：性能组件必须以该显示模式呈现。");
+                    // 静置层里除纯装饰层与承载封面/文字的主画布外，所有可见的直系表面都必须随封面推挤。
+                    var following = VisiblePushFollowingElements(control);
+                    Assert.IsTrue(following.Count >= 3, $"{context}：随推挤的直系表面不能为空（至少含频谱、性能组件与拖动条手柄）。");
+                    foreach (var surface in performanceSurfaces)
+                        Assert.IsTrue(following.Contains(surface), $"{context}/{ElementLabel(surface)}：性能表面必须属于随推挤的直系表面。");
+                    var interactionSurface = (Grid)control.FindName("InteractionSurface")!;
+                    var before = following.ToDictionary(element => element, element => element.TranslatePoint(new Point(), interactionSurface));
+
+                    Invoke(control, "AnimateArtworkHover", true, true);
+                    var popup = GetPopup(control);
+                    Assert.IsTrue(popup.IsOpen, $"{context}：必须真的进入原地放大。");
+                    var pushTransforms = (List<TranslateTransform>?)MediaBarTestAccess
+                        .GetField("_artworkZoomPushTransforms", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control);
+                    Assert.IsNotNull(pushTransforms, $"{context}：放大必须建立推挤变换。");
+                    var transforms = pushTransforms!;
+                    Assert.IsTrue(transforms.Count > 0, $"{context}：推挤变换清单不能为空。");
+                    var push = transforms[0];
+                    var expectedX = vertical ? 0 : push.X;
+                    var expectedY = vertical ? push.Y : 0;
+                    Assert.IsTrue(Math.Abs(expectedX) + Math.Abs(expectedY) > .5, $"{context}：放大必须真的产生推挤量。");
+                    foreach (var element in following)
                     {
-                        artwork.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = Mouse.PreviewMouseDownEvent });
-                        Assert.IsTrue(popup.IsOpen);
-                        Assert.AreSame(popup.Child, artwork.Parent);
-                        Assert.AreSame(popup.Child, Mouse.Captured);
-                        requestedMove = new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount) { RoutedEvent = Mouse.PreviewMouseMoveEvent };
-                        artwork.RaiseEvent(requestedMove);
-                        artwork.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = Mouse.PreviewMouseUpEvent });
-                        artwork.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = Mouse.MouseUpEvent });
-                        Assert.IsTrue(popup.IsOpen, "普通点击和播放快照不能收回封面。");
-                        Assert.AreSame(popup.Child, artwork.Parent);
-                        Assert.AreEqual(2d, scale.ScaleX, .001);
-                        Assert.AreEqual(click + 1, clicks);
+                        var pushElement = PushTransformOf(element);
+                        Assert.IsNotNull(pushElement, $"{context}/{ElementLabel(element)}：必须登记进推挤变换清单。");
+                        Assert.IsTrue(transforms.Contains(pushElement!), $"{context}/{ElementLabel(element)}：必须登记进推挤变换清单。");
+                        var moved = element.TranslatePoint(new Point(), interactionSurface);
+                        Assert.AreEqual(expectedX, moved.X - before[element].X, .001,
+                            $"{context}/{ElementLabel(element)}：实际呈现必须随封面沿横轴避让。");
+                        Assert.AreEqual(expectedY, moved.Y - before[element].Y, .001,
+                            $"{context}/{ElementLabel(element)}：实际呈现必须随封面沿纵轴避让。");
                     }
-                    Assert.AreEqual(2, presses);
-                    Assert.AreEqual(2, releases);
-                    Assert.AreEqual(2, moves);
-                    Assert.IsTrue(control.CaptureArtworkPointer(artwork));
-                    control.CollapseArtworkZoomForDrag();
-                    Assert.IsNull(Mouse.Captured, "真正拖动收回后不能留下 Popup 捕获。");
-                    AssertRestored(control);
+
+                    // 轮换可能在放大存续期间切到下一个指标：当前未显示的指标表面也必须预先挂好推挤，
+                    // 否则切过去的那一个会停在原位——这正是"性能组件不跟随"的原始缺陷路径。
+                    foreach (var surface in MetricSurfaces(control))
+                    {
+                        var pushElement = PushTransformOf(surface);
+                        Assert.IsNotNull(pushElement, $"{context}/{ElementLabel(surface)}：所有指标表面（含未显示）都必须登记进推挤变换清单。");
+                        Assert.AreEqual(expectedX, pushElement!.X, .001, $"{context}/{ElementLabel(surface)}：未显示的指标表面也必须预置横轴推挤。");
+                        Assert.AreEqual(expectedY, pushElement.Y, .001, $"{context}/{ElementLabel(surface)}：未显示的指标表面也必须预置纵轴推挤。");
+                    }
+
+                    var artwork = (Border)control.FindName("SongImageBorder");
+                    var scale = (ScaleTransform)control.FindName("SongImageScale");
+                    Assert.IsFalse(control.CaptureArtworkPointer(control), "主树的文字或空白不能被放大层抢走输入。");
+                    var presses = 0;
+                    var releases = 0;
+                    var moves = 0;
+                    var clicks = 0;
+                    MouseEventArgs? requestedMove = null;
+                    void Press(object sender, MouseButtonEventArgs args) { presses++; Assert.IsTrue(control.CaptureArtworkPointer(artwork)); }
+                    void Move(object sender, MouseEventArgs args) { if (ReferenceEquals(args, requestedMove)) moves++; }
+                    void Release(object sender, MouseButtonEventArgs args) { releases++; control.ReleaseArtworkPointerCapture(); }
+                    void Click(object? sender, EventArgs args)
+                    {
+                        clicks++;
+                        snapshot = snapshot with { IsPlaying = !snapshot.IsPlaying };
+                        control.UpdateSongInfo(snapshot);
+                    }
+                    control.ArtworkPointerPressed += Press;
+                    control.ArtworkPointerMoved += Move;
+                    control.ArtworkPointerReleased += Release;
+                    control.TogglePlayPauseRequested += Click;
+                    try
+                    {
+                        for (var click = 0; click < 2; click++)
+                        {
+                            artwork.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = Mouse.PreviewMouseDownEvent });
+                            Assert.IsTrue(popup.IsOpen);
+                            Assert.AreSame(popup.Child, artwork.Parent);
+                            Assert.AreSame(popup.Child, Mouse.Captured);
+                            requestedMove = new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount) { RoutedEvent = Mouse.PreviewMouseMoveEvent };
+                            artwork.RaiseEvent(requestedMove);
+                            artwork.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = Mouse.PreviewMouseUpEvent });
+                            artwork.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = Mouse.MouseUpEvent });
+                            Assert.IsTrue(popup.IsOpen, "普通点击和播放快照不能收回封面。");
+                            Assert.AreSame(popup.Child, artwork.Parent);
+                            Assert.AreEqual(2d, scale.ScaleX, .001);
+                            Assert.AreEqual(click + 1, clicks);
+                        }
+                        Assert.AreEqual(2, presses);
+                        Assert.AreEqual(2, releases);
+                        Assert.AreEqual(2, moves);
+                        Assert.IsTrue(control.CaptureArtworkPointer(artwork));
+                        control.CollapseArtworkZoomForDrag();
+                        Assert.IsNull(Mouse.Captured, "真正拖动收回后不能留下 Popup 捕获。");
+                        AssertRestored(control);
+                        // 收回必须清零推挤、丢弃变换清单并让跟随表面回到原位，否则下一次激活会从半推状态开始。
+                        Assert.IsNull(MediaBarTestAccess
+                            .GetField("_artworkZoomPushTransforms", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control),
+                            $"{context}：收回必须丢弃推挤变换清单。");
+                        foreach (var element in following)
+                        {
+                            var pushTransform = PushTransformOf(element);
+                            Assert.IsNotNull(pushTransform, $"{context}/{ElementLabel(element)}：收回后推挤变换不能丢失。");
+                            Assert.AreEqual(0d, pushTransform!.X, .001, $"{context}/{ElementLabel(element)}：收回后推挤必须清零。");
+                            Assert.AreEqual(0d, pushTransform.Y, .001, $"{context}/{ElementLabel(element)}：收回后推挤必须清零。");
+                            var restored = element.TranslatePoint(new Point(), interactionSurface);
+                            Assert.AreEqual(before[element].X, restored.X, .001, $"{context}/{ElementLabel(element)}：收回后必须回到原位。");
+                            Assert.AreEqual(before[element].Y, restored.Y, .001, $"{context}/{ElementLabel(element)}：收回后必须回到原位。");
+                        }
+                        foreach (var surface in MetricSurfaces(control))
+                        {
+                            var pushElement = PushTransformOf(surface);
+                            Assert.IsNotNull(pushElement, $"{context}/{ElementLabel(surface)}：收回后推挤变换不能丢失。");
+                            Assert.AreEqual(0d, pushElement!.X, .001, $"{context}/{ElementLabel(surface)}：收回后推挤必须清零。");
+                            Assert.AreEqual(0d, pushElement.Y, .001, $"{context}/{ElementLabel(surface)}：收回后推挤必须清零。");
+                        }
+                    }
+                    finally
+                    {
+                        control.ArtworkPointerPressed -= Press;
+                        control.ArtworkPointerMoved -= Move;
+                        control.ArtworkPointerReleased -= Release;
+                        control.TogglePlayPauseRequested -= Click;
+                        Invoke(control, "HideArtworkHoverZoom", true);
+                    }
                 }
-                finally
-                {
-                    control.ArtworkPointerPressed -= Press;
-                    control.ArtworkPointerMoved -= Move;
-                    control.ArtworkPointerReleased -= Release;
-                    control.TogglePlayPauseRequested -= Click;
-                    Invoke(control, "HideArtworkHoverZoom", true);
-                }
-            }
+        }
         return Task.CompletedTask;
     });
 
@@ -402,6 +482,41 @@ public sealed class ArtworkZoomLifecycleTests
             Assert.AreEqual(target, transform.X, 0.001, $"{context}：推挤必须沿内容避让方向落到目标量。");
     }
 
+    /// <summary>当前呈现下可见的性能指标悬停表面：轮换只显示当前指标，并排显示全部已开启指标。</summary>
+    private static IReadOnlyList<Border> VisibleMetricSurfaces(TaskBarMediaControl control) =>
+        MetricSurfaces(control).Where(surface => surface.Visibility == Visibility.Visible).ToArray();
+
+    /// <summary>全部性能指标悬停表面（含当前未显示的指标）：轮换可能在放大存续期间切到下一个指标。</summary>
+    private static IReadOnlyList<Border> MetricSurfaces(TaskBarMediaControl control)
+    {
+        var surfaces = (Dictionary<MetricKind, Border>)MediaBarTestAccess
+            .GetField("_metricSurfaces", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+        return surfaces.Values.ToArray();
+    }
+
+    /// <summary>
+    /// 静置层里必须随封面推挤的可见直系表面：除纯装饰层（背景图、材质、描边）与承载封面/文字的主画布外，
+    /// 所有可见子元素都是内容侧组件；XAML 里没有、运行期才创建的表面（性能指标、拖动条手柄）同样必须登记。
+    /// </summary>
+    private static List<FrameworkElement> VisiblePushFollowingElements(TaskBarMediaControl control)
+    {
+        var interactionSurface = (Grid)control.FindName("InteractionSurface")!;
+        return interactionSurface.Children.OfType<FrameworkElement>()
+            .Where(child => child.Visibility == Visibility.Visible)
+            .Where(child => child.Name is not ("BackgroundImage" or "TaskbarMaterialSurface" or "CanvasStroke" or "TopBorder" or "MainCanvas"))
+            .ToList();
+    }
+
+    /// <summary>取元素的推挤支：普通元素是裸 TranslateTransform，已有其它变换的元素被包进 TransformGroup，推挤支在最后。</summary>
+    private static TranslateTransform? PushTransformOf(FrameworkElement element) => element.RenderTransform switch
+    {
+        TranslateTransform translate => translate,
+        TransformGroup group => group.Children.OfType<TranslateTransform>().LastOrDefault(),
+        _ => null
+    };
+
+    private static string ElementLabel(FrameworkElement element) => string.IsNullOrEmpty(element.Name) ? element.GetType().Name : element.Name;
+
     private static void RunIsolated(string name, Func<TaskBarMediaControl, Dispatcher, Task> verify)
     {
         const string IsolationVariable = "AFMB_ARTWORK_ZOOM_ISOLATED";
@@ -482,6 +597,55 @@ public sealed class ArtworkZoomLifecycleTests
             }
         });
     }
+
+    [TestMethod]
+    public void BriefMediaLossRetainsMetricHistoryAndExpiredOrDisposedHistoryClears() => RunIsolated(nameof(BriefMediaLossRetainsMetricHistoryAndExpiredOrDisposedHistoryClears), (control, dispatcher) =>
+    {
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+        { PerformanceVisible = true, ComponentLayouts = new() { Idle = [] } };
+        control.ApplyTaskbarExperienceSettings();
+        var playing = MediaSnapshot.Disconnected with { IsConnected = true, IsPlaying = true, Title = "History" };
+        control.UpdateSongInfo(playing);
+        var presenters = (Dictionary<MetricKind, MetricPresenter>)MediaBarTestAccess.GetField("_metricPresenters", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+        var chart = presenters[MetricKind.SystemMemory].Charts[0];
+        var history = (MetricHistory)typeof(MetricChart).GetField("_history", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(chart)!;
+        var sample = new SystemMetricsSnapshot(40, 50, 20, 200, 1024, 2048);
+        control.ApplyPerformanceSnapshot(sample, 0, false);
+        control.ApplyPerformanceSnapshot(sample, 0, false);
+        Assert.AreEqual(2, history.Samples.Count);
+
+        control.UpdateSongInfo(MediaSnapshot.Disconnected);
+        control.ApplyPerformanceSnapshot(sample, 0, false);
+        Assert.AreEqual(2, history.Samples.Count, "短暂无媒体保留已有样本，但不追加隐藏期间的样本。");
+        control.UpdateSongInfo(playing);
+        control.ApplyPerformanceSnapshot(sample, 0, false);
+        Assert.AreEqual(3, history.Samples.Count);
+
+        control.ApplyHostVisibilitySuspension(true);
+        control.ApplyPerformanceSnapshot(sample, 0, false);
+        Assert.AreEqual(3, history.Samples.Count);
+        control.ApplyHostVisibilitySuspension(false);
+        control.ApplyPerformanceSnapshot(sample, 0, false);
+        Assert.AreEqual(4, history.Samples.Count, "宿主短暂隐藏也不能清空历史。");
+
+        // 显示关闭/睡眠剪枝只暂停采样，保留期从进入剪枝起算；短暂恢复同样不能清空历史。
+        control.ApplyBackgroundPruneLevel(MemoryPruneLevel.DisplayOff);
+        control.ApplyPerformanceSnapshot(sample, 0, false);
+        Assert.AreEqual(4, history.Samples.Count, "显示关闭剪枝期间不能追加样本。");
+        control.ApplyBackgroundPruneLevel(MemoryPruneLevel.None);
+        control.ApplyPerformanceSnapshot(sample, 0, false);
+        Assert.AreEqual(5, history.Samples.Count, "剪枝短暂恢复仍在保留期内，不能清空历史。");
+
+        control.UpdateSongInfo(MediaSnapshot.Disconnected);
+        MediaBarTestAccess.GetField("_performanceHistoryHiddenAt", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(control, Stopwatch.GetTimestamp() - Stopwatch.Frequency * 31);
+        control.UpdateSongInfo(playing);
+        control.ApplyPerformanceSnapshot(sample, 0, false);
+        Assert.AreEqual(1, history.Samples.Count, "隐藏超过保留期后恢复不能继续沿用旧历史。");
+        control.DisposePresentation();
+        Assert.AreEqual(0, history.Samples.Count);
+        return Task.CompletedTask;
+    });
 
     private static FrameworkElement? FindTooltipOwner(FrameworkElement artwork)
     {

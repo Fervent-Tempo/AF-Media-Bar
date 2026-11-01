@@ -1,4 +1,5 @@
 // 共用的图文指标卡片；接收宿主快照，历史由图表持有，不创建采样或计时器。
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -59,7 +60,9 @@ public sealed class MetricPresenter : Grid
         Refresh();
     }
 
-    public void ApplySnapshot(SystemMetricsSnapshot snapshot)
+    public void ApplySnapshot(SystemMetricsSnapshot snapshot) => ApplySnapshot(snapshot, Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency);
+
+    internal void ApplySnapshot(SystemMetricsSnapshot snapshot, double time)
     {
         _snapshot = snapshot;
         _charts[0].ApplySample(Metric switch
@@ -69,8 +72,8 @@ public sealed class MetricPresenter : Grid
             MetricKind.ProcessMemory => snapshot.ProcessMemoryMegabytes,
             MetricKind.SystemNetwork => snapshot.NetworkUploadBytesPerSecond,
             _ => snapshot.SystemMemoryPercent
-        });
-        if (Metric == MetricKind.SystemNetwork) _charts[1].ApplySample(snapshot.NetworkDownloadBytesPerSecond);
+        }, time);
+        if (Metric == MetricKind.SystemNetwork) _charts[1].ApplySample(snapshot.NetworkDownloadBytesPerSecond, time);
         Refresh();
     }
 

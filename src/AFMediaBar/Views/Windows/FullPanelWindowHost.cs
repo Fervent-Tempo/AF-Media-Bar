@@ -1,6 +1,7 @@
 // 拥有各显示器完整面板及关闭冷却时间；应用退出时同步关闭，业务服务由组合根持有。
-using System.Windows;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Windows;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Settings;
@@ -12,6 +13,7 @@ public sealed class FullPanelWindowHost(Func<TaskbarFullPanelWindow> factory, Me
 {
     private readonly Dictionary<string, TaskbarFullPanelWindow> _windows = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, DateTime> _closedAt = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, MetricSnapshotHistory> _metricHistories = new(StringComparer.OrdinalIgnoreCase);
     private bool _disposed;
     public event Action<string>? PanelClosed;
 
@@ -21,10 +23,18 @@ public sealed class FullPanelWindowHost(Func<TaskbarFullPanelWindow> factory, Me
         FullPanelPlacementSide? side = null, Point? entryCenter = null)
     {
         if (_disposed) return null;
+        var now = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
+        foreach (var key in _metricHistories
+                     .Where(entry => !_windows.ContainsKey(entry.Key) && entry.Value.IsExpired(now))
+                     .Select(entry => entry.Key)
+                     .ToArray())
+            _metricHistories.Remove(key);
         if (!_windows.TryGetValue(target, out var panel))
         {
             if (_closedAt.TryGetValue(target, out var closed) && DateTime.UtcNow - closed < TimeSpan.FromMilliseconds(350)) return null;
             panel = factory();
+            if (!_metricHistories.TryGetValue(target, out var history)) _metricHistories[target] = history = new();
+            panel.UseMetricHistory(history);
             _windows[target] = panel;
             panel.Closed += Closed;
         }
@@ -67,6 +77,7 @@ public sealed class FullPanelWindowHost(Func<TaskbarFullPanelWindow> factory, Me
         }
         _windows.Clear();
         _closedAt.Clear();
+        _metricHistories.Clear();
         PanelClosed = null;
     }
 }

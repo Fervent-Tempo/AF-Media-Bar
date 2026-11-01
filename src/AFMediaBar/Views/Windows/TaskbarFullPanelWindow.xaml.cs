@@ -39,6 +39,14 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     private readonly SystemMetricsMonitorService _metricsMonitor;
     private IDisposable? _metricsSubscription;
     private int _metricsSubscriptionGeneration;
+    private MetricSnapshotHistory _metricHistory = new();
+    private bool _metricsHistoryRestored;
+
+    internal void UseMetricHistory(MetricSnapshotHistory history)
+    {
+        _metricHistory = history;
+        _metricsHistoryRestored = false;
+    }
     private readonly IDisplayMonitorService _displayMonitorService;
     private readonly DispatcherTimer _timer;
     private MediaSnapshot _snapshot = MediaSnapshot.Disconnected;
@@ -438,6 +446,16 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         if (!_performanceVisible || !IsVisible || _windowPresentation.IsPreparing) DisposeMetricsSubscription();
         else if (_metricsSubscription is null)
         {
+            var now = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
+            // 宿主缓存的历史只在新建窗口的首次订阅时按原采样时间回放；同一窗口里性能区段再打开时图表自己还留着历史，
+            // 不重复回放。超过保留期时 Resume 已清空缓存，这里回放的就是空集。
+            if (_metricHistory.Resume(now) || !_metricsHistoryRestored)
+            {
+                foreach (var presenter in PanelPresenters()) presenter.Reset();
+                foreach (var sample in _metricHistory.Samples)
+                    foreach (var presenter in PanelPresenters()) presenter.ApplySnapshot(sample.Snapshot, sample.Time);
+                _metricsHistoryRestored = true;
+            }
             var generation = _metricsSubscriptionGeneration;
             _metricsSubscription = _metricsMonitor.Subscribe(Enum.GetValues<MetricKind>(), TimeSpan.FromMilliseconds(500),
                 metrics => ApplyMetricsSnapshot(generation, metrics));
@@ -518,7 +536,9 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     {
         if (generation != _metricsSubscriptionGeneration || _isClosing || !_performanceVisible)
             return;
-        foreach (var presenter in PanelPresenters()) presenter.ApplySnapshot(metrics);
+        var time = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
+        _metricHistory.Add(time, metrics);
+        foreach (var presenter in PanelPresenters()) presenter.ApplySnapshot(metrics, time);
     }
 
     private void DisposeMetricsSubscription()
@@ -526,7 +546,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         _metricsSubscriptionGeneration++;
         _metricsSubscription?.Dispose();
         _metricsSubscription = null;
-        foreach (var presenter in PanelPresenters()) presenter.Reset();
+        _metricHistory.Suspend(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency);
     }
 
     private void UpdateProgress()
