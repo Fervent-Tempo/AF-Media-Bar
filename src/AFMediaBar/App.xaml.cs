@@ -180,6 +180,7 @@ namespace AFMediaBar
                 services.AddSingleton<BluetoothBatteryCache>();
                 services.AddSingleton<BluetoothBatteryReader>();
                 services.AddSingleton<IDeviceBatteryProvider>(sp => sp.GetRequiredService<BluetoothBatteryReader>());
+                services.AddSingleton<IDeviceBatteryProvider, HidBatteryProvider>();
                 services.AddSingleton<DeviceBatteryReader>();
                 services.AddSingleton<BluetoothBatteryService>();
                 services.AddHostedService(sp => sp.GetRequiredService<BluetoothBatteryService>());
