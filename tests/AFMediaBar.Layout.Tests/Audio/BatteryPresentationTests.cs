@@ -42,11 +42,36 @@ public sealed class BatteryPresentationTests
         var legacy = JsonSerializer.Deserialize<BluetoothBatteryWidgetSettings>("{\"DeviceId\":\"main\",\"LastKnownName\":\"Headset\"}")!.Normalize();
         CollectionAssert.AreEqual(new[] { "main" }, BluetoothBatteryService.TrackingIds(legacy, true).ToArray());
         Assert.AreEqual(BatteryVisualStyle.Numeric, legacy.VisualStyle);
+        Assert.AreEqual(5, legacy.CycleIntervalSeconds);
+        Assert.IsNull(legacy.FillColor);
+        Assert.IsFalse(legacy.ConnectionNotifications);
         var multi = legacy with { SelectedDevices = [new("mouse", "Mouse"), new("keyboard", "Keyboard")], Notifications = true };
         CollectionAssert.AreEquivalent(new[] { "mouse", "keyboard", "main" }, BluetoothBatteryService.TrackingIds(multi, true).ToArray());
         CollectionAssert.AreEqual(new[] { "main" }, BluetoothBatteryService.TrackingIds(multi, false).ToArray());
         Assert.AreEqual(0, BluetoothBatteryService.TrackingIds(legacy with { SelectedDevices = [] }, true).Count);
         Assert.AreEqual(2, (multi with { SelectedDevices = [new("a", "A"), new("A", "Alias"), new("b", "B")] }).Normalize().SelectedDevices!.Count);
+        var connectedOnly = legacy with { ConnectionNotifications = true, SelectedDevices = [] };
+        CollectionAssert.AreEqual(new[] { "main" }, BluetoothBatteryService.TrackingIds(connectedOnly, false).ToArray());
+        var normalized = (connectedOnly with { FillColor = "invalid", CycleIntervalSeconds = -1 }).Normalize();
+        Assert.IsNull(normalized.FillColor);
+        Assert.AreEqual(1, normalized.CycleIntervalSeconds);
+        Assert.AreEqual("#42CBA6", (legacy with { FillColor = "42cba6" }).Normalize().FillColor);
+    }
+
+    [TestMethod]
+    public void ConnectionNotificationsRequireAReconnectAndDoNotAffectLowBatteryBaseline()
+    {
+        var policy = new BluetoothBatteryAlertPolicy();
+        var reading = new BluetoothBatterySnapshot("main", 80, BluetoothBatterySource.Hid, true, true, DateTimeOffset.UtcNow);
+        Assert.IsFalse(policy.EvaluateConnection("main", reading, true));
+        Assert.IsFalse(policy.EvaluateConnection("main", reading with { IsConnected = false }, true));
+        Assert.IsTrue(policy.EvaluateConnection("main", reading, true));
+        Assert.IsFalse(policy.EvaluateConnection("main", reading, true));
+        Assert.IsFalse(policy.EvaluateConnection("main", reading with { IsConnected = false }, false));
+        Assert.IsFalse(policy.EvaluateConnection("main", reading, true));
+        Assert.IsFalse(policy.EvaluateConnection("other", reading with { DeviceId = "other" }, true));
+        Assert.IsFalse(policy.Evaluate("main", reading, true, 20));
+        Assert.IsTrue(policy.Evaluate("main", reading with { Percent = 15 }, true, 20));
     }
 
     [TestMethod]

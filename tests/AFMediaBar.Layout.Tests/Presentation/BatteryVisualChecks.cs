@@ -10,7 +10,11 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Audio;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Interop;
+using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Components;
+using AFMediaBar.ViewModels.Pages;
+using AFMediaBar.Views.Pages;
 using AFMediaBar.ViewModels.Windows;
 using AFMediaBar.Views.Windows;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -86,15 +90,80 @@ internal static class BatteryVisualChecks
             using var appearance = new WindowAppearanceService(new NativeWindowBackdropAdapter(), icons);
             using var model = new DeviceBatteryOverviewViewModel(battery, localization);
             using var flyout = new TaskbarCompactFlyoutWindow(appearance);
-            flyout.ShowBatteryOverview(model, new(600, 600, 601, 601));
+            var monitor = NativeMethods.MonitorFromPoint(new NativeMethods.POINT { X = 0, Y = 0 }, NativeMethods.MONITOR_DEFAULTTONEAREST);
+            var info = new NativeMethods.MONITORINFOEX { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MONITORINFOEX>() };
+            Assert.IsTrue(NativeMethods.GetMonitorInfo(monitor, ref info));
+            flyout.ShowBatteryOverview(model, new(info.rcWork.Left + 300, info.rcWork.Bottom - 20, info.rcWork.Left + 340, info.rcWork.Bottom));
             flyout.Opacity = 0;
             SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(250));
             var panel = (FrameworkElement)flyout.FindName("BatteryPanel");
-            Assert.AreEqual(4, ((ItemsControl)flyout.FindName("BatteryList")).Items.Count);
+            var list = (ListBox)flyout.FindName("BatteryList");
+            Assert.AreEqual(4, list.Items.Count);
+            // 异步加载从一行增长为四行时，窗口必须重新贴靠而不能从旧位置向屏幕外增长。
+            model.Devices.Clear(); model.Devices.Add(new(readings[0]));
+            SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(50));
+            foreach (var reading in readings.Skip(1)) model.Devices.Add(new(reading));
+            SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(100));
+            NativeMethods.GetWindowRect(new System.Windows.Interop.WindowInteropHelper(flyout).Handle, out var rect);
+            Assert.IsTrue(rect.Bottom <= info.rcWork.Bottom && rect.Top >= info.rcWork.Top, "增长后的窗口必须留在工作区。");
+            Assert.AreEqual(156d, list.ActualHeight, 1d, "最多显示三个 52 DIP 设备行。");
+            var scroll = Descendants(list).OfType<ScrollViewer>().Single();
+            var rail = Descendants(scroll).OfType<System.Windows.Controls.Primitives.ScrollBar>().Single();
+            var first = (ListBoxItem)list.ItemContainerGenerator.ContainerFromIndex(0);
+            Assert.IsTrue(first.TranslatePoint(new Point(first.ActualWidth, 0), scroll).X <= rail.TranslatePoint(new Point(), scroll).X,
+                "设备行不能占用滚动条的独立列。");
+            scroll.ScrollToBottom(); SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(50));
+            Assert.IsTrue(scroll.VerticalOffset > 0, "第四台设备必须可滚动查看。");
+            Capture(panel, $"battery-{(dark ? "dark" : "light")}-overview-scrolled", dark, 144);
+            scroll.ScrollToTop(); SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(50));
             Capture(panel, $"battery-{(dark ? "dark" : "light")}-overview", dark, 144);
             flyout.Dismiss();
         }
+        VerifySettings(battery, localization);
         control.DisposePresentation();
+    }
+    private static void VerifySettings(BluetoothBatteryService battery, LocalizationService localization)
+    {
+        foreach (var resource in new[] { "SettingsDiagrams", "SettingsComponentResources" })
+            Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri($"/AFMediaBar;component/Resources/{resource}.xaml", UriKind.Relative) });
+        using var context = new SettingsPageContext();
+        var configuration = new LegacySettingsConfiguration(context);
+        using var editor = new BluetoothBatterySettingsViewModel(battery, configuration, localization);
+        var page = new BluetoothBatteryPage(new WidgetsSettingsViewModel(null!, editor, null!, configuration, null!));
+        var window = new Window { Content = page, Width = 820, Height = 900, Left = -20000, Top = -20000,
+            ShowInTaskbar = false, ShowActivated = false, Opacity = 0, WindowStyle = WindowStyle.None };
+        using var messages = new StringWriter();
+        using var listener = new System.Diagnostics.TextWriterTraceListener(messages);
+        var trace = System.Diagnostics.PresentationTraceSources.DataBindingSource;
+        var previous = trace.Switch.Level; trace.Switch.Level = System.Diagnostics.SourceLevels.Error; trace.Listeners.Add(listener);
+        try
+        {
+            window.Show(); editor.Activate();
+            SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(300));
+            Assert.AreEqual(4, editor.DisplayDevices.Count);
+            editor.ReorderDeviceCommand.Execute(new SettingsReorderRequest(editor.DisplayDevices[2], 0, editor.DisplayDevices));
+            Assert.AreEqual("headset", SettingsManager.Current.BluetoothBatteryWidget.GetSelectedDevices()[0].Id);
+            foreach (var dark in new[] { false, true })
+            {
+                var theme = dark ? Wpf.Ui.Appearance.ApplicationTheme.Dark : Wpf.Ui.Appearance.ApplicationTheme.Light;
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(theme);
+                new ApplicationAppearanceResources(Application.Current.Resources).Apply(SettingsManager.Current.Appearance, theme,
+                    AccentColorPolicy.Build(Color.FromRgb(0, 120, 212), dark, false));
+                var layout = (SettingsPageLayout)page.FindName("PageLayout");
+                Assert.IsNotNull(layout.ScrollViewer);
+                editor.UseAccentColor = true;
+                layout.ScrollViewer.ScrollToTop(); SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(100));
+                Capture(page, $"battery-{(dark ? "dark" : "light")}-settings", dark, 96);
+                editor.FillColorHex = "#42CBA6";
+                SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(50));
+                Assert.IsTrue(Descendants(page).OfType<BatteryPresenter>().All(p => p.Accent is SolidColorBrush brush && brush.Color == Color.FromRgb(66, 203, 166)));
+                Capture(page, $"battery-{(dark ? "dark" : "light")}-settings-custom-color", dark, 96);
+                layout.ScrollViewer.ScrollToBottom(); SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(100));
+                Capture(page, $"battery-{(dark ? "dark" : "light")}-settings-color-notifications", dark, 96);
+            }
+            listener.Flush(); Assert.AreEqual(string.Empty, messages.ToString(), "电量设置页绑定错误。");
+        }
+        finally { window.Close(); editor.Deactivate(); trace.Listeners.Remove(listener); trace.Switch.Level = previous; }
     }
     private static void Capture(FrameworkElement element, string name, bool dark, double dpi)
     {
