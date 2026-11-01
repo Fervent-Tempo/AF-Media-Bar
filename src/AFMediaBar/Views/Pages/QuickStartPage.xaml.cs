@@ -128,12 +128,6 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
             var card = (FrameworkElement)TutorialsGrid.Children[index];
             card.Margin = new Thickness(0, 0, tutorialColumns == 2 && index % 2 == 0 ? 12d : 0d, 8d);
         }
-        var helpWide = width >= 900d;
-        HelpGap.Width = new GridLength(helpWide ? 28d : 0d);
-        Grid.SetColumn(RuntimeHost, helpWide ? 2 : 0);
-        Grid.SetColumnSpan(RuntimeHost, helpWide ? 1 : 3);
-        Grid.SetRow(RuntimeHost, helpWide ? 0 : 1);
-        RuntimeHost.Margin = helpWide ? new Thickness(0) : new Thickness(0, 20, 0, 0);
         var communityWide = width >= 800d;
         CommunityGap.Width = new GridLength(communityWide ? 28d : 0d);
         Grid.SetColumnSpan(IssueHost, communityWide ? 1 : 3);

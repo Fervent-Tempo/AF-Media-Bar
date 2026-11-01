@@ -696,27 +696,23 @@
                 </components:SettingsNavigationButton>
             </UniformGrid>
 
-            <!-- ④ 上手与帮助：教程 + FAQ + 运行组件要求合并为一节。 -->
+            <!-- ④ 教程与 FAQ 使用完整宽度，运行组件要求放在末尾。 -->
             <TextBlock Style="{StaticResource HomeSection}" Text="{DynamicResource Loc.Start.Tutorials}" />
             <Grid x:Name="HelpGrid" Margin="0,0,0,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition x:Name="HelpGap" Width="28" />
-                    <ColumnDefinition Width="320" />
-                </Grid.ColumnDefinitions>
+
 
                 <StackPanel Grid.Row="0" Grid.Column="0">
                     <components:ColumnFlowPanel x:Name="TutorialsGrid" Columns="2">
                         <ui:CardExpander Margin="0,0,12,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Desktop24}">
                             <ui:CardExpander.Header>
-                                <StackPanel>
+                                <StackPanel MinHeight="60">
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
                                                TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Mode}" />
-                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0"
+                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0" MaxHeight="36" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
                                                Text="{DynamicResource Loc.Start.Tutorial.Mode.Short}" />
                                 </StackPanel>
                             </ui:CardExpander.Header>
@@ -730,10 +726,10 @@
                         </ui:CardExpander>
                         <ui:CardExpander Margin="0,0,0,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Play24}">
                             <ui:CardExpander.Header>
-                                <StackPanel>
+                                <StackPanel MinHeight="60">
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
                                                TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Playback}" />
-                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0"
+                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0" MaxHeight="36" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
                                                Text="{DynamicResource Loc.Start.Tutorial.Playback.Short}" />
                                 </StackPanel>
                             </ui:CardExpander.Header>
@@ -747,10 +743,10 @@
                         </ui:CardExpander>
                         <ui:CardExpander Margin="0,0,12,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon TextQuote24}">
                             <ui:CardExpander.Header>
-                                <StackPanel>
+                                <StackPanel MinHeight="60">
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
                                                TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Lyrics}" />
-                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0"
+                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0" MaxHeight="36" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
                                                Text="{DynamicResource Loc.Start.Tutorial.Lyrics.Short}" />
                                 </StackPanel>
                             </ui:CardExpander.Header>
@@ -764,10 +760,10 @@
                         </ui:CardExpander>
                         <ui:CardExpander Margin="0,0,0,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon Headphones24}">
                             <ui:CardExpander.Header>
-                                <StackPanel>
+                                <StackPanel MinHeight="60">
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
                                                TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Devices}" />
-                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0"
+                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0" MaxHeight="36" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
                                                Text="{DynamicResource Loc.Start.Tutorial.Devices.Short}" />
                                 </StackPanel>
                             </ui:CardExpander.Header>
@@ -781,10 +777,10 @@
                         </ui:CardExpander>
                         <ui:CardExpander Margin="0,0,12,8" Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon HandDraw24}">
                             <ui:CardExpander.Header>
-                                <StackPanel>
+                                <StackPanel MinHeight="60">
                                     <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
                                                TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Tutorial.Daily}" />
-                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0"
+                                    <TextBlock Style="{StaticResource HomeHint}" Margin="0,2,0,0" MaxHeight="36" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
                                                Text="{DynamicResource Loc.Start.Tutorial.Daily.Short}" />
                                 </StackPanel>
                             </ui:CardExpander.Header>
@@ -816,7 +812,7 @@
                     </StackPanel>
                 </StackPanel>
 
-                <Border x:Name="RuntimeHost" Grid.Row="0" Grid.Column="2" Padding="20" VerticalAlignment="Top"
+                <Border x:Name="RuntimeHost" Grid.Row="1" Margin="0,20,0,0" Padding="20" VerticalAlignment="Top"
                         Style="{StaticResource HomeCard}">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal">
