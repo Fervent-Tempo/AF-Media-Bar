@@ -3187,7 +3187,7 @@ Nguồn: {2}</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>Hiện không khả dụng</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>Phím tắt chuyển thiết bị</value></data>
   <data name="Device.Cycle.Hint" xml:space="preserve"><value>Chuyển thiết bị mặc định hệ thống theo thứ tự thiết bị được bật trong Quản lý thiết bị, bỏ qua thiết bị ngoại tuyến. Đầu vào và đầu ra dùng tổ hợp riêng.</value></data>
-  <data name="Battery.SelectHint" xml:space="preserve"><value>Chọn thiết bị hiển thị trên thanh. Thiết bị chính dùng cho cảnh báo pin yếu; các thiết bị khác được theo dõi khi cần hiển thị.</value></data>
+  <data name="Battery.SelectHint" xml:space="preserve"><value>Chọn thiết bị hiển thị. Thiết bị chính nhận thông báo; các thiết bị khác được theo dõi theo nhu cầu.</value></data>
   <data name="Battery.Select" xml:space="preserve"><value>Thiết bị chính để cảnh báo</value></data>
   <data name="Battery.ListRefresh" xml:space="preserve"><value>Làm mới danh sách thiết bị</value></data>
   <data name="Battery.Clear" xml:space="preserve"><value>Bỏ thiết bị chính</value></data>
@@ -3395,7 +3395,7 @@ Mẫu bị loại: {3}; sự kiện: {4}</value></data>
   <data name="Settings.Page.Performance" xml:space="preserve"><value>Hiệu năng</value></data>
   <data name="Settings.Page.Performance.Description" xml:space="preserve"><value>Chọn chỉ số, cách hiển thị và chu kỳ lấy mẫu.</value></data>
   <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>Pin thiết bị</value></data>
-  <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>Chọn thiết bị theo dõi, cách hiển thị và cảnh báo pin yếu.</value></data>
+  <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>Chọn thiết bị hiển thị, luân phiên và thông báo kết nối hoặc pin yếu.</value></data>
   <data name="Settings.Page.MediaSource" xml:space="preserve"><value>Nguồn đa phương tiện</value></data>
   <data name="Settings.Page.ExtraFeatures.Description" xml:space="preserve"><value>Chọn trình phát, quy tắc tự động chuyển và danh sách cho phép.</value></data>
   <data name="Settings.Page.TrackNotifications" xml:space="preserve"><value>Thông báo bài hát</value></data>
@@ -3916,9 +3916,24 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin thiết bị vẫn
   <data name="Battery.Numeric" xml:space="preserve"><value>Dạng số</value></data>
   <data name="Battery.Graphic" xml:space="preserve"><value>Hình thiết bị</value></data>
   <data name="Battery.PresentationMode" xml:space="preserve"><value>Bố trí thiết bị</value></data>
-  <data name="Battery.Cycle" xml:space="preserve"><value>Luân phiên (5 giây)</value></data>
+  <data name="Battery.Cycle" xml:space="preserve"><value>Luân phiên</value></data>
   <data name="Battery.Parallel" xml:space="preserve"><value>Song song</value></data>
-  <data name="Battery.SelectionHint" xml:space="preserve"><value>Chọn thiết bị trên thanh và sắp xếp thứ tự luân phiên. Ở chế độ song song, kéo từng thiết bị riêng trên thanh.</value></data>
+  <data name="Battery.SelectionHint" xml:space="preserve"><value>Bật thiết bị cần hiển thị. Kéo tay nắm hoặc chọn rồi dùng Alt + phím mũi tên để đổi thứ tự luân phiên. Ở chế độ song song, có thể di chuyển từng thiết bị trên thanh.</value></data>
   <data name="Battery.MoveUp" xml:space="preserve"><value>Di chuyển lên</value></data>
   <data name="Battery.MoveDown" xml:space="preserve"><value>Di chuyển xuống</value></data>
+  <data name="Battery.Devices" xml:space="preserve"><value>Tất cả thiết bị</value></data>
+  <data name="Battery.CycleInterval" xml:space="preserve"><value>Thời gian luân phiên</value></data>
+  <data name="Battery.FillColor" xml:space="preserve"><value>Màu biểu thị pin</value></data>
+  <data name="Battery.FollowAccent" xml:space="preserve"><value>Dùng màu nhấn</value></data>
+  <data name="Battery.Reminders" xml:space="preserve"><value>Thông báo pin</value></data>
+  <data name="Battery.RemindersHint" xml:space="preserve"><value>Thông báo cho thiết bị chính. Có thể bật cả hai tùy chọn.</value></data>
+  <data name="Battery.NotifyConnected" xml:space="preserve"><value>Khi kết nối</value></data>
+  <data name="Battery.NotifyLow" xml:space="preserve"><value>Pin yếu</value></data>
+  <data name="Battery.ConnectionTitle" xml:space="preserve"><value>Thiết bị đã kết nối</value></data>
+  <data name="Battery.ConnectionBody" xml:space="preserve"><value>{0} đã kết nối · {1}</value></data>
+  <data name="Battery.PreviewDevice" xml:space="preserve"><value>Tai nghe không dây mẫu</value></data>
+  <data name="Developer.Action.BatteryLow" xml:space="preserve"><value>Thông báo pin yếu</value></data>
+  <data name="Developer.Description.BatteryLow" xml:space="preserve"><value>Xem trước thông báo pin yếu mà không thay đổi trạng thái nhắc.</value></data>
+  <data name="Developer.Action.BatteryConnected" xml:space="preserve"><value>Thông báo kết nối thiết bị</value></data>
+  <data name="Developer.Description.BatteryConnected" xml:space="preserve"><value>Xem trước thông báo kết nối bằng dữ liệu thiết bị mẫu.</value></data>
 </root>

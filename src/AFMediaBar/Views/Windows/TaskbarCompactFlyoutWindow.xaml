@@ -130,14 +130,34 @@
                         <Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed"/></Trigger>
                     </Style.Triggers></Style></TextBlock.Style>
                 </TextBlock>
-                <ListBox x:Name="BatteryList" ItemsSource="{Binding Devices}" MaxHeight="280" BorderThickness="0" Padding="0"
+                <ListBox x:Name="BatteryList" ItemsSource="{Binding Devices}" MaxHeight="156" BorderThickness="0" Padding="0"
                          Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
-                         ItemContainerStyle="{StaticResource DeviceOptionContainerStyle}">
+                         ScrollViewer.CanContentScroll="False">
+                    <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem" BasedOn="{StaticResource DeviceOptionContainerStyle}">
+                        <Setter Property="Height" Value="48"/>
+                    </Style></ListBox.ItemContainerStyle>
+                    <ListBox.Template><ControlTemplate TargetType="ListBox">
+                        <ScrollViewer x:Name="PART_ScrollViewer" Focusable="False" CanContentScroll="False"
+                                      HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer.Template><ControlTemplate TargetType="ScrollViewer">
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="14"/></Grid.ColumnDefinitions>
+                                    <ScrollContentPresenter x:Name="PART_ScrollContentPresenter" Margin="0,0,4,0"
+                                        Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                        CanContentScroll="{TemplateBinding CanContentScroll}"/>
+                                    <ScrollBar x:Name="PART_VerticalScrollBar" Grid.Column="1" Width="12" Orientation="Vertical"
+                                        Maximum="{TemplateBinding ScrollableHeight}" ViewportSize="{TemplateBinding ViewportHeight}"
+                                        Value="{Binding VerticalOffset, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
+                                        Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"/>
+                                </Grid>
+                            </ControlTemplate></ScrollViewer.Template>
+                            <ItemsPresenter/>
+                        </ScrollViewer>
+                    </ControlTemplate></ListBox.Template>
                     <ListBox.ItemTemplate><DataTemplate>
                         <Button Style="{StaticResource DeviceOptionButtonStyle}" Padding="6,6" ToolTip="{Binding Details}" AutomationProperties.Name="{Binding Name}"
                                 Command="{Binding DataContext.SelectDeviceCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}">
                             <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="30"/><ColumnDefinition/><ColumnDefinition Width="42"/></Grid.ColumnDefinitions>
-                                <components:BatteryPresenter Snapshot="{Binding Snapshot}" VisualStyle="Graphic" VerticalAlignment="Center" Height="28" Margin="0,0,4,0"/>
+                                <components:BatteryPresenter Snapshot="{Binding Snapshot}" FillColor="{Binding FillColor}" VisualStyle="Graphic" VerticalAlignment="Center" Height="24" Margin="0,0,4,0"/>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
                                     <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontSize="13"/>
                                     <Grid Margin="0,2,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>

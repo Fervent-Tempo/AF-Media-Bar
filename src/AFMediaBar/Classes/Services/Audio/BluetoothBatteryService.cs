@@ -56,7 +56,7 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
     }
     internal static IReadOnlyList<string> TrackingIds(BluetoothBatteryWidgetSettings widget, bool showWidget) =>
         (showWidget ? widget.GetSelectedDevices().Select(d => d.Id) : [])
-        .Concat(widget.Notifications && widget.DeviceId is { } id ? [id] : []).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        .Concat((widget.Notifications || widget.ConnectionNotifications) && widget.DeviceId is { } id ? [id] : []).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 
     public Task<IReadOnlyList<BluetoothBatteryDevice>> GetDevicesAsync(CancellationToken token = default) => reader.GetDevicesAsync(token);
     public IDisposable AcquireOverviewSession()
@@ -110,7 +110,7 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
                     {
                         var settings = SettingsManager.Current;
                         return (Enabled: settings.Experiments.BluetoothBattery, Widget: settings.BluetoothBatteryWidget,
-                            TrackMain: WidgetRequested(settings) || settings.BluetoothBatteryWidget.Notifications,
+                            TrackMain: WidgetRequested(settings) || settings.BluetoothBatteryWidget.Notifications || settings.BluetoothBatteryWidget.ConnectionNotifications,
                             Tracking: TrackingIds(settings.BluetoothBatteryWidget, WidgetRequested(settings)),
                             Overview: Volatile.Read(ref _overviewCount) > 0);
                     });
@@ -121,7 +121,11 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
                     {
                         ReleaseObservers(observers);
                         await reader.ReleaseExceptAsync(new HashSet<string>()).ConfigureAwait(false);
-                        await PublishAsync(version, cycle.Token, () => { cache.Clear(); _lowVisible.Clear(); Readings = []; IsRefreshing = false; });
+                        await PublishAsync(version, cycle.Token, () =>
+                        {
+                            cache.Clear(); _lowVisible.Clear(); Readings = []; IsRefreshing = false;
+                            _alerts.EvaluateConnection(null, null, false);
+                        });
                         nextDiscovery = DateTimeOffset.MinValue;
                         wait = Timeout.InfiniteTimeSpan;
                     }
@@ -202,8 +206,9 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
                                 else if (reading.Percent >= config.Widget.LowThreshold + 5) _lowVisible.Remove(reading.DeviceId);
                             }
                             if (_alerts.Evaluate(main, selected, config.Widget.Notifications, config.Widget.LowThreshold))
-                                try { notifications.TryShowNotification(Translations.Get("Battery.LowTitle"), Translations.Format("Battery.LowBody", selected!.DeviceName, selected.Percent), ShellNotificationTarget.None, "Battery.Low"); }
-                                catch (Exception error) { log.Warn("Battery", "低电量通知失败", error); }
+                                Notify(selected!, false);
+                            if (_alerts.EvaluateConnection(main, selected, config.Widget.ConnectionNotifications))
+                                Notify(selected!, true);
                         });
                         var retained = catalog.Select(d => d.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
                         foreach (var id in _saved.Keys.Where(id => !retained.Contains(id)).ToArray())
@@ -244,6 +249,15 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
     }
     internal static bool CanPublish(int version, CancellationToken token, int currentVersion, bool disposed) =>
         !disposed && !token.IsCancellationRequested && version == currentVersion;
+    internal static (string Title, string Body) NotificationText(BluetoothBatterySnapshot snapshot, bool connected) => connected
+        ? (Translations.Get("Battery.ConnectionTitle"), Translations.Format("Battery.ConnectionBody", snapshot.DeviceName, snapshot.Label))
+        : (Translations.Get("Battery.LowTitle"), Translations.Format("Battery.LowBody", snapshot.DeviceName, snapshot.Percent));
+    private void Notify(BluetoothBatterySnapshot snapshot, bool connected)
+    {
+        var (title, body) = NotificationText(snapshot, connected);
+        try { notifications.TryShowNotification(title, body, ShellNotificationTarget.None, connected ? "Battery.Connected" : "Battery.Low"); }
+        catch (Exception error) { log.Warn("Battery", "设备电量通知失败", error); }
+    }
     private void CreateObservers(List<Action> observers)
     {
         foreach (var selector in new[] { BluetoothBatteryReader.Selector(false), BluetoothBatteryReader.Selector(true),

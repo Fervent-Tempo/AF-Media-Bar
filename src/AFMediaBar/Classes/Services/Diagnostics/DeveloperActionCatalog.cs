@@ -15,6 +15,8 @@ public static class DeveloperActionCatalog
         new("notify restart busy", "RestartBusy", DeveloperActionImpact.Preview),
         new("notify restart failed", "RestartFailed", DeveloperActionImpact.Preview),
         new("notify track", "Track", DeveloperActionImpact.Preview),
+        new("notify battery low", "BatteryLow", DeveloperActionImpact.Preview),
+        new("notify battery connected", "BatteryConnected", DeveloperActionImpact.Preview),
         new("restart confirm", "Confirm", DeveloperActionImpact.Preview),
         new("app restart", "Restart", DeveloperActionImpact.Session),
         new("webview rebuild", "Rebuild", DeveloperActionImpact.Session, true),

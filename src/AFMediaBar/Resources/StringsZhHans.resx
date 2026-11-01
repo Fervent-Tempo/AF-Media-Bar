@@ -3147,7 +3147,7 @@
   <data name="Device.Offline" xml:space="preserve"><value>暂不可用</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>设备切换快捷键</value></data>
   <data name="Device.Cycle.Hint" xml:space="preserve"><value>仅切换系统默认设备，按设备管理中已启用设备的顺序循环，跳过离线设备。输入和输出各使用一个组合键。</value></data>
-  <data name="Battery.SelectHint" xml:space="preserve"><value>勾选栏上显示的设备。主设备用于低电量提醒，其他设备按显示需要追踪。</value></data>
+  <data name="Battery.SelectHint" xml:space="preserve"><value>勾选栏上显示的设备。主设备用于提醒，其他设备按显示需要追踪。</value></data>
   <data name="Battery.Select" xml:space="preserve"><value>提醒主设备</value></data>
   <data name="Battery.ListRefresh" xml:space="preserve"><value>刷新设备列表</value></data>
   <data name="Battery.Clear" xml:space="preserve"><value>清除主设备</value></data>
@@ -3355,7 +3355,7 @@
   <data name="Settings.Page.Performance" xml:space="preserve"><value>性能</value></data>
   <data name="Settings.Page.Performance.Description" xml:space="preserve"><value>选择指标、显示方式和采样间隔。</value></data>
   <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>设备电量</value></data>
-  <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>选择追踪设备、显示方式与低电量提醒。</value></data>
+  <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>选择显示设备、轮换方式及连接和低电量提醒。</value></data>
   <data name="Settings.Page.MediaSource" xml:space="preserve"><value>媒体来源</value></data>
   <data name="Settings.Page.ExtraFeatures.Description" xml:space="preserve"><value>选择播放器、自动切换策略与允许列表。</value></data>
   <data name="Settings.Page.TrackNotifications" xml:space="preserve"><value>曲目通知</value></data>
@@ -3879,9 +3879,24 @@
   <data name="Battery.Numeric" xml:space="preserve"><value>数值</value></data>
   <data name="Battery.Graphic" xml:space="preserve"><value>设备图形</value></data>
   <data name="Battery.PresentationMode" xml:space="preserve"><value>多设备排列</value></data>
-  <data name="Battery.Cycle" xml:space="preserve"><value>轮换（5 秒）</value></data>
+  <data name="Battery.Cycle" xml:space="preserve"><value>轮换</value></data>
   <data name="Battery.Parallel" xml:space="preserve"><value>并列</value></data>
-  <data name="Battery.SelectionHint" xml:space="preserve"><value>勾选栏上显示的设备，上下调整轮换顺序。并列时可在栏上独立拖动。</value></data>
+  <data name="Battery.SelectionHint" xml:space="preserve"><value>开启栏上需要显示的设备，拖动手柄调整轮换顺序；也可聚焦手柄后按 Alt＋上下键。并列时可在栏上独立拖动。</value></data>
   <data name="Battery.MoveUp" xml:space="preserve"><value>上移</value></data>
   <data name="Battery.MoveDown" xml:space="preserve"><value>下移</value></data>
+  <data name="Battery.Devices" xml:space="preserve"><value>全部设备</value></data>
+  <data name="Battery.CycleInterval" xml:space="preserve"><value>轮换时间</value></data>
+  <data name="Battery.FillColor" xml:space="preserve"><value>电量填充色</value></data>
+  <data name="Battery.FollowAccent" xml:space="preserve"><value>跟随强调色</value></data>
+  <data name="Battery.Reminders" xml:space="preserve"><value>电量提醒</value></data>
+  <data name="Battery.RemindersHint" xml:space="preserve"><value>仅提醒主设备；连接时与低电量可同时启用。</value></data>
+  <data name="Battery.NotifyConnected" xml:space="preserve"><value>连接时</value></data>
+  <data name="Battery.NotifyLow" xml:space="preserve"><value>低电量</value></data>
+  <data name="Battery.ConnectionTitle" xml:space="preserve"><value>设备已连接</value></data>
+  <data name="Battery.ConnectionBody" xml:space="preserve"><value>{0} 已连接 · {1}</value></data>
+  <data name="Battery.PreviewDevice" xml:space="preserve"><value>示例无线耳机</value></data>
+  <data name="Developer.Action.BatteryLow" xml:space="preserve"><value>低电量提醒</value></data>
+  <data name="Developer.Description.BatteryLow" xml:space="preserve"><value>使用示例设备预览低电量通知，不改变提醒状态。</value></data>
+  <data name="Developer.Action.BatteryConnected" xml:space="preserve"><value>设备连接通知</value></data>
+  <data name="Developer.Description.BatteryConnected" xml:space="preserve"><value>使用示例设备预览连接通知，不读取真实设备。</value></data>
 </root>

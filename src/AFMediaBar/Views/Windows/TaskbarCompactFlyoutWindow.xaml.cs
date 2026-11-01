@@ -43,6 +43,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     {
         InitializeComponent();
         _windowPresentation = new(this);
+        SizeChanged += OnFlyoutSizeChanged;
         IsVisibleChanged += (_, _) => { if (!IsVisible) { RequestVersion++; ReleaseBatteryOverview(); } };
         appearanceService.Attach(this);
     }
@@ -215,6 +216,13 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     private void RepositionVisibleMenu()
     { if (!_allowClose && IsVisible && _anchor is { } anchor) { UpdateLayout(); TryPositionNear(anchor); } }
 
+    private void OnFlyoutSizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        // 异步列表改变 SizeToContent 后，重新用实际窗口尺寸贴靠，避免向屏幕外增长。
+        if (_isPositioning || _isHiding || _windowPresentation.IsPreparing || !IsVisible) return;
+        RepositionVisibleMenu();
+    }
+
     /// <summary>更新滚轮预览的媒体音量。 / Updates the wheel-previewed media volume.</summary>
     public void SetVolumePreview(int volume)
     {
@@ -297,7 +305,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
             UpdateLayout();
             if (_mode == TaskbarCompactFlyoutMode.Battery)
             {
-                BatteryList.MaxHeight = Math.Max(0, Math.Min(280, MaxHeight - 90));
+                BatteryList.MaxHeight = Math.Max(0, Math.Min(156, MaxHeight - 90));
                 UpdateLayout();
             }
             if (_mode is TaskbarCompactFlyoutMode.OutputDevice or TaskbarCompactFlyoutMode.InputDevice)
@@ -438,6 +446,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
     {
         if (_allowClose) return;
         _allowClose = true;
+        SizeChanged -= OnFlyoutSizeChanged;
         ReleaseBatteryOverview();
         RequestVersion++;
         _windowPresentation.Dispose();

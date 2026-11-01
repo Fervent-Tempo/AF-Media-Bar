@@ -18,6 +18,7 @@ public sealed class DeviceBatteryOverviewItem(BluetoothBatterySnapshot snapshot)
     public string Details => Name + "\n" + Snapshot.Details + "\n" + Translations.Get(Snapshot.IsCharging switch
         { true => "Battery.Charging", false => "Battery.Discharging", null => "Battery.ChargingUnknown" });
     public bool IsPrimary => Id.Equals(SettingsManager.Current.BluetoothBatteryWidget.DeviceId, StringComparison.OrdinalIgnoreCase);
+    public string? FillColor => SettingsManager.Current.BluetoothBatteryWidget.FillColor;
     public string PrimaryLabel => IsPrimary ? Translations.Get("Battery.Primary") : string.Empty;
     public string State => Translations.Get("Battery.Transport." + Snapshot.Transport) + " · " +
         Translations.Get(Snapshot.IsConnected ? "Battery.Connected" : "Battery.Disconnected");

@@ -24,8 +24,8 @@ public partial class TaskBarMediaControl
     private int _batteryCycleIndex;
     private Border? _batteryPressedSurface;
     public event Action<TrayIconBounds>? BatteryOverviewRequested;
-    private double BatterySurfaceWidth => PresentationSettings.BluetoothBatteryWidget.VisualStyle == BatteryVisualStyle.Graphic ? 40 : 78;
-    private double BatteryVerticalLength => PresentationSettings.BluetoothBatteryWidget.VisualStyle == BatteryVisualStyle.Graphic ? 36 : 46;
+    private double BatterySurfaceWidth => PresentationSettings.BluetoothBatteryWidget.VisualStyle == BatteryVisualStyle.Graphic ? 34 : 78;
+    private double BatteryVerticalLength => PresentationSettings.BluetoothBatteryWidget.VisualStyle == BatteryVisualStyle.Graphic ? 30 : 46;
 
     public void BindBatterySource(BluetoothBatteryService source)
     {
@@ -101,12 +101,14 @@ public partial class TaskBarMediaControl
             var presenter = (BatteryPresenter)surface.Child;
             presenter.SetBinding(ForegroundProperty, new Binding(nameof(TextBlock.Foreground)) { Source = SongTitle });
             presenter.VisualStyle = settings.VisualStyle; presenter.Vertical = _isVertical; presenter.Snapshot = snapshot;
+            presenter.FillColor = settings.FillColor;
             surface.ToolTip = snapshot is null ? Translations.Get("Battery.NoReading") : snapshot.DeviceName + "\n" + snapshot.Details + "\n" +
                 Translations.Get(snapshot.IsCharging switch { true => "Battery.Charging", false => "Battery.Discharging", null => "Battery.ChargingUnknown" });
             System.Windows.Automation.AutomationProperties.SetName(surface, snapshot is null ? Translations.Get("Battery.Overview") : snapshot.DeviceName + " · " + snapshot.Label);
         }
         if (_batteryCycleTimer is not null)
         {
+            _batteryCycleTimer.Interval = TimeSpan.FromSeconds(settings.CycleIntervalSeconds);
             if (_batterySubscribed && IsVisible && !_isHostVisibilitySuspended && _backgroundPruneLevel == MemoryPruneLevel.None &&
                 settings.PresentationMode == BatteryPresentationMode.Cycle && readings.Count > 1) _batteryCycleTimer.Start();
             else _batteryCycleTimer.Stop();

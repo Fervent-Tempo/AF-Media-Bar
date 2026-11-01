@@ -3147,7 +3147,7 @@ Source: {2}</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>Currently unavailable</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>Device switching shortcuts</value></data>
   <data name="Device.Cycle.Hint" xml:space="preserve"><value>Switch system defaults through enabled devices in Device management order, skipping offline devices. Input and output each use one shortcut.</value></data>
-  <data name="Battery.SelectHint" xml:space="preserve"><value>Select devices to show on the bar. Low-battery alerts use the primary device; other devices are tracked while needed for display.</value></data>
+  <data name="Battery.SelectHint" xml:space="preserve"><value>Select devices to display. Notifications use the primary device; other devices are tracked as needed.</value></data>
   <data name="Battery.Select" xml:space="preserve"><value>Primary device for alerts</value></data>
   <data name="Battery.ListRefresh" xml:space="preserve"><value>Refresh device list</value></data>
   <data name="Battery.Clear" xml:space="preserve"><value>Clear primary device</value></data>
@@ -3355,7 +3355,7 @@ Dropped samples: {3}; events: {4}</value></data>
   <data name="Settings.Page.Performance" xml:space="preserve"><value>Performance</value></data>
   <data name="Settings.Page.Performance.Description" xml:space="preserve"><value>Choose metrics, display mode, and sampling interval.</value></data>
   <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>Device battery</value></data>
-  <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>Choose a tracked device, display mode, and low-battery reminders.</value></data>
+  <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>Choose displayed devices, rotation, connection and low battery notifications.</value></data>
   <data name="Settings.Page.MediaSource" xml:space="preserve"><value>Media sources</value></data>
   <data name="Settings.Page.ExtraFeatures.Description" xml:space="preserve"><value>Choose players, automatic switching behavior, and the allow list.</value></data>
   <data name="Settings.Page.TrackNotifications" xml:space="preserve"><value>Track notifications</value></data>
@@ -3879,9 +3879,24 @@ The full-panel entry opens on click or hover. Device battery remains an experime
   <data name="Battery.Numeric" xml:space="preserve"><value>Numeric</value></data>
   <data name="Battery.Graphic" xml:space="preserve"><value>Device graphic</value></data>
   <data name="Battery.PresentationMode" xml:space="preserve"><value>Device arrangement</value></data>
-  <data name="Battery.Cycle" xml:space="preserve"><value>Rotate (5 seconds)</value></data>
+  <data name="Battery.Cycle" xml:space="preserve"><value>Cycle</value></data>
   <data name="Battery.Parallel" xml:space="preserve"><value>Side by side</value></data>
-  <data name="Battery.SelectionHint" xml:space="preserve"><value>Select devices for the bar and arrange their rotation order. In side-by-side mode, drag each device independently on the bar.</value></data>
+  <data name="Battery.SelectionHint" xml:space="preserve"><value>Enable devices to show in the bar. Drag a handle or focus it and use Alt + arrow keys to change rotation order. Parallel devices can be moved independently on the bar.</value></data>
   <data name="Battery.MoveUp" xml:space="preserve"><value>Move up</value></data>
   <data name="Battery.MoveDown" xml:space="preserve"><value>Move down</value></data>
+  <data name="Battery.Devices" xml:space="preserve"><value>All devices</value></data>
+  <data name="Battery.CycleInterval" xml:space="preserve"><value>Rotation interval</value></data>
+  <data name="Battery.FillColor" xml:space="preserve"><value>Battery fill color</value></data>
+  <data name="Battery.FollowAccent" xml:space="preserve"><value>Use accent color</value></data>
+  <data name="Battery.Reminders" xml:space="preserve"><value>Battery notifications</value></data>
+  <data name="Battery.RemindersHint" xml:space="preserve"><value>Notify for the primary device. Both options can be enabled.</value></data>
+  <data name="Battery.NotifyConnected" xml:space="preserve"><value>On connection</value></data>
+  <data name="Battery.NotifyLow" xml:space="preserve"><value>Low battery</value></data>
+  <data name="Battery.ConnectionTitle" xml:space="preserve"><value>Device connected</value></data>
+  <data name="Battery.ConnectionBody" xml:space="preserve"><value>{0} connected · {1}</value></data>
+  <data name="Battery.PreviewDevice" xml:space="preserve"><value>Sample wireless headphones</value></data>
+  <data name="Developer.Action.BatteryLow" xml:space="preserve"><value>Low battery notification</value></data>
+  <data name="Developer.Description.BatteryLow" xml:space="preserve"><value>Preview a low battery notification without changing alert state.</value></data>
+  <data name="Developer.Action.BatteryConnected" xml:space="preserve"><value>Device connection notification</value></data>
+  <data name="Developer.Description.BatteryConnected" xml:space="preserve"><value>Preview a connection notification using sample device data.</value></data>
 </root>

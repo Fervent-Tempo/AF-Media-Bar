@@ -248,7 +248,7 @@ public sealed class SettingsPreviewScene : ContentControl
             {
                 visual = PlayerForeground(new BatteryPresenter
                 {
-                    VisualStyle = model.Battery.VisualStyle, Vertical = model.IsVertical,
+                    VisualStyle = model.Battery.VisualStyle, Vertical = model.IsVertical, FillColor = model.Battery.FillColor,
                     Snapshot = new(item.DeviceId ?? "preview", 72, AFMediaBar.Classes.Models.BluetoothBatterySource.Hid, true, true, DateTimeOffset.UtcNow)
                     { Kind = AFMediaBar.Classes.Models.BatteryDeviceKind.Mouse }
                 }, Control.ForegroundProperty);

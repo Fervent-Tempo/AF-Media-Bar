@@ -164,6 +164,15 @@ public sealed class DeveloperScenarioService : IDeveloperScenarioService, IDispo
 
     private DeveloperActionResult ShowNotification(string command)
     {
+        if (command is "notify battery low" or "notify battery connected")
+        {
+            var sample = new BluetoothBatterySnapshot("preview", command == "notify battery low" ? 15 : 82,
+                BluetoothBatterySource.Hid, true, true, DateTimeOffset.UtcNow) { DeviceName = Translations.Get("Battery.PreviewDevice") };
+            var text = Audio.BluetoothBatteryService.NotificationText(sample, command == "notify battery connected");
+            var shown = _notifications.TryShowNotification(Translations.Get("Developer.Notification.Prefix") + " " + text.Title,
+                text.Body, ShellNotificationTarget.None, "Developer." + command);
+            return new(shown ? DeveloperActionStatus.Accepted : DeveloperActionStatus.Failed, Translations.Get("Developer.Notification.Submitted"));
+        }
         var (title, body, target) = command switch
         {
             "notify update" => ("Update.Notification.Title", "Developer.Notification.Update", ShellNotificationTarget.Application),

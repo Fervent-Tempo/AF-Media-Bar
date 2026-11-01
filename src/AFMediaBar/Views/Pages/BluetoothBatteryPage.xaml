@@ -1,86 +1,124 @@
-<?xml version="1.0" ?><Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.BluetoothBatteryPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
+<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Views.Pages.BluetoothBatteryPage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
     <Page.Resources>
         <Style TargetType="{x:Type components:SettingsRow}" BasedOn="{StaticResource AfSettingsPilotRowStyle}"/>
         <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/>
+        <Style x:Key="BatteryColorSwatchStyle" TargetType="Button" BasedOn="{StaticResource AfSettingsColorSwatchStyle}">
+            <Setter Property="FocusVisualStyle" Value="{StaticResource AfFocusVisualStyle}"/>
+            <Setter Property="AutomationProperties.Name" Value="{Binding ToolTip, RelativeSource={RelativeSource Self}}"/>
+        </Style>
     </Page.Resources>
     <components:SettingsPageLayout x:Name="PageLayout">
         <components:SettingsPageLayout.Header>
-            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Page.BluetoothBattery}" Subtitle="{DynamicResource Loc.Settings.Page.BluetoothBattery.Description}" PageIcon="{ui:SymbolIcon Bluetooth24}" Target="{Binding ScrollViewer, ElementName=PageLayout}"><components:SettingsGroupStrip.HeaderActions><ui:Button Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" Click="ResetButton_Click" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top"/></components:SettingsGroupStrip.HeaderActions></components:SettingsGroupStrip>
+            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Page.BluetoothBattery}" Subtitle="{DynamicResource Loc.Settings.Page.BluetoothBattery.Description}" PageIcon="{ui:SymbolIcon Bluetooth24}" Target="{Binding ScrollViewer, ElementName=PageLayout}">
+                <components:SettingsGroupStrip.HeaderActions>
+                    <ui:Button Content="{DynamicResource Loc.Common.ResetPageDefaults}" Style="{StaticResource AfSettingsButtonStyle}" Click="ResetButton_Click" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top"/>
+                </components:SettingsGroupStrip.HeaderActions>
+            </components:SettingsGroupStrip>
         </components:SettingsPageLayout.Header>
-        <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded">
+        <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded" DataContext="{Binding ViewModel.Battery}">
             <StackPanel Margin="0,0,0,20">
-                <StackPanel.Style>
-                    <Style TargetType="StackPanel">
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding ViewModel.Battery.IsExperimentEnabled}" Value="True">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </StackPanel.Style>
+                <StackPanel.Style><Style TargetType="StackPanel"><Style.Triggers>
+                    <DataTrigger Binding="{Binding IsExperimentEnabled}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                </Style.Triggers></Style></StackPanel.Style>
                 <TextBlock Text="{DynamicResource Loc.Settings.Experiment.Required}" Style="{StaticResource AfSettingsHintTextStyle}"/>
                 <components:SettingsNavigationButton Destination="Experimental" GroupId="Battery.Title" Content="{DynamicResource Loc.Settings.Component.Configure}"/>
             </StackPanel>
-            <components:SettingsGroup GroupId="Battery.Title" Header="{DynamicResource Loc.Battery.Title}" Description="{DynamicResource Loc.Battery.SelectHint}" Icon="{ui:SymbolIcon Bluetooth24}">
-                <StackPanel DataContext="{Binding ViewModel.Battery}" IsEnabled="{Binding IsExperimentEnabled}">
+            <components:SettingsGroup GroupId="Battery.Title" Header="{DynamicResource Loc.Battery.Devices}" IsEnabled="{Binding IsExperimentEnabled}">
+                <StackPanel>
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="True" Header="{DynamicResource Loc.Battery.Devices}" Icon="{ui:SymbolIcon Bluetooth24}">
+                        <StackPanel>
+                            <components:SettingsCallout Text="{DynamicResource Loc.Battery.SelectionHint}" Margin="0,0,0,4"/>
+                            <AdornerDecorator>
+                                <ItemsControl x:Name="BatteryDeviceList" Style="{StaticResource AfSettingsSortableListStyle}" ItemsSource="{Binding DisplayDevices}"
+                                              components:SettingsReorderBehavior.MoveCommand="{Binding ReorderDeviceCommand}">
+                                    <ItemsControl.ItemTemplate><DataTemplate>
+                                        <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" Title="{Binding Name}" Description="{Binding State}" ToolTip="{Binding Details}" OptionId="{Binding Id}" KeepControlInline="True">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <components:BatteryPresenter Snapshot="{Binding Snapshot}" VisualStyle="Graphic" Width="26" Height="24" Margin="0,0,6,0"
+                                                    FillColor="{Binding DataContext.FillColor, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                                <TextBlock Text="{Binding Label}" Width="42" TextAlignment="Right" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                                                <ui:ToggleSwitch IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Name}"/>
+                                                <components:SettingsReorderHandle ItemKey="{Binding Id}" IsEnabled="{Binding IsSelected}" Margin="12,0,0,0"/>
+                                            </StackPanel>
+                                        </components:SettingsRow>
+                                    </DataTemplate></ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </AdornerDecorator>
+                            <TextBlock Text="{Binding Status}" TextWrapping="Wrap">
+                                <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource AfSettingsStatusTextStyle}"><Style.Triggers>
+                                    <Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed"/></Trigger>
+                                </Style.Triggers></Style></TextBlock.Style>
+                            </TextBlock>
+                            <WrapPanel Style="{StaticResource AfSettingsStandaloneActionsStyle}">
+                                <ui:Button Content="{DynamicResource Loc.Battery.ListRefresh}" Command="{Binding RefreshCommand}" IsEnabled="{Binding CanRefresh}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </ui:CardExpander>
+                </StackPanel>
+            </components:SettingsGroup>
+            <components:SettingsGroup GroupId="Battery.Presentation" Header="{DynamicResource Loc.Battery.VisualStyle}" IsEnabled="{Binding IsExperimentEnabled}">
+                <StackPanel>
                     <components:SettingsRow Title="{DynamicResource Loc.Battery.VisualStyle}">
-                        <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding VisualStyle, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}">
+                        <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding VisualStyle, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectShortWidth}">
                             <ComboBoxItem Content="{DynamicResource Loc.Battery.Numeric}" Tag="{x:Static settings:BatteryVisualStyle.Numeric}"/>
                             <ComboBoxItem Content="{DynamicResource Loc.Battery.Graphic}" Tag="{x:Static settings:BatteryVisualStyle.Graphic}"/>
                         </ComboBox>
                     </components:SettingsRow>
                     <components:SettingsRow Title="{DynamicResource Loc.Battery.PresentationMode}">
-                        <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding PresentationMode, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}">
+                        <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding PresentationMode, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectShortWidth}">
                             <ComboBoxItem Content="{DynamicResource Loc.Battery.Cycle}" Tag="{x:Static settings:BatteryPresentationMode.Cycle}"/>
                             <ComboBoxItem Content="{DynamicResource Loc.Battery.Parallel}" Tag="{x:Static settings:BatteryPresentationMode.Parallel}"/>
                         </ComboBox>
                     </components:SettingsRow>
-                    <TextBlock Text="{DynamicResource Loc.Battery.SelectionHint}" Style="{StaticResource AfSettingsHintTextStyle}" TextWrapping="Wrap"/>
-                    <ItemsControl ItemsSource="{Binding DisplayDevices}" Margin="0,4,0,12">
-                        <ItemsControl.ItemTemplate><DataTemplate>
-                            <Grid Margin="8,2"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" ToolTip="{Binding Name}" Margin="0,0,8,0">
-                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
-                                </CheckBox>
-                                <Button Grid.Column="1" Content="↑" Width="32" Height="30" Margin="2,0" IsEnabled="{Binding IsSelected}"
-                                    ToolTip="{DynamicResource Loc.Battery.MoveUp}" AutomationProperties.Name="{DynamicResource Loc.Battery.MoveUp}"
-                                    Command="{Binding DataContext.MoveDeviceUpCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
-                                <Button Grid.Column="2" Content="↓" Width="32" Height="30" Margin="2,0" IsEnabled="{Binding IsSelected}"
-                                    ToolTip="{DynamicResource Loc.Battery.MoveDown}" AutomationProperties.Name="{DynamicResource Loc.Battery.MoveDown}"
-                                    Command="{Binding DataContext.MoveDeviceDownCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
-                            </Grid>
-                        </DataTemplate></ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.Select}">
-                        <ComboBox ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice, Mode=TwoWay}" DisplayMemberPath="DisplayName" MinWidth="{StaticResource AfSettingsSelectMinWidth}" MaxWidth="{StaticResource AfSettingsSelectLongMaxWidth}"/>
+                    <components:SettingsRow Title="{DynamicResource Loc.Battery.CycleInterval}" Icon="{ui:SymbolIcon Timer24}" IsEnabled="{Binding IsCycle}">
+                        <components:SettingsNumericEditor Value="{Binding CycleIntervalSeconds, Mode=TwoWay}" Minimum="1" Maximum="60" Step="1" Unit="{DynamicResource Loc.Settings.Numeric.Seconds}"/>
                     </components:SettingsRow>
-                    <WrapPanel Style="{StaticResource AfSettingsStandaloneActionsStyle}">
-                        <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Battery.Overview}" Command="{Binding OpenOverviewCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
-                        <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Battery.ListRefresh}" Command="{Binding RefreshDevicesListCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
-                        <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Battery.Clear}" Command="{Binding ClearSelectionCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
-                    </WrapPanel>
-                    <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.DisplayMode}">
-                        <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding DisplayMode, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}">
+                    <components:SettingsRow Title="{DynamicResource Loc.Battery.DisplayMode}">
+                        <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding DisplayMode, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectShortWidth}">
                             <ComboBoxItem Content="{DynamicResource Loc.Battery.WhenConnected}" Tag="{x:Static settings:BluetoothBatteryDisplayMode.WhenConnected}"/>
                             <ComboBoxItem Content="{DynamicResource Loc.Battery.WhenLow}" Tag="{x:Static settings:BluetoothBatteryDisplayMode.WhenLow}"/>
                         </ComboBox>
                     </components:SettingsRow>
-                    <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.Notify}" KeepControlInline="True">
-                        <ui:ToggleSwitch IsChecked="{Binding Notifications, Mode=TwoWay}"/>
+                    <components:SettingsRow Title="{DynamicResource Loc.Battery.FillColor}" Icon="{ui:SymbolIcon Color24}" KeepControlInline="True">
+                        <CheckBox Content="{DynamicResource Loc.Battery.FollowAccent}" IsChecked="{Binding UseAccentColor, Mode=TwoWay}"/>
                     </components:SettingsRow>
-                    <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.Threshold}">
+                    <Border Background="{DynamicResource AfSettingsInfoSurfaceBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14,12" Margin="0,4,0,0">
+                        <Border.Style><Style TargetType="Border"><Style.Triggers>
+                            <DataTrigger Binding="{Binding UseAccentColor}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                        </Style.Triggers></Style></Border.Style>
+                        <WrapPanel VerticalAlignment="Center">
+                            <Button Background="#0078D4" Margin="0,0,6,0" ToolTip="#0078D4" Style="{StaticResource BatteryColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#0078D4"/>
+                            <Button Background="#42CBA6" Margin="0,0,6,0" ToolTip="#42CBA6" Style="{StaticResource BatteryColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#42CBA6"/>
+                            <Button Background="#F7C948" Margin="0,0,6,0" ToolTip="#F7C948" Style="{StaticResource BatteryColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#F7C948"/>
+                            <Button Background="#FF8A8A" Margin="0,0,6,0" ToolTip="#FF8A8A" Style="{StaticResource BatteryColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#FF8A8A"/>
+                            <Button Background="#9C7CFF" Margin="0,0,6,0" ToolTip="#9C7CFF" Style="{StaticResource BatteryColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#9C7CFF"/>
+                            <TextBox Width="110" MaxLength="9" Margin="8,0,0,0" Text="{Binding FillColorHex, Mode=TwoWay}" AutomationProperties.Name="{DynamicResource Loc.Battery.FillColor}"/>
+                        </WrapPanel>
+                    </Border>
+                </StackPanel>
+            </components:SettingsGroup>
+            <components:SettingsGroup GroupId="Battery.Notifications" Header="{DynamicResource Loc.Battery.Reminders}" Description="{DynamicResource Loc.Battery.RemindersHint}" IsEnabled="{Binding IsExperimentEnabled}">
+                <StackPanel>
+                    <components:SettingsRow Title="{DynamicResource Loc.Battery.Select}" Icon="{ui:SymbolIcon Bluetooth24}">
+                        <ComboBox ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice, Mode=TwoWay}" DisplayMemberPath="DisplayName" MinWidth="{StaticResource AfSettingsSelectMinWidth}" MaxWidth="{StaticResource AfSettingsSelectLongMaxWidth}"/>
+                    </components:SettingsRow>
+                    <components:SettingsRow Title="{DynamicResource Loc.Battery.Reminders}" KeepControlInline="True">
+                        <WrapPanel>
+                            <CheckBox Content="{DynamicResource Loc.Battery.NotifyConnected}" IsChecked="{Binding ConnectionNotifications, Mode=TwoWay}" Margin="0,0,16,0"/>
+                            <CheckBox Content="{DynamicResource Loc.Battery.NotifyLow}" IsChecked="{Binding Notifications, Mode=TwoWay}"/>
+                        </WrapPanel>
+                    </components:SettingsRow>
+                    <components:SettingsRow Title="{DynamicResource Loc.Battery.Threshold}">
                         <components:SettingsNumericEditor Minimum="{Binding MinimumLowThreshold}" Maximum="{Binding MaximumLowThreshold}" Value="{Binding LowThreshold, Mode=TwoWay}" Step="1" Unit="{DynamicResource Loc.Settings.Numeric.Percent}"/>
                     </components:SettingsRow>
-                    <TextBlock Text="{Binding CurrentDetails}" TextWrapping="Wrap" Style="{StaticResource AfSettingsStatusTextStyle}"/>
-                    <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.RefreshHint}">
-                        <ui:Button Content="{DynamicResource Loc.Battery.Refresh}" Command="{Binding RefreshCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
-                    </components:SettingsRow>
-                    <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                        <components:SettingsNavigationButton Destination="RestState" GroupId="Common.RestLayer" Content="{DynamicResource Loc.Common.Page.RestState}"/>
+                    <WrapPanel Style="{StaticResource AfSettingsStandaloneActionsStyle}">
+                        <ui:Button Content="{DynamicResource Loc.Battery.Clear}" Command="{Binding ClearSelectionCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
                     </WrapPanel>
                 </StackPanel>
             </components:SettingsGroup>
-
+            <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                <components:SettingsNavigationButton Destination="RestState" GroupId="Common.RestLayer" Content="{DynamicResource Loc.Common.Page.RestState}"/>
+            </WrapPanel>
         </StackPanel>
     </components:SettingsPageLayout>
 </Page>

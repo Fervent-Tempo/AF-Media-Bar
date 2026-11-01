@@ -18,13 +18,14 @@ public partial class BluetoothBatteryPage : INavigableView<WidgetsSettingsViewMo
         ViewModel = viewModel;
         DataContext = this;
         InitializeComponent();
+        Unloaded += (_, _) => ViewModel.Battery.Deactivate();
     }
 
     private async void OnPageLoaded(object sender, RoutedEventArgs args)
     {
         SettingsRevealAnimator.Play(sender as Panel);
         if (await SettingsPageActivation.WaitForPresentationAsync(this, ViewModel.ContextCancellationToken))
-            await ViewModel.Battery.RefreshDevicesAsync();
+            ViewModel.Battery.Activate();
     }
 
     private async void ResetButton_Click(object sender, RoutedEventArgs args)

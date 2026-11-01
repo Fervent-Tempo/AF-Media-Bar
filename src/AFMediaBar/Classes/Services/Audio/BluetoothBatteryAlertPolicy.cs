@@ -11,6 +11,21 @@ public sealed class BluetoothBatteryAlertPolicy
     private int _threshold;
     private bool _enabled;
     private bool _baseline = true;
+    private string? _connectionTarget;
+    private bool? _wasConnected;
+
+    /// <summary>启用与切换目标只建立基线；仅观察到断开再连接时提醒。</summary>
+    public bool EvaluateConnection(string? target, BluetoothBatterySnapshot? battery, bool enabled)
+    {
+        var current = enabled ? target : null;
+        if (!string.Equals(_connectionTarget, current, StringComparison.OrdinalIgnoreCase))
+        { _connectionTarget = current; _wasConnected = null; }
+        if (current is null) { _wasConnected = null; return false; }
+        if (battery is null || !battery.DeviceId.Equals(current, StringComparison.OrdinalIgnoreCase)) return false;
+        var notify = _wasConnected == false && battery.IsConnected;
+        _wasConnected = battery.IsConnected;
+        return notify;
+    }
 
     public void ResetBaseline() => _baseline = true;
     public bool Evaluate(string? target, BluetoothBatterySnapshot? battery, bool enabled, int threshold)

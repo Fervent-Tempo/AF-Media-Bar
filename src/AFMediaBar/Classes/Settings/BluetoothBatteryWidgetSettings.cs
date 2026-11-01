@@ -22,6 +22,9 @@ public sealed record BluetoothBatteryWidgetSettings
     public string LastKnownName { get; init; } = string.Empty;
     public BluetoothBatteryDisplayMode DisplayMode { get; init; }
     public bool Notifications { get; init; }
+    public bool ConnectionNotifications { get; init; }
+    public int CycleIntervalSeconds { get; init; } = 5;
+    public string? FillColor { get; init; }
     public BatteryVisualStyle VisualStyle { get; init; }
     public BatteryPresentationMode PresentationMode { get; init; }
     public IReadOnlyList<BatterySelectedDevice>? SelectedDevices { get; init; }
@@ -32,6 +35,8 @@ public sealed record BluetoothBatteryWidgetSettings
     {
         DeviceId = string.IsNullOrWhiteSpace(DeviceId) ? null : DeviceId.Trim(),
         LastKnownName = LastKnownName ?? string.Empty,
+        CycleIntervalSeconds = Math.Clamp(CycleIntervalSeconds, 1, 60),
+        FillColor = Classes.Utils.ColorHex.TryParse(FillColor, out var color) ? Classes.Utils.ColorHex.Format(color) : null,
         DisplayMode = Enum.IsDefined(DisplayMode) ? DisplayMode : BluetoothBatteryDisplayMode.WhenConnected,
         VisualStyle = Enum.IsDefined(VisualStyle) ? VisualStyle : BatteryVisualStyle.Numeric,
         PresentationMode = Enum.IsDefined(PresentationMode) ? PresentationMode : BatteryPresentationMode.Cycle,

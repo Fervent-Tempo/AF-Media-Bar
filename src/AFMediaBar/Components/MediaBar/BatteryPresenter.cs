@@ -16,6 +16,8 @@ public sealed class BatteryPresenter : Control
     public static readonly DependencyProperty VisualStyleProperty = DependencyProperty.Register(nameof(VisualStyle), typeof(BatteryVisualStyle), typeof(BatteryPresenter), new FrameworkPropertyMetadata(BatteryVisualStyle.Numeric, FrameworkPropertyMetadataOptions.AffectsRender | FrameworkPropertyMetadataOptions.AffectsMeasure));
     public static readonly DependencyProperty VerticalProperty = DependencyProperty.Register(nameof(Vertical), typeof(bool), typeof(BatteryPresenter), new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender | FrameworkPropertyMetadataOptions.AffectsMeasure));
     public static readonly DependencyProperty AccentProperty = DependencyProperty.Register(nameof(Accent), typeof(Brush), typeof(BatteryPresenter), new FrameworkPropertyMetadata(Brushes.DodgerBlue, FrameworkPropertyMetadataOptions.AffectsRender));
+    public static readonly DependencyProperty FillColorProperty = DependencyProperty.Register(nameof(FillColor), typeof(string), typeof(BatteryPresenter), new PropertyMetadata(null, OnFillColorChanged));
+    public string? FillColor { get => (string?)GetValue(FillColorProperty); set => SetValue(FillColorProperty, value); }
     public BluetoothBatterySnapshot? Snapshot { get => (BluetoothBatterySnapshot?)GetValue(SnapshotProperty); set => SetValue(SnapshotProperty, value); }
     public BatteryVisualStyle VisualStyle { get => (BatteryVisualStyle)GetValue(VisualStyleProperty); set => SetValue(VisualStyleProperty, value); }
     public bool Vertical { get => (bool)GetValue(VerticalProperty); set => SetValue(VerticalProperty, value); }
@@ -36,10 +38,19 @@ public sealed class BatteryPresenter : Control
         System.Windows.Automation.AutomationProperties.SetName(presenter, text);
         presenter.ToolTip = reading?.Details;
     }
+    private static void OnFillColorChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
+    {
+        var presenter = (BatteryPresenter)sender;
+        if (Classes.Utils.ColorHex.TryParse(args.NewValue as string, out var color))
+        {
+            var brush = new SolidColorBrush(color); brush.Freeze(); presenter.Accent = brush;
+        }
+        else presenter.SetResourceReference(AccentProperty, "AfAccentBrush");
+    }
     protected override System.Windows.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new System.Windows.Automation.Peers.FrameworkElementAutomationPeer(this);
     protected override Size MeasureOverride(Size constraint)
     {
-        var desired = VisualStyle == BatteryVisualStyle.Graphic ? new Size(32, 28) : Vertical ? new Size(40, 42) : new Size(70, 28);
+        var desired = VisualStyle == BatteryVisualStyle.Graphic ? new Size(26, 24) : Vertical ? new Size(40, 42) : new Size(70, 28);
         return new(Math.Min(constraint.Width, desired.Width), Math.Min(constraint.Height, desired.Height));
     }
     private static readonly Geometry[] Outlines =
@@ -59,9 +70,8 @@ public sealed class BatteryPresenter : Control
         var foreground = SystemParameters.HighContrast ? SystemColors.WindowTextBrush : Foreground;
         var graphic = VisualStyle == BatteryVisualStyle.Graphic;
         var percent = snapshot?.Percent is >= 0 and <= 100 ? snapshot.Percent : null;
-        var color = SystemParameters.HighContrast ? foreground : percent <= 20
-            ? TryFindResource("SystemFillColorCriticalBrush") as Brush ?? foreground : Accent;
-        var iconScale = graphic ? Math.Min(1, Math.Min(ActualWidth / 32, ActualHeight / 28)) : .65;
+        var color = SystemParameters.HighContrast ? foreground : Accent;
+        var iconScale = graphic ? Math.Min(.72, Math.Min(ActualWidth / 32, ActualHeight / 28)) : .65;
         var x = graphic || Vertical ? (ActualWidth - 24 * iconScale) / 2 : 1;
         var y = graphic ? (ActualHeight - 28 * iconScale) / 2 : Vertical ? 0 : (ActualHeight - 28 * iconScale) / 2;
         dc.PushTransform(new TranslateTransform(x, y));

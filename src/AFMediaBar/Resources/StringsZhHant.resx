@@ -3147,7 +3147,7 @@
   <data name="Device.Offline" xml:space="preserve"><value>暫時無法使用</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>裝置切換快速鍵</value></data>
   <data name="Device.Cycle.Hint" xml:space="preserve"><value>僅切換系統預設裝置，依裝置管理中已啟用裝置的順序循環，略過離線裝置。輸入和輸出各使用一個組合鍵。</value></data>
-  <data name="Battery.SelectHint" xml:space="preserve"><value>勾選列上顯示的裝置。主裝置用於低電量提醒，其他裝置依顯示需要追蹤。</value></data>
+  <data name="Battery.SelectHint" xml:space="preserve"><value>勾選欄上顯示的裝置。主裝置用於提醒，其他裝置按顯示需要追蹤。</value></data>
   <data name="Battery.Select" xml:space="preserve"><value>提醒主裝置</value></data>
   <data name="Battery.ListRefresh" xml:space="preserve"><value>重新整理裝置清單</value></data>
   <data name="Battery.Clear" xml:space="preserve"><value>清除主裝置</value></data>
@@ -3355,7 +3355,7 @@
   <data name="Settings.Page.Performance" xml:space="preserve"><value>效能</value></data>
   <data name="Settings.Page.Performance.Description" xml:space="preserve"><value>選擇指標、顯示方式與取樣間隔。</value></data>
   <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>裝置電量</value></data>
-  <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>選擇追蹤裝置、顯示方式與低電量提醒。</value></data>
+  <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>選擇顯示裝置、輪換方式及連線和低電量提醒。</value></data>
   <data name="Settings.Page.MediaSource" xml:space="preserve"><value>媒體來源</value></data>
   <data name="Settings.Page.ExtraFeatures.Description" xml:space="preserve"><value>選擇播放器、自動切換策略與允許清單。</value></data>
   <data name="Settings.Page.TrackNotifications" xml:space="preserve"><value>曲目通知</value></data>
@@ -3879,9 +3879,24 @@
   <data name="Battery.Numeric" xml:space="preserve"><value>數值</value></data>
   <data name="Battery.Graphic" xml:space="preserve"><value>裝置圖形</value></data>
   <data name="Battery.PresentationMode" xml:space="preserve"><value>多裝置排列</value></data>
-  <data name="Battery.Cycle" xml:space="preserve"><value>輪換（5 秒）</value></data>
+  <data name="Battery.Cycle" xml:space="preserve"><value>輪換</value></data>
   <data name="Battery.Parallel" xml:space="preserve"><value>並列</value></data>
-  <data name="Battery.SelectionHint" xml:space="preserve"><value>勾選列上顯示的裝置，上下調整輪換順序。並列時可在列上獨立拖曳。</value></data>
+  <data name="Battery.SelectionHint" xml:space="preserve"><value>開啟欄上需要顯示的裝置，拖曳手柄調整輪換順序；也可聚焦手柄後按 Alt＋上下鍵。並列時可在欄上獨立拖曳。</value></data>
   <data name="Battery.MoveUp" xml:space="preserve"><value>上移</value></data>
   <data name="Battery.MoveDown" xml:space="preserve"><value>下移</value></data>
+  <data name="Battery.Devices" xml:space="preserve"><value>全部裝置</value></data>
+  <data name="Battery.CycleInterval" xml:space="preserve"><value>輪換時間</value></data>
+  <data name="Battery.FillColor" xml:space="preserve"><value>電量填充色</value></data>
+  <data name="Battery.FollowAccent" xml:space="preserve"><value>跟隨強調色</value></data>
+  <data name="Battery.Reminders" xml:space="preserve"><value>電量提醒</value></data>
+  <data name="Battery.RemindersHint" xml:space="preserve"><value>僅提醒主裝置；連線時與低電量可同時啟用。</value></data>
+  <data name="Battery.NotifyConnected" xml:space="preserve"><value>連線時</value></data>
+  <data name="Battery.NotifyLow" xml:space="preserve"><value>低電量</value></data>
+  <data name="Battery.ConnectionTitle" xml:space="preserve"><value>裝置已連線</value></data>
+  <data name="Battery.ConnectionBody" xml:space="preserve"><value>{0} 已連線 · {1}</value></data>
+  <data name="Battery.PreviewDevice" xml:space="preserve"><value>範例無線耳機</value></data>
+  <data name="Developer.Action.BatteryLow" xml:space="preserve"><value>低電量提醒</value></data>
+  <data name="Developer.Description.BatteryLow" xml:space="preserve"><value>使用範例裝置預覽低電量通知，不變更提醒狀態。</value></data>
+  <data name="Developer.Action.BatteryConnected" xml:space="preserve"><value>裝置連線通知</value></data>
+  <data name="Developer.Description.BatteryConnected" xml:space="preserve"><value>使用範例裝置預覽連線通知，不讀取實際裝置。</value></data>
 </root>
