@@ -181,10 +181,18 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     public IRelayCommand<PerformanceMetricSettingItem> MoveMetricDownCommand { get; }
 
     public IReadOnlyList<PerformanceMetricSettingItem> MetricOrderEntries => _metricOrderEntries;
+    private bool UsesParallelMetricLayout => PerformanceMode == PerformanceDisplayMode.Parallel;
+    public string MetricListTitle => Translations.Get(UsesParallelMetricLayout ? "ComponentLayout.Parallel" : "ComponentLayout.Cycle");
+    public string MetricListDescription => Translations.Get(UsesParallelMetricLayout ? "ComponentLayout.ParallelDescription" : "ComponentLayout.CycleDescription");
+
+    private IReadOnlyList<MetricKind> CurrentMetricOrder() => UsesParallelMetricLayout
+        ? ComponentLayoutPolicy.Resolve(_configuration.Current, BarLayoutState.Resident)
+            .Where(entry => ComponentLayoutPolicy.IsMetric(entry.Component)).Select(entry => ComponentLayoutPolicy.Metric(entry.Component)).ToArray()
+        : _configuration.Current.PerformanceComponent.Normalize().GetMetricOrder();
 
     private void RefreshMetricEntries()
     {
-        var order = _configuration.Current.PerformanceComponent.Normalize().GetMetricOrder();
+        var order = CurrentMetricOrder();
         var existing = _metricOrderEntries.ToDictionary(item => item.Metric);
         var updated = order.Select(metric => existing.TryGetValue(metric, out var item)
             ? item : new PerformanceMetricSettingItem(metric, this)).ToArray();
@@ -209,6 +217,17 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     {
         if (_disposed || !_configuration.IsActive || request is null ||
             !request.TryResolve(MetricOrderEntries, entry => entry.Metric, out var index, out var target)) return;
+        if (UsesParallelMetricLayout)
+        {
+            // 按实际组件的位置移动，复用媒体栏拖动策略，保留其余组件和无媒体布局。
+            var components = ComponentLayoutPolicy.Resolve(_configuration.Current, BarLayoutState.Resident).Select(entry => entry.Component).ToArray();
+            var component = ComponentLayoutPolicy.Component(MetricOrderEntries[index].Metric);
+            var destination = ComponentLayoutPolicy.Component(MetricOrderEntries[target].Metric);
+            if (ComponentLayoutPolicy.TryMove(_configuration.Current, BarLayoutState.Resident, component,
+                Array.IndexOf(components, destination), components, out var updated))
+                _configuration.SetTaskbarExperience(updated);
+            return;
+        }
         var settings = _configuration.Current.PerformanceComponent.Normalize();
         var order = settings.GetMetricOrder().ToList();
         var metric = order[index];
@@ -219,11 +238,7 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     }
 
     /// <summary>
-    /// 该指标当前能否取消勾选。性能组件至少需要一个指标，因此最后一个勾选项的复选框必须禁用；
-    /// 原实现只是静默忽略取消操作、复选框却照常可点，用户会以为界面失灵。
-    /// Whether a metric may currently be unchecked. The performance component needs at least one metric, so the
-    /// last checked box must be disabled; the previous behaviour silently ignored the click while leaving the
-    /// box enabled, which read as a broken control.
+    /// 轮换至少保留一个参与指标；并排组件可全部隐藏。
     /// </summary>
     public bool CanUncheckSystemMemory => CanUncheck(MetricKind.SystemMemory);
 
@@ -271,14 +286,24 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
 
     public bool CanConfigurePerformance => !_disposed && _configuration.IsActive;
 
-    internal bool HasMetric(MetricKind metric) => _configuration.Current.PerformanceComponent.Metrics!.Contains(metric);
+    internal bool HasMetric(MetricKind metric) => UsesParallelMetricLayout
+        ? ComponentLayoutPolicy.Resolve(_configuration.Current, BarLayoutState.Resident)
+            .Any(entry => entry.Component == ComponentLayoutPolicy.Component(metric) && entry.IsVisible)
+        : _configuration.Current.PerformanceComponent.Metrics!.Contains(metric);
 
     internal bool CanUncheck(MetricKind metric) =>
-        !HasMetric(metric) || _configuration.Current.PerformanceComponent.Metrics!.Count > 1;
+        UsesParallelMetricLayout || !HasMetric(metric) || _configuration.Current.PerformanceComponent.Metrics!.Count > 1;
 
     internal void SetMetric(MetricKind metric, bool enabled)
     {
         if (_disposed || !_configuration.IsActive) return;
+        if (UsesParallelMetricLayout)
+        {
+            _configuration.SetTaskbarExperience(ComponentLayoutPolicy.SetVisible(_configuration.Current, BarLayoutState.Resident,
+                ComponentLayoutPolicy.Component(metric), enabled));
+            RaiseMetricProperties();
+            return;
+        }
         var metrics = _configuration.Current.PerformanceComponent.Metrics!.ToList();
         var order = _configuration.Current.PerformanceComponent.GetMetricOrder();
         if (enabled && !metrics.Contains(metric)) metrics.Add(metric);
@@ -307,7 +332,7 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args) => DispatcherHelper.Run(_dispatcher, () =>
     {
         if (_disposed || !_configuration.IsActive) return;
-        if (args.PropertyName is null or nameof(AppSettings.PerformanceComponent)) RefreshMetricEntries();
+        if (args.PropertyName is null or nameof(AppSettings.PerformanceComponent) or nameof(AppSettings.TaskbarExperience)) RefreshMetricEntries();
         if (args.PropertyName is null or nameof(AppSettings.SpectrumComponent) or nameof(AppSettings.AudioDevices)) RefreshCaptureDeviceOptions();
         if (args.PropertyName == nameof(AppSettings.AudioDevices)) QueueCaptureDeviceRefresh();
         OnPropertyChanged(string.Empty);

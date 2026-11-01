@@ -50,9 +50,9 @@
             </components:SettingsGroup>
             <components:SettingsGroup GroupId="Widgets.Performance" Header="{DynamicResource Loc.Integration.Performance.Bar}">
                 <StackPanel>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="True" Header="{DynamicResource Loc.ComponentLayout.Cycle}" Icon="{ui:SymbolIcon Gauge24}">
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="True" Header="{Binding ViewModel.Components.MetricListTitle}" Icon="{ui:SymbolIcon Gauge24}">
                         <StackPanel>
-                            <components:SettingsCallout Text="{DynamicResource Loc.ComponentLayout.CycleDescription}" Margin="0,0,0,4"/>
+                            <components:SettingsCallout Text="{Binding ViewModel.Components.MetricListDescription}" Margin="0,0,0,4"/>
                             <components:SettingsCallout Text="{DynamicResource Loc.Performance.Visual.Description}" Margin="0,0,0,4"/>
                             <AdornerDecorator>
                                 <ItemsControl x:Name="PerformanceMetricList" Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.ShowMediaBarHint="True" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Components.ReorderMetricCommand}" ItemsSource="{Binding ViewModel.Components.MetricOrderEntries}" IsEnabled="{Binding ViewModel.Components.CanConfigurePerformance}">

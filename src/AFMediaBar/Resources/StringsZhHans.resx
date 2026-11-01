@@ -3655,10 +3655,10 @@
 <data name="ComponentLayout.Move" xml:space="preserve"><value>拖动此处移动媒体栏</value></data>
 <data name="ComponentLayout.Locked" xml:space="preserve"><value>位置已锁定</value></data>
 <data name="ComponentLayout.Cycle" xml:space="preserve"><value>轮换指标与顺序</value></data>
-  <data name="ComponentLayout.CycleDescription" xml:space="preserve"><value>仅控制轮换参与项及顺序；并排组件的显隐和顺序在“常驻状态”调整。图表样式适用于对应指标。</value></data>
+  <data name="ComponentLayout.CycleDescription" xml:space="preserve"><value>只控制轮换时参与的指标及顺序；切换到并排显示后，可调整常驻组件的显隐和顺序。</value></data>
 <data name="Settings.RestState.Details" xml:space="preserve"><value>封面与进度</value></data>
   <data name="Integration.Performance.Sampling" xml:space="preserve"><value>采样与行为</value></data>
-  <data name="Integration.Performance.Bar" xml:space="preserve"><value>媒体栏样式与轮换</value></data>
+  <data name="Integration.Performance.Bar" xml:space="preserve"><value>媒体栏指标与样式</value></data>
   <data name="Integration.Performance.Panel" xml:space="preserve"><value>完整面板样式</value></data>
   <data name="Integration.Panel.Scale" xml:space="preserve"><value>面板缩放</value></data>
   <data name="Integration.Panel.Scale.Description" xml:space="preserve"><value>同步缩放窗口与内容，范围为 75%–200%；靠近媒体栏的一侧保持贴合。</value></data>
@@ -3862,4 +3862,6 @@
     <value>刚刚已刷新，稍后再试</value>
   </data>
   <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>拖动调整顺序；也可在实际媒体栏上用鼠标拖动组件。</value></data>
+  <data name="ComponentLayout.Parallel" xml:space="preserve"><value>并排指标与顺序</value></data>
+  <data name="ComponentLayout.ParallelDescription" xml:space="preserve"><value>与“常驻状态”的常驻显示共用显隐和顺序；无媒体显示请到该页单独调整。</value></data>
 </root>

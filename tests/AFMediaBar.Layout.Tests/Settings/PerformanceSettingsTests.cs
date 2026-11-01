@@ -100,6 +100,86 @@ public sealed class PerformanceSettingsTests
     }
 
     [TestMethod]
+    public void ParallelEditorSharesResidentVisibilityAndOrderWithoutChangingCycleOrIdle()
+    {
+        StaTest.Run(_ =>
+        {
+            var previous = SettingsManager.Current.Clone();
+            using var page = new SettingsPageContext();
+            page.Initialize(SettingsContext.Initial);
+            using var localization = new LocalizationService();
+            try
+            {
+                var settings = new AppSettings();
+                settings.PerformanceComponent = settings.PerformanceComponent with
+                {
+                    DisplayMode = PerformanceDisplayMode.Parallel,
+                    Metrics = [MetricKind.SystemMemory],
+                    MetricOrder = [MetricKind.SystemMemory, MetricKind.SystemCpu, MetricKind.SystemGpu]
+                };
+                settings.TaskbarExperience = settings.TaskbarExperience with { ComponentLayouts = new()
+                {
+                    Resident = [new(TaskbarRestComponent.Artwork, true), new(TaskbarRestComponent.MediaText, true),
+                        new(TaskbarRestComponent.SystemGpu, true), new(TaskbarRestComponent.Spectrum, true),
+                        new(TaskbarRestComponent.SystemCpu, false), new(TaskbarRestComponent.SystemMemory, false)],
+                    Idle = [new(TaskbarRestComponent.Artwork, true), new(TaskbarRestComponent.SystemNetwork, true)]
+                } };
+                SettingsManager.Current = settings;
+                settings = SettingsManager.Current;
+                var cycleOrder = settings.PerformanceComponent.GetMetricOrder().ToArray();
+                var idle = ComponentLayoutPolicy.ResolveAll(settings, BarLayoutState.Idle).ToArray();
+                var otherComponents = ComponentLayoutPolicy.ResolveAll(settings, BarLayoutState.Resident)
+                    .Where(entry => !ComponentLayoutPolicy.IsMetric(entry.Component)).ToArray();
+                var configuration = new LegacySettingsConfiguration(page);
+                using var model = new ComponentsSettingsViewModel(configuration, localization);
+                var gpu = model.MetricOrderEntries.Single(item => item.Metric == MetricKind.SystemGpu);
+                var cpu = model.MetricOrderEntries.Single(item => item.Metric == MetricKind.SystemCpu);
+                Assert.AreSame(gpu, model.MetricOrderEntries[0]);
+                Assert.IsTrue(gpu.IsSelected);
+                Assert.IsFalse(model.ShowSystemMemory);
+                Assert.IsTrue(gpu.CanToggle, "并排组件允许全部隐藏。");
+
+                gpu.IsSelected = false;
+                Assert.IsFalse(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident)
+                    .Any(entry => ComponentLayoutPolicy.IsMetric(entry.Component) && entry.IsVisible));
+                cpu.IsSelected = true;
+                Assert.IsTrue(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident)
+                    .Single(entry => entry.Component == TaskbarRestComponent.SystemCpu).IsVisible);
+                configuration.SetTaskbarExperience(ComponentLayoutPolicy.SetVisible(settings, BarLayoutState.Resident, TaskbarRestComponent.SystemGpu, true));
+                Assert.IsTrue(gpu.IsSelected, "常驻页或实际媒体栏的修改必须同步回性能页。");
+
+                model.ReorderMetricCommand.Execute(new SettingsReorderRequest(cpu, 0, model.MetricOrderEntries));
+                Assert.AreSame(cpu, model.MetricOrderEntries[0]);
+                Assert.AreEqual(TaskbarRestComponent.SystemCpu, ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident)
+                    .First(entry => ComponentLayoutPolicy.IsMetric(entry.Component)).Component);
+                var components = ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident).Select(entry => entry.Component).ToArray();
+                Assert.IsTrue(ComponentLayoutPolicy.TryMove(settings, BarLayoutState.Resident, TaskbarRestComponent.SystemGpu,
+                    Array.IndexOf(components, TaskbarRestComponent.SystemCpu), components, out var moved));
+                configuration.SetTaskbarExperience(moved);
+                Assert.AreSame(gpu, model.MetricOrderEntries[0]);
+                CollectionAssert.AreEqual(otherComponents, ComponentLayoutPolicy.ResolveAll(settings, BarLayoutState.Resident)
+                    .Where(entry => !ComponentLayoutPolicy.IsMetric(entry.Component)).ToArray());
+                CollectionAssert.AreEqual(idle, ComponentLayoutPolicy.ResolveAll(settings, BarLayoutState.Idle).ToArray());
+                CollectionAssert.AreEqual(new[] { MetricKind.SystemMemory }, settings.PerformanceComponent.Metrics!.ToArray());
+                CollectionAssert.AreEqual(cycleOrder, settings.PerformanceComponent.GetMetricOrder().ToArray());
+
+                model.PerformanceMode = PerformanceDisplayMode.Cycle;
+                Assert.IsTrue(model.ShowSystemMemory);
+                Assert.IsFalse(model.ShowSystemGpu);
+                CollectionAssert.AreEqual(cycleOrder, model.MetricOrderEntries.Select(item => item.Metric).ToArray());
+                model.PerformanceMode = PerformanceDisplayMode.Parallel;
+                Assert.AreSame(gpu, model.MetricOrderEntries[0]);
+                Assert.IsTrue(cpu.IsSelected);
+                page.Deactivate();
+                cpu.IsSelected = false;
+                Assert.IsTrue(cpu.IsSelected);
+            }
+            finally { SettingsManager.Current = previous; }
+            return Task.CompletedTask;
+        });
+    }
+
+    [TestMethod]
     public void DisabledMetricCanBeOrderedAndStyledWithoutReplacingRows()
     {
         StaTest.Run(_ =>

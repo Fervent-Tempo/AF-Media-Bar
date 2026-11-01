@@ -3655,10 +3655,10 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
 <data name="ComponentLayout.Move" xml:space="preserve"><value>Drag here to move the media bar</value></data>
 <data name="ComponentLayout.Locked" xml:space="preserve"><value>Position is locked</value></data>
 <data name="ComponentLayout.Cycle" xml:space="preserve"><value>Cycle metrics and order</value></data>
-  <data name="ComponentLayout.CycleDescription" xml:space="preserve"><value>Choose cycling metrics and their order. Configure parallel visibility and order in At rest. Styles apply to the corresponding metric.</value></data>
+  <data name="ComponentLayout.CycleDescription" xml:space="preserve"><value>Choose the metrics and order used while cycling. Switch to parallel display to adjust visibility and order in the resident layout.</value></data>
 <data name="Settings.RestState.Details" xml:space="preserve"><value>Artwork and progress</value></data>
   <data name="Integration.Performance.Sampling" xml:space="preserve"><value>Sampling and behavior</value></data>
-  <data name="Integration.Performance.Bar" xml:space="preserve"><value>Bar styles and cycling</value></data>
+  <data name="Integration.Performance.Bar" xml:space="preserve"><value>Media bar metrics and styles</value></data>
   <data name="Integration.Performance.Panel" xml:space="preserve"><value>Full panel styles</value></data>
   <data name="Integration.Panel.Scale" xml:space="preserve"><value>Panel scale</value></data>
   <data name="Integration.Panel.Scale.Description" xml:space="preserve"><value>Scale the window and content together, from 75% to 200%. The edge next to the bar stays attached.</value></data>
@@ -3862,4 +3862,6 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
     <value>Refreshed recently, try again later</value>
   </data>
   <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>Drag to reorder. You can also drag components directly on the media bar.</value></data>
+  <data name="ComponentLayout.Parallel" xml:space="preserve"><value>Parallel metrics and order</value></data>
+  <data name="ComponentLayout.ParallelDescription" xml:space="preserve"><value>Shares visibility and order with the resident layout in At rest. Configure the no-media layout separately on that page.</value></data>
 </root>

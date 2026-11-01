@@ -3692,10 +3692,10 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
 <data name="ComponentLayout.Move" xml:space="preserve"><value>Kéo tại đây để di chuyển thanh</value></data>
 <data name="ComponentLayout.Locked" xml:space="preserve"><value>Vị trí đã khóa</value></data>
 <data name="ComponentLayout.Cycle" xml:space="preserve"><value>Chỉ số luân phiên và thứ tự</value></data>
-  <data name="ComponentLayout.CycleDescription" xml:space="preserve"><value>Chọn chỉ số luân phiên và thứ tự. Chỉnh hiển thị và thứ tự chỉ số song song trong Thường trực. Kiểu áp dụng cho chỉ số tương ứng.</value></data>
+  <data name="ComponentLayout.CycleDescription" xml:space="preserve"><value>Chọn chỉ số và thứ tự khi luân phiên. Chuyển sang hiển thị song song để chỉnh hiển thị và thứ tự trong bố cục thường trực.</value></data>
 <data name="Settings.RestState.Details" xml:space="preserve"><value>Ảnh bìa và tiến độ</value></data>
   <data name="Integration.Performance.Sampling" xml:space="preserve"><value>Lấy mẫu và hành vi</value></data>
-  <data name="Integration.Performance.Bar" xml:space="preserve"><value>Kiểu thanh và luân phiên</value></data>
+  <data name="Integration.Performance.Bar" xml:space="preserve"><value>Chỉ số và kiểu thanh phương tiện</value></data>
   <data name="Integration.Performance.Panel" xml:space="preserve"><value>Kiểu bảng đầy đủ</value></data>
   <data name="Integration.Panel.Scale" xml:space="preserve"><value>Tỷ lệ bảng</value></data>
   <data name="Integration.Panel.Scale.Description" xml:space="preserve"><value>Đổi tỷ lệ cửa sổ và nội dung cùng nhau từ 75% đến 200%. Cạnh sát thanh được giữ cố định.</value></data>
@@ -3899,4 +3899,6 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
     <value>Vừa làm mới, vui lòng thử lại sau</value>
   </data>
   <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>Kéo để đổi thứ tự. Bạn cũng có thể kéo các thành phần trực tiếp trên thanh phương tiện.</value></data>
+  <data name="ComponentLayout.Parallel" xml:space="preserve"><value>Chỉ số song song và thứ tự</value></data>
+  <data name="ComponentLayout.ParallelDescription" xml:space="preserve"><value>Dùng chung hiển thị và thứ tự với bố cục thường trực trong trang Thường trực. Chỉnh bố cục khi không có phương tiện riêng trên trang đó.</value></data>
 </root>
