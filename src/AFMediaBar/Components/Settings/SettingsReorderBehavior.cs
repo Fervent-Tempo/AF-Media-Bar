@@ -20,6 +20,11 @@ namespace AFMediaBar.Components;
 /// <summary>让设置列表通过手柄预览排序，仅在有效释放或键盘调整时发出一次移动命令。</summary>
 public static class SettingsReorderBehavior
 {
+    public static readonly DependencyProperty ShowMediaBarHintProperty = DependencyProperty.RegisterAttached(
+        "ShowMediaBarHint", typeof(bool), typeof(SettingsReorderBehavior), new PropertyMetadata(false));
+    public static bool GetShowMediaBarHint(DependencyObject element) => (bool)element.GetValue(ShowMediaBarHintProperty);
+    public static void SetShowMediaBarHint(DependencyObject element, bool value) => element.SetValue(ShowMediaBarHintProperty, value);
+
     public static readonly DependencyProperty MoveCommandProperty = DependencyProperty.RegisterAttached(
         "MoveCommand", typeof(ICommand), typeof(SettingsReorderBehavior), new PropertyMetadata(null, OnCommandChanged));
     private static readonly DependencyProperty StateProperty = DependencyProperty.RegisterAttached(

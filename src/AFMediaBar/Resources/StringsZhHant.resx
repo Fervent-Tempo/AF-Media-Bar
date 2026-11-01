@@ -3861,4 +3861,5 @@
   <data name="Home.RefreshCooldown" xml:space="preserve">
     <value>剛剛已重新整理，請稍後再試</value>
   </data>
+  <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>拖曳調整順序，或聚焦把手後按 Alt＋↑／↓；也可在實際媒體列上用滑鼠拖曳元件。</value></data>
 </root>

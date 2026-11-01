@@ -55,7 +55,7 @@
                             <components:SettingsCallout Text="{DynamicResource Loc.ComponentLayout.CycleDescription}" Margin="0,0,0,4"/>
                             <components:SettingsCallout Text="{DynamicResource Loc.Performance.Visual.Description}" Margin="0,0,0,4"/>
                             <AdornerDecorator>
-                                <ItemsControl x:Name="PerformanceMetricList" Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Components.ReorderMetricCommand}" ItemsSource="{Binding ViewModel.Components.MetricOrderEntries}" IsEnabled="{Binding ViewModel.Components.CanConfigurePerformance}">
+                                <ItemsControl x:Name="PerformanceMetricList" Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.ShowMediaBarHint="True" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Components.ReorderMetricCommand}" ItemsSource="{Binding ViewModel.Components.MetricOrderEntries}" IsEnabled="{Binding ViewModel.Components.CanConfigurePerformance}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" KeepControlInline="False" Title="{Binding DisplayName}" OptionId="{Binding SearchId}">
@@ -96,7 +96,7 @@
                         </StackPanel>
                     </ui:CardExpander>
                     <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.WidgetLayout}" Destination="RestState" GroupId="Common.RestLayer" HorizontalAlignment="Left"/>
+                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Page.RestState}" Destination="RestState" GroupId="Common.RestLayer" HorizontalAlignment="Left"/>
                     </WrapPanel>
                 </StackPanel>
             </components:SettingsGroup>

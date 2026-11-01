@@ -3898,4 +3898,5 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Home.RefreshCooldown" xml:space="preserve">
     <value>Vừa làm mới, vui lòng thử lại sau</value>
   </data>
+  <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>Kéo để đổi thứ tự, hoặc chọn tay nắm rồi nhấn Alt+Lên/Xuống. Bạn cũng có thể kéo các thành phần trực tiếp trên thanh phương tiện.</value></data>
 </root>

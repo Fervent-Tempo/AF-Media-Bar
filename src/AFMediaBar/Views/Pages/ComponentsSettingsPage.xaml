@@ -21,7 +21,7 @@
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.HoverLayerEnabled, Mode=TwoWay}"/>
                     </components:SettingsRow>
                     <AdornerDecorator>
-                        <ItemsControl ItemsSource="{Binding ViewModel.Layers.HoverLayoutEntries}" Style="{StaticResource AfSettingsSortableListStyle}" ItemTemplate="{StaticResource AfSettingsComponentRowTemplate}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layers.ReorderLayoutCommand}"/>
+                        <ItemsControl ItemsSource="{Binding ViewModel.Layers.HoverLayoutEntries}" Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.ShowMediaBarHint="True" ItemTemplate="{StaticResource AfSettingsComponentRowTemplate}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layers.ReorderLayoutCommand}"/>
                     </AdornerDecorator>
                     <components:SettingsRow Title="{DynamicResource Loc.DisplayModes.Hover.Row.Alignment.Title}" Description="{DynamicResource Loc.DisplayModes.Hover.Row.Alignment.Description}" Icon="{ui:SymbolIcon ArrowMove24}" OptionId="hover:alignment">
                         <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedIndex="{Binding ViewModel.Layers.TaskbarHoverAlignmentIndex, Mode=TwoWay}">
@@ -46,7 +46,7 @@
                         <components:SettingsNumericEditor Value="{Binding ViewModel.Layout.HoverButtonSpacingDip, Mode=TwoWay}" Minimum="0" Maximum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MaximumHoverButtonSpacingDip}}" Step="1" Unit="{DynamicResource Loc.Settings.Numeric.Dip}"/>
                     </components:SettingsRow>
                     <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestInteraction}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer"/>
+                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Page.InteractionAndHotkeys}" Destination="Interaction" GroupId="Common.Group.InAppRestLayer"/>
                     </WrapPanel>
                 </StackPanel>
             </components:SettingsGroup>

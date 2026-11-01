@@ -18,7 +18,7 @@
             <components:SettingsGroup GroupId="Common.RestLayer" Header="{DynamicResource Loc.ComponentLayout.Resident}">
                 <StackPanel>
                     <AdornerDecorator>
-                        <ItemsControl ItemsSource="{Binding ViewModel.Layers.ResidentLayoutEntries}" Style="{StaticResource AfSettingsSortableListStyle}" ItemTemplate="{StaticResource AfSettingsComponentRowTemplate}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layers.ReorderLayoutCommand}"/>
+                        <ItemsControl ItemsSource="{Binding ViewModel.Layers.ResidentLayoutEntries}" Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.ShowMediaBarHint="True" ItemTemplate="{StaticResource AfSettingsComponentRowTemplate}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layers.ReorderLayoutCommand}"/>
                     </AdornerDecorator>
                 </StackPanel>
             </components:SettingsGroup>
@@ -39,7 +39,7 @@
                 <StackPanel>
                     <components:SettingsCallout Text="{DynamicResource Loc.Settings.RestState.IdleDescription}"/>
                     <AdornerDecorator>
-                        <ItemsControl ItemsSource="{Binding ViewModel.Layers.IdleLayoutEntries}" Style="{StaticResource AfSettingsSortableListStyle}" ItemTemplate="{StaticResource AfSettingsComponentRowTemplate}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layers.ReorderLayoutCommand}"/>
+                        <ItemsControl ItemsSource="{Binding ViewModel.Layers.IdleLayoutEntries}" Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.ShowMediaBarHint="True" ItemTemplate="{StaticResource AfSettingsComponentRowTemplate}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layers.ReorderLayoutCommand}"/>
                     </AdornerDecorator>
                 </StackPanel>
             </components:SettingsGroup>

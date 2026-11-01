@@ -123,7 +123,7 @@
                         </StackPanel>
                     </ui:CardExpander>
                     <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.WidgetLayout}" Destination="Components" GroupId="Common.Group.ComponentOrder"/>
+                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Page.RestState}" Destination="Components" GroupId="Common.Group.ComponentOrder"/>
                         <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.Experiments}" Destination="Experimental" GroupId="Memory.Title"/>
                     </WrapPanel>
                 </StackPanel>

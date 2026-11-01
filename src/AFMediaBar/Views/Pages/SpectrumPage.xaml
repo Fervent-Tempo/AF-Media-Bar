@@ -30,7 +30,6 @@
         <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded">
             <components:SettingsGroup GroupId="Widgets.Spectrum" Header="{DynamicResource Loc.Widgets.Spectrum}" Description="{DynamicResource Loc.Widgets.Spectrum.Description}" Icon="{ui:SymbolIcon DataHistogram24}">
                 <StackPanel>
-                    <components:SettingsNavigationButton Destination="RestState" GroupId="Common.RestLayer" Content="{DynamicResource Loc.Settings.RestState.VisibilityLink}" HorizontalAlignment="Left" Margin="0,0,0,12"/>
                     <TextBlock Text="{DynamicResource Loc.Settings.Group.Capture}" Style="{StaticResource AfSettingsSubsectionTitleStyle}"/>
                     <components:SettingsRow Description="{DynamicResource Loc.Media.Spectrum.CaptureSource.Description}" Icon="{ui:SymbolIcon Speaker224}" Style="{StaticResource SpectrumParameterRowStyle}" Title="{DynamicResource Loc.Media.Spectrum.CaptureSource.Title}">
                         <ComboBox MinWidth="{StaticResource AfSettingsSelectShortWidth}" SelectedValue="{Binding ViewModel.Components.SpectrumCaptureSource, Mode=TwoWay}" SelectedValuePath="Tag">
@@ -65,6 +64,9 @@
                     <components:SettingsRow Description="{DynamicResource Loc.Media.Spectrum.Sensitivity.Description}" Icon="{ui:SymbolIcon TopSpeed24}" Style="{StaticResource SpectrumParameterRowStyle}" Title="{DynamicResource Loc.Media.Spectrum.Sensitivity.Title}">
                         <components:SettingsNumericEditor Value="{Binding ViewModel.Components.SpectrumSensitivityPercent, Mode=TwoWay}" Minimum="{Binding ViewModel.Components.MinimumSpectrumSensitivityPercent}" Maximum="{Binding ViewModel.Components.MaximumSpectrumSensitivityPercent}" Step="{Binding ViewModel.Components.SpectrumSensitivityStepPercent}" Unit="{DynamicResource Loc.Settings.Numeric.Percent}"/>
                     </components:SettingsRow>
+                    <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                        <components:SettingsNavigationButton Destination="RestState" GroupId="Common.RestLayer" Content="{DynamicResource Loc.Common.Page.RestState}"/>
+                    </WrapPanel>
                 </StackPanel>
             </components:SettingsGroup>
 

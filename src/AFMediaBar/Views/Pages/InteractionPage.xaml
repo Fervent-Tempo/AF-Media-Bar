@@ -36,7 +36,7 @@
                         </ComboBox>
                     </components:SettingsRow>
                     <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestContent}" Destination="Components" GroupId="Common.RestLayer"/>
+                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Page.RestState}" Destination="Components" GroupId="Common.RestLayer"/>
                     </WrapPanel>
                 </StackPanel>
             </components:SettingsGroup>
@@ -132,7 +132,7 @@
                         </ComboBox>
                     </components:SettingsRow>
                     <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.DeviceOrder}" Destination="DeviceManagement" GroupId="Common.OutputDevice" HorizontalAlignment="Left"/>
+                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Page.AudioDevices}" Destination="DeviceManagement" GroupId="Common.OutputDevice" HorizontalAlignment="Left"/>
                     </WrapPanel>
                 </StackPanel>
             </components:SettingsGroup>
@@ -147,7 +147,7 @@
                         </components:SettingsRow>
                     </StackPanel>
                     <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.DeviceOrder}" Destination="DeviceManagement" GroupId="Common.OutputDevice" HorizontalAlignment="Left"/>
+                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Page.AudioDevices}" Destination="DeviceManagement" GroupId="Common.OutputDevice" HorizontalAlignment="Left"/>
                     </WrapPanel>
                 </StackPanel>
             </components:SettingsGroup>

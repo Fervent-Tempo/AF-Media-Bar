@@ -3861,4 +3861,5 @@
   <data name="Home.RefreshCooldown" xml:space="preserve">
     <value>刚刚已刷新，稍后再试</value>
   </data>
+  <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>拖动调整顺序，或聚焦手柄后按 Alt＋↑／↓；也可在实际媒体栏上用鼠标拖动组件。</value></data>
 </root>

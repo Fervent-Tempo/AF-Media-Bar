@@ -123,7 +123,7 @@
                         </StackPanel>
                     </Border>
                     <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.RestContent}" Destination="Components" GroupId="Common.RestLayer"/>
+                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Page.RestState}" Destination="Components" GroupId="Common.RestLayer"/>
                     </WrapPanel>
                 </StackPanel>
             </components:SettingsGroup>

@@ -50,7 +50,6 @@
                         <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Battery.ListRefresh}" Command="{Binding RefreshDevicesListCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
                         <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Battery.Clear}" Command="{Binding ClearSelectionCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
                     </WrapPanel>
-                    <components:SettingsNavigationButton Destination="RestState" GroupId="Common.RestLayer" Content="{DynamicResource Loc.Settings.RestState.VisibilityLink}" HorizontalAlignment="Left" Margin="0,0,0,12"/>
                     <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.DisplayMode}">
                         <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding DisplayMode, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}">
                             <ComboBoxItem Content="{DynamicResource Loc.Battery.WhenConnected}" Tag="{x:Static settings:BluetoothBatteryDisplayMode.WhenConnected}"/>
@@ -67,6 +66,9 @@
                     <components:SettingsRow Icon="{ui:SymbolIcon Bluetooth24}" Title="{DynamicResource Loc.Battery.RefreshHint}">
                         <ui:Button Content="{DynamicResource Loc.Battery.Refresh}" Command="{Binding RefreshCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
                     </components:SettingsRow>
+                    <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                        <components:SettingsNavigationButton Destination="RestState" GroupId="Common.RestLayer" Content="{DynamicResource Loc.Common.Page.RestState}"/>
+                    </WrapPanel>
                 </StackPanel>
             </components:SettingsGroup>
 

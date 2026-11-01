@@ -3861,4 +3861,5 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
   <data name="Home.RefreshCooldown" xml:space="preserve">
     <value>Refreshed recently, try again later</value>
   </data>
+  <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>Drag to reorder, or focus the handle and press Alt+Up/Down. You can also drag components directly on the media bar.</value></data>
 </root>

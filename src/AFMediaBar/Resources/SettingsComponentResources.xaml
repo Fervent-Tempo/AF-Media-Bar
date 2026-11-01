@@ -332,7 +332,18 @@
                                 <DockPanel>
                                     <ui:SymbolIcon Symbol="ArrowSort24" FontSize="16" Margin="0,0,8,0"
                                         VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    <TextBlock Text="{DynamicResource Loc.Settings.Reorder.Help}" Style="{StaticResource AfSettingsHintTextStyle}" />
+                                    <TextBlock>
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource AfSettingsHintTextStyle}">
+                                                <Setter Property="Text" Value="{DynamicResource Loc.Settings.Reorder.Help}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding (components:SettingsReorderBehavior.ShowMediaBarHint), RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                                                        <Setter Property="Text" Value="{DynamicResource Loc.Settings.Reorder.MediaBarHelp}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </DockPanel>
                             </Border>
                             <ItemsPresenter Margin="4" />
@@ -730,13 +741,16 @@
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
                                         <Border x:Name="LinkSurface" Background="Transparent" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="4">
-                                            <TextBlock Text="{TemplateBinding Content}" FontSize="{TemplateBinding FontSize}"
+                                            <TextBlock x:Name="ParentText" Text="{TemplateBinding Content}" FontSize="{TemplateBinding FontSize}"
                                                        FontWeight="{TemplateBinding FontWeight}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center"/>
                                         </Border>
                                         <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/></Trigger>
+                                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ParentText" Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/></Trigger>
                                             <Trigger Property="IsPressed" Value="True"><Setter Property="Opacity" Value="0.65"/></Trigger>
-                                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="LinkSurface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}"/></Trigger>
+                                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                                <Setter TargetName="LinkSurface" Property="BorderBrush" Value="{DynamicResource AfAccentBrush}"/>
+                                                <Setter TargetName="ParentText" Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                            </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
                                 </Button.Template>
@@ -976,12 +990,12 @@
     <!-- 页面间跳转统一使用文字与方向箭头，保留原生键盘焦点和主题资源。 -->
     <Style x:Key="AfSettingsNavigationButtonStyle" TargetType="{x:Type components:SettingsNavigationButton}" BasedOn="{StaticResource AfSettingsButtonStyle}">
     <Setter Property="Margin" Value="{StaticResource AfSettingsActionGap}"/>
-    <Setter Property="Padding" Value="8,6"/>
-    <Setter Property="MinHeight" Value="32"/>
+    <Setter Property="Padding" Value="12,8"/>
+    <Setter Property="MinHeight" Value="36"/>
     <Setter Property="HorizontalAlignment" Value="Left"/>
-    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Background" Value="{DynamicResource AfSettingsInputBrush}"/>
     <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-    <Setter Property="BorderBrush" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource AfSettingsBorderBrush}"/>
     <Setter Property="BorderThickness" Value="1"/>
     <Setter Property="Template">
         <Setter.Value>

@@ -149,7 +149,7 @@
                         <TextBlock Style="{StaticResource AfSettingsHintTextStyle}" Text="{DynamicResource Loc.Appearance.Preview.Hint}"/>
                     </Border>
                     <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextLayout}" Destination="Components" GroupId="Appearance.Group.RestLayout"/>
+                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Group.MediaBarText}" Destination="Components" GroupId="Appearance.Group.RestLayout"/>
                         <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.LyricsPresentation}" Destination="Lyrics" GroupId="Lyrics.Group.Presentation"/>
                     </WrapPanel>
                     <components:SettingsRow Description="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Description}" Icon="{ui:SymbolIcon Grid24}" Title="{DynamicResource Loc.DisplayModes.Rest.Row.Layout.Title}" Visibility="{Binding LayoutEditor.Layout.CanConfigureBarLayout, Converter={StaticResource AfBooleanToVisibilityConverter}}">
@@ -299,9 +299,8 @@
                         </StackPanel>
                     </ui:CardExpander>
                     <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextLayout}" Destination="Components" GroupId="Appearance.Group.RestLayout"/>
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.TextAppearance}" Destination="Appearance" GroupId="Common.Group.MediaBarText"/>
-                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Related.MediaBarLength}" Destination="Components" GroupId="Common.Group.MediaBarWidth"/>
+                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Common.Group.MediaBarText}" Destination="Components" GroupId="Appearance.Group.RestLayout"/>
+                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Settings.Page.BarAppearance}" Destination="Components" GroupId="Common.Group.MediaBarWidth"/>
                     </WrapPanel>
                 </StackPanel>
             </components:SettingsGroup>
