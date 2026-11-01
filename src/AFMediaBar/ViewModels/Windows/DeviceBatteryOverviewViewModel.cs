@@ -14,16 +14,17 @@ public sealed class DeviceBatteryOverviewItem(BluetoothBatterySnapshot snapshot)
     public BluetoothBatterySnapshot Snapshot { get; private set; } = snapshot;
     public string Id => Snapshot.DeviceId;
     public string Name => Snapshot.DeviceName;
-    public string Label => Snapshot.Label;
-    public string Details => Snapshot.Details;
-    public string PrimaryLabel => Id == SettingsManager.Current.BluetoothBatteryWidget.DeviceId ? Translations.Get("Battery.Primary") : string.Empty;
+    public string Label => Snapshot.Percent is { } percent ? percent + "%" : "—";
+    public string Details => Name + "\n" + Snapshot.Details + "\n" + Translations.Get(Snapshot.IsCharging switch
+        { true => "Battery.Charging", false => "Battery.Discharging", null => "Battery.ChargingUnknown" });
+    public bool IsPrimary => Id.Equals(SettingsManager.Current.BluetoothBatteryWidget.DeviceId, StringComparison.OrdinalIgnoreCase);
+    public string PrimaryLabel => IsPrimary ? Translations.Get("Battery.Primary") : string.Empty;
     public string State => Translations.Get("Battery.Transport." + Snapshot.Transport) + " · " +
-        Translations.Get(Snapshot.IsConnected ? "Battery.Connected" : "Battery.Disconnected") +
-        (Snapshot.IsConnected ? " · " + Translations.Get(Snapshot.IsCharging switch { true => "Battery.Charging", false => "Battery.Discharging", null => "Battery.ChargingUnknown" }) : string.Empty);
+        Translations.Get(Snapshot.IsConnected ? "Battery.Connected" : "Battery.Disconnected");
     internal void Update(BluetoothBatterySnapshot value) { Snapshot = value; OnPropertyChanged(string.Empty); }
 }
 
-/// <summary>面板打开时请求概览，关闭后立即交还非主设备追踪。</summary>
+/// <summary>面板打开时请求概览，关闭后立即交还额外设备追踪。</summary>
 public sealed partial class DeviceBatteryOverviewViewModel : ObservableObject, IDisposable
 {
     private readonly BluetoothBatteryService _battery;
@@ -31,12 +32,14 @@ public sealed partial class DeviceBatteryOverviewViewModel : ObservableObject, I
     private IDisposable? _lease;
     private bool _disposed;
     public event Action? OpenRequested;
+    public event Action? SettingsRequested;
+    [RelayCommand] private void OpenSettings() { if (!_disposed) SettingsRequested?.Invoke(); }
     public ObservableCollection<DeviceBatteryOverviewItem> Devices { get; } = [];
     public bool IsEnabled => !_disposed && SettingsManager.Current.Experiments.BluetoothBattery;
     public bool CanRefresh => IsEnabled && !_battery.IsRefreshing;
     public string Status => !IsEnabled ? Translations.Get("Settings.Experiment.Required") :
         _battery.LastDiscoveryFailed ? Translations.Get("Battery.ReadFailed") :
-        _battery.IsRefreshing ? Translations.Get("Battery.Loading") : Devices.Count == 0 ? Translations.Get("Battery.Empty") : Translations.Get("Battery.OverviewHint");
+        _battery.IsRefreshing ? Translations.Get("Battery.Loading") : Devices.Count == 0 ? Translations.Get("Battery.Empty") : string.Empty;
     public DeviceBatteryOverviewViewModel(BluetoothBatteryService battery, LocalizationService localization)
     {
         _battery = battery; _localization = localization;
@@ -80,7 +83,7 @@ public sealed partial class DeviceBatteryOverviewViewModel : ObservableObject, I
     public void Dispose()
     {
         if (_disposed) return;
-        _disposed = true; Deactivate(); OpenRequested = null;
+        _disposed = true; Deactivate(); OpenRequested = null; SettingsRequested = null;
         _battery.Changed -= OnChanged; _localization.LanguageChanged -= OnChanged;
         SettingsManager.SettingsChanged -= OnSettingsChanged;
     }

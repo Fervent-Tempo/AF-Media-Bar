@@ -3147,10 +3147,10 @@
   <data name="Device.Offline" xml:space="preserve"><value>暂不可用</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>设备切换快捷键</value></data>
   <data name="Device.Cycle.Hint" xml:space="preserve"><value>仅切换系统默认设备，按设备管理中已启用设备的顺序循环，跳过离线设备。输入和输出各使用一个组合键。</value></data>
-  <data name="Battery.SelectHint" xml:space="preserve"><value>选择任务栏主设备。多设备面板打开时查询全部受支持设备，关闭后仅追踪主设备；未提供的数据显示未知。</value></data>
-  <data name="Battery.Select" xml:space="preserve"><value>任务栏主设备</value></data>
+  <data name="Battery.SelectHint" xml:space="preserve"><value>勾选栏上显示的设备。主设备用于低电量提醒，其他设备按显示需要追踪。</value></data>
+  <data name="Battery.Select" xml:space="preserve"><value>提醒主设备</value></data>
   <data name="Battery.ListRefresh" xml:space="preserve"><value>刷新设备列表</value></data>
-  <data name="Battery.Clear" xml:space="preserve"><value>清除选择</value></data>
+  <data name="Battery.Clear" xml:space="preserve"><value>清除主设备</value></data>
   <data name="Battery.WidgetEnabled" xml:space="preserve"><value>显示电量组件</value></data>
   <data name="Battery.DisplayMode" xml:space="preserve"><value>自动显示方式</value></data>
   <data name="Battery.WhenConnected" xml:space="preserve"><value>所选设备连接时显示</value></data>
@@ -3161,7 +3161,7 @@
   <data name="Battery.Open" xml:space="preserve"><value>配置设备电量</value></data>
   <data name="Battery.Refresh" xml:space="preserve"><value>刷新电量</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>读取最多每分钟一次；连接变化会更新状态，失败时退避。</value></data>
-  <data name="Battery.WidgetHint" xml:space="preserve"><value>在设备电量设置中选择主设备，并在保留组件中启用设备电量。</value></data>
+  <data name="Battery.WidgetHint" xml:space="preserve"><value>在设备电量设置中勾选设备，并在保留组件中启用设备电量。</value></data>
   <data name="Memory.System.CacheReadings" xml:space="preserve"><value>系统缓存（含待机页）：{0} → {1}</value></data>
   <data name="Memory.System.Change" xml:space="preserve"><value>可用内存变化：{0} MB</value></data>
   <data name="Memory.System.Elapsed" xml:space="preserve"><value>执行耗时：{0} ms</value></data>
@@ -3874,5 +3874,14 @@
   <data name="Battery.Transport.Receiver" xml:space="preserve"><value>USB 接收器</value></data>
   <data name="Battery.Loading" xml:space="preserve"><value>正在刷新设备电量…</value></data>
   <data name="Battery.Empty" xml:space="preserve"><value>未发现受支持设备。请连接或唤醒设备后刷新。</value></data>
-  <data name="Battery.OverviewHint" xml:space="preserve"><value>点击设备设为主设备；关闭面板后仅持续追踪主设备。</value></data>
+  <data name="Battery.OverviewHint" xml:space="preserve"><value>点击设备设为提醒主设备；显示设备在设置中勾选。</value></data>
+  <data name="Battery.VisualStyle" xml:space="preserve"><value>显示样式</value></data>
+  <data name="Battery.Numeric" xml:space="preserve"><value>数值</value></data>
+  <data name="Battery.Graphic" xml:space="preserve"><value>设备图形</value></data>
+  <data name="Battery.PresentationMode" xml:space="preserve"><value>多设备排列</value></data>
+  <data name="Battery.Cycle" xml:space="preserve"><value>轮换（5 秒）</value></data>
+  <data name="Battery.Parallel" xml:space="preserve"><value>并列</value></data>
+  <data name="Battery.SelectionHint" xml:space="preserve"><value>勾选栏上显示的设备，上下调整轮换顺序。并列时可在栏上独立拖动。</value></data>
+  <data name="Battery.MoveUp" xml:space="preserve"><value>上移</value></data>
+  <data name="Battery.MoveDown" xml:space="preserve"><value>下移</value></data>
 </root>

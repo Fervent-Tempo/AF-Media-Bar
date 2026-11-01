@@ -10,6 +10,11 @@ public partial class MainWindow
     private TaskbarCompactFlyoutWindow? _batteryFlyout;
     private IDisposable? _batteryEdgeLease;
     private int _batteryOpenVersion;
+    private void OpenBatterySettings()
+    {
+        CloseBatteryOverview();
+        _settingsHost.RequestOpen(window => window.NavigateToGroup(AFMediaBar.Classes.Services.SettingsPageKey.BluetoothBattery, "Battery.Title"));
+    }
     private void OpenBatteryOverviewFromSettings()
     {
         if (!GetCursorPos(out var point)) return;

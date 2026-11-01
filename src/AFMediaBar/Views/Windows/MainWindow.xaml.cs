@@ -143,6 +143,7 @@ namespace AFMediaBar.Views.Windows
             _settingsHost = settingsWindowHost;
             _batteryOverview = batteryOverview;
             _batteryOverview.OpenRequested += OpenBatteryOverviewFromSettings;
+            _batteryOverview.SettingsRequested += OpenBatterySettings;
             _quickLaunch = quickLaunch;
             ViewModel = viewModel;
             _memoryMenu = new AFMediaBar.Components.MemoryContextMenu(memoryTools, () =>
@@ -291,6 +292,7 @@ namespace AFMediaBar.Views.Windows
             _settingsHost.WindowClosed -= SettingsWindow_Closed;
             _settingsHost.Dispose();
             _batteryOverview.OpenRequested -= OpenBatteryOverviewFromSettings;
+            _batteryOverview.SettingsRequested -= OpenBatterySettings;
             CloseBatteryOverview();
             _batteryFlyout?.Dispose();
             _memoryMenu.IsOpen = false; _batteryMenu.IsOpen = false;

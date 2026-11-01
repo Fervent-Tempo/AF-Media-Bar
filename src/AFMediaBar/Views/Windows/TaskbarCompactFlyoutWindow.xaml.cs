@@ -55,7 +55,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
         if (_allowClose) return;
         _batteryOverview = viewModel;
         BatteryPanel.DataContext = viewModel;
-        Width = 360;
+        Width = 320;
         ShowMode(TaskbarCompactFlyoutMode.Battery, anchor);
     }
     private void ReleaseBatteryOverview()
@@ -297,7 +297,7 @@ public partial class TaskbarCompactFlyoutWindow : FluentWindow, IDisposable
             UpdateLayout();
             if (_mode == TaskbarCompactFlyoutMode.Battery)
             {
-                BatteryList.MaxHeight = Math.Max(0, Math.Min(260, MaxHeight - 150));
+                BatteryList.MaxHeight = Math.Max(0, Math.Min(280, MaxHeight - 90));
                 UpdateLayout();
             }
             if (_mode is TaskbarCompactFlyoutMode.OutputDevice or TaskbarCompactFlyoutMode.InputDevice)

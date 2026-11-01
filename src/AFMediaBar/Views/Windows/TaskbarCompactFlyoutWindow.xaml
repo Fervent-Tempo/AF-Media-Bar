@@ -114,26 +114,47 @@
             </StackPanel>
 
             <StackPanel x:Name="BatteryPanel" Visibility="Collapsed">
-                <TextBlock Text="{DynamicResource Loc.Battery.Title}" FontSize="16" FontWeight="{DynamicResource AppTextStrongFontWeight}"/>
-                <TextBlock Text="{Binding Status}" Margin="0,6,0,8" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                <ListBox x:Name="BatteryList" ItemsSource="{Binding Devices}" MaxHeight="260" BorderThickness="0" Padding="0"
+                <Grid Margin="2,0,0,6"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <TextBlock Text="{DynamicResource Loc.Battery.Title}" FontSize="14" FontWeight="{DynamicResource AppTextStrongFontWeight}" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Style="{StaticResource DeviceOptionButtonStyle}" Padding="7,4" MinHeight="28"
+                            Command="{Binding RefreshCommand}" IsEnabled="{Binding CanRefresh}" ToolTip="{DynamicResource Loc.Battery.Refresh}" AutomationProperties.Name="{DynamicResource Loc.Battery.Refresh}">
+                        <ui:SymbolIcon Symbol="ArrowClockwise20" FontSize="15"/>
+                    </Button>
+                    <Button Grid.Column="2" Style="{StaticResource DeviceOptionButtonStyle}" Padding="7,4" MinHeight="28"
+                            Command="{Binding OpenSettingsCommand}" ToolTip="{DynamicResource Loc.Battery.Open}" AutomationProperties.Name="{DynamicResource Loc.Battery.Open}">
+                        <ui:SymbolIcon Symbol="Settings20" FontSize="15"/>
+                    </Button>
+                </Grid>
+                <TextBlock Text="{Binding Status}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                    <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Margin" Value="4,0,4,6"/><Style.Triggers>
+                        <Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed"/></Trigger>
+                    </Style.Triggers></Style></TextBlock.Style>
+                </TextBlock>
+                <ListBox x:Name="BatteryList" ItemsSource="{Binding Devices}" MaxHeight="280" BorderThickness="0" Padding="0"
                          Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
                          ItemContainerStyle="{StaticResource DeviceOptionContainerStyle}">
                     <ListBox.ItemTemplate><DataTemplate>
-                        <Button Style="{StaticResource DeviceOptionButtonStyle}" ToolTip="{Binding Details}" AutomationProperties.Name="{Binding Name}"
+                        <Button Style="{StaticResource DeviceOptionButtonStyle}" Padding="6,6" ToolTip="{Binding Details}" AutomationProperties.Name="{Binding Name}"
                                 Command="{Binding DataContext.SelectDeviceCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}">
-                            <StackPanel>
-                                <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                    <TextBlock Text="{Binding Name}" TextWrapping="Wrap" Margin="0,0,8,0"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding Label}" MaxWidth="130" TextWrapping="Wrap" TextAlignment="Right"/>
-                                </Grid>
-                                <TextBlock Text="{Binding State}" TextWrapping="Wrap" FontSize="12" Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                <TextBlock Text="{Binding PrimaryLabel}" FontSize="12" Foreground="{DynamicResource AfAccentBrush}"/>
-                            </StackPanel>
+                            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="30"/><ColumnDefinition/><ColumnDefinition Width="42"/></Grid.ColumnDefinitions>
+                                <components:BatteryPresenter Snapshot="{Binding Snapshot}" VisualStyle="Graphic" VerticalAlignment="Center" Height="28" Margin="0,0,4,0"/>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontSize="13"/>
+                                    <Grid Margin="0,2,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding State}" TextTrimming="CharacterEllipsis" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <ui:SymbolIcon Grid.Column="1" Symbol="Checkmark12" FontSize="12" Margin="4,0,0,0" Foreground="{DynamicResource AfAccentBrush}"
+                                                       ToolTip="{DynamicResource Loc.Battery.Primary}" AutomationProperties.Name="{DynamicResource Loc.Battery.Primary}">
+                                            <ui:SymbolIcon.Style><Style TargetType="ui:SymbolIcon"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsPrimary}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger>
+                                            </Style.Triggers></Style></ui:SymbolIcon.Style>
+                                        </ui:SymbolIcon>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="{Binding Label}" FontSize="13" TextAlignment="Right" VerticalAlignment="Center"/>
+                            </Grid>
                         </Button>
                     </DataTemplate></ListBox.ItemTemplate>
                 </ListBox>
-                <Button Content="{DynamicResource Loc.Battery.Refresh}" Command="{Binding RefreshCommand}" IsEnabled="{Binding CanRefresh}" Margin="0,8,0,0"/>
             </StackPanel>
 
             <StackPanel x:Name="VolumePanel" Visibility="Collapsed" HorizontalAlignment="Center"

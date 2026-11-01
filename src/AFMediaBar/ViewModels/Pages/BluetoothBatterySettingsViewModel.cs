@@ -1,4 +1,4 @@
-// 页面仅编辑一个追踪目标；枚举经作用域取消，关闭页面不接管应用级追踪生命周期。
+// 页面编辑显示设备与提醒目标；枚举经作用域取消，不接管应用级追踪生命周期。
 using System.Collections.ObjectModel;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
@@ -21,6 +21,64 @@ public sealed partial class BluetoothBatterySettingsViewModel : ObservableObject
     private int _generation;
     private string _status = string.Empty;
     public ObservableCollection<BluetoothBatteryDevice> Devices { get; } = [];
+    public ObservableCollection<BatterySelectionItem> DisplayDevices { get; } = [];
+    public BatteryVisualStyle VisualStyle { get => Current.VisualStyle; set => Update(Current with { VisualStyle = value }); }
+    public BatteryPresentationMode PresentationMode
+    {
+        get => Current.PresentationMode;
+        set
+        {
+            if (value == Current.PresentationMode || !_configuration.IsActive) return;
+            _configuration.SetTaskbarExperience(AFMediaBar.Classes.Services.ComponentLayoutPolicy.PreserveImplicitLayouts(SettingsManager.Current));
+            Update(Current with { PresentationMode = value });
+        }
+    }
+    /// <summary>设备多选行；写入由所属设置作用域验证。</summary>
+    public sealed class BatterySelectionItem(BluetoothBatterySettingsViewModel owner, BluetoothBatteryDevice device) : ObservableObject
+    {
+        public BluetoothBatteryDevice Device { get; private set; } = device;
+        public string Id => Device.Id;
+        public string Name => Device.DisplayName;
+        public bool IsSelected
+        {
+            get => owner.Current.GetSelectedDevices().Any(d => Device.Matches(d.Id));
+            set
+            {
+                if (value == IsSelected) return;
+                var selected = owner.Current.GetSelectedDevices().Where(d => !Device.Matches(d.Id)).ToList();
+                if (value) selected.Add(new(Id, Name));
+                owner.Update(owner.Current with { SelectedDevices = selected });
+            }
+        }
+        internal void Refresh(BluetoothBatteryDevice value) { Device = value; OnPropertyChanged(string.Empty); }
+    }
+    private void RefreshDisplayDevices()
+    {
+        var selected = Current.GetSelectedDevices();
+        var devices = selected.Select(d => Devices.FirstOrDefault(v => v.Matches(d.Id)) ?? new(d.Id, d.Name, null, string.Empty, []))
+            .Concat(Devices.Where(d => !selected.Any(v => d.Matches(v.Id)))).ToArray();
+        var retained = devices.Select(d => d.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in DisplayDevices.Where(d => !retained.Contains(d.Id)).ToArray()) DisplayDevices.Remove(item);
+        for (var index = 0; index < devices.Length; index++)
+        {
+            var device = devices[index];
+            var item = DisplayDevices.FirstOrDefault(d => d.Id.Equals(device.Id, StringComparison.OrdinalIgnoreCase));
+            if (item is null) DisplayDevices.Insert(index, new(this, device));
+            else { item.Refresh(device); DisplayDevices.Move(DisplayDevices.IndexOf(item), index); }
+        }
+    }
+    [RelayCommand] private void MoveDeviceUp(BatterySelectionItem? item) => MoveDevice(item, -1);
+    [RelayCommand] private void MoveDeviceDown(BatterySelectionItem? item) => MoveDevice(item, 1);
+    private void MoveDevice(BatterySelectionItem? item, int delta)
+    {
+        if (item is null || !item.IsSelected) return;
+        var selected = Current.GetSelectedDevices().ToList();
+        var index = selected.FindIndex(d => item.Device.Matches(d.Id));
+        var target = index + delta;
+        if (index < 0 || target < 0 || target >= selected.Count) return;
+        (selected[index], selected[target]) = (selected[target], selected[index]);
+        Update(Current with { SelectedDevices = selected });
+    }
     private BluetoothBatteryWidgetSettings Current => SettingsManager.Current.BluetoothBatteryWidget;
     public bool IsExperimentEnabled => SettingsManager.Current.Experiments.BluetoothBattery;
     public bool Enabled { get => Current.Enabled; set => Update(Current with { Enabled = value }); }
@@ -65,6 +123,7 @@ public sealed partial class BluetoothBatterySettingsViewModel : ObservableObject
             if (Current.DeviceId is { } id && !Devices.Any(device => device.Matches(id)))
                 Devices.Add(new(id, Current.LastKnownName, null, string.Empty, []));
             _status = string.Empty;
+            RefreshDisplayDevices();
             OnPropertyChanged(string.Empty);
         }
         catch (OperationCanceledException) when (_disposed || _configuration.CancellationToken.IsCancellationRequested) { }
@@ -75,7 +134,7 @@ public sealed partial class BluetoothBatterySettingsViewModel : ObservableObject
     [RelayCommand] private void Refresh() => _battery.RequestRefresh();
     [RelayCommand] private void OpenOverview() { if (!_disposed && _configuration.IsActive && IsExperimentEnabled) _overview?.RequestOpen(); }
     [RelayCommand] private Task RefreshDevicesListAsync() => RefreshDevicesAsync();
-    private void OnChanged(object? sender, EventArgs args) { if (!_disposed) OnPropertyChanged(string.Empty); }
+    private void OnChanged(object? sender, EventArgs args) { if (!_disposed) { RefreshDisplayDevices(); OnPropertyChanged(string.Empty); } }
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
         if (args.PropertyName is null or nameof(AppSettings.BluetoothBatteryWidget) or nameof(AppSettings.Experiments)) OnChanged(sender, EventArgs.Empty);

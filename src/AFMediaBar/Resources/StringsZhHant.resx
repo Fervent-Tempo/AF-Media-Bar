@@ -3147,10 +3147,10 @@
   <data name="Device.Offline" xml:space="preserve"><value>暫時無法使用</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>裝置切換快速鍵</value></data>
   <data name="Device.Cycle.Hint" xml:space="preserve"><value>僅切換系統預設裝置，依裝置管理中已啟用裝置的順序循環，略過離線裝置。輸入和輸出各使用一個組合鍵。</value></data>
-  <data name="Battery.SelectHint" xml:space="preserve"><value>選擇工作列主要裝置。多裝置面板開啟時查詢全部支援裝置，關閉後僅追蹤主要裝置；未提供的資料顯示未知。</value></data>
-  <data name="Battery.Select" xml:space="preserve"><value>工作列主要裝置</value></data>
+  <data name="Battery.SelectHint" xml:space="preserve"><value>勾選列上顯示的裝置。主裝置用於低電量提醒，其他裝置依顯示需要追蹤。</value></data>
+  <data name="Battery.Select" xml:space="preserve"><value>提醒主裝置</value></data>
   <data name="Battery.ListRefresh" xml:space="preserve"><value>重新整理裝置清單</value></data>
-  <data name="Battery.Clear" xml:space="preserve"><value>清除選擇</value></data>
+  <data name="Battery.Clear" xml:space="preserve"><value>清除主裝置</value></data>
   <data name="Battery.WidgetEnabled" xml:space="preserve"><value>顯示電量元件</value></data>
   <data name="Battery.DisplayMode" xml:space="preserve"><value>自動顯示方式</value></data>
   <data name="Battery.WhenConnected" xml:space="preserve"><value>所選裝置連線時顯示</value></data>
@@ -3161,7 +3161,7 @@
   <data name="Battery.Open" xml:space="preserve"><value>設定裝置電量</value></data>
   <data name="Battery.Refresh" xml:space="preserve"><value>重新整理電量</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>讀取最多每分鐘一次；連線變化會更新狀態，失敗時延後重試。</value></data>
-  <data name="Battery.WidgetHint" xml:space="preserve"><value>在裝置電量設定中選擇主要裝置，並在保留元件中啟用裝置電量。</value></data>
+  <data name="Battery.WidgetHint" xml:space="preserve"><value>在裝置電量設定中勾選裝置，並在保留元件中啟用裝置電量。</value></data>
   <data name="Memory.System.CacheReadings" xml:space="preserve"><value>系統快取（含待命頁）：{0} → {1}</value></data>
   <data name="Memory.System.Change" xml:space="preserve"><value>可用記憶體變化：{0} MB</value></data>
   <data name="Memory.System.Elapsed" xml:space="preserve"><value>執行耗時：{0} ms</value></data>
@@ -3874,5 +3874,14 @@
   <data name="Battery.Transport.Receiver" xml:space="preserve"><value>USB 接收器</value></data>
   <data name="Battery.Loading" xml:space="preserve"><value>正在重新整理裝置電量…</value></data>
   <data name="Battery.Empty" xml:space="preserve"><value>未發現支援的裝置。請連接或喚醒裝置後重新整理。</value></data>
-  <data name="Battery.OverviewHint" xml:space="preserve"><value>點選裝置設為主要裝置；關閉面板後僅持續追蹤主要裝置。</value></data>
+  <data name="Battery.OverviewHint" xml:space="preserve"><value>點擊裝置設為提醒主裝置；顯示裝置在設定中勾選。</value></data>
+  <data name="Battery.VisualStyle" xml:space="preserve"><value>顯示樣式</value></data>
+  <data name="Battery.Numeric" xml:space="preserve"><value>數值</value></data>
+  <data name="Battery.Graphic" xml:space="preserve"><value>裝置圖形</value></data>
+  <data name="Battery.PresentationMode" xml:space="preserve"><value>多裝置排列</value></data>
+  <data name="Battery.Cycle" xml:space="preserve"><value>輪換（5 秒）</value></data>
+  <data name="Battery.Parallel" xml:space="preserve"><value>並列</value></data>
+  <data name="Battery.SelectionHint" xml:space="preserve"><value>勾選列上顯示的裝置，上下調整輪換順序。並列時可在列上獨立拖曳。</value></data>
+  <data name="Battery.MoveUp" xml:space="preserve"><value>上移</value></data>
+  <data name="Battery.MoveDown" xml:space="preserve"><value>下移</value></data>
 </root>
