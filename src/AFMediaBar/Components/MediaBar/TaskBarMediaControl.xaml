@@ -405,6 +405,8 @@
                 </Button>
             </Border>
             <Border x:Name="TaskbarBatterySurface" Panel.ZIndex="4" Width="66" Height="32" Padding="4" CornerRadius="5"
+                Tag="MediaAction" Focusable="True" FocusVisualStyle="{DynamicResource AfFocusVisualStyle}" AutomationProperties.Name="{DynamicResource Loc.Battery.Overview}"
+                MouseLeftButtonDown="TaskbarBatterySurface_MouseLeftButtonDown" MouseLeftButtonUp="TaskbarBatterySurface_MouseLeftButtonUp" KeyDown="TaskbarBatterySurface_KeyDown"
                 HorizontalAlignment="Left" VerticalAlignment="Center" Background="Transparent" Visibility="Collapsed" Tag="MediaAction"
                 MouseEnter="TaskbarBatterySurface_MouseEnter" MouseLeave="TaskbarBatterySurface_MouseLeave">
                 <StackPanel x:Name="TaskbarBatteryContent" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">

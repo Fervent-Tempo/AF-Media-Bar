@@ -113,6 +113,29 @@
                 </TextBlock>
             </StackPanel>
 
+            <StackPanel x:Name="BatteryPanel" Visibility="Collapsed">
+                <TextBlock Text="{DynamicResource Loc.Battery.Title}" FontSize="16" FontWeight="{DynamicResource AppTextStrongFontWeight}"/>
+                <TextBlock Text="{Binding Status}" Margin="0,6,0,8" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <ListBox x:Name="BatteryList" ItemsSource="{Binding Devices}" MaxHeight="260" BorderThickness="0" Padding="0"
+                         Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         ItemContainerStyle="{StaticResource DeviceOptionContainerStyle}">
+                    <ListBox.ItemTemplate><DataTemplate>
+                        <Button Style="{StaticResource DeviceOptionButtonStyle}" ToolTip="{Binding Details}" AutomationProperties.Name="{Binding Name}"
+                                Command="{Binding DataContext.SelectDeviceCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}">
+                            <StackPanel>
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Name}" TextWrapping="Wrap" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Label}" MaxWidth="130" TextWrapping="Wrap" TextAlignment="Right"/>
+                                </Grid>
+                                <TextBlock Text="{Binding State}" TextWrapping="Wrap" FontSize="12" Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <TextBlock Text="{Binding PrimaryLabel}" FontSize="12" Foreground="{DynamicResource AfAccentBrush}"/>
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate></ListBox.ItemTemplate>
+                </ListBox>
+                <Button Content="{DynamicResource Loc.Battery.Refresh}" Command="{Binding RefreshCommand}" IsEnabled="{Binding CanRefresh}" Margin="0,8,0,0"/>
+            </StackPanel>
+
             <StackPanel x:Name="VolumePanel" Visibility="Collapsed" HorizontalAlignment="Center"
                         PreviewMouseWheel="VolumePanel_PreviewMouseWheel">
                 <!-- 竖向音量面板：来源名称在上、百分比在滑块上方、滑块占满剩余高度。 -->

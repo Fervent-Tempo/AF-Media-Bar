@@ -3072,8 +3072,8 @@
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>已注册</value></data>
   <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>没有可用目标，请在设备管理中检查启用状态和连接</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>设备切换未完成</value></data>
-  <data name="Battery.Title" xml:space="preserve"><value>蓝牙电量</value></data>
-  <data name="Battery.Hint" xml:space="preserve"><value>仅追踪手动选择的一个蓝牙设备，读取 Windows 属性和标准 BLE 电量。低电量同一周期提醒一次，启动、改选和重连先建立基线。</value></data>
+  <data name="Battery.Title" xml:space="preserve"><value>设备电量</value></data>
+  <data name="Battery.Hint" xml:space="preserve"><value>查看蓝牙与受支持接收器的设备电量。面板关闭后仅追踪主设备，并沿用其低电量提醒。</value></data>
   <data name="Battery.Notify" xml:space="preserve"><value>所选设备低电量提醒</value></data>
   <data name="Battery.Threshold" xml:space="preserve"><value>低电量阈值</value></data>
   <data name="Battery.Unknown" xml:space="preserve"><value>电量未知</value></data>
@@ -3083,7 +3083,7 @@
 来源：{2}</value></data>
   <data name="Battery.WindowsProperty" xml:space="preserve"><value>Windows 设备属性</value></data>
   <data name="Battery.BleGatt" xml:space="preserve"><value>标准 BLE 电量</value></data>
-  <data name="Battery.LowTitle" xml:space="preserve"><value>耳机电量较低</value></data>
+  <data name="Battery.LowTitle" xml:space="preserve"><value>设备电量较低</value></data>
   <data name="Battery.LowBody" xml:space="preserve"><value>{0} 当前电量为 {1}%。</value></data>
   <data name="Memory.ToolsDescription" xml:space="preserve"><value>查看 AF 内存并按需回收；系统缓存清理单独操作。</value></data>
   <data name="Memory.Self.Title" xml:space="preserve"><value>AF 自身内存回收</value></data>
@@ -3147,9 +3147,9 @@
   <data name="Device.Offline" xml:space="preserve"><value>暂不可用</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>设备切换快捷键</value></data>
   <data name="Device.Cycle.Hint" xml:space="preserve"><value>仅切换系统默认设备，按设备管理中已启用设备的顺序循环，跳过离线设备。输入和输出各使用一个组合键。</value></data>
-  <data name="Battery.SelectHint" xml:space="preserve"><value>手动选择一个已配对设备，仅查询该设备的标准电量信息。驱动或设备不提供时显示未知。</value></data>
-  <data name="Battery.Select" xml:space="preserve"><value>追踪设备</value></data>
-  <data name="Battery.ListRefresh" xml:space="preserve"><value>刷新配对设备列表</value></data>
+  <data name="Battery.SelectHint" xml:space="preserve"><value>选择任务栏主设备。多设备面板打开时查询全部受支持设备，关闭后仅追踪主设备；未提供的数据显示未知。</value></data>
+  <data name="Battery.Select" xml:space="preserve"><value>任务栏主设备</value></data>
+  <data name="Battery.ListRefresh" xml:space="preserve"><value>刷新设备列表</value></data>
   <data name="Battery.Clear" xml:space="preserve"><value>清除选择</value></data>
   <data name="Battery.WidgetEnabled" xml:space="preserve"><value>显示电量组件</value></data>
   <data name="Battery.DisplayMode" xml:space="preserve"><value>自动显示方式</value></data>
@@ -3157,11 +3157,11 @@
   <data name="Battery.WhenLow" xml:space="preserve"><value>仅低电量时显示</value></data>
   <data name="Battery.Connected" xml:space="preserve"><value>已连接</value></data>
   <data name="Battery.Disconnected" xml:space="preserve"><value>未连接</value></data>
-  <data name="Battery.ReadFailed" xml:space="preserve"><value>无法读取蓝牙设备，请稍后刷新</value></data>
-  <data name="Battery.Open" xml:space="preserve"><value>配置蓝牙电量</value></data>
+  <data name="Battery.ReadFailed" xml:space="preserve"><value>部分设备无法读取，请稍后刷新</value></data>
+  <data name="Battery.Open" xml:space="preserve"><value>配置设备电量</value></data>
   <data name="Battery.Refresh" xml:space="preserve"><value>刷新电量</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>读取最多每分钟一次；连接变化会更新状态，失败时退避。</value></data>
-  <data name="Battery.WidgetHint" xml:space="preserve"><value>在设备管理中选择追踪目标。无媒体时显示需在下方保留组件中勾选蓝牙电量。</value></data>
+  <data name="Battery.WidgetHint" xml:space="preserve"><value>在设备电量设置中选择主设备，并在保留组件中启用设备电量。</value></data>
   <data name="Memory.System.CacheReadings" xml:space="preserve"><value>系统缓存（含待机页）：{0} → {1}</value></data>
   <data name="Memory.System.Change" xml:space="preserve"><value>可用内存变化：{0} MB</value></data>
   <data name="Memory.System.Elapsed" xml:space="preserve"><value>执行耗时：{0} ms</value></data>
@@ -3196,7 +3196,7 @@
     <value>组件设置</value>
   </data>
 <data name="Widgets.Header.Subtitle" xml:space="preserve">
-    <value>配置小音符、频谱、性能和蓝牙电量；组件顺序在内容与布局中调整。</value>
+    <value>配置小音符、频谱、性能和设备电量；组件顺序在内容与布局中调整。</value>
   </data>
   <data name="Widgets.Spectrum" xml:space="preserve">
     <value>频谱</value>
@@ -3305,7 +3305,7 @@
   <data name="Settings.RestState.IdleDescription" xml:space="preserve"><value>可全部关闭；没有媒体时将隐藏媒体栏。</value></data>
   <data name="Settings.RestState.OrderHint" xml:space="preserve"><value>封面和媒体文字固定在起始侧，其余组件可排序。</value></data>
   <data name="Settings.RestState.Fixed" xml:space="preserve"><value>固定</value></data>
-  <data name="Settings.RestState.BatteryHint" xml:space="preserve"><value>需启用蓝牙电量实验并选择追踪设备。</value></data>
+  <data name="Settings.RestState.BatteryHint" xml:space="preserve"><value>需启用设备电量实验并选择主设备。</value></data>
   <data name="Settings.RestState.VisibilityLink" xml:space="preserve"><value>调整常驻显示</value></data>
   <data name="Settings.Component.Configure" xml:space="preserve"><value>前往配置</value></data>
   <data name="Settings.Preview.Title" xml:space="preserve"><value>局部预览</value></data>
@@ -3354,7 +3354,7 @@
   <data name="Settings.Page.Spectrum.Description" xml:space="preserve"><value>设置采集范围、设备与频谱样式。</value></data>
   <data name="Settings.Page.Performance" xml:space="preserve"><value>性能</value></data>
   <data name="Settings.Page.Performance.Description" xml:space="preserve"><value>选择指标、显示方式和采样间隔。</value></data>
-  <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>蓝牙电量</value></data>
+  <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>设备电量</value></data>
   <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>选择追踪设备、显示方式与低电量提醒。</value></data>
   <data name="Settings.Page.MediaSource" xml:space="preserve"><value>媒体来源</value></data>
   <data name="Settings.Page.ExtraFeatures.Description" xml:space="preserve"><value>选择播放器、自动切换策略与允许列表。</value></data>
@@ -3470,7 +3470,7 @@
   <data name="Start.Tutorial.Devices.Body" xml:space="preserve">
     <value>1. 在“音频设备”启用需要的设备，设置别名与排列顺序。
 2. 在“常驻状态”显示输入或输出设备按钮。
-3. 设备切换快捷键与操作目标在“交互与快捷键”。蓝牙电量需要先启用对应实验功能，且依赖 Windows 和驱动提供的数据。</value>
+3. 设备切换快捷键与操作目标在“交互与快捷键”。设备电量需要先启用对应实验功能，且依赖 Windows 和驱动提供的数据。</value>
   </data>
   <data name="Start.Tutorial.Daily" xml:space="preserve">
     <value>日常操作与排序</value>
@@ -3492,7 +3492,7 @@
   <data name="Start.Release16.Body" xml:space="preserve">
     <value>音频设备管理与切换快捷键正式可用，支持设备别名与排序。
 提供悬浮模式、四边贴边收起，以及与系统任务栏方向一致的竖向显示。
-完整面板入口支持点击或悬停打开；蓝牙电量仍为默认关闭的实验功能。</value>
+完整面板入口支持点击或悬停打开；设备电量仍为默认关闭的实验功能。</value>
   </data>
   <data name="Start.ReleaseNotes" xml:space="preserve">
     <value>查看正式版说明</value>
@@ -3864,4 +3864,15 @@
   <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>拖动调整顺序；也可在实际媒体栏上用鼠标拖动组件。</value></data>
   <data name="ComponentLayout.Parallel" xml:space="preserve"><value>并排指标与顺序</value></data>
   <data name="ComponentLayout.ParallelDescription" xml:space="preserve"><value>与“常驻状态”的常驻显示共用显隐和顺序；无媒体显示请到该页单独调整。</value></data>
+  <data name="Battery.Overview" xml:space="preserve"><value>查看全部设备</value></data>
+  <data name="Battery.Primary" xml:space="preserve"><value>主设备</value></data>
+  <data name="Battery.Charging" xml:space="preserve"><value>充电中</value></data>
+  <data name="Battery.Discharging" xml:space="preserve"><value>未充电</value></data>
+  <data name="Battery.ChargingUnknown" xml:space="preserve"><value>充电状态未知</value></data>
+  <data name="Battery.Transport.Bluetooth" xml:space="preserve"><value>蓝牙</value></data>
+  <data name="Battery.Transport.Usb" xml:space="preserve"><value>USB</value></data>
+  <data name="Battery.Transport.Receiver" xml:space="preserve"><value>USB 接收器</value></data>
+  <data name="Battery.Loading" xml:space="preserve"><value>正在刷新设备电量…</value></data>
+  <data name="Battery.Empty" xml:space="preserve"><value>未发现受支持设备。请连接或唤醒设备后刷新。</value></data>
+  <data name="Battery.OverviewHint" xml:space="preserve"><value>点击设备设为主设备；关闭面板后仅持续追踪主设备。</value></data>
 </root>

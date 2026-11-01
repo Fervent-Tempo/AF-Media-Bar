@@ -47,6 +47,7 @@
                         <ComboBox ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice, Mode=TwoWay}" DisplayMemberPath="DisplayName" MinWidth="{StaticResource AfSettingsSelectMinWidth}" MaxWidth="{StaticResource AfSettingsSelectLongMaxWidth}"/>
                     </components:SettingsRow>
                     <WrapPanel Style="{StaticResource AfSettingsStandaloneActionsStyle}">
+                        <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Battery.Overview}" Command="{Binding OpenOverviewCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
                         <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Battery.ListRefresh}" Command="{Binding RefreshDevicesListCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
                         <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Battery.Clear}" Command="{Binding ClearSelectionCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
                     </WrapPanel>

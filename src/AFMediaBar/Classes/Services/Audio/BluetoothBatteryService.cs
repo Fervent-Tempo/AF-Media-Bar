@@ -48,7 +48,7 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
     public IDisposable AcquireOverviewSession()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        Interlocked.Increment(ref _overviewCount);
+        if (Interlocked.Increment(ref _overviewCount) == 1) Interlocked.Exchange(ref _forceRefresh, 1);
         Invalidate();
         return new Lease(() => { Interlocked.Decrement(ref _overviewCount); Invalidate(); });
     }

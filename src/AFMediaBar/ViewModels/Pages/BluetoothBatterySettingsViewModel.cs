@@ -15,6 +15,7 @@ public sealed partial class BluetoothBatterySettingsViewModel : ObservableObject
     private readonly BluetoothBatteryService _battery;
     private readonly ISettingsConfiguration _configuration;
     private readonly LocalizationService _localization;
+    private readonly AFMediaBar.ViewModels.Windows.DeviceBatteryOverviewViewModel? _overview;
     private bool _disposed;
     private bool _refreshing;
     private int _generation;
@@ -37,9 +38,11 @@ public sealed partial class BluetoothBatterySettingsViewModel : ObservableObject
         Translations.Get(snapshot.IsConnected ? "Battery.Connected" : "Battery.Disconnected") + "\n" + snapshot.Details :
         !string.IsNullOrEmpty(_status) ? _status : Translations.Get("Battery.SelectHint");
 
-    public BluetoothBatterySettingsViewModel(BluetoothBatteryService battery, ISettingsConfiguration configuration, LocalizationService localization)
+    public BluetoothBatterySettingsViewModel(BluetoothBatteryService battery, ISettingsConfiguration configuration, LocalizationService localization,
+        AFMediaBar.ViewModels.Windows.DeviceBatteryOverviewViewModel? overview = null)
     {
         _battery = battery; _configuration = configuration; _localization = localization;
+        _overview = overview;
         battery.Changed += OnChanged;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         localization.LanguageChanged += OnChanged;
@@ -70,6 +73,7 @@ public sealed partial class BluetoothBatterySettingsViewModel : ObservableObject
     }
     [RelayCommand] private void ClearSelection() => Update(Current with { DeviceId = null, LastKnownName = string.Empty });
     [RelayCommand] private void Refresh() => _battery.RequestRefresh();
+    [RelayCommand] private void OpenOverview() { if (!_disposed && _configuration.IsActive && IsExperimentEnabled) _overview?.RequestOpen(); }
     [RelayCommand] private Task RefreshDevicesListAsync() => RefreshDevicesAsync();
     private void OnChanged(object? sender, EventArgs args) { if (!_disposed) OnPropertyChanged(string.Empty); }
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)

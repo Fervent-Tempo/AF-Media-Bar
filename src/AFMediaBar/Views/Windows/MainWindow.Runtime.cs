@@ -138,6 +138,7 @@ public partial class MainWindow
                     }
                     window.ApplySnapshot(_mediaSessionService.CurrentSnapshot ?? MediaSnapshot.Disconnected);
                     window.OpenFullPanelRequested += FloatingFullPanelRequested;
+                    window.BatteryOverviewRequested += anchor => ShowBatteryOverview(anchor, window.KeepEdgeExpanded());
                     window.PlacementTransitionStarted += (_, _) => { if (_floatingWindows.Contains(window)) CloseFullPanelWindows(); };
                     window.PlayerMenuOpenRequested += (host, point) =>
                     {

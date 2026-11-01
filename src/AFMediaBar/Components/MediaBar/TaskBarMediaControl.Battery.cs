@@ -2,6 +2,8 @@
 using System.Windows;
 using System.Windows.Media;
 using AFMediaBar.Classes.Services.Audio;
+using AFMediaBar.Classes.Models;
+using System.Windows.Input;
 using AFMediaBar.Resources;
 
 namespace AFMediaBar.Components;
@@ -11,6 +13,8 @@ public partial class TaskBarMediaControl
     private BluetoothBatteryService? _batterySource;
     private bool _batterySubscribed;
     private bool _batteryCanShow;
+    private bool _batteryPressed;
+    public event Action<TrayIconBounds>? BatteryOverviewRequested;
     private const double BatterySurfaceWidth = 66;
     private const double BatteryVerticalLength = 42;
 
@@ -52,6 +56,23 @@ public partial class TaskBarMediaControl
     }
     private void TaskbarBatterySurface_MouseEnter(object sender, System.Windows.Input.MouseEventArgs args) => AnimateComponentHover(TaskbarBatterySurface, true);
     private void TaskbarBatterySurface_MouseLeave(object sender, System.Windows.Input.MouseEventArgs args) => AnimateComponentHover(TaskbarBatterySurface, false);
+    private void TaskbarBatterySurface_MouseLeftButtonDown(object sender, MouseButtonEventArgs args)
+    { _batteryPressed = true; TaskbarBatterySurface.Focus(); args.Handled = true; }
+    private void TaskbarBatterySurface_MouseLeftButtonUp(object sender, MouseButtonEventArgs args)
+    {
+        var pressed = _batteryPressed; _batteryPressed = false;
+        if (pressed && TaskbarBatterySurface.IsMouseOver && !_suppressComponentRelease && !_componentGestureActive) OpenBatteryOverview();
+        args.Handled = true;
+    }
+    private void TaskbarBatterySurface_KeyDown(object sender, KeyEventArgs args)
+    { if (args.Key is Key.Enter or Key.Space) { OpenBatteryOverview(); args.Handled = true; } }
+    private void OpenBatteryOverview()
+    {
+        if (!IsLoaded) return;
+        var start = TaskbarBatterySurface.PointToScreen(new Point());
+        var end = TaskbarBatterySurface.PointToScreen(new Point(TaskbarBatterySurface.ActualWidth, TaskbarBatterySurface.ActualHeight));
+        BatteryOverviewRequested?.Invoke(new((int)start.X, (int)start.Y, (int)end.X, (int)end.Y));
+    }
     public bool IsBatteryComponentClick(DependencyObject? source)
     {
         while (source is not null)

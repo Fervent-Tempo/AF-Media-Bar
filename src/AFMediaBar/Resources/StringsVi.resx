@@ -3112,8 +3112,8 @@ Heap được quản lý {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>Đã đăng ký</value></data>
   <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>Không có thiết bị đích khả dụng; kiểm tra trạng thái bật và kết nối trong Quản lý thiết bị</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>Chuyển thiết bị chưa hoàn tất</value></data>
-  <data name="Battery.Title" xml:space="preserve"><value>Pin Bluetooth</value></data>
-  <data name="Battery.Hint" xml:space="preserve"><value>Theo dõi một thiết bị Bluetooth được chọn bằng thuộc tính Windows và pin BLE chuẩn. Mỗi chu kỳ pin yếu chỉ cảnh báo một lần; khởi động, đổi chọn và kết nối lại thiết lập mốc trước.</value></data>
+  <data name="Battery.Title" xml:space="preserve"><value>Pin thiết bị</value></data>
+  <data name="Battery.Hint" xml:space="preserve"><value>Xem pin từ Bluetooth và bộ thu được hỗ trợ. Khi đóng bảng, chỉ thiết bị chính được theo dõi và nhận cảnh báo pin yếu.</value></data>
   <data name="Battery.Notify" xml:space="preserve"><value>Cảnh báo pin yếu cho thiết bị đã chọn</value></data>
   <data name="Battery.Threshold" xml:space="preserve"><value>Ngưỡng pin yếu</value></data>
   <data name="Battery.Unknown" xml:space="preserve"><value>Không rõ mức pin</value></data>
@@ -3123,7 +3123,7 @@ Lần đọc hợp lệ cuối: {1}
 Nguồn: {2}</value></data>
   <data name="Battery.WindowsProperty" xml:space="preserve"><value>Thuộc tính thiết bị Windows</value></data>
   <data name="Battery.BleGatt" xml:space="preserve"><value>Dịch vụ pin BLE chuẩn</value></data>
-  <data name="Battery.LowTitle" xml:space="preserve"><value>Pin tai nghe yếu</value></data>
+  <data name="Battery.LowTitle" xml:space="preserve"><value>Pin thiết bị yếu</value></data>
   <data name="Battery.LowBody" xml:space="preserve"><value>Pin {0} còn {1}%.</value></data>
   <data name="Memory.ToolsDescription" xml:space="preserve"><value>Xem và thu hồi bộ nhớ AF khi cần. Dọn bộ đệm hệ thống là thao tác riêng.</value></data>
   <data name="Memory.Self.Title" xml:space="preserve"><value>Thu hồi bộ nhớ AF</value></data>
@@ -3187,9 +3187,9 @@ Nguồn: {2}</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>Hiện không khả dụng</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>Phím tắt chuyển thiết bị</value></data>
   <data name="Device.Cycle.Hint" xml:space="preserve"><value>Chuyển thiết bị mặc định hệ thống theo thứ tự thiết bị được bật trong Quản lý thiết bị, bỏ qua thiết bị ngoại tuyến. Đầu vào và đầu ra dùng tổ hợp riêng.</value></data>
-  <data name="Battery.SelectHint" xml:space="preserve"><value>Chọn một thiết bị đã ghép đôi. Chỉ đọc pin chuẩn của thiết bị đó; thiết bị không hỗ trợ hiển thị không rõ.</value></data>
-  <data name="Battery.Select" xml:space="preserve"><value>Thiết bị theo dõi</value></data>
-  <data name="Battery.ListRefresh" xml:space="preserve"><value>Làm mới thiết bị đã ghép đôi</value></data>
+  <data name="Battery.SelectHint" xml:space="preserve"><value>Chọn thiết bị chính trên thanh tác vụ. Mở bảng để đọc tất cả thiết bị được hỗ trợ; khi đóng chỉ theo dõi thiết bị chính. Dữ liệu không có được hiển thị là không rõ.</value></data>
+  <data name="Battery.Select" xml:space="preserve"><value>Thiết bị chính trên thanh tác vụ</value></data>
+  <data name="Battery.ListRefresh" xml:space="preserve"><value>Làm mới danh sách thiết bị</value></data>
   <data name="Battery.Clear" xml:space="preserve"><value>Bỏ chọn</value></data>
   <data name="Battery.WidgetEnabled" xml:space="preserve"><value>Bật thành phần pin</value></data>
   <data name="Battery.DisplayMode" xml:space="preserve"><value>Tự động hiển thị</value></data>
@@ -3197,11 +3197,11 @@ Nguồn: {2}</value></data>
   <data name="Battery.WhenLow" xml:space="preserve"><value>Chỉ hiện khi pin yếu</value></data>
   <data name="Battery.Connected" xml:space="preserve"><value>Đã kết nối</value></data>
   <data name="Battery.Disconnected" xml:space="preserve"><value>Đã ngắt kết nối</value></data>
-  <data name="Battery.ReadFailed" xml:space="preserve"><value>Không đọc được thiết bị Bluetooth; thử làm mới sau</value></data>
-  <data name="Battery.Open" xml:space="preserve"><value>Cấu hình pin Bluetooth</value></data>
+  <data name="Battery.ReadFailed" xml:space="preserve"><value>Không đọc được một số thiết bị; hãy làm mới sau</value></data>
+  <data name="Battery.Open" xml:space="preserve"><value>Cấu hình pin thiết bị</value></data>
   <data name="Battery.Refresh" xml:space="preserve"><value>Làm mới pin</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>Đọc tối đa mỗi phút một lần; cập nhật khi đổi kết nối và lùi thời gian khi lỗi.</value></data>
-  <data name="Battery.WidgetHint" xml:space="preserve"><value>Chọn thiết bị trong Quản lý thiết bị. Để hiện khi không có phương tiện, chọn Pin Bluetooth trong danh sách thành phần giữ lại.</value></data>
+  <data name="Battery.WidgetHint" xml:space="preserve"><value>Chọn thiết bị chính trong cài đặt Pin thiết bị và bật Pin thiết bị trong danh sách thành phần được giữ lại.</value></data>
   <data name="Memory.System.CacheReadings" xml:space="preserve"><value>Bộ nhớ đệm hệ thống (gồm trang chờ): {0} → {1}</value></data>
   <data name="Memory.System.Change" xml:space="preserve"><value>Thay đổi bộ nhớ khả dụng: {0} MB</value></data>
   <data name="Memory.System.Elapsed" xml:space="preserve"><value>Thời gian thực hiện: {0} ms</value></data>
@@ -3345,7 +3345,7 @@ Mẫu bị loại: {3}; sự kiện: {4}</value></data>
   <data name="Settings.RestState.IdleDescription" xml:space="preserve"><value>Tắt tất cả để ẩn thanh khi không có nội dung phát.</value></data>
   <data name="Settings.RestState.OrderHint" xml:space="preserve"><value>Ảnh bìa và văn bản đa phương tiện được cố định ở đầu. Có thể sắp xếp các thành phần còn lại.</value></data>
   <data name="Settings.RestState.Fixed" xml:space="preserve"><value>Cố định</value></data>
-  <data name="Settings.RestState.BatteryHint" xml:space="preserve"><value>Cần bật thử nghiệm pin Bluetooth và chọn thiết bị theo dõi.</value></data>
+  <data name="Settings.RestState.BatteryHint" xml:space="preserve"><value>Cần bật thử nghiệm Pin thiết bị và chọn thiết bị chính.</value></data>
   <data name="Settings.RestState.VisibilityLink" xml:space="preserve"><value>Chỉnh hiển thị thường trực</value></data>
   <data name="Settings.Component.Configure" xml:space="preserve"><value>Mở thiết lập</value></data>
   <data name="Settings.Preview.Title" xml:space="preserve"><value>Xem trước</value></data>
@@ -3394,7 +3394,7 @@ Mẫu bị loại: {3}; sự kiện: {4}</value></data>
   <data name="Settings.Page.Spectrum.Description" xml:space="preserve"><value>Thiết lập phạm vi thu, thiết bị và kiểu phổ âm thanh.</value></data>
   <data name="Settings.Page.Performance" xml:space="preserve"><value>Hiệu năng</value></data>
   <data name="Settings.Page.Performance.Description" xml:space="preserve"><value>Chọn chỉ số, cách hiển thị và chu kỳ lấy mẫu.</value></data>
-  <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>Pin Bluetooth</value></data>
+  <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>Pin thiết bị</value></data>
   <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>Chọn thiết bị theo dõi, cách hiển thị và cảnh báo pin yếu.</value></data>
   <data name="Settings.Page.MediaSource" xml:space="preserve"><value>Nguồn đa phương tiện</value></data>
   <data name="Settings.Page.ExtraFeatures.Description" xml:space="preserve"><value>Chọn trình phát, quy tắc tự động chuyển và danh sách cho phép.</value></data>
@@ -3510,7 +3510,7 @@ Mẫu bị loại: {3}; sự kiện: {4}</value></data>
   <data name="Start.Tutorial.Devices.Body" xml:space="preserve">
     <value>1. Bật, đặt bí danh và sắp xếp thiết bị trong Thiết bị âm thanh.
 2. Hiện nút đầu vào hoặc đầu ra trong Thường trực.
-3. Chỉnh phím tắt và đích thao tác trong Tương tác và phím tắt. Pin Bluetooth cần bật thử nghiệm và dữ liệu từ Windows, trình điều khiển.</value>
+3. Chỉnh phím tắt và đích thao tác trong Tương tác và phím tắt. Pin thiết bị cần bật thử nghiệm và dữ liệu từ Windows, trình điều khiển.</value>
   </data>
   <data name="Start.Tutorial.Daily" xml:space="preserve">
     <value>Thao tác hằng ngày và sắp xếp</value>
@@ -3532,7 +3532,7 @@ Nhấn Ctrl + F để tìm thiết lập. Liên kết hiện khi di chuột ho�
   <data name="Start.Release16.Body" xml:space="preserve">
     <value>Quản lý và phím tắt chuyển thiết bị âm thanh đã chính thức khả dụng, hỗ trợ bí danh và thứ tự.
 Chế độ nổi thu gọn ở cả bốn cạnh; hiển thị dọc theo hướng thanh tác vụ hệ thống.
-Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn là thử nghiệm, mặc định tắt.</value>
+Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin thiết bị vẫn là thử nghiệm, mặc định tắt.</value>
   </data>
   <data name="Start.ReleaseNotes" xml:space="preserve">
     <value>Xem ghi chú phát hành</value>
@@ -3901,4 +3901,15 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>Kéo để đổi thứ tự. Bạn cũng có thể kéo các thành phần trực tiếp trên thanh phương tiện.</value></data>
   <data name="ComponentLayout.Parallel" xml:space="preserve"><value>Chỉ số song song và thứ tự</value></data>
   <data name="ComponentLayout.ParallelDescription" xml:space="preserve"><value>Dùng chung hiển thị và thứ tự với bố cục thường trực trong trang Thường trực. Chỉnh bố cục khi không có phương tiện riêng trên trang đó.</value></data>
+  <data name="Battery.Overview" xml:space="preserve"><value>Xem tất cả thiết bị</value></data>
+  <data name="Battery.Primary" xml:space="preserve"><value>Thiết bị chính</value></data>
+  <data name="Battery.Charging" xml:space="preserve"><value>Đang sạc</value></data>
+  <data name="Battery.Discharging" xml:space="preserve"><value>Không sạc</value></data>
+  <data name="Battery.ChargingUnknown" xml:space="preserve"><value>Không rõ trạng thái sạc</value></data>
+  <data name="Battery.Transport.Bluetooth" xml:space="preserve"><value>Bluetooth</value></data>
+  <data name="Battery.Transport.Usb" xml:space="preserve"><value>USB</value></data>
+  <data name="Battery.Transport.Receiver" xml:space="preserve"><value>Bộ thu USB</value></data>
+  <data name="Battery.Loading" xml:space="preserve"><value>Đang làm mới pin thiết bị…</value></data>
+  <data name="Battery.Empty" xml:space="preserve"><value>Không tìm thấy thiết bị được hỗ trợ. Kết nối hoặc đánh thức thiết bị rồi làm mới.</value></data>
+  <data name="Battery.OverviewHint" xml:space="preserve"><value>Chọn một thiết bị làm thiết bị chính. Khi đóng bảng, chỉ thiết bị chính tiếp tục được theo dõi.</value></data>
 </root>

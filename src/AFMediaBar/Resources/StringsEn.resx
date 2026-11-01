@@ -3072,8 +3072,8 @@ Managed heap {6} → {7} · {8} ms · {9}</value></data>
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>Registered</value></data>
   <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>No available target; check enabled devices and connections in Device management</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>Device switch did not complete</value></data>
-  <data name="Battery.Title" xml:space="preserve"><value>Bluetooth battery</value></data>
-  <data name="Battery.Hint" xml:space="preserve"><value>Tracks one manually selected Bluetooth device using Windows properties and standard BLE battery data. One alert per low-battery cycle; startup, selection changes and reconnection establish a baseline first.</value></data>
+  <data name="Battery.Title" xml:space="preserve"><value>Device battery</value></data>
+  <data name="Battery.Hint" xml:space="preserve"><value>View battery levels from Bluetooth and supported receivers. Only the primary device is tracked and receives low-battery alerts when the panel is closed.</value></data>
   <data name="Battery.Notify" xml:space="preserve"><value>Low-battery alerts for selected device</value></data>
   <data name="Battery.Threshold" xml:space="preserve"><value>Low-battery threshold</value></data>
   <data name="Battery.Unknown" xml:space="preserve"><value>Battery unknown</value></data>
@@ -3083,7 +3083,7 @@ Last valid reading: {1}
 Source: {2}</value></data>
   <data name="Battery.WindowsProperty" xml:space="preserve"><value>Windows device property</value></data>
   <data name="Battery.BleGatt" xml:space="preserve"><value>Standard BLE battery service</value></data>
-  <data name="Battery.LowTitle" xml:space="preserve"><value>Headphone battery low</value></data>
+  <data name="Battery.LowTitle" xml:space="preserve"><value>Device battery low</value></data>
   <data name="Battery.LowBody" xml:space="preserve"><value>{0} battery is at {1}%.</value></data>
   <data name="Memory.ToolsDescription" xml:space="preserve"><value>Inspect and reclaim AF memory. System cache cleanup is a separate action.</value></data>
   <data name="Memory.Self.Title" xml:space="preserve"><value>Reclaim AF memory</value></data>
@@ -3147,9 +3147,9 @@ Source: {2}</value></data>
   <data name="Device.Offline" xml:space="preserve"><value>Currently unavailable</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>Device switching shortcuts</value></data>
   <data name="Device.Cycle.Hint" xml:space="preserve"><value>Switch system defaults through enabled devices in Device management order, skipping offline devices. Input and output each use one shortcut.</value></data>
-  <data name="Battery.SelectHint" xml:space="preserve"><value>Choose one paired device. Only its standard battery information is queried; unsupported devices show unknown.</value></data>
-  <data name="Battery.Select" xml:space="preserve"><value>Tracked device</value></data>
-  <data name="Battery.ListRefresh" xml:space="preserve"><value>Refresh paired devices</value></data>
+  <data name="Battery.SelectHint" xml:space="preserve"><value>Choose the taskbar primary device. Opening the overview reads all supported devices; closing it tracks only the primary device. Unavailable data is shown as unknown.</value></data>
+  <data name="Battery.Select" xml:space="preserve"><value>Taskbar primary device</value></data>
+  <data name="Battery.ListRefresh" xml:space="preserve"><value>Refresh device list</value></data>
   <data name="Battery.Clear" xml:space="preserve"><value>Clear selection</value></data>
   <data name="Battery.WidgetEnabled" xml:space="preserve"><value>Enable battery component</value></data>
   <data name="Battery.DisplayMode" xml:space="preserve"><value>Automatic visibility</value></data>
@@ -3157,11 +3157,11 @@ Source: {2}</value></data>
   <data name="Battery.WhenLow" xml:space="preserve"><value>Show only when battery is low</value></data>
   <data name="Battery.Connected" xml:space="preserve"><value>Connected</value></data>
   <data name="Battery.Disconnected" xml:space="preserve"><value>Disconnected</value></data>
-  <data name="Battery.ReadFailed" xml:space="preserve"><value>Unable to read Bluetooth devices; refresh later</value></data>
-  <data name="Battery.Open" xml:space="preserve"><value>Configure Bluetooth battery</value></data>
+  <data name="Battery.ReadFailed" xml:space="preserve"><value>Some devices could not be read; refresh later</value></data>
+  <data name="Battery.Open" xml:space="preserve"><value>Configure device battery</value></data>
   <data name="Battery.Refresh" xml:space="preserve"><value>Refresh battery</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>Reads at most once per minute, with connection updates and backoff on failures.</value></data>
-  <data name="Battery.WidgetHint" xml:space="preserve"><value>Select a device in Device management. To show it without media, also select Bluetooth battery in the kept components list.</value></data>
+  <data name="Battery.WidgetHint" xml:space="preserve"><value>Choose a primary device in Device battery settings and enable Device battery in the kept components.</value></data>
   <data name="Memory.System.CacheReadings" xml:space="preserve"><value>System cache (including standby pages): {0} → {1}</value></data>
   <data name="Memory.System.Change" xml:space="preserve"><value>Change in available memory: {0} MB</value></data>
   <data name="Memory.System.Elapsed" xml:space="preserve"><value>Execution time: {0} ms</value></data>
@@ -3196,7 +3196,7 @@ Source: {2}</value></data>
     <value>Component settings</value>
   </data>
 <data name="Widgets.Header.Subtitle" xml:space="preserve">
-    <value>Configure the quick-launch note, spectrum, performance and Bluetooth battery. Arrange components in Content and layout.</value>
+    <value>Configure the quick-launch note, spectrum, performance and Device battery. Arrange components in Content and layout.</value>
   </data>
   <data name="Widgets.Spectrum" xml:space="preserve">
     <value>Spectrum</value>
@@ -3305,7 +3305,7 @@ Dropped samples: {3}; events: {4}</value></data>
   <data name="Settings.RestState.IdleDescription" xml:space="preserve"><value>Turn off every item to hide the media bar when no media is available.</value></data>
   <data name="Settings.RestState.OrderHint" xml:space="preserve"><value>Artwork and media text stay at the start. Other components can be reordered.</value></data>
   <data name="Settings.RestState.Fixed" xml:space="preserve"><value>Fixed</value></data>
-  <data name="Settings.RestState.BatteryHint" xml:space="preserve"><value>Requires the Bluetooth battery experiment and a selected device.</value></data>
+  <data name="Settings.RestState.BatteryHint" xml:space="preserve"><value>Requires the Device battery experiment and a primary device.</value></data>
   <data name="Settings.RestState.VisibilityLink" xml:space="preserve"><value>Configure always-on visibility</value></data>
   <data name="Settings.Component.Configure" xml:space="preserve"><value>Configure</value></data>
   <data name="Settings.Preview.Title" xml:space="preserve"><value>Preview</value></data>
@@ -3354,7 +3354,7 @@ Dropped samples: {3}; events: {4}</value></data>
   <data name="Settings.Page.Spectrum.Description" xml:space="preserve"><value>Set capture scope, device, and spectrum style.</value></data>
   <data name="Settings.Page.Performance" xml:space="preserve"><value>Performance</value></data>
   <data name="Settings.Page.Performance.Description" xml:space="preserve"><value>Choose metrics, display mode, and sampling interval.</value></data>
-  <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>Bluetooth battery</value></data>
+  <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>Device battery</value></data>
   <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>Choose a tracked device, display mode, and low-battery reminders.</value></data>
   <data name="Settings.Page.MediaSource" xml:space="preserve"><value>Media sources</value></data>
   <data name="Settings.Page.ExtraFeatures.Description" xml:space="preserve"><value>Choose players, automatic switching behavior, and the allow list.</value></data>
@@ -3470,7 +3470,7 @@ Dropped samples: {3}; events: {4}</value></data>
   <data name="Start.Tutorial.Devices.Body" xml:space="preserve">
     <value>1. Enable, rename and order devices in Audio devices.
 2. Show input or output buttons in At rest.
-3. Configure device shortcuts and action targets in Interaction &amp; shortcuts. Bluetooth battery requires its experiment and data supplied by Windows and the driver.</value>
+3. Configure device shortcuts and action targets in Interaction &amp; shortcuts. Device battery requires its experiment and data supplied by Windows and the driver.</value>
   </data>
   <data name="Start.Tutorial.Daily" xml:space="preserve">
     <value>Daily use and ordering</value>
@@ -3492,7 +3492,7 @@ Press Ctrl + F to search. Related links appear when a row is hovered or contains
   <data name="Start.Release16.Body" xml:space="preserve">
     <value>Audio device management and switching shortcuts are now available, with aliases and ordering.
 Floating mode supports collapse at all four edges; vertical display follows the system taskbar orientation.
-The full-panel entry opens on click or hover. Bluetooth battery remains an experiment, off by default.</value>
+The full-panel entry opens on click or hover. Device battery remains an experiment, off by default.</value>
   </data>
   <data name="Start.ReleaseNotes" xml:space="preserve">
     <value>Read release notes</value>
@@ -3864,4 +3864,15 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
   <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>Drag to reorder. You can also drag components directly on the media bar.</value></data>
   <data name="ComponentLayout.Parallel" xml:space="preserve"><value>Parallel metrics and order</value></data>
   <data name="ComponentLayout.ParallelDescription" xml:space="preserve"><value>Shares visibility and order with the resident layout in At rest. Configure the no-media layout separately on that page.</value></data>
+  <data name="Battery.Overview" xml:space="preserve"><value>View all devices</value></data>
+  <data name="Battery.Primary" xml:space="preserve"><value>Primary device</value></data>
+  <data name="Battery.Charging" xml:space="preserve"><value>Charging</value></data>
+  <data name="Battery.Discharging" xml:space="preserve"><value>Not charging</value></data>
+  <data name="Battery.ChargingUnknown" xml:space="preserve"><value>Charging state unknown</value></data>
+  <data name="Battery.Transport.Bluetooth" xml:space="preserve"><value>Bluetooth</value></data>
+  <data name="Battery.Transport.Usb" xml:space="preserve"><value>USB</value></data>
+  <data name="Battery.Transport.Receiver" xml:space="preserve"><value>USB receiver</value></data>
+  <data name="Battery.Loading" xml:space="preserve"><value>Refreshing device batteries…</value></data>
+  <data name="Battery.Empty" xml:space="preserve"><value>No supported devices found. Connect or wake a device, then refresh.</value></data>
+  <data name="Battery.OverviewHint" xml:space="preserve"><value>Select a device to make it primary. Only the primary device remains tracked when this panel closes.</value></data>
 </root>

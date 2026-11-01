@@ -104,6 +104,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     public event EventHandler<FullPanelOpenRequestEventArgs>? OpenFullPanelRequested;
     public event EventHandler? PlacementTransitionStarted;
     public event Action<FloatingBarWindow, Point?>? PlayerMenuOpenRequested;
+    public event Action<TrayIconBounds>? BatteryOverviewRequested
+    { add => _mediaControl.BatteryOverviewRequested += value; remove => _mediaControl.BatteryOverviewRequested -= value; }
     internal bool IsPerformanceMenuRequested { get; private set; }
     internal bool IsBatteryMenuRequested { get; private set; }
 

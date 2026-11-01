@@ -3072,8 +3072,8 @@
   <data name="Device.Hotkey.Registered" xml:space="preserve"><value>已註冊</value></data>
   <data name="Device.Hotkey.Unavailable" xml:space="preserve"><value>沒有可用目標，請在裝置管理中檢查啟用狀態與連線</value></data>
   <data name="Device.Hotkey.Failed" xml:space="preserve"><value>裝置切換未完成</value></data>
-  <data name="Battery.Title" xml:space="preserve"><value>藍牙電量</value></data>
-  <data name="Battery.Hint" xml:space="preserve"><value>僅追蹤手動選擇的一個藍牙裝置，讀取 Windows 屬性和標準 BLE 電量。低電量同一週期提醒一次，啟動、改選和重新連線先建立基準。</value></data>
+  <data name="Battery.Title" xml:space="preserve"><value>裝置電量</value></data>
+  <data name="Battery.Hint" xml:space="preserve"><value>查看藍牙與支援接收器的裝置電量。面板關閉後僅追蹤主要裝置，並沿用其低電量提醒。</value></data>
   <data name="Battery.Notify" xml:space="preserve"><value>所選裝置低電量提醒</value></data>
   <data name="Battery.Threshold" xml:space="preserve"><value>低電量門檻</value></data>
   <data name="Battery.Unknown" xml:space="preserve"><value>電量未知</value></data>
@@ -3083,7 +3083,7 @@
 來源：{2}</value></data>
   <data name="Battery.WindowsProperty" xml:space="preserve"><value>Windows 裝置屬性</value></data>
   <data name="Battery.BleGatt" xml:space="preserve"><value>標準 BLE 電量</value></data>
-  <data name="Battery.LowTitle" xml:space="preserve"><value>耳機電量偏低</value></data>
+  <data name="Battery.LowTitle" xml:space="preserve"><value>裝置電量偏低</value></data>
   <data name="Battery.LowBody" xml:space="preserve"><value>{0} 目前電量為 {1}%。</value></data>
   <data name="Memory.ToolsDescription" xml:space="preserve"><value>檢視 AF 記憶體並按需回收；系統快取清理獨立操作。</value></data>
   <data name="Memory.Self.Title" xml:space="preserve"><value>回收 AF 自身記憶體</value></data>
@@ -3147,9 +3147,9 @@
   <data name="Device.Offline" xml:space="preserve"><value>暫時無法使用</value></data>
   <data name="Device.Hotkeys" xml:space="preserve"><value>裝置切換快速鍵</value></data>
   <data name="Device.Cycle.Hint" xml:space="preserve"><value>僅切換系統預設裝置，依裝置管理中已啟用裝置的順序循環，略過離線裝置。輸入和輸出各使用一個組合鍵。</value></data>
-  <data name="Battery.SelectHint" xml:space="preserve"><value>手動選擇一個已配對裝置，僅查詢該裝置的標準電量資訊。驅動程式或裝置未提供時顯示未知。</value></data>
-  <data name="Battery.Select" xml:space="preserve"><value>追蹤裝置</value></data>
-  <data name="Battery.ListRefresh" xml:space="preserve"><value>重新整理已配對裝置清單</value></data>
+  <data name="Battery.SelectHint" xml:space="preserve"><value>選擇工作列主要裝置。多裝置面板開啟時查詢全部支援裝置，關閉後僅追蹤主要裝置；未提供的資料顯示未知。</value></data>
+  <data name="Battery.Select" xml:space="preserve"><value>工作列主要裝置</value></data>
+  <data name="Battery.ListRefresh" xml:space="preserve"><value>重新整理裝置清單</value></data>
   <data name="Battery.Clear" xml:space="preserve"><value>清除選擇</value></data>
   <data name="Battery.WidgetEnabled" xml:space="preserve"><value>顯示電量元件</value></data>
   <data name="Battery.DisplayMode" xml:space="preserve"><value>自動顯示方式</value></data>
@@ -3157,11 +3157,11 @@
   <data name="Battery.WhenLow" xml:space="preserve"><value>僅低電量時顯示</value></data>
   <data name="Battery.Connected" xml:space="preserve"><value>已連線</value></data>
   <data name="Battery.Disconnected" xml:space="preserve"><value>未連線</value></data>
-  <data name="Battery.ReadFailed" xml:space="preserve"><value>無法讀取藍牙裝置，請稍後重新整理</value></data>
-  <data name="Battery.Open" xml:space="preserve"><value>設定藍牙電量</value></data>
+  <data name="Battery.ReadFailed" xml:space="preserve"><value>部分裝置無法讀取，請稍後重新整理</value></data>
+  <data name="Battery.Open" xml:space="preserve"><value>設定裝置電量</value></data>
   <data name="Battery.Refresh" xml:space="preserve"><value>重新整理電量</value></data>
   <data name="Battery.RefreshHint" xml:space="preserve"><value>讀取最多每分鐘一次；連線變化會更新狀態，失敗時延後重試。</value></data>
-  <data name="Battery.WidgetHint" xml:space="preserve"><value>在裝置管理中選擇追蹤目標。無媒體時顯示需在下方保留元件中勾選藍牙電量。</value></data>
+  <data name="Battery.WidgetHint" xml:space="preserve"><value>在裝置電量設定中選擇主要裝置，並在保留元件中啟用裝置電量。</value></data>
   <data name="Memory.System.CacheReadings" xml:space="preserve"><value>系統快取（含待命頁）：{0} → {1}</value></data>
   <data name="Memory.System.Change" xml:space="preserve"><value>可用記憶體變化：{0} MB</value></data>
   <data name="Memory.System.Elapsed" xml:space="preserve"><value>執行耗時：{0} ms</value></data>
@@ -3196,7 +3196,7 @@
     <value>元件設定</value>
   </data>
 <data name="Widgets.Header.Subtitle" xml:space="preserve">
-    <value>設定小音符、頻譜、效能和藍牙電量；元件順序在內容與配置中調整。</value>
+    <value>設定小音符、頻譜、效能和裝置電量；元件順序在內容與配置中調整。</value>
   </data>
   <data name="Widgets.Spectrum" xml:space="preserve">
     <value>頻譜</value>
@@ -3305,7 +3305,7 @@
   <data name="Settings.RestState.IdleDescription" xml:space="preserve"><value>可全部關閉；沒有媒體時會隱藏媒體列。</value></data>
   <data name="Settings.RestState.OrderHint" xml:space="preserve"><value>封面與媒體文字固定於起始側，其餘元件可排序。</value></data>
   <data name="Settings.RestState.Fixed" xml:space="preserve"><value>固定</value></data>
-  <data name="Settings.RestState.BatteryHint" xml:space="preserve"><value>需啟用藍牙電量實驗並選擇追蹤裝置。</value></data>
+  <data name="Settings.RestState.BatteryHint" xml:space="preserve"><value>需啟用裝置電量實驗並選擇主要裝置。</value></data>
   <data name="Settings.RestState.VisibilityLink" xml:space="preserve"><value>調整常駐顯示</value></data>
   <data name="Settings.Component.Configure" xml:space="preserve"><value>前往設定</value></data>
   <data name="Settings.Preview.Title" xml:space="preserve"><value>局部預覽</value></data>
@@ -3354,7 +3354,7 @@
   <data name="Settings.Page.Spectrum.Description" xml:space="preserve"><value>設定擷取範圍、裝置與頻譜樣式。</value></data>
   <data name="Settings.Page.Performance" xml:space="preserve"><value>效能</value></data>
   <data name="Settings.Page.Performance.Description" xml:space="preserve"><value>選擇指標、顯示方式與取樣間隔。</value></data>
-  <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>藍牙電量</value></data>
+  <data name="Settings.Page.BluetoothBattery" xml:space="preserve"><value>裝置電量</value></data>
   <data name="Settings.Page.BluetoothBattery.Description" xml:space="preserve"><value>選擇追蹤裝置、顯示方式與低電量提醒。</value></data>
   <data name="Settings.Page.MediaSource" xml:space="preserve"><value>媒體來源</value></data>
   <data name="Settings.Page.ExtraFeatures.Description" xml:space="preserve"><value>選擇播放器、自動切換策略與允許清單。</value></data>
@@ -3470,7 +3470,7 @@
   <data name="Start.Tutorial.Devices.Body" xml:space="preserve">
     <value>1. 在「音訊裝置」啟用需要的裝置，設定別名與排列順序。
 2. 在「常駐狀態」顯示輸入或輸出裝置按鈕。
-3. 裝置切換快速鍵與操作目標在「互動與快速鍵」。藍牙電量需要先啟用對應實驗功能，且依賴 Windows 和驅動程式提供的資料。</value>
+3. 裝置切換快速鍵與操作目標在「互動與快速鍵」。裝置電量需要先啟用對應實驗功能，且依賴 Windows 和驅動程式提供的資料。</value>
   </data>
   <data name="Start.Tutorial.Daily" xml:space="preserve">
     <value>日常操作與排序</value>
@@ -3492,7 +3492,7 @@
   <data name="Start.Release16.Body" xml:space="preserve">
     <value>音訊裝置管理與切換快速鍵正式可用，支援裝置別名與排序。
 提供懸浮模式、四邊貼邊收合，以及與系統工作列方向一致的垂直顯示。
-完整面板入口支援點擊或懸停開啟；藍牙電量仍為預設關閉的實驗功能。</value>
+完整面板入口支援點擊或懸停開啟；裝置電量仍為預設關閉的實驗功能。</value>
   </data>
   <data name="Start.ReleaseNotes" xml:space="preserve">
     <value>檢視正式版說明</value>
@@ -3864,4 +3864,15 @@
   <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>拖曳調整順序；也可在實際媒體列上用滑鼠拖曳元件。</value></data>
   <data name="ComponentLayout.Parallel" xml:space="preserve"><value>並排指標與順序</value></data>
   <data name="ComponentLayout.ParallelDescription" xml:space="preserve"><value>與「常駐狀態」的常駐顯示共用顯隱和順序；無媒體顯示請到該頁另行調整。</value></data>
+  <data name="Battery.Overview" xml:space="preserve"><value>查看所有裝置</value></data>
+  <data name="Battery.Primary" xml:space="preserve"><value>主要裝置</value></data>
+  <data name="Battery.Charging" xml:space="preserve"><value>充電中</value></data>
+  <data name="Battery.Discharging" xml:space="preserve"><value>未充電</value></data>
+  <data name="Battery.ChargingUnknown" xml:space="preserve"><value>充電狀態未知</value></data>
+  <data name="Battery.Transport.Bluetooth" xml:space="preserve"><value>藍牙</value></data>
+  <data name="Battery.Transport.Usb" xml:space="preserve"><value>USB</value></data>
+  <data name="Battery.Transport.Receiver" xml:space="preserve"><value>USB 接收器</value></data>
+  <data name="Battery.Loading" xml:space="preserve"><value>正在重新整理裝置電量…</value></data>
+  <data name="Battery.Empty" xml:space="preserve"><value>未發現支援的裝置。請連接或喚醒裝置後重新整理。</value></data>
+  <data name="Battery.OverviewHint" xml:space="preserve"><value>點選裝置設為主要裝置；關閉面板後僅持續追蹤主要裝置。</value></data>
 </root>
