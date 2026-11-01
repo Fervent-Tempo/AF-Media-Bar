@@ -3001,7 +3001,7 @@
   <data name="Placement.Floating.Description" xml:space="preserve"><value>在选中的显示器上显示桌面小工具，位置分别保存。</value></data>
   <data name="DisplayModes.Mode.FloatingBar.Caption" xml:space="preserve"><value>独立显示在桌面，可自由拖动并选择窗口层级。</value></data>
   <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>实验性</value></data>
-  <data name="Settings.Reorder.Help" xml:space="preserve"><value>拖动调整顺序；也可聚焦后按 Alt＋↑／↓。</value></data>
+  <data name="Settings.Reorder.Help" xml:space="preserve"><value>拖动调整顺序。</value></data>
   <data name="Settings.Reorder.Position" xml:space="preserve"><value>第 {0} 项，共 {1} 项</value></data>
   <data name="Media.Selection.Title" xml:space="preserve"><value>自动切换策略</value></data>
   <data name="Media.Selection.Mode.Automatic" xml:space="preserve"><value>自动选择</value></data>
@@ -3480,7 +3480,7 @@
   </data>
   <data name="Start.Tutorial.Daily.Body" xml:space="preserve">
     <value>点击与滚轮的行为在“交互与快捷键”统一设置。
-可排序列表使用最右侧手柄；聚焦手柄后按 Alt＋↑／↓ 也可排序，拖动中按 Esc 取消。
+使用列表最右侧的手柄拖动调整顺序，拖动中按 Esc 取消。
 使用 Ctrl＋F 搜索设置。关联入口在指针悬停或键盘焦点进入该行时显示。</value>
   </data>
   <data name="Start.Releases" xml:space="preserve">
@@ -3861,5 +3861,5 @@
   <data name="Home.RefreshCooldown" xml:space="preserve">
     <value>刚刚已刷新，稍后再试</value>
   </data>
-  <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>拖动调整顺序，或聚焦手柄后按 Alt＋↑／↓；也可在实际媒体栏上用鼠标拖动组件。</value></data>
+  <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>拖动调整顺序；也可在实际媒体栏上用鼠标拖动组件。</value></data>
 </root>

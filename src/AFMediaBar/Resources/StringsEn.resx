@@ -3001,7 +3001,7 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Placement.Floating.Description" xml:space="preserve"><value>Show a desktop widget on each selected display, with positions saved separately.</value></data>
   <data name="DisplayModes.Mode.FloatingBar.Caption" xml:space="preserve"><value>Place the bar on the desktop, drag it freely, and choose its window layer.</value></data>
   <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>Experimental</value></data>
-  <data name="Settings.Reorder.Help" xml:space="preserve"><value>Drag to reorder, or focus the handle and press Alt+Up/Down.</value></data>
+  <data name="Settings.Reorder.Help" xml:space="preserve"><value>Drag to reorder.</value></data>
   <data name="Settings.Reorder.Position" xml:space="preserve"><value>Item {0} of {1}</value></data>
   <data name="Media.Selection.Title" xml:space="preserve"><value>Automatic switching</value></data>
   <data name="Media.Selection.Mode.Automatic" xml:space="preserve"><value>Automatic</value></data>
@@ -3480,7 +3480,7 @@ Dropped samples: {3}; events: {4}</value></data>
   </data>
   <data name="Start.Tutorial.Daily.Body" xml:space="preserve">
     <value>Configure click and wheel actions in Interaction &amp; shortcuts.
-Reorder lists with the handle on the right, or focus it and press Alt + Up/Down. Press Esc to cancel a drag.
+Drag the handle on the right to reorder a list. Press Esc to cancel a drag.
 Press Ctrl + F to search. Related links appear when a row is hovered or contains keyboard focus.</value>
   </data>
   <data name="Start.Releases" xml:space="preserve">
@@ -3861,5 +3861,5 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
   <data name="Home.RefreshCooldown" xml:space="preserve">
     <value>Refreshed recently, try again later</value>
   </data>
-  <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>Drag to reorder, or focus the handle and press Alt+Up/Down. You can also drag components directly on the media bar.</value></data>
+  <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>Drag to reorder. You can also drag components directly on the media bar.</value></data>
 </root>

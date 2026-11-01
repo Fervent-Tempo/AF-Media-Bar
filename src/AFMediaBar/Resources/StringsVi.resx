@@ -3041,7 +3041,7 @@ Bạn có dùng bản Windows rút gọn không? Hãy thử khôi phục các d�
   <data name="Placement.Floating.Description" xml:space="preserve"><value>Hiển thị tiện ích trên từng màn hình đã chọn và lưu vị trí riêng.</value></data>
   <data name="DisplayModes.Mode.FloatingBar.Caption" xml:space="preserve"><value>Hiển thị riêng trên màn hình, kéo tự do và chọn lớp cửa sổ.</value></data>
   <data name="DisplayModes.Mode.Experimental" xml:space="preserve"><value>Thử nghiệm</value></data>
-  <data name="Settings.Reorder.Help" xml:space="preserve"><value>Kéo để đổi thứ tự, hoặc chọn tay nắm rồi nhấn Alt+Lên/Xuống.</value></data>
+  <data name="Settings.Reorder.Help" xml:space="preserve"><value>Kéo để đổi thứ tự.</value></data>
   <data name="Settings.Reorder.Position" xml:space="preserve"><value>Mục {0} trên {1}</value></data>
   <data name="Media.Selection.Title" xml:space="preserve"><value>Chính sách chuyển nguồn</value></data>
   <data name="Media.Selection.Mode.Automatic" xml:space="preserve"><value>Tự động</value></data>
@@ -3520,7 +3520,7 @@ Mẫu bị loại: {3}; sự kiện: {4}</value></data>
   </data>
   <data name="Start.Tutorial.Daily.Body" xml:space="preserve">
     <value>Chỉnh hành vi nhấp và cuộn trong Tương tác và phím tắt.
-Kéo tay nắm bên phải để sắp xếp hoặc chọn nó rồi nhấn Alt + Lên/Xuống. Nhấn Esc để hủy kéo.
+Kéo tay nắm bên phải để đổi thứ tự. Nhấn Esc để hủy kéo.
 Nhấn Ctrl + F để tìm thiết lập. Liên kết hiện khi di chuột hoặc đưa tiêu điểm bàn phím vào hàng.</value>
   </data>
   <data name="Start.Releases" xml:space="preserve">
@@ -3898,5 +3898,5 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Home.RefreshCooldown" xml:space="preserve">
     <value>Vừa làm mới, vui lòng thử lại sau</value>
   </data>
-  <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>Kéo để đổi thứ tự, hoặc chọn tay nắm rồi nhấn Alt+Lên/Xuống. Bạn cũng có thể kéo các thành phần trực tiếp trên thanh phương tiện.</value></data>
+  <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>Kéo để đổi thứ tự. Bạn cũng có thể kéo các thành phần trực tiếp trên thanh phương tiện.</value></data>
 </root>
