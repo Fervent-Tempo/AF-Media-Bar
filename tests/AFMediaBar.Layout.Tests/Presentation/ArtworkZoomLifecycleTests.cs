@@ -26,6 +26,13 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class ArtworkZoomLifecycleTests
 {
     [TestMethod]
+    public void BatteryDevicesHaveIndependentSurfacesAndFollowArtworkPush() => RunIsolated(nameof(BatteryDevicesHaveIndependentSurfacesAndFollowArtworkPush), (control, _) =>
+    {
+        BatteryVisualChecks.Verify(control);
+        return Task.CompletedTask;
+    });
+
+    [TestMethod]
     public void FinalDisposalReclaimsArtworkAndRejectsPresentationReactivation() => RunIsolated(nameof(FinalDisposalReclaimsArtworkAndRejectsPresentationReactivation), async (control, dispatcher) =>
     {
         Invoke(control, "ShowArtworkHoverZoom");
