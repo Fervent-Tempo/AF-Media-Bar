@@ -624,7 +624,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         if (e.PropertyName is nameof(AppSettings.Experiments) or nameof(AppSettings.FloatingBar) ||
             e.ResetScope is SettingsResetScope.DisplayModes or SettingsResetScope.Layout or SettingsResetScope.Components or SettingsResetScope.RestState or SettingsResetScope.QuickControls or SettingsResetScope.FullPanel or SettingsResetScope.BarAppearance or SettingsResetScope.All)
             RaiseAll();
-        else if (e.PropertyName == nameof(AppSettings.PerformanceComponent)) RefreshComponentLayouts();
+        else if (e.PropertyName is nameof(AppSettings.PerformanceComponent) or nameof(AppSettings.BluetoothBatteryWidget)) RefreshComponentLayouts();
         else if (!_isRefreshing && (e.PropertyName is nameof(AppSettings.Position) or nameof(AppSettings.TaskbarExperience)))
         {
             // Arrangement is derived from both properties. Publish their effective values while

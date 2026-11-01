@@ -69,7 +69,7 @@ public partial class TaskBarMediaControl
         double OriginalOpacity,
         Transform OriginalTransform);
 
-    private Dictionary<TaskbarRestComponent, RestVisual>? CaptureRestVisuals(bool targetConnected)
+    private Dictionary<ComponentKey, RestVisual>? CaptureRestVisuals(bool targetConnected)
     {
         if (!AllowRestConnectionTransition || !IsLoaded || _isHostVisibilitySuspended || _isPlacementMotionActive ||
             _backgroundPruneLevel >= MemoryPruneLevel.DisplayOff || !IsBarPresentation ||
@@ -86,10 +86,11 @@ public partial class TaskBarMediaControl
             experience.VolumeVisible,
             experience.ArtworkVisible,
             experience.InputDeviceVisible);
-        var visuals = new Dictionary<TaskbarRestComponent, RestVisual>();
-        foreach (var component in TaskbarRestLayoutPolicy.DefaultOrder.Concat(ComponentLayoutPolicy.TransportComponents))
+        var visuals = new Dictionary<ComponentKey, RestVisual>();
+        foreach (var key in RestTransitionKeys())
         {
-            var element = GetRestElement(component);
+            var component = key.Component;
+            var element = RestTransitionElement(key);
             if (element.Visibility != Visibility.Visible || element.ActualWidth <= 0 || element.ActualHeight <= 0)
                 continue;
 
@@ -101,7 +102,9 @@ public partial class TaskBarMediaControl
             BitmapSource? bitmap = null;
             var needsBitmap = component == TaskbarRestComponent.Artwork ||
                 (component != TaskbarRestComponent.MediaText &&
-                 !(ComponentLayoutPolicy.TransportComponents.Contains(component)
+                 !(component == TaskbarRestComponent.BluetoothBattery
+                     ? ComponentLayoutPolicy.Resolve(PresentationSettings, targetConnected ? BarLayoutState.Resident : BarLayoutState.Idle).Any(e => e.Key == key && e.IsVisible)
+                     : ComponentLayoutPolicy.TransportComponents.Contains(component)
                      ? targetConnected && ComponentLayoutPolicy.Resolve(PresentationSettings, BarLayoutState.Resident)
                          .Any(entry => entry.Component == component && entry.IsVisible)
                      : TaskbarRestLayoutPolicy.IsVisible(component, targetVisibility)));
@@ -125,12 +128,18 @@ public partial class TaskBarMediaControl
             var visibleWidth = element.Clip is RectangleGeometry { Transform: ScaleTransform scale }
                 ? element.ActualWidth * scale.ScaleX
                 : element.ActualWidth;
-            visuals[component] = new RestVisual(point, element.ActualWidth,
+            visuals[key] = new RestVisual(point, element.ActualWidth,
                 element.ActualHeight, bitmap, visibleWidth);
         }
 
         return visuals;
     }
+
+    private IEnumerable<ComponentKey> RestTransitionKeys() => TaskbarRestLayoutPolicy.DefaultOrder
+        .Concat(ComponentLayoutPolicy.TransportComponents).Select(c => new ComponentKey(c))
+        .Concat(_batterySurfaces.Keys).Distinct();
+    private FrameworkElement RestTransitionElement(ComponentKey key) => key.DeviceId is not null && _batterySurfaces.TryGetValue(key, out var surface)
+        ? surface : GetRestElement(key.Component);
 
     private FrameworkElement GetRestElement(TaskbarRestComponent component) => component switch
     {
@@ -168,7 +177,7 @@ public partial class TaskBarMediaControl
         }
     }
 
-    private void PrepareRestConnectionTransition(Dictionary<TaskbarRestComponent, RestVisual>? before, bool entering)
+    private void PrepareRestConnectionTransition(Dictionary<ComponentKey, RestVisual>? before, bool entering)
     {
         if (before is null)
         {
@@ -224,7 +233,7 @@ public partial class TaskBarMediaControl
         _restTransitionTargetPublished = true;
     }
 
-    private void AnimateRestConnectionChange(Dictionary<TaskbarRestComponent, RestVisual>? before)
+    private void AnimateRestConnectionChange(Dictionary<ComponentKey, RestVisual>? before)
     {
         if (before is null || !_restTransitionActive)
             return;
@@ -236,13 +245,14 @@ public partial class TaskBarMediaControl
         _restTransitionEase = MotionPolicy.CreateRestConnectionEase();
         InteractionSurface.UpdateLayout();
 
-        foreach (var component in TaskbarRestLayoutPolicy.DefaultOrder.Concat(ComponentLayoutPolicy.TransportComponents))
+        foreach (var key in RestTransitionKeys())
         {
+            var component = key.Component;
             if (component == TaskbarRestComponent.MediaText)
                 continue;
 
-            var element = GetRestElement(component);
-            var wasVisible = before.TryGetValue(component, out var previous);
+            var element = RestTransitionElement(key);
+            var wasVisible = before.TryGetValue(key, out var previous);
             var isVisible = element.Visibility == Visibility.Visible &&
                 (element.ActualWidth > 0 || (double.IsFinite(element.Width) && element.Width > 0));
 

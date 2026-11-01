@@ -18,10 +18,10 @@ public partial class TaskBarMediaControl
 
     private BarLayoutState RestLayoutState => _isConnected ? BarLayoutState.Resident : BarLayoutState.Idle;
     private IReadOnlyList<ComponentLayoutEntry> EffectiveRestEntries() => ComponentLayoutPolicy.Resolve(PresentationSettings, RestLayoutState);
-    private TaskbarRestComponent[] EffectiveRestComponents() => PreviewRestEntries()
-        .Where(entry => entry.IsVisible && (entry.Component != TaskbarRestComponent.BluetoothBattery || _batteryCanShow))
-        .Select(entry => entry.Component).ToArray();
-    private TaskbarRestComponent[] RestComponentsWithHandle()
+    private ComponentKey[] EffectiveRestComponents() => PreviewRestEntries()
+        .Where(entry => entry.IsVisible && (entry.Component != TaskbarRestComponent.BluetoothBattery || IsBatteryKeyVisible(entry.Key)))
+        .Select(entry => entry.Key).ToArray();
+    private ComponentKey[] RestComponentsWithHandle()
     {
         var visible = EffectiveRestComponents();
         return visible.Length == 0 ? [] : [.. visible, TaskbarRestComponent.DragHandle];

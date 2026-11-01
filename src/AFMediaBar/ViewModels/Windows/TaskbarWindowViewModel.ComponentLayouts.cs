@@ -15,8 +15,8 @@ public partial class TaskbarWindowViewModel
         var settings = SettingsManager.Current;
         var entries = ComponentLayoutPolicy.Resolve(settings, request.State);
         if (!entries.SequenceEqual(request.OriginalEntries)) return;
-        if (ComponentLayoutPolicy.TryMove(settings, request.State, request.Component, request.TargetIndex,
-            entries.Select(entry => entry.Component).ToArray(), out var updated))
+        if (ComponentLayoutPolicy.TryMove(settings, request.State, request.Key, request.TargetIndex,
+            entries.Select(entry => entry.Key).ToArray(), out var updated))
             settings.TaskbarExperience = updated;
     }
 }

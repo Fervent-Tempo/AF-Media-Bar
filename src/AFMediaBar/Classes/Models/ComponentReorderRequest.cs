@@ -2,5 +2,8 @@
 using AFMediaBar.Classes.Settings;
 namespace AFMediaBar.Classes.Models;
 
-public sealed record ComponentReorderRequest(BarLayoutState State, TaskbarRestComponent Component,
-    int TargetIndex, IReadOnlyList<ComponentLayoutEntry> OriginalEntries);
+public sealed record ComponentReorderRequest(BarLayoutState State, ComponentKey Key,
+    int TargetIndex, IReadOnlyList<ComponentLayoutEntry> OriginalEntries)
+{
+    public TaskbarRestComponent Component => Key.Component;
+}

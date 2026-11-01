@@ -30,7 +30,7 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
     private int _version;
     private int _overviewCount;
     private int _forceRefresh;
-    private bool _lowVisible;
+    private readonly HashSet<string> _lowVisible = new(StringComparer.OrdinalIgnoreCase);
     private bool _disposed;
     private bool _started;
     private string? _selectedId;
@@ -40,9 +40,23 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
     public IReadOnlyList<BluetoothBatterySnapshot> Readings { get; private set; } = [];
     public bool IsRefreshing { get; private set; }
     public bool LastDiscoveryFailed { get; private set; }
-    public bool ShouldShowWidget => SettingsManager.Current.Experiments.BluetoothBattery && WidgetRequested(SettingsManager.Current) &&
-        Snapshot is { IsConnected: true } snapshot && snapshot.DeviceId == SettingsManager.Current.BluetoothBatteryWidget.DeviceId &&
-        (SettingsManager.Current.BluetoothBatteryWidget.DisplayMode == BluetoothBatteryDisplayMode.WhenConnected || snapshot.IsRealtime && _lowVisible);
+    public bool ShouldShowWidget => WidgetReadings.Count > 0;
+    public IReadOnlyList<BluetoothBatterySnapshot> WidgetReadings
+    {
+        get
+        {
+            var settings = SettingsManager.Current;
+            if (!settings.Experiments.BluetoothBattery || !WidgetRequested(settings)) return [];
+            return settings.BluetoothBatteryWidget.GetSelectedDevices().Select(d => Readings.FirstOrDefault(r =>
+                r.DeviceId.Equals(d.Id, StringComparison.OrdinalIgnoreCase)))
+                .OfType<BluetoothBatterySnapshot>().Where(r => r.IsConnected &&
+                    (settings.BluetoothBatteryWidget.DisplayMode == BluetoothBatteryDisplayMode.WhenConnected ||
+                     r.IsRealtime && _lowVisible.Contains(r.DeviceId))).ToArray();
+        }
+    }
+    internal static IReadOnlyList<string> TrackingIds(BluetoothBatteryWidgetSettings widget, bool showWidget) =>
+        (showWidget ? widget.GetSelectedDevices().Select(d => d.Id) : [])
+        .Concat(widget.Notifications && widget.DeviceId is { } id ? [id] : []).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 
     public Task<IReadOnlyList<BluetoothBatteryDevice>> GetDevicesAsync(CancellationToken token = default) => reader.GetDevicesAsync(token);
     public IDisposable AcquireOverviewSession()
@@ -97,27 +111,29 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
                         var settings = SettingsManager.Current;
                         return (Enabled: settings.Experiments.BluetoothBattery, Widget: settings.BluetoothBatteryWidget,
                             TrackMain: WidgetRequested(settings) || settings.BluetoothBatteryWidget.Notifications,
+                            Tracking: TrackingIds(settings.BluetoothBatteryWidget, WidgetRequested(settings)),
                             Overview: Volatile.Read(ref _overviewCount) > 0);
                     });
                     var main = config.Enabled && config.TrackMain ? config.Widget.DeviceId : null;
                     var overview = config.Enabled && config.Overview;
-                    if (main is null && !overview)
+                    var tracking = config.Enabled ? config.Tracking : [];
+                    if (tracking.Count == 0 && !overview)
                     {
                         ReleaseObservers(observers);
                         await reader.ReleaseExceptAsync(new HashSet<string>()).ConfigureAwait(false);
-                        await PublishAsync(version, cycle.Token, () => { cache.Clear(); _lowVisible = false; Readings = []; IsRefreshing = false; });
+                        await PublishAsync(version, cycle.Token, () => { cache.Clear(); _lowVisible.Clear(); Readings = []; IsRefreshing = false; });
                         nextDiscovery = DateTimeOffset.MinValue;
                         wait = Timeout.InfiniteTimeSpan;
                     }
                     else
                     {
-                        // 概览关闭先释放非主设备监听，不等可能耗时的 HID++ 目录查询。
+                        // 概览关闭先释放不再追踪的设备，不等可能耗时的 HID++ 目录查询。
                         if (!overview)
-                            await reader.ReleaseExceptAsync(catalog.Where(d => d.Matches(main)).Select(d => d.Id).ToHashSet(StringComparer.OrdinalIgnoreCase)).ConfigureAwait(false);
+                            await reader.ReleaseExceptAsync(catalog.Where(d => tracking.Any(d.Matches)).Select(d => d.Id).ToHashSet(StringComparer.OrdinalIgnoreCase)).ConfigureAwait(false);
                         if (observers.Count == 0) CreateObservers(observers);
                         if (main != _selectedId || config.Widget.LowThreshold != _threshold)
                         {
-                            _selectedId = main; _threshold = config.Widget.LowThreshold; _lowVisible = false;
+                            _selectedId = main;
                             _alerts.ResetBaseline();
                         }
                         var refresh = Volatile.Read(ref _forceRefresh);
@@ -131,13 +147,13 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
                             var failed = reader.HadDiscoveryFailures;
                             await PublishAsync(version, cycle.Token, () => { LastDiscoveryFailed = failed; });
                         }
-                        var targets = catalog.Where(d => overview || d.Matches(main)).ToArray();
+                        var targets = catalog.Where(d => overview || tracking.Any(d.Matches)).ToArray();
                         await reader.ReleaseExceptAsync(targets.Select(d => d.Id).ToHashSet(StringComparer.OrdinalIgnoreCase)).ConfigureAwait(false);
                         var results = new List<BluetoothBatterySnapshot>();
                         foreach (var device in targets)
                         {
                             cycle.Token.ThrowIfCancellationRequested();
-                            var id = device.Matches(main) ? main! : device.Id;
+                            var id = config.Widget.GetSelectedDevices().FirstOrDefault(d => device.Matches(d.Id))?.Id ?? (device.Matches(main) ? main! : device.Id);
                             _saved.TryGetValue(device.Id, out var old);
                             var reading = old ?? new(id, null, null, device.IsConnected, false, null)
                             { DeviceName = device.DisplayName, Transport = device.Transport, Protocol = device.Protocol };
@@ -161,13 +177,13 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
                                 if (!reading.ReadSucceeded && old is not null)
                                     reading = reading with { Percent = old.Percent, Source = old.Source, UpdatedAt = old.UpdatedAt, IsCharging = old.IsCharging, FreshnessKnown = old.FreshnessKnown };
                             }
-                            reading = reading with { DeviceId = id };
+                            reading = reading with { DeviceId = id, Kind = device.Kind, DeviceName = device.DisplayName };
                             if (device.Matches(main) && old?.IsConnected != reading.IsConnected) _alerts.ResetBaseline();
                             _saved[device.Id] = reading;
                             results.Add(reading);
                             if (device.IsPassive) wait = TimeSpan.FromSeconds(2);
                         }
-                        if (main is not null && !results.Any(r => r.DeviceId == main))
+                        if (main is not null && !results.Any(r => catalog.Any(d => d.Matches(main) && d.Matches(r.DeviceId))))
                             results.Add((Snapshot is { } previous && previous.DeviceId == main ? previous : new(main, null, null, false, false, null)
                             { DeviceName = config.Widget.LastKnownName }) with { IsConnected = false, ReadSucceeded = false });
                         cycle.Token.ThrowIfCancellationRequested();
@@ -175,12 +191,15 @@ public sealed class BluetoothBatteryService(DeviceBatteryReader reader, Bluetoot
                         {
                             Readings = results.ToArray(); IsRefreshing = false;
                             appliedRefresh = refresh;
-                            var selected = results.FirstOrDefault(r => r.DeviceId == main);
+                            var selected = results.FirstOrDefault(r => r.DeviceId.Equals(main, StringComparison.OrdinalIgnoreCase) ||
+                                catalog.Any(d => d.Matches(main) && d.Matches(r.DeviceId)));
+                            if (selected is not null) selected = selected with { DeviceId = main! };
                             cache.Publish(selected);
-                            if (selected?.IsRealtime == true)
+                            if (_threshold != config.Widget.LowThreshold) { _lowVisible.Clear(); _threshold = config.Widget.LowThreshold; }
+                            foreach (var reading in results.Where(r => r.IsRealtime))
                             {
-                                if (selected.Percent <= config.Widget.LowThreshold) _lowVisible = true;
-                                else if (selected.Percent >= config.Widget.LowThreshold + 5) _lowVisible = false;
+                                if (reading.Percent <= config.Widget.LowThreshold) _lowVisible.Add(reading.DeviceId);
+                                else if (reading.Percent >= config.Widget.LowThreshold + 5) _lowVisible.Remove(reading.DeviceId);
                             }
                             if (_alerts.Evaluate(main, selected, config.Widget.Notifications, config.Widget.LowThreshold))
                                 try { notifications.TryShowNotification(Translations.Get("Battery.LowTitle"), Translations.Format("Battery.LowBody", selected!.DeviceName, selected.Percent), ShellNotificationTarget.None, "Battery.Low"); }

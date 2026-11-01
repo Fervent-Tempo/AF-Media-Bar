@@ -94,10 +94,23 @@ public sealed class HidBatteryProvider(AppLogService log) : IDeviceBatteryProvid
             if (string.IsNullOrWhiteSpace(name)) name = $"HID {h.VendorId:X4}:{h.ProductId:X4}";
             devices.Add(new(id, name, h.ContainerId, string.Empty, [])
             {
+                Kind = target.Kind switch
+                {
+                    HidBatteryKind.RazerMouse or HidBatteryKind.AtkMouse or HidBatteryKind.Inphic9 or HidBatteryKind.Inphic10 => BatteryDeviceKind.Mouse,
+                    HidBatteryKind.RazerHeadset or HidBatteryKind.AtkHeadset => BatteryDeviceKind.Headset,
+                    _ => ClassifyCollections(endpoints.Where(e => e.PhysicalId == h.PhysicalId))
+                },
                 ProviderId = Id, IsPresent = true, IsPassive = target.Kind == HidBatteryKind.Inphic10,
                 Protocol = target.Kind.ToString(), Transport = h.IsBluetooth ? BatteryTransport.Bluetooth : target.Kind == HidBatteryKind.Inphic9 && h.ProductId == 0x5B2E ? BatteryTransport.Usb : BatteryTransport.Receiver
             });
         }
+    }
+    private static BatteryDeviceKind ClassifyCollections(IEnumerable<BatteryHidEndpoint> endpoints)
+    {
+        var kinds = endpoints.Where(e => e.UsagePage == 1).Select(e => e.Usage switch
+        { 2 => BatteryDeviceKind.Mouse, 6 => BatteryDeviceKind.Keyboard, 4 or 5 => BatteryDeviceKind.Controller, _ => BatteryDeviceKind.Unknown })
+            .Where(k => k != BatteryDeviceKind.Unknown).Distinct().ToArray();
+        return kinds.Length == 1 ? kinds[0] : BatteryDeviceKind.Unknown;
     }
     public async Task<BluetoothBatterySnapshot> ReadAsync(BluetoothBatteryDevice device, string selectedId, CancellationToken token)
     {
@@ -136,7 +149,7 @@ public sealed class HidBatteryProvider(AppLogService log) : IDeviceBatteryProvid
     }
     private static BluetoothBatterySnapshot SnapshotFor(BluetoothBatteryDevice device, string id, HidBatteryValue? value) =>
         new(id, value?.Percent, BluetoothBatterySource.Hid, value is not null, value is not null, value is not null ? DateTimeOffset.UtcNow : null)
-        { DeviceName = device.DisplayName, Transport = device.Transport, Protocol = device.Protocol, IsCharging = value?.Charging };
+        { DeviceName = device.DisplayName, Kind = device.Kind, Transport = device.Transport, Protocol = device.Protocol, IsCharging = value?.Charging };
     private async Task<bool?> ReadChargingAsync(Func<Task<HidBatteryValue?>> read, CancellationToken token)
     {
         try { return (await read().ConfigureAwait(false))?.Percent switch { 0 => false, 1 => true, _ => null }; }

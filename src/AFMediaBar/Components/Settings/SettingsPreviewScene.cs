@@ -246,9 +246,12 @@ public sealed class SettingsPreviewScene : ContentControl
             else if (item.Component == TaskbarRestComponent.Spectrum) visual = (FrameworkElement)BuildSpectrum(model, crossSize);
             else if (item.Component == TaskbarRestComponent.BluetoothBattery)
             {
-                var battery = new StackPanel { Orientation = model.IsVertical ? Orientation.Vertical : Orientation.Horizontal };
-                battery.Children.Add(PlayerForeground(new PreviewSymbolIcon { Symbol = SymbolRegular.Bluetooth24, FontSize = 14 }, SymbolIcon.ForegroundProperty));
-                battery.Children.Add(PlayerForeground(Label("72%", 12), TextBlock.ForegroundProperty)); visual = battery;
+                visual = PlayerForeground(new BatteryPresenter
+                {
+                    VisualStyle = model.Battery.VisualStyle, Vertical = model.IsVertical,
+                    Snapshot = new(item.DeviceId ?? "preview", 72, AFMediaBar.Classes.Models.BluetoothBatterySource.Hid, true, true, DateTimeOffset.UtcNow)
+                    { Kind = AFMediaBar.Classes.Models.BatteryDeviceKind.Mouse }
+                }, Control.ForegroundProperty);
             }
             else visual = BarButton(item.Component, density);
             visual.HorizontalAlignment = HorizontalAlignment.Center;

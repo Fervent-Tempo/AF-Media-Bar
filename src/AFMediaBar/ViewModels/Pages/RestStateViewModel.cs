@@ -15,7 +15,7 @@ public sealed class RestStateViewModel : ObservableObject, IDisposable
     public BluetoothBatterySettingsViewModel Battery { get; }
     public SettingsPreviewViewModel Preview { get; }
     public CancellationToken ContextCancellationToken => _configuration.CancellationToken;
-    public bool BatteryAvailable => _configuration.Current.Experiments.BluetoothBattery && !string.IsNullOrEmpty(_configuration.Current.BluetoothBatteryWidget.DeviceId);
+    public bool BatteryAvailable => _configuration.Current.Experiments.BluetoothBattery && _configuration.Current.BluetoothBatteryWidget.GetSelectedDevices().Count > 0;
     public SettingsPageKey BatteryDestination => _configuration.Current.Experiments.BluetoothBattery ? SettingsPageKey.Widgets : SettingsPageKey.Experimental;
 
     public RestStateViewModel(DisplayModesViewModel layers, TaskbarAppearanceViewModel layout,

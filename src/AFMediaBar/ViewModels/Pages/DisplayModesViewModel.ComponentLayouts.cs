@@ -10,7 +10,7 @@ namespace AFMediaBar.ViewModels.Pages;
 
 public partial class DisplayModesViewModel
 {
-    private readonly Dictionary<(BarLayoutState, TaskbarRestComponent), ComponentLayoutSettingItem> _layoutRows = new();
+    private readonly Dictionary<(BarLayoutState, ComponentKey), ComponentLayoutSettingItem> _layoutRows = new();
     public IReadOnlyList<ComponentLayoutSettingItem> ResidentLayoutEntries { get; private set; } = [];
     public IReadOnlyList<ComponentLayoutSettingItem> IdleLayoutEntries { get; private set; } = [];
     public IReadOnlyList<ComponentLayoutSettingItem> HoverLayoutEntries { get; private set; } = [];
@@ -19,9 +19,9 @@ public partial class DisplayModesViewModel
     {
         return ComponentLayoutPolicy.Resolve(_configuration.Current, state).Select(entry =>
         {
-            var key = (state, entry.Component);
+            var key = (state, entry.Key);
             if (!_layoutRows.TryGetValue(key, out var row))
-                _layoutRows[key] = row = new(this, state, entry.Component);
+                _layoutRows[key] = row = new(this, state, entry.Key);
             row.Refresh();
             return row;
         }).ToArray();
@@ -42,16 +42,16 @@ public partial class DisplayModesViewModel
     {
         if (_disposed || _isRefreshing || !_configuration.IsActive || request?.Item is not ComponentLayoutSettingItem row) return;
         var current = LayoutRows(row.State);
-        if (request.TryResolve(current, item => item.Component, out _, out var target) &&
-            ComponentLayoutPolicy.TryMove(_configuration.Current, row.State, row.Component, target,
-                current.Select(item => item.Component).ToArray(), out var result))
+        if (request.TryResolve(current, item => item.Key, out _, out var target) &&
+            ComponentLayoutPolicy.TryMove(_configuration.Current, row.State, row.Key, target,
+                current.Select(item => item.Key).ToArray(), out var result))
             _configuration.SetTaskbarExperience(result);
     }
 
-    public sealed class ComponentLayoutSettingItem(DisplayModesViewModel owner, BarLayoutState state, TaskbarRestComponent component) : ObservableObject
+    public sealed class ComponentLayoutSettingItem(DisplayModesViewModel owner, BarLayoutState state, ComponentKey key) : ObservableObject
     {
         public BarLayoutState State { get; } = state;
-        public string SearchId => $"component:{State}:{Component}";
+        public string SearchId => $"component:{State}:{Key}";
         public bool HasConfiguration => Component is not (TaskbarRestComponent.Artwork or TaskbarRestComponent.PreviousTrack or TaskbarRestComponent.PlayPause or TaskbarRestComponent.NextTrack);
         public SettingsPageKey ConfigurationDestination => Component switch
         {
@@ -72,11 +72,12 @@ public partial class DisplayModesViewModel
             TaskbarRestComponent.Volume => "Audio.Settings.Advanced",
             _ => "Widgets.Performance"
         };
-        public TaskbarRestComponent Component { get; } = component;
+        public ComponentKey Key { get; } = key;
+        public TaskbarRestComponent Component => Key.Component;
         public bool CanMove => ComponentLayoutPolicy.CanMove(Component);
         public bool CanToggle => !(State == BarLayoutState.Resident && Component == TaskbarRestComponent.MediaText);
         public string Description => CanMove ? string.Empty : Translations.Get("ComponentLayout.FixedHead");
-        public string DisplayName => Component switch
+        public string DisplayName => Key.DeviceId is { } id ? owner._configuration.Current.BluetoothBatteryWidget.GetSelectedDevices().FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase))?.Name ?? id : Component switch
         {
             TaskbarRestComponent.SystemCpu => "CPU",
             TaskbarRestComponent.SystemGpu => "GPU",
@@ -91,11 +92,11 @@ public partial class DisplayModesViewModel
         };
         public bool IsVisible
         {
-            get => ComponentLayoutPolicy.ResolveAll(owner._configuration.Current, State).Any(item => item.Component == Component && item.IsVisible);
+            get => ComponentLayoutPolicy.ResolveAll(owner._configuration.Current, State).Any(item => item.Key == Component && item.IsVisible);
             set
             {
                 if (!CanToggle || owner._disposed || owner._isRefreshing || !owner._configuration.IsActive || value == IsVisible) return;
-                owner._configuration.SetTaskbarExperience(ComponentLayoutPolicy.SetVisible(owner._configuration.Current, State, Component, value));
+                owner._configuration.SetTaskbarExperience(ComponentLayoutPolicy.SetVisible(owner._configuration.Current, State, Key, value));
             }
         }
         internal void Refresh() => OnPropertyChanged(string.Empty);

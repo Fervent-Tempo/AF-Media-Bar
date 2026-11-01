@@ -361,7 +361,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         MediaSelection = MediaSelection,
         QuickLaunch = QuickLaunch,
         SpectrumComponent = SpectrumComponent,
-        BluetoothBatteryWidget = BluetoothBatteryWidget,
+        BluetoothBatteryWidget = BluetoothBatteryWidget.Normalize(),
         SystemMemoryOptimization = SystemMemoryOptimization,
         PerformanceComponent = PerformanceComponent,
         Update = Update,

@@ -1054,6 +1054,7 @@ namespace AFMediaBar.Components
             // The spectrum's bar count and style decide how much width it occupies, so the visual tree is rebuilt before any
             // width is computed.
             ConfigureSpectrum();
+            ConfigureBattery();
             var performanceWidthChanged = ConfigurePerformance();
             var progressVisible = _snapshot.Duration > 0;
             var controls = ComponentLayoutPolicy.HoverVisibility(PresentationSettings);
@@ -1283,7 +1284,7 @@ namespace AFMediaBar.Components
             if (IsBarPresentation) hoverHeight = Math.Min(hoverHeight, Math.Max(1, MainBorder.Height - _textBudget.PaddingDip * 2));
             PlaceRestWidget(TaskbarSpectrumHoverSurface, layout.Find(TaskbarRestComponent.Spectrum), hoverHeight);
             PlaceRestWidget(TaskbarPerformanceHoverSurface, layout.Find(TaskbarRestComponent.Performance), hoverHeight);
-            PlaceRestWidget(TaskbarBatterySurface, layout.Find(TaskbarRestComponent.BluetoothBattery), hoverHeight);
+
             PlaceRestWidget(TaskbarOutputDeviceHoverSurface, layout.Find(TaskbarRestComponent.OutputDevice), hoverHeight);
             PlaceRestWidget(TaskbarInputDeviceHoverSurface, layout.Find(TaskbarRestComponent.InputDevice), hoverHeight);
             PlaceRestWidget(TaskbarVolumeHoverSurface, layout.Find(TaskbarRestComponent.Volume), hoverHeight);
@@ -1293,6 +1294,7 @@ namespace AFMediaBar.Components
             ResizeResidentTransportButtons(metrics.ButtonSize,
                 Math.Min(metrics.ButtonSize, Math.Max(1, hoverHeight - RestWidgetVerticalInset(ResidentPreviousSurface))));
             PlaceMetricSurfaces(layout, hoverHeight);
+            PlaceBatterySurfaces(layout, hoverHeight);
             PlaceBarMoveHandle(layout, hoverHeight);
             foreach (var surface in new[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface })
                 surface.Height = Math.Min(metrics.ButtonSize, Math.Max(1, hoverHeight - RestWidgetVerticalInset(TaskbarOutputDeviceHoverSurface)));
@@ -1424,7 +1426,7 @@ namespace AFMediaBar.Components
         private TaskbarRestLayout ResolveRestLayout(in TaskbarExperienceSettings experience, double primaryLength)
         {
             var metrics = TaskbarDensityMetrics.From(experience.Density);
-            return TaskbarRestLayoutPolicy.Arrange(
+            return TaskbarRestLayoutPolicy.ArrangeKeys(
                 RestComponentsWithHandle(),
                 component => ResolveRestComponentWidth(component, metrics),
                 _ => true,
@@ -1615,6 +1617,7 @@ namespace AFMediaBar.Components
 
         private void ApplyTimerSuspensionState()
         {
+            ConfigureBattery();
             if (!_isHostVisibilitySuspended && _backgroundPruneLevel == MemoryPruneLevel.None)
             {
                 ResumeBackgroundTimers();
@@ -2207,7 +2210,7 @@ namespace AFMediaBar.Components
             {
                 var experience = PresentationSettings.TaskbarExperience.Normalize();
                 var progressVisible = _snapshot.Duration > 0;
-                var visibleComponents = RestComponentsWithHandle();
+                var visibleComponents = RestComponentsWithHandle().Select(k => k.Component).ToArray();
                 var metrics = TaskbarDensityMetrics.From(experience.Density);
                 var sectionGap = TaskbarExperiencePolicy.ResolveSectionGap(experience.Density, experience.ComponentSpacingDip);
                 // 悬停层下限属于媒体文字组件：它只把文字区撑到"悬停控件放得下"，不再另算一段宽度。

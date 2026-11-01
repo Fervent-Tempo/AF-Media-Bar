@@ -37,7 +37,7 @@ public sealed class DeviceBatteryReader
             var hidContainers = result.Where(d => d.ProviderId != "bluetooth" && d.Transport == BatteryTransport.Bluetooth && d.ContainerId is not null).Select(d => d.ContainerId).ToHashSet();
             for (var index = 0; index < result.Count; index++)
                 if (result[index] is { ProviderId: not "bluetooth", Transport: BatteryTransport.Bluetooth, ContainerId: not null } hid)
-                    result[index] = hid with { Peers = hid.Peers.Concat(result.Where(d => d.ProviderId == "bluetooth" && d.ContainerId == hid.ContainerId).SelectMany(d => d.Peers)).DistinctBy(p => p.Id).ToArray() };
+                    result[index] = hid with { Kind = hid.Kind != BatteryDeviceKind.Unknown ? hid.Kind : result.FirstOrDefault(d => d.ProviderId == "bluetooth" && d.ContainerId == hid.ContainerId)?.Kind ?? BatteryDeviceKind.Unknown, Peers = hid.Peers.Concat(result.Where(d => d.ProviderId == "bluetooth" && d.ContainerId == hid.ContainerId).SelectMany(d => d.Peers)).DistinctBy(p => p.Id).ToArray() };
             return result.Where(d => d.ProviderId != "bluetooth" || d.ContainerId is null || !hidContainers.Contains(d.ContainerId))
                 .OrderBy(d => d.DisplayName, StringComparer.CurrentCultureIgnoreCase).ThenBy(d => d.Id).ToArray();
         }
@@ -51,7 +51,7 @@ public sealed class DeviceBatteryReader
         {
             var provider = _providers.First(p => p.Id == device.ProviderId);
             _sessions[device.Id] = provider;
-            return await provider.ReadAsync(device, selectedId, token).ConfigureAwait(false);
+            return (await provider.ReadAsync(device, selectedId, token).ConfigureAwait(false)) with { Kind = device.Kind };
         }
         finally { _gate.Release(); }
     }

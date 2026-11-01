@@ -499,7 +499,7 @@ public partial class TaskBarMediaControl
         AnimateComponentHover(TaskbarInputDeviceHoverSurface, TaskbarInputDeviceHoverSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
         AnimateComponentHover(TaskbarOutputDeviceHoverSurface, TaskbarOutputDeviceHoverSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
         AnimateComponentHover(TaskbarVolumeHoverSurface, TaskbarVolumeHoverSurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
-        AnimateComponentHover(TaskbarBatterySurface, TaskbarBatterySurface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
+        foreach (var surface in _batterySurfaces.Values) AnimateComponentHover(surface, surface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
         foreach (var surface in _metricSurfaces.Values) AnimateComponentHover(surface, surface.IsMouseOver, immediate: !animateColor, colorDuration: duration);
     }
 

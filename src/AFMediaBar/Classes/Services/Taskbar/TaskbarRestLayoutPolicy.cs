@@ -10,6 +10,8 @@ public readonly record struct TaskbarRestPlacement(TaskbarRestComponent Componen
 {
     /// <summary>右缘。/ Right edge.</summary>
     public double Right => Left + Width;
+    public string? DeviceId { get; init; }
+    public ComponentKey Key => new(Component, DeviceId);
 }
 
 /// <summary>一次静置层布局的结果：每个可见组件的位置与宽度，以及媒体文字区的范围。 / The result of one rest-layer layout: the position and width of every visible component plus the extent of the media text region.</summary>
@@ -26,12 +28,12 @@ public readonly record struct TaskbarRestLayout(
     public double TextWidth => Find(TaskbarRestComponent.MediaText)?.Width ?? 0;
 
     /// <summary>取某个组件的位置；它不可见时返回 <see langword="null"/>。 / Returns one component's placement, or <see langword="null"/> when it is not visible.</summary>
-    /// <param name="component">组件。/ The component.</param>
-    public TaskbarRestPlacement? Find(TaskbarRestComponent component)
+    /// <param name="key">组件及可选设备身份。</param>
+    public TaskbarRestPlacement? Find(ComponentKey key)
     {
         foreach (var placement in Placements)
         {
-            if (placement.Component == component)
+            if (placement.Key == key)
             {
                 return placement;
             }
@@ -262,8 +264,14 @@ public static class TaskbarRestLayoutPolicy
     /// <param name="sectionGap">组件间距（DIP）。/ Gap between components, in DIP.</param>
     /// <param name="trailingMargin">尾部留白（DIP）。/ Trailing margin in DIP.</param>
     /// <param name="fromRight">从右侧锚点向左排列，保留设置中的逻辑顺序。</param>
-    public static TaskbarRestLayout Arrange(
-        IReadOnlyList<TaskbarRestComponent> order,
+    public static TaskbarRestLayout Arrange(IReadOnlyList<TaskbarRestComponent> order,
+        Func<TaskbarRestComponent, double> widthOf, Func<TaskbarRestComponent, bool> isVisible,
+        double leadingInset, double availableWidth, double sectionGap, double trailingMargin, bool fromRight = false) =>
+        ArrangeKeys(order.Select(c => new ComponentKey(c)).ToArray(), widthOf, isVisible,
+            leadingInset, availableWidth, sectionGap, trailingMargin, fromRight);
+
+    public static TaskbarRestLayout ArrangeKeys(
+        IReadOnlyList<ComponentKey> order,
         Func<TaskbarRestComponent, double> widthOf,
         Func<TaskbarRestComponent, bool> isVisible,
         double leadingInset,
@@ -272,10 +280,10 @@ public static class TaskbarRestLayoutPolicy
         double trailingMargin,
         bool fromRight = false)
     {
-        var visible = new List<TaskbarRestComponent>(order.Count);
+        var visible = new List<ComponentKey>(order.Count);
         foreach (var component in order)
         {
-            if (isVisible(component))
+            if (isVisible(component.Component))
             {
                 visible.Add(component);
             }
@@ -296,7 +304,7 @@ public static class TaskbarRestLayoutPolicy
                 continue;
             }
 
-            fixedWidth += Math.Max(0, widthOf(component));
+            fixedWidth += Math.Max(0, widthOf(component.Component));
         }
 
         var gapTotal = visible.Skip(1).Count(component => component != TaskbarRestComponent.DragHandle) * Math.Max(0, sectionGap);
@@ -309,8 +317,8 @@ public static class TaskbarRestLayoutPolicy
         for (var index = 0; index < visible.Count; index++)
         {
             var component = visible[index];
-            var width = component == TaskbarRestComponent.MediaText ? textWidth : Math.Max(0, widthOf(component));
-            placements.Add(new TaskbarRestPlacement(component, cursor, width));
+            var width = component == TaskbarRestComponent.MediaText ? textWidth : Math.Max(0, widthOf(component.Component));
+            placements.Add(new TaskbarRestPlacement(component.Component, cursor, width) { DeviceId = component.DeviceId });
             cursor += width;
             if (index < visible.Count - 1 && visible[index + 1] != TaskbarRestComponent.DragHandle)
             {

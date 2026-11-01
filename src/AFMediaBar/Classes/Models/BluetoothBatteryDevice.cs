@@ -4,6 +4,9 @@ namespace AFMediaBar.Classes.Models;
 /// <summary>实际承载电量查询的连接方式。</summary>
 public enum BatteryTransport { Bluetooth, Usb, Receiver }
 
+/// <summary>来自系统分类或已确认协议的设备类型；接收器本身不代表子设备类型。</summary>
+public enum BatteryDeviceKind { Unknown, Mouse, Keyboard, Headset, Controller }
+
 /// <summary>同一物理蓝牙设备的一条系统关联端点。</summary>
 public sealed record BluetoothBatteryPeer(string Id, bool IsLowEnergy, bool IsConnected);
 
@@ -12,6 +15,7 @@ public sealed record BluetoothBatteryDevice(string Id, string DisplayName, Guid?
     IReadOnlyList<BluetoothBatteryPeer> Peers)
 {
     public string ProviderId { get; init; } = "bluetooth";
+    public BatteryDeviceKind Kind { get; init; }
     public BatteryTransport Transport { get; init; }
     public string Protocol { get; init; } = string.Empty;
     public bool IsPresent { get; init; }

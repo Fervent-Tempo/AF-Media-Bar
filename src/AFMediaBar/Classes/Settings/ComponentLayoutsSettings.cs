@@ -5,7 +5,22 @@ namespace AFMediaBar.Classes.Settings;
 public enum BarLayoutState { Resident, Idle, Hover }
 
 /// <summary>稳定组件标识和显隐；列表位置即逻辑顺序。</summary>
-public sealed record ComponentLayoutEntry(TaskbarRestComponent Component, bool IsVisible);
+public sealed record ComponentLayoutEntry(TaskbarRestComponent Component, bool IsVisible)
+{
+    public string? DeviceId { get; init; }
+    [System.Text.Json.Serialization.JsonIgnore]
+    public ComponentKey Key => new(Component, DeviceId);
+}
+
+/// <summary>布局、命中和排序共用的身份；普通组件没有设备标识。</summary>
+public readonly record struct ComponentKey
+{
+    public TaskbarRestComponent Component { get; }
+    public string? DeviceId { get; }
+    public ComponentKey(TaskbarRestComponent component, string? deviceId = null)
+    { Component = component; DeviceId = component == TaskbarRestComponent.BluetoothBattery && !string.IsNullOrWhiteSpace(deviceId) ? deviceId.Trim().ToUpperInvariant() : null; }
+    public static implicit operator ComponentKey(TaskbarRestComponent component) => new(component);
+}
 
 /// <summary>任务栏与悬浮栏共用的三套独立布局。</summary>
 public sealed record ComponentLayoutsSettings
@@ -25,5 +40,5 @@ public sealed record ComponentLayoutsSettings
     { Resident = Copy(Resident), Idle = Copy(Idle), Hover = Copy(Hover) };
     private static ComponentLayoutEntry[]? Copy(IReadOnlyList<ComponentLayoutEntry>? entries) => entries?
         .Where(entry => entry is not null && Enum.IsDefined(entry.Component) && entry.Component != TaskbarRestComponent.DragHandle)
-        .DistinctBy(entry => entry.Component).Select(entry => entry with { }).ToArray();
+        .DistinctBy(entry => entry.Key).Select(entry => entry with { DeviceId = entry.Key.DeviceId }).ToArray();
 }

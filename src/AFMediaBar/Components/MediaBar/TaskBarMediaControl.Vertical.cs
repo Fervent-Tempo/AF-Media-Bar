@@ -48,7 +48,7 @@ public partial class TaskBarMediaControl
         TaskbarHoverActionsOffset.X = 0;
         TaskbarHoverActionsOffset.Y = 0;
         TaskbarPerformanceItems.Orientation = vertical ? Orientation.Vertical : Orientation.Horizontal;
-        TaskbarBatteryContent.Orientation = vertical ? Orientation.Vertical : Orientation.Horizontal;
+        ConfigureBattery();
         if (!vertical)
         {
             _wheelTooltip.Placement = PlacementMode.Top;
@@ -78,7 +78,7 @@ public partial class TaskBarMediaControl
     {
         var experience = PresentationSettings.TaskbarExperience.Normalize();
         var metrics = TaskbarDensityMetrics.From(experience.Density);
-        return TaskbarRestLayoutPolicy.Arrange(
+        return TaskbarRestLayoutPolicy.ArrangeKeys(
             RestComponentsWithHandle(),
             component => VerticalComponentLength(component, metrics),
             _ => true,
@@ -127,7 +127,7 @@ public partial class TaskBarMediaControl
             ? LyricsFixedWidth.Normalize(PresentationSettings.LyricsFixedWidthDip)
             : Math.Max(Measure(current, VerticalPrimaryFontSize),
                 Measure(lyricsVisible ? secondary : _isSmallTaskbar ? string.Empty : DisplayedArtist, lyricsVisible ? VerticalPrimaryFontSize : VerticalSecondaryFontSize));
-        var components = RestComponentsWithHandle();
+        var components = RestComponentsWithHandle().Select(k => k.Component).ToArray();
         var metrics = TaskbarDensityMetrics.From(experience.Density);
         double Content(double text) => TaskbarExperiencePolicy.CalculateRestWidth(
             components, 2, text, 2, VerticalSectionGap,
@@ -181,7 +181,7 @@ public partial class TaskBarMediaControl
         Place(SongInfoHoverOverlay, TaskbarRestComponent.MediaText);
         Place(TaskbarSpectrumHoverSurface, TaskbarRestComponent.Spectrum);
         Place(TaskbarPerformanceHoverSurface, TaskbarRestComponent.Performance);
-        Place(TaskbarBatterySurface, TaskbarRestComponent.BluetoothBattery);
+
         Place(TaskbarOutputDeviceHoverSurface, TaskbarRestComponent.OutputDevice);
         Place(TaskbarInputDeviceHoverSurface, TaskbarRestComponent.InputDevice);
         Place(TaskbarVolumeHoverSurface, TaskbarRestComponent.Volume);
@@ -203,6 +203,7 @@ public partial class TaskBarMediaControl
         TaskbarPerformanceSurface.Padding = new Thickness(1);
         TaskbarPerformanceSurface.Height = Math.Max(1, _verticalPerformanceLength - RestWidgetVerticalInset(TaskbarPerformanceHoverSurface));
         PlaceMetricSurfaces(layout, innerWidth);
+        PlaceBatterySurfaces(layout, innerWidth);
         PlaceBarMoveHandle(layout, innerWidth);
         var buttonSize = VerticalAudioButtonSize(TaskbarDensityMetrics.From(experience.Density));
         foreach (var surface in new[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface })

@@ -24,7 +24,7 @@ public sealed class BluetoothBatteryReader : IDeviceBatteryProvider
         public DateTimeOffset? Timestamp;
         public HashSet<string> Addresses { get; } = new(StringComparer.OrdinalIgnoreCase);
     }
-    public static readonly string[] DeviceProperties = ["System.Devices.Aep.ContainerId", "System.Devices.Aep.DeviceAddress", "System.Devices.Aep.IsConnected"];
+    public static readonly string[] DeviceProperties = ["System.Devices.Aep.ContainerId", "System.Devices.Aep.DeviceAddress", "System.Devices.Aep.IsConnected", "System.Devices.Aep.Bluetooth.Cod.Major", "System.Devices.Aep.Bluetooth.Cod.Minor", "System.Devices.Aep.Bluetooth.Le.Appearance"];
 
     public static string Selector(bool lowEnergy) => lowEnergy ? BluetoothLEDevice.GetDeviceSelectorFromPairingState(true) : BluetoothDevice.GetDeviceSelectorFromPairingState(true);
 
@@ -40,19 +40,38 @@ public sealed class BluetoothBatteryReader : IDeviceBatteryProvider
             {
                 var address = NormalizeAddress(device.Properties.GetValueOrDefault("System.Devices.Aep.DeviceAddress") as string);
                 var container = device.Properties.GetValueOrDefault("System.Devices.Aep.ContainerId") is Guid id ? AudioDeviceIdentity.PhysicalContainer(id) : null;
+                var kind = Classify(device.Properties.GetValueOrDefault("System.Devices.Aep.Bluetooth.Cod.Major") as ushort?,
+                    device.Properties.GetValueOrDefault("System.Devices.Aep.Bluetooth.Cod.Minor") as ushort?,
+                    device.Properties.GetValueOrDefault("System.Devices.Aep.Bluetooth.Le.Appearance") as ushort?);
                 var peer = new BluetoothBatteryPeer(device.Id, lowEnergy, device.Properties.GetValueOrDefault("System.Devices.Aep.IsConnected") is true);
                 var index = result.FindIndex(item => item.Matches(device.Id) || container is not null && item.ContainerId == container ||
                     address.Length > 0 && item.Address == address);
-                if (index < 0) result.Add(new(device.Id, string.IsNullOrWhiteSpace(device.Name) ? device.Id : device.Name, container, address, [peer]));
+                if (index < 0) result.Add(new(device.Id, string.IsNullOrWhiteSpace(device.Name) ? device.Id : device.Name, container, address, [peer]) { Kind = kind });
                 else
                 {
                     var existing = result[index];
-                    result[index] = existing with { ContainerId = existing.ContainerId ?? container,
+                    result[index] = existing with { Kind = existing.Kind == BatteryDeviceKind.Unknown ? kind : existing.Kind, ContainerId = existing.ContainerId ?? container,
                         Address = existing.Address.Length > 0 ? existing.Address : address, Peers = existing.Peers.Concat([peer]).DistinctBy(item => item.Id).ToArray() };
                 }
             }
         }
         return result.OrderBy(device => device.DisplayName, StringComparer.CurrentCultureIgnoreCase).ThenBy(device => device.Id, StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
+    internal static BatteryDeviceKind Classify(ushort? major, ushort? minor, ushort? appearance)
+    {
+        // Bluetooth SIG Assigned Numbers: Appearance 0x03C1–4 / CoD Audio-Video 与 Peripheral。
+        if (appearance is 0x03C1) return BatteryDeviceKind.Keyboard;
+        if (appearance is 0x03C2) return BatteryDeviceKind.Mouse;
+        if (appearance is 0x03C3 or 0x03C4) return BatteryDeviceKind.Controller;
+        if (major == 4 && minor is 1 or 6) return BatteryDeviceKind.Headset;
+        if (major == 5 && minor is { } code)
+        {
+            if ((code & 0x30) == 0x10) return BatteryDeviceKind.Keyboard;
+            if ((code & 0x30) == 0x20 && (code & 0x0F) == 0) return BatteryDeviceKind.Mouse;
+            if ((code & 0x30) == 0 && (code & 0x0F) is 1 or 2) return BatteryDeviceKind.Controller;
+        }
+        return BatteryDeviceKind.Unknown;
     }
 
     public async Task<BluetoothBatterySnapshot> ReadAsync(BluetoothBatteryDevice device, string selectedId, CancellationToken token)
@@ -82,7 +101,7 @@ public sealed class BluetoothBatteryReader : IDeviceBatteryProvider
             timestamp = _observed[device.Id].At;
         }
         return new(selectedId, percent, source, device.IsConnected, percent is not null, timestamp)
-        { DeviceName = device.DisplayName, FreshnessKnown = freshnessKnown };
+        { DeviceName = device.DisplayName, Kind = device.Kind, FreshnessKnown = freshnessKnown };
     }
 
     private static async Task<int?> ReadGattAsync(string deviceId, CancellationToken token)

@@ -1091,6 +1091,23 @@ public partial class TaskBarMediaControl
         /// on its own branch, not shared with the entrance animation — otherwise a track change while hovering would
         /// replace the whole RenderTransform and erase the push, freezing the title/artist against the zoom (root of BUG 2).
         /// </summary>
+        internal void RefreshBatteryPush()
+        {
+            if (_artworkZoomPushTransforms is null) return;
+            foreach (var surface in _owner._batterySurfaces.Values)
+            {
+                var transform = GetOrCreatePushTransform(surface);
+                if (_artworkZoomPushTransforms.Contains(transform)) continue;
+                _artworkZoomPushTransforms.Add(transform);
+                var existing = _artworkZoomPushTransforms.FirstOrDefault();
+                if (existing is not null)
+                {
+                    System.Windows.Data.BindingOperations.SetBinding(transform, TranslateTransform.XProperty, new System.Windows.Data.Binding("X") { Source = existing });
+                    System.Windows.Data.BindingOperations.SetBinding(transform, TranslateTransform.YProperty, new System.Windows.Data.Binding("Y") { Source = existing });
+                }
+            }
+        }
+
         internal void BuildArtworkZoomPushTransforms()
         {
             _artworkZoomPushTransforms = new List<TranslateTransform>();
@@ -1171,6 +1188,7 @@ public partial class TaskBarMediaControl
             yield return _owner.TaskbarOutputDeviceHoverSurface;
             yield return _owner.TaskbarVolumeHoverSurface;
             yield return _owner.TaskbarInputDeviceHoverSurface;
+            foreach (var surface in _owner._batterySurfaces.Values) yield return surface;
             yield return _owner.ResidentPreviousSurface;
             yield return _owner.ResidentPlayPauseSurface;
             yield return _owner.ResidentNextSurface;
@@ -1232,6 +1250,8 @@ public partial class TaskBarMediaControl
             {
                 transform.BeginAnimation(TranslateTransform.XProperty, null);
                 transform.BeginAnimation(TranslateTransform.YProperty, null);
+                System.Windows.Data.BindingOperations.ClearBinding(transform, TranslateTransform.XProperty);
+                System.Windows.Data.BindingOperations.ClearBinding(transform, TranslateTransform.YProperty);
                 transform.X = 0;
                 transform.Y = 0;
             }

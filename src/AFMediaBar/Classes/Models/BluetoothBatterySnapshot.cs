@@ -12,6 +12,7 @@ public sealed record BluetoothBatterySnapshot(string DeviceId, int? Percent, Blu
 {
     public string DeviceName { get; init; } = string.Empty;
     public BatteryTransport Transport { get; init; }
+    public BatteryDeviceKind Kind { get; init; }
     public bool? IsCharging { get; init; }
     public string Protocol { get; init; } = string.Empty;
     public bool FreshnessKnown { get; init; } = true;

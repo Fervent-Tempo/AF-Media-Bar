@@ -11,7 +11,7 @@ using System.Windows.Threading;
 namespace AFMediaBar.ViewModels.Pages;
 
 /// <summary>预览中的有序组件；性能轮换固定展示首项。</summary>
-public sealed record SettingsPreviewItem(TaskbarRestComponent Component, MetricKind? Metric = null);
+public sealed record SettingsPreviewItem(TaskbarRestComponent Component, MetricKind? Metric = null, string? DeviceId = null);
 /// <summary>预览对应的实际呈现层，不参与配置持久化。</summary>
 public enum SettingsPreviewMode { Rest, QuickControls, FullPanel }
 /// <summary>作用域内的只读预览投影，释放后不再发布结果。</summary>
@@ -32,6 +32,7 @@ public sealed class SettingsPreviewViewModel : ObservableObject, IDisposable
     public TaskbarExperienceSettings Experience { get; private set; } = TaskbarExperienceSettings.Default;
     public AppearanceSettings Appearance { get; private set; } = AppearanceSettings.Default;
     public PerformanceComponentSettings Performance { get; private set; } = PerformanceComponentSettings.Default;
+    public BluetoothBatteryWidgetSettings Battery { get; private set; } = new();
     public SpectrumComponentSettings Spectrum { get; private set; } = SpectrumComponentSettings.Default;
     public double LengthScale { get; private set; } = 1d;
     public double ThicknessScale { get; private set; } = 1d;
@@ -58,6 +59,7 @@ public sealed class SettingsPreviewViewModel : ObservableObject, IDisposable
         Appearance = current.Appearance;
         Performance = current.PerformanceComponent.Normalize();
         Spectrum = current.SpectrumComponent.Normalize();
+        Battery = current.BluetoothBatteryWidget;
         LengthScale = current.LayoutLengthScalePercent / 100d;
         ThicknessScale = current.LayoutThicknessScalePercent / 100d;
         IsVertical = _configuration.Context.Orientation == AFMediaBar.Classes.Models.Layout.LayoutOrientation.Vertical;
@@ -65,7 +67,7 @@ public sealed class SettingsPreviewViewModel : ObservableObject, IDisposable
         Items = (Mode == SettingsPreviewMode.QuickControls && !Experience.HoverLayerEnabled ? [] : ComponentLayoutPolicy.Resolve(current, state))
             .Where(entry => entry.IsVisible && (entry.Component != TaskbarRestComponent.BluetoothBattery || current.Experiments.BluetoothBattery))
             .Select(entry => new SettingsPreviewItem(entry.Component, ComponentLayoutPolicy.IsMetric(entry.Component) ? ComponentLayoutPolicy.Metric(entry.Component) :
-                entry.Component == TaskbarRestComponent.Performance ? Performance.GetOrderedMetrics().First() : null)).ToArray();
+                entry.Component == TaskbarRestComponent.Performance ? Performance.GetOrderedMetrics().First() : null, entry.DeviceId)).ToArray();
         OnPropertyChanged(new PropertyChangedEventArgs(string.Empty));
     }
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args) => Refresh();
