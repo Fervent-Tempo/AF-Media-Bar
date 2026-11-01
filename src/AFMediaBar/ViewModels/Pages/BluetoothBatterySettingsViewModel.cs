@@ -28,13 +28,28 @@ public sealed partial class BluetoothBatterySettingsViewModel : ObservableObject
     public int CycleIntervalSeconds { get => Current.CycleIntervalSeconds; set => Update(Current with { CycleIntervalSeconds = value }); }
     public bool IsCycle => PresentationMode == BatteryPresentationMode.Cycle;
     public string? FillColor => Current.FillColor;
-    public bool UseAccentColor { get => Current.FillColor is null; set => Update(Current with { FillColor = value ? null : "#0078D4" }); }
+    private string _fillColorHex = AppearanceSettings.DefaultAccentColorHex;
+    public bool UseCustomFillColor
+    {
+        get => Current.FillColor is not null;
+        set
+        {
+            if (value == UseCustomFillColor) return;
+            Update(Current with { FillColor = value ? ColorHex.TryParse(_fillColorHex, out var color)
+                ? ColorHex.Format(color) : AppearanceSettings.DefaultAccentColorHex : null });
+        }
+    }
     public string FillColorHex
     {
-        get => Current.FillColor ?? "#0078D4";
-        set { if (ColorHex.TryParse(value, out var color)) Update(Current with { FillColor = ColorHex.Format(color) }); }
+        get => _fillColorHex;
+        set
+        {
+            if (!SetProperty(ref _fillColorHex, value ?? string.Empty) || !UseCustomFillColor) return;
+            if (ColorHex.TryParse(value, out var color)) Update(Current with { FillColor = ColorHex.Format(color) });
+        }
     }
     [RelayCommand] private void SetFillColor(string? color) { if (color is not null) FillColorHex = color; }
+    [RelayCommand] private void ResetFillColor() => UseCustomFillColor = false;
     public BatteryPresentationMode PresentationMode
     {
         get => Current.PresentationMode;
@@ -116,6 +131,7 @@ public sealed partial class BluetoothBatterySettingsViewModel : ObservableObject
     public BluetoothBatterySettingsViewModel(BluetoothBatteryService battery, ISettingsConfiguration configuration, LocalizationService localization)
     {
         _battery = battery; _configuration = configuration; _localization = localization;
+        _fillColorHex = Current.FillColor ?? AppearanceSettings.DefaultAccentColorHex;
         battery.Changed += OnChanged;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         localization.LanguageChanged += OnChanged;
@@ -159,6 +175,7 @@ public sealed partial class BluetoothBatterySettingsViewModel : ObservableObject
     private void OnChanged(object? sender, EventArgs args)
     {
         if (_disposed) return;
+        if (Current.FillColor is { } hex) SetProperty(ref _fillColorHex, hex, nameof(FillColorHex));
         if (_pageActive)
         {
             if (IsExperimentEnabled) _overviewLease ??= _battery.AcquireOverviewSession();

@@ -3899,4 +3899,5 @@ The full-panel entry opens on click or hover. Device battery remains an experime
   <data name="Developer.Description.BatteryLow" xml:space="preserve"><value>Preview a low battery notification without changing alert state.</value></data>
   <data name="Developer.Action.BatteryConnected" xml:space="preserve"><value>Device connection notification</value></data>
   <data name="Developer.Description.BatteryConnected" xml:space="preserve"><value>Preview a connection notification using sample device data.</value></data>
+  <data name="Battery.CustomFillColor" xml:space="preserve"><value>Custom battery fill color</value></data>
 </root>

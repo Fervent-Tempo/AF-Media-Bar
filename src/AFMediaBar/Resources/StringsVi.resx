@@ -3936,4 +3936,5 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin thiết bị vẫn
   <data name="Developer.Description.BatteryLow" xml:space="preserve"><value>Xem trước thông báo pin yếu mà không thay đổi trạng thái nhắc.</value></data>
   <data name="Developer.Action.BatteryConnected" xml:space="preserve"><value>Thông báo kết nối thiết bị</value></data>
   <data name="Developer.Description.BatteryConnected" xml:space="preserve"><value>Xem trước thông báo kết nối bằng dữ liệu thiết bị mẫu.</value></data>
+  <data name="Battery.CustomFillColor" xml:space="preserve"><value>Tùy chỉnh màu biểu thị pin</value></data>
 </root>

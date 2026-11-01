@@ -3899,4 +3899,5 @@
   <data name="Developer.Description.BatteryLow" xml:space="preserve"><value>使用範例裝置預覽低電量通知，不變更提醒狀態。</value></data>
   <data name="Developer.Action.BatteryConnected" xml:space="preserve"><value>裝置連線通知</value></data>
   <data name="Developer.Description.BatteryConnected" xml:space="preserve"><value>使用範例裝置預覽連線通知，不讀取實際裝置。</value></data>
+  <data name="Battery.CustomFillColor" xml:space="preserve"><value>自訂電量填充色</value></data>
 </root>

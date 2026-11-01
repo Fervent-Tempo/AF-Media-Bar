@@ -2,10 +2,6 @@
     <Page.Resources>
         <Style TargetType="{x:Type components:SettingsRow}" BasedOn="{StaticResource AfSettingsPilotRowStyle}"/>
         <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/>
-        <Style x:Key="BatteryColorSwatchStyle" TargetType="Button" BasedOn="{StaticResource AfSettingsColorSwatchStyle}">
-            <Setter Property="FocusVisualStyle" Value="{StaticResource AfFocusVisualStyle}"/>
-            <Setter Property="AutomationProperties.Name" Value="{Binding ToolTip, RelativeSource={RelativeSource Self}}"/>
-        </Style>
     </Page.Resources>
     <components:SettingsPageLayout x:Name="PageLayout">
         <components:SettingsPageLayout.Header>
@@ -32,14 +28,29 @@
                                 <ItemsControl x:Name="BatteryDeviceList" Style="{StaticResource AfSettingsSortableListStyle}" ItemsSource="{Binding DisplayDevices}"
                                               components:SettingsReorderBehavior.MoveCommand="{Binding ReorderDeviceCommand}">
                                     <ItemsControl.ItemTemplate><DataTemplate>
-                                        <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" Title="{Binding Name}" Description="{Binding State}" ToolTip="{Binding Details}" OptionId="{Binding Id}" KeepControlInline="True">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" Title="{Binding Name}" Description="{Binding State}" ToolTip="{Binding Details}" OptionId="{Binding Id}" KeepControlInline="False">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                 <components:BatteryPresenter Snapshot="{Binding Snapshot}" VisualStyle="Graphic" Width="26" Height="24" Margin="0,0,6,0"
                                                     FillColor="{Binding DataContext.FillColor, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
                                                 <TextBlock Text="{Binding Label}" Width="42" TextAlignment="Right" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <StackPanel.Style><Style TargetType="StackPanel">
+                                                        <Setter Property="Grid.Column" Value="1"/>
+                                                        <Setter Property="Margin" Value="12,0,0,0"/>
+                                                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                        <Style.Triggers><DataTrigger Binding="{Binding IsCompact, RelativeSource={RelativeSource AncestorType={x:Type components:SettingsRow}}}" Value="True">
+                                                            <Setter Property="Grid.Column" Value="0"/><Setter Property="Grid.Row" Value="1"/>
+                                                            <Setter Property="Margin" Value="0,8,0,0"/>
+                                                        </DataTrigger></Style.Triggers>
+                                                    </Style></StackPanel.Style>
                                                 <ui:ToggleSwitch IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Name}"/>
                                                 <components:SettingsReorderHandle ItemKey="{Binding Id}" IsEnabled="{Binding IsSelected}" Margin="12,0,0,0"/>
-                                            </StackPanel>
+                                                </StackPanel>
+                                            </Grid>
                                         </components:SettingsRow>
                                     </DataTemplate></ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -79,21 +90,25 @@
                             <ComboBoxItem Content="{DynamicResource Loc.Battery.WhenLow}" Tag="{x:Static settings:BluetoothBatteryDisplayMode.WhenLow}"/>
                         </ComboBox>
                     </components:SettingsRow>
-                    <components:SettingsRow Title="{DynamicResource Loc.Battery.FillColor}" Icon="{ui:SymbolIcon Color24}" KeepControlInline="True">
-                        <CheckBox Content="{DynamicResource Loc.Battery.FollowAccent}" IsChecked="{Binding UseAccentColor, Mode=TwoWay}"/>
+                    <components:SettingsRow Title="{DynamicResource Loc.Battery.CustomFillColor}" Description="{DynamicResource Loc.Appearance.IdleNote.Hint}" Icon="{ui:SymbolIcon Color24}" KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding UseCustomFillColor, Mode=TwoWay}"/>
                     </components:SettingsRow>
-                    <Border Background="{DynamicResource AfSettingsInfoSurfaceBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14,12" Margin="0,4,0,0">
-                        <Border.Style><Style TargetType="Border"><Style.Triggers>
-                            <DataTrigger Binding="{Binding UseAccentColor}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
-                        </Style.Triggers></Style></Border.Style>
-                        <WrapPanel VerticalAlignment="Center">
-                            <Button Background="#0078D4" Margin="0,0,6,0" ToolTip="#0078D4" Style="{StaticResource BatteryColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#0078D4"/>
-                            <Button Background="#42CBA6" Margin="0,0,6,0" ToolTip="#42CBA6" Style="{StaticResource BatteryColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#42CBA6"/>
-                            <Button Background="#F7C948" Margin="0,0,6,0" ToolTip="#F7C948" Style="{StaticResource BatteryColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#F7C948"/>
-                            <Button Background="#FF8A8A" Margin="0,0,6,0" ToolTip="#FF8A8A" Style="{StaticResource BatteryColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#FF8A8A"/>
-                            <Button Background="#9C7CFF" Margin="0,0,6,0" ToolTip="#9C7CFF" Style="{StaticResource BatteryColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#9C7CFF"/>
-                            <TextBox Width="110" MaxLength="9" Margin="8,0,0,0" Text="{Binding FillColorHex, Mode=TwoWay}" AutomationProperties.Name="{DynamicResource Loc.Battery.FillColor}"/>
-                        </WrapPanel>
+                    <Border Style="{StaticResource AfSettingsInfoSurfaceStyle}" Margin="0,4,0,0" Visibility="{Binding UseCustomFillColor, Converter={StaticResource AfBooleanToVisibilityConverter}}">
+                        <StackPanel>
+                            <WrapPanel Margin="0,0,0,10">
+                                <Button Background="#0078D4" Margin="0,0,6,0" ToolTip="#0078D4" Style="{StaticResource AfSettingsColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#0078D4"/>
+                                <Button Background="#FF8A8A" Margin="0,0,6,0" ToolTip="#FF8A8A" Style="{StaticResource AfSettingsColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#FF8A8A"/>
+                                <Button Background="#F7C948" Margin="0,0,6,0" ToolTip="#F7C948" Style="{StaticResource AfSettingsColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#F7C948"/>
+                                <Button Background="#42CBA6" Margin="0,0,6,0" ToolTip="#42CBA6" Style="{StaticResource AfSettingsColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#42CBA6"/>
+                                <Button Background="#9C7CFF" Margin="0,0,6,0" ToolTip="#9C7CFF" Style="{StaticResource AfSettingsColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#9C7CFF"/>
+                                <Button Background="#FFFFFF" ToolTip="#FFFFFF" Style="{StaticResource AfSettingsColorSwatchStyle}" Command="{Binding SetFillColorCommand}" CommandParameter="#FFFFFF"/>
+                            </WrapPanel>
+                            <WrapPanel Style="{StaticResource AfSettingsActionsStyle}">
+                                <TextBlock Text="{DynamicResource Loc.Appearance.Accent.HexLabel}" VerticalAlignment="Center"/>
+                                <TextBox Width="110" MaxLength="9" Margin="8,0,0,0" Text="{Binding FillColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{DynamicResource Loc.Battery.FillColor}"/>
+                                <ui:Button Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Appearance.IdleNote.FollowAccent}" Command="{Binding ResetFillColorCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                            </WrapPanel>
+                        </StackPanel>
                     </Border>
                 </StackPanel>
             </components:SettingsGroup>
@@ -102,11 +117,11 @@
                     <components:SettingsRow Title="{DynamicResource Loc.Battery.Select}" Icon="{ui:SymbolIcon Bluetooth24}">
                         <ComboBox ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice, Mode=TwoWay}" DisplayMemberPath="DisplayName" MinWidth="{StaticResource AfSettingsSelectMinWidth}" MaxWidth="{StaticResource AfSettingsSelectLongMaxWidth}"/>
                     </components:SettingsRow>
-                    <components:SettingsRow Title="{DynamicResource Loc.Battery.Reminders}" KeepControlInline="True">
-                        <WrapPanel>
-                            <CheckBox Content="{DynamicResource Loc.Battery.NotifyConnected}" IsChecked="{Binding ConnectionNotifications, Mode=TwoWay}" Margin="0,0,16,0"/>
-                            <CheckBox Content="{DynamicResource Loc.Battery.NotifyLow}" IsChecked="{Binding Notifications, Mode=TwoWay}"/>
-                        </WrapPanel>
+                    <components:SettingsRow Title="{DynamicResource Loc.Battery.NotifyConnected}" KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ConnectionNotifications, Mode=TwoWay}"/>
+                    </components:SettingsRow>
+                    <components:SettingsRow Title="{DynamicResource Loc.Battery.NotifyLow}" KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding Notifications, Mode=TwoWay}"/>
                     </components:SettingsRow>
                     <components:SettingsRow Title="{DynamicResource Loc.Battery.Threshold}">
                         <components:SettingsNumericEditor Minimum="{Binding MinimumLowThreshold}" Maximum="{Binding MaximumLowThreshold}" Value="{Binding LowThreshold, Mode=TwoWay}" Step="1" Unit="{DynamicResource Loc.Settings.Numeric.Percent}"/>

@@ -3899,4 +3899,5 @@
   <data name="Developer.Description.BatteryLow" xml:space="preserve"><value>使用示例设备预览低电量通知，不改变提醒状态。</value></data>
   <data name="Developer.Action.BatteryConnected" xml:space="preserve"><value>设备连接通知</value></data>
   <data name="Developer.Description.BatteryConnected" xml:space="preserve"><value>使用示例设备预览连接通知，不读取真实设备。</value></data>
+  <data name="Battery.CustomFillColor" xml:space="preserve"><value>自定义电量填充色</value></data>
 </root>

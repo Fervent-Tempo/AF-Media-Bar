@@ -124,6 +124,7 @@ internal static class BatteryVisualChecks
     }
     private static void VerifySettings(BluetoothBatteryService battery, LocalizationService localization)
     {
+        Application.Current.Resources["AfBooleanToVisibilityConverter"] = new BooleanToVisibilityConverter();
         foreach (var resource in new[] { "SettingsDiagrams", "SettingsComponentResources" })
             Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri($"/AFMediaBar;component/Resources/{resource}.xaml", UriKind.Relative) });
         using var context = new SettingsPageContext();
@@ -151,15 +152,24 @@ internal static class BatteryVisualChecks
                     AccentColorPolicy.Build(Color.FromRgb(0, 120, 212), dark, false));
                 var layout = (SettingsPageLayout)page.FindName("PageLayout");
                 Assert.IsNotNull(layout.ScrollViewer);
-                editor.UseAccentColor = true;
+                editor.ResetFillColorCommand.Execute(null);
                 layout.ScrollViewer.ScrollToTop(); SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(100));
                 Capture(page, $"battery-{(dark ? "dark" : "light")}-settings", dark, 96);
+                editor.UseCustomFillColor = true;
+                var previousColor = editor.FillColor;
+                editor.FillColorHex = "#42";
+                Assert.AreEqual("#42", editor.FillColorHex, "未输入完整的色值应保留在编辑框中。");
+                Assert.AreEqual(previousColor, editor.FillColor, "未输入完整的色值不能改变生效颜色。");
                 editor.FillColorHex = "#42CBA6";
                 SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(50));
                 Assert.IsTrue(Descendants(page).OfType<BatteryPresenter>().All(p => p.Accent is SolidColorBrush brush && brush.Color == Color.FromRgb(66, 203, 166)));
                 Capture(page, $"battery-{(dark ? "dark" : "light")}-settings-custom-color", dark, 96);
                 layout.ScrollViewer.ScrollToBottom(); SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(100));
                 Capture(page, $"battery-{(dark ? "dark" : "light")}-settings-color-notifications", dark, 96);
+                window.Width = 560;
+                layout.ScrollViewer.ScrollToTop(); SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(100));
+                Capture(page, $"battery-{(dark ? "dark" : "light")}-settings-narrow", dark, 96);
+                window.Width = 820;
             }
             listener.Flush(); Assert.AreEqual(string.Empty, messages.ToString(), "电量设置页绑定错误。");
         }
