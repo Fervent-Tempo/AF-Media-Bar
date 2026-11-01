@@ -1474,6 +1474,9 @@
   <data name="Lyrics.Row.InstrumentalTitleOnly.Title" xml:space="preserve">
     <value>Chỉ hiển thị tiêu đề cho nhạc không lời</value>
   </data>
+  <data name="Lyrics.Searching" xml:space="preserve">
+    <value>Đang tìm lời bài hát</value>
+  </data>
   <data name="Lyrics.Row.LineGap.Badge" xml:space="preserve">
     <value>Hãy bật lời bài hát hai dòng trước</value>
   </data>

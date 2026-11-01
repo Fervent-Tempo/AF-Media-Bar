@@ -24,7 +24,7 @@ public partial class TaskBarMediaControl
 
     private string VisibleMetadataTitle(TaskbarExperienceSettings experience) =>
         _isSmallTaskbar ? _actualTitle :
-            TaskbarExperiencePolicy.FormatMetadataTitle(_actualTitle, _actualArtist, experience.ContentLayout);
+            TaskbarExperiencePolicy.FormatMetadataTitle(_actualTitle, DisplayedArtist, experience.ContentLayout);
 
     private LyricsPresentationFrame VisibleLyricsFrame(LyricsPresentationFrame raw) =>
         SmallTaskbarPresentationPolicy.Project(raw, UsesAdaptiveTaskbarText && _textBudget.HideSecondary);
@@ -69,7 +69,7 @@ public partial class TaskBarMediaControl
             var fallbackLyrics = raw.IsVisible && (SongLyricsPanel.Opacity <= 0 || _lyrics._webLyricsGraphicsDisabled);
             SongTitle.Text = fallbackLyrics ? raw.Current : VisibleMetadataTitle(PresentationSettings.TaskbarExperience);
             if (fallbackLyrics) SongTitle.FontSize = EffectiveLyricFontSize;
-            SongArtistContainer.Visibility = !fallbackLyrics && !_isSmallTaskbar && !string.IsNullOrEmpty(_actualArtist) &&
+            SongArtistContainer.Visibility = !fallbackLyrics && !_isSmallTaskbar && !string.IsNullOrEmpty(DisplayedArtist) &&
                 (_isVertical || PresentationSettings.TaskbarExperience.ContentLayout != TaskbarContentLayout.CompactInline)
                 ? Visibility.Visible : Visibility.Collapsed;
         }

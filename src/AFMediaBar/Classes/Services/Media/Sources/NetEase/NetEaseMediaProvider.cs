@@ -337,8 +337,16 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         _currentInfoReadAt = readAt;
 
         var hasCachedLyrics = _lyricsCache.TryGetValue(info.Identity, out var lyrics);
-        PublishSnapshot(_continuity.Update(CreateSnapshot(info, lyrics, readAt), true, DateTimeOffset.UtcNow), token);
-        if (!hasCachedLyrics && _lyricsRetries.CanRequest(info.Identity, !info.Pause))
+        var canRequestLyrics = !hasCachedLyrics && _lyricsRetries.CanRequest(info.Identity, !info.Pause);
+        bool lyricsRequestPending;
+        lock (_lyricsRequestGate)
+        {
+            lyricsRequestPending = _pendingLyrics.ContainsKey(info.Identity);
+        }
+
+        PublishSnapshot(_continuity.Update(CreateSnapshot(info, lyrics, readAt,
+            searchingLyrics: !hasCachedLyrics && (canRequestLyrics || lyricsRequestPending)), true, DateTimeOffset.UtcNow), token);
+        if (canRequestLyrics && !lyricsRequestPending)
         {
             CancellationTokenSource cancellation;
             lock (_lyricsRequestGate)
@@ -351,7 +359,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         }
     }
 
-    private MediaSnapshot CreateSnapshot(PlayerInfo info, LyricsResult? lyrics, DateTimeOffset readAt) =>
+    private MediaSnapshot CreateSnapshot(PlayerInfo info, LyricsResult? lyrics, DateTimeOffset readAt, bool searchingLyrics) =>
         new(
             true,
             !info.Pause,
@@ -370,7 +378,10 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
             false,
             MediaRepeatMode.Unavailable,
             1,
-            readAt);
+            readAt)
+        {
+            IsSearchingLyrics = searchingLyrics
+        };
 
     private void PublishSnapshot(MediaSnapshot? snapshot, CancellationToken token)
     {
@@ -423,7 +434,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
                 string.Equals(current.Identity, info.Identity, StringComparison.Ordinal))
             {
                 // 歌词补全不等于重新读取进度，必须保留最近一次真实内存读取的时间。
-                PublishSnapshot(_continuity.Update(CreateSnapshot(current, result, _currentInfoReadAt), true, DateTimeOffset.UtcNow), token);
+                PublishSnapshot(_continuity.Update(CreateSnapshot(current, result, _currentInfoReadAt, searchingLyrics: false), true, DateTimeOffset.UtcNow), token);
             }
         }
         catch (OperationCanceledException)

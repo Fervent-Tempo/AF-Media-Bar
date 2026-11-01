@@ -51,6 +51,10 @@ public sealed record MediaSnapshot(
     /// <summary>临时读取失败期间保留的快照；冻结进度并等待恢复，不应据此自动切源。</summary>
     public bool IsStale { get; init; }
 
+    /// <summary>当前曲目的歌词是否仍在检索；没有缓存结果且请求在途时为 true，用于显示“正在检索歌词”。</summary>
+    /// <remarks>Whether lyrics for the current track are still being retrieved; true while no cached result exists and a request is in flight.</remarks>
+    public bool IsSearchingLyrics { get; init; }
+
     /// <summary>
     /// 断开状态的快照：表示没有可用的媒体会话。
     /// Disconnected snapshot: indicates no available media session.

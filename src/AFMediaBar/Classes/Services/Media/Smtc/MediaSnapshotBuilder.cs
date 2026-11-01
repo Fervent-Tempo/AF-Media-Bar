@@ -229,6 +229,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         var request = new LyricsRequest(title, artist, read.Album, duration > 0 ? duration : null, null,
             PlaybackSourceId: sourceId);
         var lyrics = GetLyrics(session.Id, sourceId, request, read.IsVideo, read.IsPlaying);
+        var searchingLyrics = lyrics is null && IsSearchingLyrics();
 
         return new MediaSnapshot(
             true,
@@ -248,7 +249,10 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
             read.CanChangeRepeat,
             read.RepeatMode,
             read.PlaybackRate,
-            read.TimelineUpdatedAt);
+            read.TimelineUpdatedAt)
+        {
+            IsSearchingLyrics = searchingLyrics
+        };
     }
 
     private sealed record SmtcMediaRead(
@@ -269,7 +273,10 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
     {
         if (_disposed) return null;
         if (!LyricsMediaEligibilityPolicy.ShouldFetch(sourceId, isVideo, SettingsManager.Current.AllowBrowserAndVideoLyrics))
+        {
+            _lastLyricsKey = null;
             return null;
+        }
         request = request with { PlaybackSourceId = sourceId };
         // SMTC 的总时长可能随时间轴更新变化；它用于匹配，不用于缓存或在途请求的曲目身份。
         var key = (sessionId, request with { DurationSeconds = null });
@@ -287,6 +294,21 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
 
         BeginLyricsRequest(key, request, isPlaying);
         return null;
+    }
+
+    /// <summary>最近一次快照的歌词请求是否仍在途；用于快照的“正在检索歌词”状态。</summary>
+    /// <remarks>Whether the lyric request for the latest snapshot is still in flight; feeds the snapshot's searching state.</remarks>
+    internal bool IsSearchingLyrics()
+    {
+        if (_lastLyricsKey is not { } key)
+        {
+            return false;
+        }
+
+        lock (_lyricsRequestGate)
+        {
+            return _pendingLyrics.ContainsKey(key);
+        }
     }
 
     /// <summary>

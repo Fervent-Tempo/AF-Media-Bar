@@ -237,6 +237,8 @@ namespace AFMediaBar.Components
 
         private string _actualTitle = string.Empty;   // 实际标题（不含歌词）Actual title (without lyrics)
         private string _actualArtist = string.Empty;  // 实际艺术家 Actual artist
+        private bool _isLyricsSearching;              // 当前曲目是否仍在检索歌词 Whether lyrics are still being searched
+        private string DisplayedArtist => _isLyricsSearching ? Translations.Get("Lyrics.Searching") : _actualArtist;
 
         private bool _isPaused;        // 是否暂停 Whether paused
         private bool _isConnected;
@@ -1149,7 +1151,8 @@ namespace AFMediaBar.Components
                 else
                 {
                     SongTitle.Text = _actualTitle;
-                    SongArtistContainer.Visibility = !_isSmallTaskbar && !string.IsNullOrEmpty(_actualArtist)
+                    SongArtist.Text = DisplayedArtist;
+                    SongArtistContainer.Visibility = !_isSmallTaskbar && !string.IsNullOrEmpty(DisplayedArtist)
                         ? Visibility.Visible
                         : Visibility.Collapsed;
                 }
@@ -1696,7 +1699,7 @@ namespace AFMediaBar.Components
                 ? Visibility.Visible
                 : Visibility.Collapsed;
             SongInfoStackPanel.IsHitTestVisible = !isVertical && _isConnected;
-            SongArtistContainer.Visibility = !_isSmallTaskbar && !isVertical && !string.IsNullOrEmpty(_actualArtist)
+            SongArtistContainer.Visibility = !_isSmallTaskbar && !isVertical && !string.IsNullOrEmpty(DisplayedArtist)
                 ? Visibility.Visible
                 : Visibility.Collapsed;
         }
@@ -1708,7 +1711,7 @@ namespace AFMediaBar.Components
         public void SetSmallTaskbarMode(bool isSmallTaskbar)
         {
             _isSmallTaskbar = isSmallTaskbar;
-            SongArtistContainer.Visibility = !isSmallTaskbar && !_isVertical && !string.IsNullOrEmpty(_actualArtist)
+            SongArtistContainer.Visibility = !isSmallTaskbar && !_isVertical && !string.IsNullOrEmpty(DisplayedArtist)
                 ? Visibility.Visible
                 : Visibility.Collapsed;
         }
@@ -1889,6 +1892,7 @@ namespace AFMediaBar.Components
                         _quickLaunchTooltip.Content = null;
                     _actualTitle = string.Empty;
                     _actualArtist = string.Empty;
+                    _isLyricsSearching = false;
                     _isConnected = false;
                     _canPlayPause = false;
                     _canSkipPrevious = false;
@@ -1962,13 +1966,17 @@ namespace AFMediaBar.Components
                     : !string.IsNullOrWhiteSpace(snapshot.SourceName) ? snapshot.SourceName : "-";
 
                 var textChanged = _actualTitle != newTitle || _actualArtist != newArtist;
-                if (textChanged)
+                var searchingLyrics = snapshot.IsSearchingLyrics && PresentationSettings.LyricsEnabled &&
+                    snapshot.Lyrics?.Document.Lines is not { Count: > 0 };
+                var searchChanged = _isLyricsSearching != searchingLyrics;
+                _isLyricsSearching = searchingLyrics;
+                if (textChanged || searchChanged)
                 {
                     _actualTitle = newTitle;
                     _actualArtist = newArtist;
 
                     SongTitle.Text = _actualTitle;
-                    SongArtist.Text = _actualArtist;
+                    SongArtist.Text = DisplayedArtist;
                 }
 
                 _lyrics.UpdateWebLyricsPresentation(skipUnchangedContent: skipUnchangedLyricsContent);
@@ -2038,7 +2046,7 @@ namespace AFMediaBar.Components
                 // 标题和歌手内容写入后重新判定 WPF 元数据跑马灯；歌词滚动与逐字动画由 Web 层独立负责。
                 // Re-evaluate the WPF metadata marquee after writing title and artist; the web layer owns lyric scrolling and word animation.
                 ApplyMarqueeLayout(Math.Max(0, SongInfoStackPanel.Width));
-                SongArtistContainer.Visibility = !_isSmallTaskbar && !_isVertical && !string.IsNullOrEmpty(_actualArtist)
+                SongArtistContainer.Visibility = !_isSmallTaskbar && !_isVertical && !string.IsNullOrEmpty(DisplayedArtist)
                     ? Visibility.Visible
                     : Visibility.Collapsed;
                 SongInfoStackPanel.Visibility = Visibility.Visible;
@@ -2121,7 +2129,7 @@ namespace AFMediaBar.Components
             var secondaryText = _isConnected && lyricsVisible
                 ? string.IsNullOrEmpty(effectiveLyrics.CurrentTranslation) ? effectiveLyrics.Next : effectiveLyrics.CurrentTranslation
                 : string.Empty;
-            var artist = _isConnected && !lyricsVisible && SongArtistContainer.Visibility == Visibility.Visible ? _actualArtist : string.Empty;
+            var artist = _isConnected && !lyricsVisible && SongArtistContainer.Visibility == Visibility.Visible ? DisplayedArtist : string.Empty;
             // Spectrum tuning and metric selection never change their reserved widths. Keeping
             // those values (or play/pause) in the fingerprint causes redundant host size
             // animations and visibly nudges title/artist/lyrics while sliders are adjusted.

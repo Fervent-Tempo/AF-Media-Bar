@@ -69,9 +69,9 @@ public partial class TaskBarMediaControl
     }
 
     private LyricsPresentationFrame BuildVerticalMetadataFrame() => new(
-        true, _actualTitle + "\n" + _actualArtist, -1,
+        true, _actualTitle + "\n" + DisplayedArtist, -1,
         VisibleMetadataTitle(PresentationSettings.TaskbarExperience), _isSmallTaskbar || PresentationSettings.TaskbarExperience.ContentLayout == TaskbarContentLayout.CompactInline
-            ? string.Empty : _actualArtist,
+            ? string.Empty : DisplayedArtist,
         string.Empty, string.Empty, false, 0, null, null, _snapshot.IsPlaying);
 
     private TaskbarRestLayout ResolveVerticalLayout(double primaryLength)
@@ -126,7 +126,7 @@ public partial class TaskBarMediaControl
         var textLength = lyricsVisible && PresentationSettings.LyricsFixedWidthEnabled
             ? LyricsFixedWidth.Normalize(PresentationSettings.LyricsFixedWidthDip)
             : Math.Max(Measure(current, VerticalPrimaryFontSize),
-                Measure(lyricsVisible ? secondary : _isSmallTaskbar ? string.Empty : _actualArtist, lyricsVisible ? VerticalPrimaryFontSize : VerticalSecondaryFontSize));
+                Measure(lyricsVisible ? secondary : _isSmallTaskbar ? string.Empty : DisplayedArtist, lyricsVisible ? VerticalPrimaryFontSize : VerticalSecondaryFontSize));
         var components = RestComponentsWithHandle();
         var metrics = TaskbarDensityMetrics.From(experience.Density);
         double Content(double text) => TaskbarExperiencePolicy.CalculateRestWidth(
@@ -196,7 +196,7 @@ public partial class TaskBarMediaControl
         SongArtistContainer.Width = innerWidth;
         SongTitle.Width = innerWidth;
         SongArtist.Width = innerWidth;
-        SongArtistContainer.Visibility = _isSmallTaskbar || string.IsNullOrEmpty(_actualArtist) ? Visibility.Collapsed : Visibility.Visible;
+        SongArtistContainer.Visibility = _isSmallTaskbar || string.IsNullOrEmpty(DisplayedArtist) ? Visibility.Collapsed : Visibility.Visible;
         SongArtistContainer.Margin = new Thickness(0, 2, 0, 0);
         TaskbarPerformanceSurface.Width = Math.Max(1, innerWidth - TaskbarPerformanceHoverSurface.Padding.Left -
             TaskbarPerformanceHoverSurface.Padding.Right - TaskbarPerformanceHoverSurface.BorderThickness.Left - TaskbarPerformanceHoverSurface.BorderThickness.Right);

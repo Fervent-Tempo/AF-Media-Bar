@@ -1411,6 +1411,9 @@
   <data name="Lyrics.Row.InstrumentalTitleOnly.Title" xml:space="preserve">
     <value>純音樂只顯示標題</value>
   </data>
+  <data name="Lyrics.Searching" xml:space="preserve">
+    <value>正在檢索歌詞</value>
+  </data>
   <data name="Lyrics.Row.ChineseConversion.Title" xml:space="preserve">
     <value>歌詞繁簡轉換</value>
   </data>
