@@ -206,7 +206,7 @@ namespace AFMediaBar
                 // 自有 Shell 托盘图标与统一鼠标输入监听
                 // App-owned Shell tray icon and unified mouse input monitor
                 services.AddSingleton<ShellTrayIconService>();
-                services.AddSingleton<ISystemNotificationService>(sp => sp.GetRequiredService<ShellTrayIconService>());
+                services.AddSingleton<ISystemNotificationService, PetNotificationRouter>();
                 services.AddSingleton<NativeMouseInputMonitor>();
                 services.AddSingleton<PetCompanionService>();
                 services.AddSingleton<PetInputService>();

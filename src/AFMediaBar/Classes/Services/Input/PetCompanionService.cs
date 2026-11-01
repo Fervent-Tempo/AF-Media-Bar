@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Resources;
 
 namespace AFMediaBar.Classes.Services;
 
@@ -10,6 +11,33 @@ namespace AFMediaBar.Classes.Services;
 public sealed class PetCompanionService : IDisposable
 {
     private readonly AudioMonitorService _audio;
+    private readonly List<Func<string, bool>> _messages = [];
+    private readonly IDisplayMonitorService _display;
+    private int _phraseIndex;
+    private long _reactionUntil;
+
+    public string Speak()
+    {
+        _reactionUntil = Environment.TickCount64 + 1800;
+        Publish();
+        return _snapshot.IsConnected && !string.IsNullOrWhiteSpace(_snapshot.Title)
+            ? Translations.Format(_snapshot.IsPlaying ? "Widgets.Pet.Say.Playing" : "Widgets.Pet.Say.Paused", _snapshot.Title, _snapshot.Artist)
+            : Translations.Get("Widgets.Pet.Say.Hello" + (_phraseIndex++ % 3));
+    }
+
+    public bool TryNotify(string title, string message)
+    {
+        if (_disposed || !_dispatcher.CheckAccess() || !SettingsManager.Current.PetComponent.NotificationsEnabled ||
+            _display.IsForegroundWindowFullscreen()) return false;
+        foreach (var present in _messages.ToArray())
+        {
+            if (!present(title + "\n" + message)) continue;
+            _reactionUntil = Environment.TickCount64 + 1800;
+            Publish();
+            return true;
+        }
+        return false;
+    }
     private readonly Dispatcher _dispatcher;
     private readonly DispatcherTimer _timer;
     private readonly List<Action<string, double>> _views = [];
@@ -24,9 +52,10 @@ public sealed class PetCompanionService : IDisposable
     private double _beat;
     private long _lastBeat;
 
-    public PetCompanionService(AudioMonitorService audio)
+    public PetCompanionService(AudioMonitorService audio, IDisplayMonitorService display)
     {
         _audio = audio;
+        _display = display;
         _dispatcher = Application.Current.Dispatcher;
         _timer = new DispatcherTimer(DispatcherPriority.Background, _dispatcher) { Interval = TimeSpan.FromMilliseconds(50) };
         _timer.Tick += OnTick;
@@ -42,20 +71,21 @@ public sealed class PetCompanionService : IDisposable
         _snapshot = snapshot;
     }
 
-    public IDisposable Subscribe(Action<string, double> view)
+    public IDisposable Subscribe(Action<string, double> view, Func<string, bool>? message = null)
     {
         _dispatcher.VerifyAccess();
         ObjectDisposedException.ThrowIf(_disposed, this);
         _views.Add(view);
+        if (message is not null) _messages.Add(message);
         if (!_timer.IsEnabled) { _generation++; _timer.Start(); }
         Publish();
-        return new Lease(this, view);
+        return new Lease(this, view, message);
     }
 
     private void Publish()
     {
         var now = Environment.TickCount64;
-        var animation = now < _happyUntil ? "happy" : _snapshot.IsPlaying ? "listening" :
+        var animation = now < _reactionUntil ? "notifying" : now < _happyUntil ? "happy" : _snapshot.IsPlaying ? "listening" :
             !_snapshot.IsConnected && now - _idleSince > 30000 ? "drowsy" : "idle";
         foreach (var view in _views.ToArray()) view(animation, _beat);
     }
@@ -90,7 +120,7 @@ public sealed class PetCompanionService : IDisposable
         if (!_disposed && generation == _generation) Publish();
     }
 
-    private sealed class Lease(PetCompanionService owner, Action<string, double> view) : IDisposable
+    private sealed class Lease(PetCompanionService owner, Action<string, double> view, Func<string, bool>? message) : IDisposable
     {
         private bool _released;
         public void Dispose()
@@ -98,6 +128,7 @@ public sealed class PetCompanionService : IDisposable
             if (_released) return;
             _released = true;
             owner._views.Remove(view);
+            if (message is not null) owner._messages.Remove(message);
             if (owner._views.Count == 0) { owner._generation++; owner._timer.Stop(); owner._beat = owner._average = 0; }
         }
     }
@@ -110,5 +141,6 @@ public sealed class PetCompanionService : IDisposable
         _timer.Stop();
         _timer.Tick -= OnTick;
         _views.Clear();
+        _messages.Clear();
     }
 }

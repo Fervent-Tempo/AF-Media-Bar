@@ -10,6 +10,8 @@ namespace AFMediaBar.Components;
 
 public partial class TaskBarMediaControl
 {
+    private readonly PetSpeechBubble _petBubble = new();
+    private Point? _petPressPoint;
     private PetCompanionService? _petCompanion;
     private IDisposable? _petContextLease;
     private PetInputService? _petInput;
@@ -51,7 +53,11 @@ public partial class TaskBarMediaControl
         {
             TaskbarPet.SetPresentation(false, false);
             TaskbarPet.Visibility = Visibility.Hidden;
-            _petOverflow ??= new PetOverflowHost(TaskbarPetSurface, owner, _petEnvironment);
+            if (_petOverflow is null)
+            {
+                _petOverflow = new PetOverflowHost(TaskbarPetSurface, owner, _petEnvironment);
+                _petOverflow.Activated += SpeakPet;
+            }
             _petOverflow.Show(settings, _isVertical, _verticalTaskbarOnLeft);
         }
         else
@@ -62,7 +68,7 @@ public partial class TaskBarMediaControl
             TaskbarPet.SetPresentation(active, visible);
         }
         if (active && _petCompanion is not null)
-            _petContextLease ??= _petCompanion.Subscribe((animation, beat) => ActivePet.SetContext(animation, beat));
+            _petContextLease ??= _petCompanion.Subscribe((animation, beat) => ActivePet.SetContext(animation, beat), text => _petBubble.Show(ActivePet, text, false));
         if (active && _petInput is not null)
         {
             if (!ReferenceEquals(_petLeaseView, ActivePet))
@@ -79,6 +85,7 @@ public partial class TaskBarMediaControl
 
     private void SuspendPetPresentation()
     {
+        _petBubble.Close();
         _petContextLease?.Dispose();
         _petContextLease = null;
         _petLease?.Dispose();
@@ -95,6 +102,7 @@ public partial class TaskBarMediaControl
         _petDisposed = true;
         SuspendPetPresentation();
         ReleasePetOverflow();
+        _petBubble.Dispose();
         TaskbarPet.Dispose();
         _petInput = null;
         _petEnvironment = null;
@@ -119,6 +127,26 @@ public partial class TaskBarMediaControl
     private void PetSurfaceMouseDown(object sender, MouseButtonEventArgs args)
     {
         if (args.ChangedButton is MouseButton.Left or MouseButton.Right) ActivePet.Press();
+        if (args.ChangedButton == MouseButton.Left) _petPressPoint = args.GetPosition(this);
+    }
+
+    private void SpeakPet()
+    {
+        if (_petCompanion is not null) _petBubble.Show(ActivePet, _petCompanion.Speak());
+    }
+
+    private void PetSurfaceMouseUp(object sender, MouseButtonEventArgs args)
+    {
+        if (args.ChangedButton != MouseButton.Left) return;
+        var start = _petPressPoint;
+        _petPressPoint = null;
+        if (start is { } point && (args.GetPosition(this) - point).Length < SystemParameters.MinimumHorizontalDragDistance) SpeakPet();
+        args.Handled = true;
+    }
+
+    private void PetSurfaceKeyDown(object sender, KeyEventArgs args)
+    {
+        if (args.Key is Key.Enter or Key.Space) { SpeakPet(); args.Handled = true; }
     }
 
     public bool IsPetComponentClick(DependencyObject? source)

@@ -34,12 +34,19 @@ internal sealed class PetOverflowHost : IDisposable
         var surface = new InputSurface { Child = _pet };
         surface.MouseEnter += (_, _) => _pet.SetHovered(true);
         surface.MouseLeave += (_, _) => _pet.SetHovered(false);
+        Point? press = null;
         surface.MouseDown += (_, args) =>
         {
             if (args.ChangedButton is MouseButton.Left or MouseButton.Right) _pet.Press();
+            if (args.ChangedButton == MouseButton.Left) press = args.GetPosition(surface);
             args.Handled = true;
         };
-        surface.MouseUp += (_, args) => args.Handled = true;
+        surface.MouseUp += (_, args) =>
+        {
+            if (args.ChangedButton == MouseButton.Left && press is { } point && (args.GetPosition(surface) - point).Length < SystemParameters.MinimumHorizontalDragDistance) Activated?.Invoke();
+            press = null;
+            args.Handled = true;
+        };
         surface.MouseWheel += (_, args) => args.Handled = true;
         _window = new Window
         {
@@ -68,6 +75,7 @@ internal sealed class PetOverflowHost : IDisposable
         _owner.Closed += OnOwnerClosed;
     }
 
+    internal event Action? Activated;
     internal PetView View => _pet;
     internal bool IsVisible => _visible && !_disposed;
 

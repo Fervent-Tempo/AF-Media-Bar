@@ -3317,4 +3317,9 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Widgets.Pet.Animation.spin-dizzy" xml:space="preserve"><value>Động tác · Xoay chóng mặt</value></data>
   <data name="Widgets.Pet.Animation.spin-wild" xml:space="preserve"><value>Động tác · Xoay nhanh</value></data>
   <data name="Widgets.Pet.Animation.particles" xml:space="preserve"><value>Động tác · Hạt tỏa ra</value></data>
+  <data name="Widgets.Pet.Say.Playing" xml:space="preserve"><value>Đang nghe {0} · {1}. Nhịp điệu hay quá!</value></data>
+  <data name="Widgets.Pet.Say.Paused" xml:space="preserve"><value>{0} đang tạm dừng. Nghỉ một chút nhé.</value></data>
+  <data name="Widgets.Pet.Say.Hello0" xml:space="preserve"><value>Mình ở đây, sẵn sàng nghe nhạc cùng bạn.</value></data>
+  <data name="Widgets.Pet.Say.Hello1" xml:space="preserve"><value>Hôm nay bạn muốn nghe gì?</value></data>
+  <data name="Widgets.Pet.Say.Hello2" xml:space="preserve"><value>Chào bạn! Bật một bài yêu thích nhé.</value></data>
 </root>

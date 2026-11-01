@@ -12,6 +12,7 @@ public sealed record PetComponentSettings
     public bool IdleAnimationsEnabled { get; init; } = true;
     public double SizeDip { get; init; } = DefaultSizeDip;
     public bool AllowOverflow { get; init; }
+    public bool NotificationsEnabled { get; init; }
     public bool FollowPlayback { get; init; } = true;
     public bool MusicMotionEnabled { get; init; } = true;
     public double MusicSensitivity { get; init; } = 100;

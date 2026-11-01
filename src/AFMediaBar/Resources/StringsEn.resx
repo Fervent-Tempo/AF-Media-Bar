@@ -3279,4 +3279,9 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Widgets.Pet.Animation.spin-dizzy" xml:space="preserve"><value>Tricks · Dizzy spin</value></data>
   <data name="Widgets.Pet.Animation.spin-wild" xml:space="preserve"><value>Tricks · Fast spin</value></data>
   <data name="Widgets.Pet.Animation.particles" xml:space="preserve"><value>Tricks · Particles</value></data>
+  <data name="Widgets.Pet.Say.Playing" xml:space="preserve"><value>Listening to {0} · {1}. Nice rhythm!</value></data>
+  <data name="Widgets.Pet.Say.Paused" xml:space="preserve"><value>{0} is paused. Time for a little break.</value></data>
+  <data name="Widgets.Pet.Say.Hello0" xml:space="preserve"><value>I am here, ready for some music.</value></data>
+  <data name="Widgets.Pet.Say.Hello1" xml:space="preserve"><value>What would you like to listen to today?</value></data>
+  <data name="Widgets.Pet.Say.Hello2" xml:space="preserve"><value>Hello there! Put on a favourite song.</value></data>
 </root>

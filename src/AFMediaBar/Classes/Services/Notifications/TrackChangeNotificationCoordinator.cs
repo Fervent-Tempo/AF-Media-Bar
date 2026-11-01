@@ -10,6 +10,7 @@ namespace AFMediaBar.Classes.Services;
 /// </summary>
 public sealed class TrackChangeNotificationCoordinator : IDisposable
 {
+    private readonly PetCompanionService? _pet;
     private readonly MediaSessionService _mediaSessionService;
     private readonly IDisplayMonitorService _displayMonitorService;
     private readonly TrackChangeNotificationPolicy _policy = new();
@@ -29,8 +30,9 @@ public sealed class TrackChangeNotificationCoordinator : IDisposable
     /// <summary>创建协调器并订阅媒体和通知设置变化。 / Creates the coordinator and subscribes to media and notification-setting changes.</summary>
     public TrackChangeNotificationCoordinator(
         MediaSessionService mediaSessionService,
-        IDisplayMonitorService displayMonitorService)
+        IDisplayMonitorService displayMonitorService, PetCompanionService? pet = null)
     {
+        _pet = pet;
         _mediaSessionService = mediaSessionService;
         _displayMonitorService = displayMonitorService;
         _mediaSessionService.SnapshotChanged += OnSnapshotChanged;
@@ -82,6 +84,7 @@ public sealed class TrackChangeNotificationCoordinator : IDisposable
 
         _presentedTrackIdentity = identity;
         _presentedSnapshot = snapshot;
+        if (_pet?.TryNotify(snapshot.Title, snapshot.Artist) == true) return;
         NotificationRequested?.Invoke(this, new TrackChangeNotificationRequest(snapshot, settings, monitor));
     }
 

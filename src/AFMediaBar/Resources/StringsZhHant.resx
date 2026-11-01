@@ -3279,4 +3279,9 @@
   <data name="Widgets.Pet.Animation.spin-dizzy" xml:space="preserve"><value>短動作 · 旋轉後暈眩</value></data>
   <data name="Widgets.Pet.Animation.spin-wild" xml:space="preserve"><value>短動作 · 快速旋轉</value></data>
   <data name="Widgets.Pet.Animation.particles" xml:space="preserve"><value>短動作 · 粒子散開</value></data>
+  <data name="Widgets.Pet.Say.Playing" xml:space="preserve"><value>正在聽《{0}》 · {1}。這個節奏不錯！</value></data>
+  <data name="Widgets.Pet.Say.Paused" xml:space="preserve"><value>《{0}》暫停了。休息一下吧。</value></data>
+  <data name="Widgets.Pet.Say.Hello0" xml:space="preserve"><value>我在這裡，隨時準備陪你聽歌。</value></data>
+  <data name="Widgets.Pet.Say.Hello1" xml:space="preserve"><value>今天想聽什麼？</value></data>
+  <data name="Widgets.Pet.Say.Hello2" xml:space="preserve"><value>點到我啦！放首喜歡的歌吧。</value></data>
 </root>
