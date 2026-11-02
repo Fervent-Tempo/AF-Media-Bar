@@ -72,6 +72,11 @@ public sealed class AudioSettingsPageLoadingTests
                 var widgets = new WidgetsSettingsPage(widgetsModel);
                 widgets.Measure(new Size(820, 900));
                 Assert.IsNotNull(widgets.Content);
+                var demo = (Button)widgets.FindName("PetDemoPlayButton");
+                demo.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Assert.IsTrue(widgets.IsPetDemoRunning);
+                widgets.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
+                Assert.IsFalse(widgets.IsPetDemoRunning, "离开页面必须停止演示计时器。");
                 Assert.IsNull(components.SelectedSpectrumCaptureDevice!.DeviceId, "默认策略是跟随媒体来源。");
                 Assert.AreEqual(3, components.SpectrumCaptureDevices.Count, "跟随媒体来源、系统默认输出设备与离线设备各一项。");
                 Assert.IsTrue(components.SpectrumCaptureDevices.Any(option => option.Mode == SpectrumCaptureDeviceMode.SystemDefault),

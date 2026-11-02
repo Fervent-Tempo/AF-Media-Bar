@@ -142,9 +142,16 @@
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetVisible, Mode=TwoWay}"/>
                         </components:SettingsRow>
                         <Expander x:Name="PetPreviewExpander" Header="{DynamicResource Loc.Widgets.Pet.Preview}" Margin="12,4" Expanded="PetPreviewExpanded" Collapsed="PetPreviewCollapsed">
-                            <Border Width="136" Height="136" Background="Transparent" MouseEnter="PetPreviewMouseEnter" MouseLeave="PetPreviewMouseLeave" MouseMove="PetPreviewMouseMove" MouseDown="PetPreviewMouseDown">
-                                <components:PetView x:Name="PetPreview" Width="120" Height="120" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
+                            <StackPanel>
+                                <Border Width="136" Height="136" Background="Transparent" MouseEnter="PetPreviewMouseEnter" MouseLeave="PetPreviewMouseLeave" MouseMove="PetPreviewMouseMove" MouseDown="PetPreviewMouseDown">
+                                    <components:PetView x:Name="PetPreview" Width="120" Height="120" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <WrapPanel HorizontalAlignment="Center">
+                                    <ui:Button x:Name="PetDemoPlayButton" Content="{DynamicResource Loc.Widgets.Pet.Demo.Play}" Click="PetDemoPlay" Style="{StaticResource AfSettingsButtonStyle}" Margin="4"/>
+                                    <ui:Button Content="{DynamicResource Loc.Widgets.Pet.Demo.Speak}" Click="PetDemoSpeak" Style="{StaticResource AfSettingsButtonStyle}" Margin="4"/>
+                                    <ui:Button Content="{DynamicResource Loc.Widgets.Pet.Demo.Notify}" Click="PetDemoNotify" Style="{StaticResource AfSettingsButtonStyle}" Margin="4"/>
+                                </WrapPanel>
+                            </StackPanel>
                         </Expander>
                         <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Margin="0,4">
                             <ui:CardExpander.Header>
@@ -212,9 +219,6 @@
                                     <components:SettingsNumericEditor Value="{Binding ViewModel.Components.PetVoiceVolume, Mode=TwoWay}" Minimum="0" Maximum="100" Step="5" Unit="{DynamicResource Loc.Settings.Numeric.Percent}"/>
                                 </components:SettingsRow>
                                 <WrapPanel Style="{StaticResource AfSettingsStandaloneActionsStyle}">
-                                    <ui:Button Content="{DynamicResource Loc.Widgets.Pet.Demo.Play}" Click="PetDemoPlay" Style="{StaticResource AfSettingsButtonStyle}" Margin="4"/>
-                                    <ui:Button Content="{DynamicResource Loc.Widgets.Pet.Demo.Speak}" Click="PetDemoSpeak" Style="{StaticResource AfSettingsButtonStyle}" Margin="4"/>
-                                    <ui:Button Content="{DynamicResource Loc.Widgets.Pet.Demo.Notify}" Click="PetDemoNotify" Style="{StaticResource AfSettingsButtonStyle}" Margin="4"/>
                                     <ui:Button Content="{DynamicResource Loc.Widgets.Pet.Demo.Voice}" Click="PetDemoVoice" Style="{StaticResource AfSettingsButtonStyle}" Margin="4"/>
                                 </WrapPanel>
                             </StackPanel>

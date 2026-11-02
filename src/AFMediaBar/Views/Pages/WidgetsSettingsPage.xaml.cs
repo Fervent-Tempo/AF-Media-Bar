@@ -18,9 +18,38 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
     private bool _petPreviewExpanded;
     private readonly PetVoiceService? _petVoice;
     private readonly AFMediaBar.Components.PetSpeechBubble _petBubble = new();
-    private void PetDemoPlay(object sender, RoutedEventArgs args) { PetPreviewExpander.IsExpanded = true; PetPreview.SetContext("listening", 0.8); }
-    private void PetDemoSpeak(object sender, RoutedEventArgs args) { PetPreviewExpander.IsExpanded = true; PetPreview.SetContext("happy", 0); _petBubble.Show((FrameworkElement)sender, AFMediaBar.Resources.Translations.Get("Widgets.Pet.Say.Hello0")); }
-    private void PetDemoNotify(object sender, RoutedEventArgs args) { PetPreviewExpander.IsExpanded = true; PetPreview.SetContext("notifying", 0); _petBubble.Show((FrameworkElement)sender, AFMediaBar.Resources.Translations.Get("Widgets.Pet.Demo.Message")); }
+    private readonly System.Windows.Threading.DispatcherTimer _petDemoTimer = new() { Interval = TimeSpan.FromMilliseconds(50) };
+    private long _petDemoUntil;
+    internal bool IsPetDemoRunning => _petDemoTimer.IsEnabled;
+
+    private void PetDemoPlay(object sender, RoutedEventArgs args)
+    {
+        _petDemoUntil = Environment.TickCount64 + 1800;
+        _petDemoTimer.Start();
+    }
+    private void AdvancePetDemo(object? sender, EventArgs args)
+    {
+        var remaining = _petDemoUntil - Environment.TickCount64;
+        if (!IsLoaded || !_petPreviewExpanded || remaining <= 0)
+        {
+            _petDemoTimer.Stop();
+            PetPreview.SetContext("idle", 0);
+            return;
+        }
+        PetPreview.SetContext("listening", Math.Exp(-((1800 - remaining) % 450) / 90d) * 0.8);
+    }
+    private void PetDemoSpeak(object sender, RoutedEventArgs args)
+    {
+        _petDemoTimer.Stop();
+        PetPreview.SetContext("happy", 0);
+        _petBubble.Show(PetPreview, AFMediaBar.Resources.Translations.Get("Widgets.Pet.Say.Hello0"));
+    }
+    private void PetDemoNotify(object sender, RoutedEventArgs args)
+    {
+        _petDemoTimer.Stop();
+        PetPreview.SetContext("notifying", 0);
+        _petBubble.Show(PetPreview, AFMediaBar.Resources.Translations.Get("Widgets.Pet.Demo.Message"));
+    }
     private void PetDemoVoice(object sender, RoutedEventArgs args) => _petVoice?.Play(true);
 
     public WidgetsSettingsPage(WidgetsSettingsViewModel viewModel, PetWebEnvironment? petEnvironment = null, PetVoiceService? petVoice = null)
@@ -30,6 +59,7 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
         _petVoice = petVoice;
         DataContext = this;
         InitializeComponent();
+        _petDemoTimer.Tick += AdvancePetDemo;
         Loaded += (_, _) =>
         {
             ViewModel.Components.PropertyChanged += PreviewSettingsChanged;
@@ -38,8 +68,10 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
         Unloaded += (_, _) =>
         {
             ViewModel.Components.PropertyChanged -= PreviewSettingsChanged;
+            _petDemoTimer.Stop();
             _petBubble.Close();
             _petVoice?.Stop();
+            PetPreview.SetContext("idle", 0);
             PetPreview.SetPresentation(false, false);
         };
     }
@@ -53,6 +85,9 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
 
     private void PetPreviewCollapsed(object sender, RoutedEventArgs args)
     {
+        _petDemoTimer.Stop();
+        _petBubble.Close();
+        PetPreview.SetContext("idle", 0);
         _petPreviewExpanded = false;
         PetPreview.SetPresentation(false, false);
     }
