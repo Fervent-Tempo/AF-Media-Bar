@@ -138,4 +138,5 @@
     <ZipDirectory SourceDirectory="$(MemoryHelperOutput)" DestinationFile="$(MemoryHelperOutput)..\memory-helper.zip" Overwrite="true" />
     <ItemGroup><EmbeddedResource Include="$(MemoryHelperOutput)..\memory-helper.zip" LogicalName="AFMediaBar.MemoryHelper.zip" /></ItemGroup>
   </Target>
+  <ItemGroup><EmbeddedResource Include="Resources/Audio/PetSyllables.pcm" /></ItemGroup>
 </Project>

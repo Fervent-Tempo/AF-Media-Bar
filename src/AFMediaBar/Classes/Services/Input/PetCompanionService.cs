@@ -20,13 +20,14 @@ public sealed class PetCompanionService : IDisposable
 
     public string Speak()
     {
-        _voice.Play();
         _reactionAnimation = "happy";
         _reactionUntil = Environment.TickCount64 + 1800;
         Publish();
-        return _snapshot.IsConnected && !string.IsNullOrWhiteSpace(_snapshot.Title)
+        var text = _snapshot.IsConnected && !string.IsNullOrWhiteSpace(_snapshot.Title)
             ? Translations.Format(_snapshot.IsPlaying ? "Widgets.Pet.Say.Playing" : "Widgets.Pet.Say.Paused", _snapshot.Title, _snapshot.Artist)
             : Translations.Get("Widgets.Pet.Say.Hello" + (_phraseIndex++ % 3));
+        _voice.Play(text);
+        return text;
     }
 
     public bool TryNotify(string title, string message, Action? activation = null)

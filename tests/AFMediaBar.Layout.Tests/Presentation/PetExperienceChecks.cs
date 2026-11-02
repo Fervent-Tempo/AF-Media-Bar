@@ -44,10 +44,11 @@ internal static class PetExperienceChecks
             pet.Dispose();
             pet.UpdateSnapshot(MediaSnapshot.Disconnected);
             Assert.IsFalse(pet.TryNotify("title", "body"));
-            var pcm = PetVoiceService.CreatePcm(100);
-            Assert.AreEqual(48000, pcm.Length, "声音限制为一秒、24kHz 单声道 16 位。");
+            var pcm = PetVoiceService.CreatePcm(100, "你好，AF！");
+            Assert.AreEqual(48640, pcm.Length, "四个音节与标点停顿决定时长。");
+            Assert.IsFalse(pcm.SequenceEqual(PetVoiceService.CreatePcm(100, "世界，AF！")));
             Assert.IsTrue(pcm.Any(value => value != 0));
-            Assert.IsTrue(PetVoiceService.CreatePcm(0).All(value => value == 0));
+            Assert.IsTrue(PetVoiceService.CreatePcm(0, "你好").All(value => value == 0));
             for (var i = 0; i < pcm.Length; i += 2)
                 Assert.IsTrue(Math.Abs((int)BitConverter.ToInt16(pcm, i)) <= short.MaxValue * 0.36, "合成音必须保留音量余量。");
         }

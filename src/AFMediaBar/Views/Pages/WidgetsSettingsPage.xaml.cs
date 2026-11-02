@@ -42,7 +42,9 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
     {
         _petDemoTimer.Stop();
         PetPreview.SetContext("happy", 0);
-        _petBubble.Show(PetPreview, AFMediaBar.Resources.Translations.Get("Widgets.Pet.Say.Hello0"));
+        var text = AFMediaBar.Resources.Translations.Get("Widgets.Pet.Say.Hello0");
+        _petBubble.Show(PetPreview, text);
+        _petVoice?.Play(text);
     }
     private void PetDemoNotify(object sender, RoutedEventArgs args)
     {
@@ -50,7 +52,7 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
         PetPreview.SetContext("notifying", 0);
         _petBubble.Show(PetPreview, AFMediaBar.Resources.Translations.Get("Widgets.Pet.Demo.Message"));
     }
-    private void PetDemoVoice(object sender, RoutedEventArgs args) => _petVoice?.Play(true);
+    private void PetDemoVoice(object sender, RoutedEventArgs args) => _petVoice?.Play(AFMediaBar.Resources.Translations.Get("Widgets.Pet.Say.Hello0"), true);
 
     public WidgetsSettingsPage(WidgetsSettingsViewModel viewModel, PetWebEnvironment? petEnvironment = null, PetVoiceService? petVoice = null)
     {
