@@ -29,6 +29,8 @@ public partial class TaskbarWindow
     private bool _updatingDetachedLayout;
     private readonly Dictionary<TaskbarRestComponent, DetachedComponentPosition> _appliedComponentPreferences = [];
     private IReadOnlyList<TaskbarPrimaryRange> _componentSafeRanges = [];
+    private bool _componentRangesCurrent;
+    private (IntPtr Handle, int Left, int Top, int Right, int Bottom, double Dpi, bool Vertical, bool Avoid)? _componentPlacementEnvironment;
     private TaskbarRestComponent? _componentMenuTarget;
     internal ContextMenu? ActiveComponentMenu { get; set; }
     private ScreenBackgroundSampler? _componentSampler;
@@ -57,17 +59,47 @@ public partial class TaskbarWindow
         Dispatcher.BeginInvoke(() => { if (!_isClosing && !IsTaskbarPresentationSuspended) UpdatePosition(); });
     }
 
+    private void ResetDetachedPlacement()
+    {
+        _componentSafeRanges = [];
+        _componentRangesCurrent = false;
+        _componentPlacementEnvironment = null;
+        _detachedRects.Clear();
+        _appliedComponentPreferences.Clear();
+    }
+
+    private void PrepareDetachedPlacement(RECT taskbar, double dpi)
+    {
+        var environment = (_lastTaskbarHandle, taskbar.Left, taskbar.Top, taskbar.Right, taskbar.Bottom,
+            dpi, IsVerticalPresentation, SettingsManager.Current.TaskbarBarAvoidIcons);
+        if (!_componentPlacementEnvironment.Equals(environment))
+        {
+            ResetDetachedPlacement();
+            _componentPlacementEnvironment = environment;
+        }
+        var requested = MonitorBarProfilePolicy.Find(SettingsManager.Current, BarConfigurationTarget.Taskbar, _targetMonitorDeviceId)?.Detached ?? [];
+        // 归还已提交时先撤除旧预留，不能再拿旧画面把合并后的本体挤开。
+        foreach (var obsolete in _detachedRects.Keys.Where(component => !requested.Any(position => position.Component == component)).ToArray())
+            _detachedRects.Remove(obsolete);
+    }
+
     private IReadOnlyList<TaskbarPrimaryRange> CurrentComponentRanges(RECT taskbar, double dpi, bool duringGesture = false)
     {
+        PrepareDetachedPlacement(taskbar, dpi);
+        _componentRangesCurrent = false;
         var length = IsVerticalPresentation ? taskbar.Bottom - taskbar.Top : taskbar.Right - taskbar.Left;
         if (!SettingsManager.Current.TaskbarBarAvoidIcons)
+        {
+            _componentRangesCurrent = true;
             return [new(Math.Min(EdgePadding, length), Math.Max(Math.Min(EdgePadding, length), length - EdgePadding))];
+        }
         if (_hostActions.IsEnvironmentRecovering || IsTaskbarPresentationSuspended || DateTime.UtcNow < _skipOccupiedAreaProbeUntilUtc) return [];
         if (duringGesture && (_isDragging || MediaControl.HasComponentGesture)) return _componentSafeRanges;
         var snapshot = _occupiedAreaService.GetSnapshot(_lastTaskbarHandle, taskbar,
             _appliedOrientation ?? LayoutOrientation.Horizontal, dpi, EdgePadding);
-        // 未知结果不得让释放后的对象继续压住图标；等待同环境成功发布再恢复。
-        _componentSafeRanges = snapshot.Status == TaskbarProbeStatus.Success ? snapshot.Ranges : [];
+        _componentRangesCurrent = snapshot.Status == TaskbarProbeStatus.Success;
+        // 系统菜单可能暂时替代 UIA 树；与本体一样保留同环境的旧画面，但不分配新落点。
+        if (_componentRangesCurrent) _componentSafeRanges = snapshot.Ranges;
         return _componentSafeRanges;
     }
 
@@ -107,19 +139,29 @@ public partial class TaskbarWindow
                     var prior = PrimaryRange(stable);
                     if (prior.Length == primarySize && free.Any(range => range.Start <= prior.Start && range.End >= prior.End)) desired = prior.Start;
                 }
-                var primary = visual.HasContent ? ComponentPlacementPolicy.Nearest(free, desired, primarySize) : null;
-                visual.IsPlaced = primary.HasValue;
-                visual.View.Visibility = primary.HasValue ? Visibility.Visible : Visibility.Collapsed;
-                if (primary is not { } start) continue;
-                var preferredCross = preference is null ? (crossLength - crossSize) / 2d : preference.CrossDip * dpi;
-                var cross = (int)Math.Round(Math.Clamp(preferredCross, 0, Math.Max(0, crossLength - crossSize)));
-                var rectangle = IsVerticalPresentation ? new RECT { Left = cross, Top = start, Right = cross + crossSize, Bottom = start + primarySize }
-                    : new RECT { Left = start, Top = cross, Right = start + primarySize, Bottom = cross + crossSize };
+                RECT? placement = null;
+                if (visual.HasContent)
+                {
+                    if (!_componentRangesCurrent)
+                    {
+                        if (previous.TryGetValue(visual.Component, out var frozen)) placement = frozen;
+                    }
+                    else if (ComponentPlacementPolicy.Nearest(free, desired, primarySize) is { } start)
+                    {
+                        var preferredCross = preference is null ? (crossLength - crossSize) / 2d : preference.CrossDip * dpi;
+                        var cross = (int)Math.Round(Math.Clamp(preferredCross, 0, Math.Max(0, crossLength - crossSize)));
+                        placement = IsVerticalPresentation ? new RECT { Left = cross, Top = start, Right = cross + crossSize, Bottom = start + primarySize }
+                            : new RECT { Left = start, Top = cross, Right = start + primarySize, Bottom = cross + crossSize };
+                    }
+                }
+                visual.IsPlaced = placement.HasValue;
+                visual.View.Visibility = placement.HasValue ? Visibility.Visible : Visibility.Collapsed;
+                if (placement is not { } rectangle) continue;
                 Canvas.SetLeft(visual.View, rectangle.Left / dpi); Canvas.SetTop(visual.View, rectangle.Top / dpi);
                 visual.View.Width = (rectangle.Right - rectangle.Left) / dpi;
                 visual.View.Height = (rectangle.Bottom - rectangle.Top) / dpi;
                 _detachedRects[visual.Component] = rectangle;
-                if (preference is not null) _appliedComponentPreferences[visual.Component] = preference;
+                if (_componentRangesCurrent && preference is not null) _appliedComponentPreferences[visual.Component] = preference;
                 free = ComponentPlacementPolicy.Subtract(free, [PrimaryRange(rectangle)], (int)Math.Ceiling(4 * dpi));
             }
         }
@@ -170,6 +212,7 @@ public partial class TaskbarWindow
         }
         ClearComponentGhost();
         var ranges = CurrentComponentRanges(taskbar, dpi);
+        if (!_componentRangesCurrent) { UpdatePosition(); return; }
         var others = _detachedRects.Where(pair => pair.Key != intent.Component).Select(pair => PrimaryRange(pair.Value));
         var free = ComponentPlacementPolicy.Subtract(ranges, others, (int)Math.Ceiling(4 * dpi));
         var dock = intent.Dock;
@@ -213,6 +256,7 @@ public partial class TaskbarWindow
         ActiveComponentMenu = null;
         foreach (var view in _detachedViews) WidgetCanvas.Children.Remove(view);
         _detachedViews.Clear(); _detachedRects.Clear();
+        ResetDetachedPlacement();
         MediaControl.ReleaseDetachedVisuals();
         MediaControl.ComponentPlacementAllowed = null;
         foreach (var color in _componentColors.Values) color.Session.Dispose();

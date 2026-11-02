@@ -392,6 +392,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         MediaControl.SetBarDragActive(false);
         if (Mouse.Captured == MediaControl) Mouse.Capture(null);
         MediaControl.CancelComponentPlacement();
+        ResetDetachedPlacement();
         if (ActiveComponentMenu is { } componentMenu) componentMenu.IsOpen = false;
         foreach (var color in _componentColors.Values) color.Session.Invalidate(clearDecision: false);
         foreach (var visual in MediaControl.DetachedVisuals)
@@ -845,6 +846,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                 taskbarWidth, taskbarHeight);
 
             // Place the bar on the canvas and clip the window to it
+            PrepareDetachedPlacement(taskbarRect, dpiScale);
             RECT barRect = PositionBar(taskbarRect, dpiScale);
             LayoutDetachedComponents(taskbarRect, dpiScale, barRect);
             MediaControl.Opacity = HasArea(barRect) ? 1 : 0;
@@ -2467,15 +2469,19 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             var dpi = _taskBarService.GetTaskbarDpiScale(_lastTaskbarHandle);
             if (dpi > 0)
             {
-                var free = ComponentPlacementPolicy.Subtract(CurrentComponentRanges(taskbar, dpi),
-                    _detachedRects.Values.Select(PrimaryRange), (int)Math.Ceiling(4 * dpi));
-                var landing = ComponentPlacementPolicy.Nearest(free, primary, _bodyDragLength) ?? primary;
-                var alignment = TaskbarPresentation.Position;
-                var anchor = landing + (alignment == TaskbarBarPosition.End ? _bodyDragLength : alignment == TaskbarBarPosition.Center ? _bodyDragLength / 2d : 0);
-                AFMediaBar.Classes.Services.Settings.MonitorBarProfilePolicy.Store(SettingsManager.Current,
-                    AFMediaBar.Classes.Services.Settings.MonitorBarProfilePolicy.Capture(SettingsManager.Current, BarConfigurationTarget.Taskbar, _targetMonitorDeviceId)
-                    with
-                    { BodyPrimaryDip = anchor / dpi, BodyAlignment = alignment });
+                var ranges = CurrentComponentRanges(taskbar, dpi);
+                if (_componentRangesCurrent)
+                {
+                    var free = ComponentPlacementPolicy.Subtract(ranges,
+                        _detachedRects.Values.Select(PrimaryRange), (int)Math.Ceiling(4 * dpi));
+                    var landing = ComponentPlacementPolicy.Nearest(free, primary, _bodyDragLength) ?? primary;
+                    var alignment = TaskbarPresentation.Position;
+                    var anchor = landing + (alignment == TaskbarBarPosition.End ? _bodyDragLength : alignment == TaskbarBarPosition.Center ? _bodyDragLength / 2d : 0);
+                    AFMediaBar.Classes.Services.Settings.MonitorBarProfilePolicy.Store(SettingsManager.Current,
+                        AFMediaBar.Classes.Services.Settings.MonitorBarProfilePolicy.Capture(SettingsManager.Current, BarConfigurationTarget.Taskbar, _targetMonitorDeviceId)
+                        with
+                        { BodyPrimaryDip = anchor / dpi, BodyAlignment = alignment });
+                }
             }
         }
         UpdatePosition();

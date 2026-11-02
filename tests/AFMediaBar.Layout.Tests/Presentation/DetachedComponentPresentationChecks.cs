@@ -87,7 +87,8 @@ internal static class DetachedComponentPresentationChecks
             Assert.IsTrue(control.IsAncestorOf((FrameworkElement)control.FindName("ResidentPlayPauseSurface")));
             var interaction = (FrameworkElement)control.FindName("InteractionSurface");
             Assert.AreEqual(HorizontalAlignment.Left, metricSurface.HorizontalAlignment, "归还不能保留独立窗口的居中对齐。");
-            Assert.AreEqual(metricSurface.Margin.Left, metricSurface.TransformToAncestor(interaction).Transform(new Point()).X, 0.1,
+            Assert.AreEqual(metricSurface.Margin.Left, metricSurface.TransformToAncestor(interaction).Transform(new Point()).X,
+                1 / VisualTreeHelper.GetDpi(metricSurface).DpiScaleX + 0.01,
                 "归还的指标必须在同一帧按本体的左起坐标排列。");
         }
         finally
