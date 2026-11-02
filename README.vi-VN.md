@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/readme/hero-vi.svg" width="100%" alt="Minh họa AF Media Bar: thanh media ở góc dưới bên trái thanh tác vụ Windows, bảng điều khiển đầy đủ phía trên, biểu tượng và giới thiệu dự án bên phải">
+  <img src="docs/assets/readme/hero-promo.png" width="100%" alt="Hình ảnh quảng bá AF Media Bar: điều khiển media và tùy biến nhẹ trên desktop Windows">
 </p>
 
 <p align="center">

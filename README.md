@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/readme/hero-zh.svg" width="100%" alt="AF Media Bar 布局示意：媒体栏位于 Windows 任务栏左下角，完整媒体弹窗在其正上方，软件图标与项目介绍位于右侧">
+  <img src="docs/assets/readme/hero-promo.png" width="100%" alt="AF Media Bar 宣传图：Windows 桌面上的媒体控制与轻度美化软件">
 </p>
 
 <p align="center">

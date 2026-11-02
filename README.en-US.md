@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/readme/hero-en.svg" width="100%" alt="AF Media Bar layout illustration: the media bar sits at the lower left of the Windows taskbar, its full media popover is directly above, and the app icon and project introduction are on the right">
+  <img src="docs/assets/readme/hero-promo.png" width="100%" alt="AF Media Bar promotional image: media control and light customization on the Windows desktop">
 </p>
 
 <p align="center">
