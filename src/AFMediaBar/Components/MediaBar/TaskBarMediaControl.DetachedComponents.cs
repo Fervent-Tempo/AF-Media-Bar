@@ -23,7 +23,8 @@ public sealed class DetachedComponentVisual(TaskbarRestComponent component, Grid
     public bool HasContent { get; internal set; }
     public bool IsPlaced { get; set; }
     internal Action<PlayerForegroundDecision?>? ForegroundChanged { get; set; }
-    internal List<(FrameworkElement Element, Panel Parent, int Index)> Roots { get; } = [];
+    internal TaskbarHoverPalette? HoverPalette { get; set; }
+    internal List<(FrameworkElement Element, Panel Parent, int Index, Action RestoreLayout)> Roots { get; } = [];
 }
 
 public partial class TaskBarMediaControl
@@ -118,6 +119,31 @@ public partial class TaskBarMediaControl
             : new Size(Math.Max(1, ResolveRestComponentWidth(component, metrics)), cross);
     }
 
+    private static Action CaptureComponentLayout(FrameworkElement element)
+    {
+        var properties = new[] { WidthProperty, HeightProperty, MarginProperty, HorizontalAlignmentProperty,
+            VerticalAlignmentProperty, RenderTransformProperty, Canvas.LeftProperty, Canvas.TopProperty };
+        var values = properties.Select(property => (Property: property, Local: element.ReadLocalValue(property),
+            Binding: BindingOperations.GetBindingBase(element, property))).ToArray();
+        return () =>
+        {
+            foreach (var value in values)
+                if (value.Binding is not null) BindingOperations.SetBinding(element, value.Property, value.Binding);
+                else if (value.Local == DependencyProperty.UnsetValue) element.ClearValue(value.Property);
+                else element.SetValue(value.Property, value.Local);
+        };
+    }
+
+    private void RestoreAttachedComponents()
+    {
+        var entries = EffectiveRestEntries();
+        var restored = false;
+        foreach (var component in _detachedVisuals.Keys.Where(component => !IsDetached(component) ||
+            !entries.Any(entry => entry.Component == component)).ToArray())
+        { RestoreDetachedVisual(component); restored = true; }
+        if (restored) DetachedVisualsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     private void UpdateDetachedVisuals()
     {
         if (_updatingDetachedVisuals || ComponentTarget is null) return;
@@ -134,7 +160,9 @@ public partial class TaskBarMediaControl
             {
                 if (!_detachedVisuals.TryGetValue(component, out var visual))
                 {
-                    var grid = new Grid { Background = Brushes.Transparent };
+                    var grid = new Grid();
+                    // 分层窗口的零 alpha 像素会穿透；整块命中底与本体保持一致。
+                    grid.SetBinding(Panel.BackgroundProperty, new Binding(nameof(Panel.Background)) { Source = InteractionSurface });
                     grid.Resources.MergedDictionaries.Add(Resources);
                     NameScope.SetNameScope(grid, new ComponentNameScope(this));
                     // 重新挂到窗口后不再继承媒体控件的数据上下文和前景，显式连接原所有者。
@@ -149,7 +177,7 @@ public partial class TaskBarMediaControl
                     foreach (var element in ComponentRoots(component))
                     {
                         if (element.Parent is not Panel parent) continue;
-                        visual.Roots.Add((element, parent, parent.Children.IndexOf(element)));
+                        visual.Roots.Add((element, parent, parent.Children.IndexOf(element), CaptureComponentLayout(element)));
                         parent.Children.Remove(element);
                         grid.Children.Add(element);
                     }
@@ -217,6 +245,7 @@ public partial class TaskBarMediaControl
         foreach (var root in visual.Roots)
         {
             visual.View.Children.Remove(root.Element);
+            root.RestoreLayout();
             root.Parent.Children.Insert(Math.Min(root.Index, root.Parent.Children.Count), root.Element);
         }
         _componentForegroundDecisions.Remove(component);
@@ -230,6 +259,11 @@ public partial class TaskBarMediaControl
         var presentation = PlayerForegroundPolicy.ResolvePresentation(PresentationSettings.Appearance.PlayerForegroundMode,
             SystemParameters.HighContrast, fallbackLight, decision);
         var brush = presentation.UsesSystemColors ? SystemColors.WindowTextBrush : presentation.UsesLightText ? Brushes.White : DarkPlayerForeground;
+        var palette = TaskbarHoverPalettePolicy.Resolve(brush.Color);
+        visual.HoverPalette = palette;
+        visual.View.Resources["TaskbarHoverForegroundBrush"] = new SolidColorBrush(palette.Foreground);
+        visual.View.Resources["TaskbarHoverButtonOverBrush"] = new SolidColorBrush(palette.ButtonHover);
+        visual.View.Resources["TaskbarHoverButtonPressedBrush"] = new SolidColorBrush(palette.ButtonPressed);
         void Apply(DependencyObject element)
         {
             if (element is TextBlock text) text.SetCurrentValue(TextBlock.ForegroundProperty, brush);
@@ -239,12 +273,15 @@ public partial class TaskBarMediaControl
             for (var index = 0; index < VisualTreeHelper.GetChildrenCount(element); index++) Apply(VisualTreeHelper.GetChild(element, index));
         }
         Apply(visual.View);
+        foreach (var root in visual.Roots)
+            if (root.Element is Border surface) AnimateComponentHover(surface, surface.IsMouseOver);
         if (component == TaskbarRestComponent.Spectrum) ApplySpectrumForeground(brush);
     }
 
     private void ReapplyDetachedForeground()
     {
-        foreach (var pair in _componentForegroundDecisions) ApplyDetachedForeground(pair.Key, pair.Value);
+        foreach (var component in _detachedVisuals.Keys)
+            ApplyDetachedForeground(component, _componentForegroundDecisions.GetValueOrDefault(component));
     }
 
     public void ReleaseDetachedVisuals()

@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
@@ -55,6 +56,8 @@ internal static class DetachedComponentPresentationChecks
             Assert.AreEqual(2, MonitorBarProfilePolicy.Find(SettingsManager.Current, BarConfigurationTarget.Taskbar, "A")!.Detached.Count,
                 "控件只发布放回意图，不直接改写设置。");
             var performance = control.DetachedVisuals.Single(visual => visual.Component == TaskbarRestComponent.Performance);
+            Assert.IsTrue(performance.View.Background is SolidColorBrush { Color.A: > 0 },
+                "独立组件空白处也必须有与媒体栏相同的非零 alpha 命中底。");
             Assert.IsNotNull(performance.View.TryFindResource("TaskbarHoverButtonOverBrush"), "重挂后必须保留组件悬停样式的资源作用域。");
             Assert.IsTrue(performance.SizeDip.Width > 0 && performance.SizeDip.Height > 0);
             Assert.IsTrue(performance.View.Children.Cast<FrameworkElement>().Any(element => element.Visibility == Visibility.Visible &&
@@ -79,8 +82,13 @@ internal static class DetachedComponentPresentationChecks
                 "恢复宿主后独立容器必须恢复输入。");
             MonitorBarProfilePolicy.Store(settings, profile with { Detached = [] });
             control.ApplyTaskbarExperienceSettings();
+            owner.UpdateLayout();
             Assert.AreEqual(0, control.DetachedVisuals.Count);
             Assert.IsTrue(control.IsAncestorOf((FrameworkElement)control.FindName("ResidentPlayPauseSurface")));
+            var interaction = (FrameworkElement)control.FindName("InteractionSurface");
+            Assert.AreEqual(HorizontalAlignment.Left, metricSurface.HorizontalAlignment, "归还不能保留独立窗口的居中对齐。");
+            Assert.AreEqual(metricSurface.Margin.Left, metricSurface.TransformToAncestor(interaction).Transform(new Point()).X, 0.1,
+                "归还的指标必须在同一帧按本体的左起坐标排列。");
         }
         finally
         {

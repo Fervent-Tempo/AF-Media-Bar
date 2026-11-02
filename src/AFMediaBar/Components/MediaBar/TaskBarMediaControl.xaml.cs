@@ -1194,6 +1194,7 @@ namespace AFMediaBar.Components
         /// </summary>
         private void ApplyTaskbarSectionGeometry(double primaryLength)
         {
+            RestoreAttachedComponents();
             RefreshTaskbarTextBudget(_lyrics._lyricsFrame);
             // 先按封面自身的比例纠正封面框：下面的文字起点与整条宽度都按封面右缘计算，封面宽度必须是最终值。
             // The artwork box is corrected to the artwork's own aspect first, because the text start and the whole length below are derived

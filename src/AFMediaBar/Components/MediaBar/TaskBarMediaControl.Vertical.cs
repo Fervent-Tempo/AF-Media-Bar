@@ -143,6 +143,7 @@ public partial class TaskBarMediaControl
 
     private void ApplyVerticalSectionGeometry(double primaryLength)
     {
+        RestoreAttachedComponents();
         _verticalSpectrumLength = TaskbarSpectrum.Width + RestWidgetVerticalInset(TaskbarSpectrumHoverSurface);
         var width = Math.Max(1, MainBorder.Width);
         var innerWidth = Math.Max(1, width - 4);

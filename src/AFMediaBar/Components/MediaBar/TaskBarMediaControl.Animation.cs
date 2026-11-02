@@ -350,12 +350,14 @@ public partial class TaskBarMediaControl
         if (isHovered && !CanUseTaskbarRestHover(surface))
             return;
 
+        var palette = _detachedVisuals.Values.FirstOrDefault(visual => visual.Roots.Any(root => ReferenceEquals(root.Element, surface)))?.HoverPalette
+            ?? _taskbarHoverPalette;
         var backgroundColor = isHovered
-            ? _taskbarHoverPalette.Surface
+            ? palette.Surface
             : Colors.Transparent;
-        var backgroundOpacity = isHovered ? _taskbarHoverPalette.SurfaceOpacity : 0;
-        var borderColor = isHovered ? _taskbarHoverPalette.Border : Colors.Transparent;
-        var borderOpacity = isHovered ? _taskbarHoverPalette.BorderOpacity : 0;
+        var backgroundOpacity = isHovered ? palette.SurfaceOpacity : 0;
+        var borderColor = isHovered ? palette.Border : Colors.Transparent;
+        var borderOpacity = isHovered ? palette.BorderOpacity : 0;
         var easingMode = isHovered ? EasingMode.EaseOut : EasingMode.EaseInOut;
 
         if (surface.Background is not SolidColorBrush background || background.IsFrozen)

@@ -23,7 +23,6 @@ public partial class TaskBarMediaControl
     private bool _suppressComponentRelease;
     private bool _finishingComponentGesture;
     private ComponentReorderRequest? _componentGesture;
-    private Point _componentPress;
     private bool _componentVertical;
     private DpiScale _componentDpi;
     private readonly Dictionary<TaskbarRestComponent, Rect> _componentStartBounds = new();
@@ -295,7 +294,6 @@ public partial class TaskBarMediaControl
         if (!entries.Any(entry => entry.Component == source.Component && entry.IsVisible)) return;
         _componentGesture = new(source.State, source.Component, Array.FindIndex(entries, entry => entry.Component == source.Component), entries)
         { Target = ComponentTarget, MonitorDeviceId = ComponentMonitorDeviceId };
-        _componentPress = args.GetPosition(this);
         _componentCaptureElement = capture;
         if (!Classes.Interop.NativeMethods.GetCursorPos(out var cursor)) { _componentGesture = null; return; }
         _componentScreenPress = new Point(cursor.X, cursor.Y);
@@ -326,29 +324,31 @@ public partial class TaskBarMediaControl
     {
         if (_componentGesture is not { } gesture) return;
         if (args.LeftButton != MouseButtonState.Pressed || !GestureStillValid()) { CancelComponentGesture(); return; }
-        var position = args.GetPosition(this);
-        var delta = position - _componentPress;
+        if (!Classes.Interop.NativeMethods.GetCursorPos(out var cursor)) return;
+        var screen = new Point(cursor.X, cursor.Y);
+        var position = PointFromScreen(screen);
+        var delta = screen - _componentScreenPress;
         if (!_componentGestureActive)
         {
-            if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+            if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance * _componentDpi.DpiScaleX &&
+                Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance * _componentDpi.DpiScaleY) return;
             _componentGestureActive = true;
             _suppressComponentRelease = true;
             _hoverOpenTimer.Stop(); _hoverCloseTimer.Stop(); _hoverHideFallbackTimer.Stop();
             _componentPreviousFocus = Keyboard.FocusedElement;
             // 先接管按钮捕获再转移焦点，避免 ButtonBase 失焦释放捕获时取消排序。
             // 保留内部容器的真实命中；Element 捕获会让其误收 MouseLeave 并清理当前排序。
-            if (!Mouse.Capture(_componentCaptureElement, CaptureMode.SubTree)) { CancelComponentGesture(); return; }
-            if (_componentGesture is not null) { Focusable = true; Focus(); }
+            var capture = _componentCaptureElement!;
+            if (!Mouse.Capture(capture, CaptureMode.SubTree)) { CancelComponentGesture(); return; }
+            if (_componentGesture is not null) { capture.Focusable = true; capture.Focus(); }
             if (_componentGesture is null)
             {
-                if (IsMouseCaptured) ReleaseMouseCapture();
+                if (Mouse.Captured == capture) Mouse.Capture(null);
                 return;
             }
         }
-        if (gesture.State != BarLayoutState.Hover && !PresentationSettings.TaskbarBarPositionLocked &&
-            Classes.Interop.NativeMethods.GetCursorPos(out var cursor))
+        if (gesture.State != BarLayoutState.Hover && !PresentationSettings.TaskbarBarPositionLocked)
         {
-            var screen = new Point(cursor.X, cursor.Y);
             var outer = _componentBarBounds;
             if (!outer.IsEmpty) outer.Inflate(12 * _componentDpi.DpiScaleX, 12 * _componentDpi.DpiScaleY);
             if (_componentDetachedOrigin)
@@ -538,7 +538,8 @@ public partial class TaskBarMediaControl
             if (wasHover) { ApplyHoverComponentLayout(); if (_isVertical) ConfigureVerticalHoverGeometry(); }
             else if (_isVertical) ApplyVerticalSectionGeometry(MainBorder.Height);
             else ApplyTaskbarSectionGeometry(MainBorder.Width);
-            if (_componentPreviousFocus is { } focused && Window.GetWindow(this)?.IsActive == true && ReferenceEquals(Keyboard.FocusedElement, this)) Keyboard.Focus(focused);
+            if (_componentCaptureElement is { } capture && _componentPreviousFocus is { } focused && Window.GetWindow(capture)?.IsActive == true &&
+                ReferenceEquals(Keyboard.FocusedElement, capture)) Keyboard.Focus(focused);
             _componentPreviousFocus = null;
             if (!IsMouseOver) HideTaskbarHoverLayer();
         }

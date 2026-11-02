@@ -14,6 +14,7 @@ public sealed partial class FloatingBarWindow
     private readonly Dictionary<TaskbarRestComponent, (DetachedComponentVisual Visual, ComponentFloatingWindow Window)> _componentWindows = [];
     private Func<DetachedComponentVisual, ComponentFloatingWindow>? _componentWindowFactory;
     private ComponentFloatingWindow? _componentGhostWindow;
+    private TaskbarRestComponent? _movingComponent;
     private bool _componentRefreshQueued;
     private bool _componentsActivated;
     private bool _bodyDragCancelled;
@@ -62,6 +63,7 @@ public sealed partial class FloatingBarWindow
         var positions = MonitorBarProfilePolicy.Find(SettingsManager.Current, BarConfigurationTarget.FloatingBar, TargetMonitorDeviceId)?.Detached ?? [];
         foreach (var visual in visuals.Values)
         {
+            if (_movingComponent == visual.Component) continue;
             if (!_componentWindows.TryGetValue(visual.Component, out var entry))
             {
                 var window = (_componentWindowFactory ?? throw new InvalidOperationException("Component window factory is unavailable."))(visual);
@@ -83,10 +85,22 @@ public sealed partial class FloatingBarWindow
     private void FloatingComponentMove(object? sender, ComponentMoveIntentEventArgs intent)
     {
         if (intent.Cancelled || !CanSaveFloatingComponent)
-        { _componentGhostWindow?.Dispose(); _componentGhostWindow = null; return; }
+        {
+            _componentGhostWindow?.Dispose(); _componentGhostWindow = null;
+            var restore = _movingComponent.HasValue;
+            _movingComponent = null;
+            if (restore && CanSaveFloatingComponent && _componentsActivated) RefreshFloatingComponents();
+            return;
+        }
         var bounds = ClampComponent(intent.ScreenBounds);
         if (!intent.Finished)
         {
+            if (_componentWindows.TryGetValue(intent.Component, out var moving))
+            {
+                _movingComponent = intent.Component;
+                moving.Window.Place(bounds, _layer, _overlayTaskbar, true);
+                return;
+            }
             if (_componentGhostWindow is null)
             {
                 var grid = new Grid
@@ -103,12 +117,14 @@ public sealed partial class FloatingBarWindow
             return;
         }
         _componentGhostWindow?.Dispose(); _componentGhostWindow = null;
+        _movingComponent = null;
         var position = intent.Dock ? null : new DetachedComponentPosition(intent.Component,
             (bounds.Left + bounds.Width / 2 - Monitor.WorkArea.Left) / Dpi,
             (bounds.Top + bounds.Height / 2 - Monitor.WorkArea.Top) / Dpi);
         var request = new ComponentPlacementRequest(BarConfigurationTarget.FloatingBar, TargetMonitorDeviceId, intent.Component,
             position, intent.State, intent.OriginalEntries, intent.TargetIndex);
         if (_commands.CommitComponentPlacementCommand.CanExecute(request)) _commands.CommitComponentPlacementCommand.Execute(request);
+        RefreshFloatingComponents();
     }
 
     private void SuspendFloatingComponents()
@@ -116,6 +132,7 @@ public sealed partial class FloatingBarWindow
         if (ActiveComponentMenu is { } menu) menu.IsOpen = false;
         ActiveComponentMenu = null;
         _mediaControl.CancelComponentPlacement();
+        _movingComponent = null;
         _componentGhostWindow?.Dispose(); _componentGhostWindow = null;
         foreach (var entry in _componentWindows.Values) entry.Window.Suspend();
     }
