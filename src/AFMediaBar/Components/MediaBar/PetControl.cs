@@ -137,8 +137,9 @@ public sealed class PetControl : FrameworkElement
         drawing.PushTransform(new TranslateTransform((ActualWidth - size) / 2, (ActualHeight - size) / 2));
         drawing.PushTransform(new ScaleTransform(size / 64, size / 64));
         var highContrast = SystemParameters.HighContrast;
+        if (!highContrast) drawing.DrawGeometry(null, new Pen(Brushes.White, 2.4), _body);
         drawing.DrawGeometry(highContrast ? SystemColors.WindowBrush : _bodyBrush,
-            highContrast ? new Pen(SystemColors.WindowTextBrush, 1.5) : null, _body);
+            highContrast ? new Pen(SystemColors.WindowTextBrush, 1.5) : new Pen(Brushes.DimGray, 1), _body);
         var eyes = highContrast ? SystemColors.WindowTextBrush : _eyeBrush;
         drawing.PushTransform(_gaze);
         drawing.PushTransform(_eyelids);

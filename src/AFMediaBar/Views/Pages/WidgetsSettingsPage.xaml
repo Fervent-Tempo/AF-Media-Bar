@@ -183,6 +183,22 @@
                                         </StackPanel>
                                     </StackPanel>
                                 </components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.OutfitColor}" Description="{Binding ViewModel.Components.PetOutfitColorStatus}" Icon="{ui:SymbolIcon Color24}">
+                                    <StackPanel>
+                                        <WrapPanel Margin="0,0,0,8">
+                                            <Button Background="#FFFFFF" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0" ToolTip="#FFFFFF" Command="{Binding ViewModel.Components.SetPetOutfitColorCommand}" CommandParameter="#FFFFFF"/>
+                                            <Button Background="#1C1D21" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0" ToolTip="#1C1D21" Command="{Binding ViewModel.Components.SetPetOutfitColorCommand}" CommandParameter="#1C1D21"/>
+                                            <Button Background="#0078D4" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0" ToolTip="#0078D4" Command="{Binding ViewModel.Components.SetPetOutfitColorCommand}" CommandParameter="#0078D4"/>
+                                            <Button Background="#42CBA6" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0" ToolTip="#42CBA6" Command="{Binding ViewModel.Components.SetPetOutfitColorCommand}" CommandParameter="#42CBA6"/>
+                                            <Button Background="#F7C948" Style="{StaticResource AfSettingsColorSwatchStyle}" Margin="0,0,6,0" ToolTip="#F7C948" Command="{Binding ViewModel.Components.SetPetOutfitColorCommand}" CommandParameter="#F7C948"/>
+                                            <Button Background="#84282B" Style="{StaticResource AfSettingsColorSwatchStyle}" ToolTip="#84282B" Command="{Binding ViewModel.Components.SetPetOutfitColorCommand}" CommandParameter="#84282B"/>
+                                        </WrapPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <ui:TextBox Width="120" MaxLength="9" Text="{Binding ViewModel.Components.PetOutfitColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <ui:Button Margin="8,0,0,0" Content="{DynamicResource Loc.Widgets.Pet.OutfitColor.System}" Command="{Binding ViewModel.Components.ResetPetOutfitColorCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </components:SettingsRow>
                             </StackPanel>
                         </ui:CardExpander>
                         <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Margin="0,4">

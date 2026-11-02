@@ -21,6 +21,7 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     private readonly LocalizationService _localization;
     private readonly Dispatcher _dispatcher = DispatcherHelper.Current;
     private bool _disposed;
+    private string _petOutfitColorHex = string.Empty;
     private string _petFillColorHex = PetComponentSettings.DefaultFillColorHex;
 
     /// <summary>创建参数编辑器，订阅设置、语言与共享音频目录的变更。</summary>
@@ -363,11 +364,36 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
         }
     }
 
+    public string PetOutfitColorHex
+    {
+        get => _petOutfitColorHex;
+        set
+        {
+            if (_disposed || !_configuration.IsActive || !SetProperty(ref _petOutfitColorHex, value ?? string.Empty)) return;
+            OnPropertyChanged(nameof(PetOutfitColorStatus));
+            if (ColorHex.TryParse(_petOutfitColorHex, out var color))
+                _configuration.SetPetComponent(_configuration.Current.PetComponent with { OutfitColorHex = ColorHex.Format(color) });
+        }
+    }
+    public string PetOutfitColorStatus => Translations.Get(string.IsNullOrWhiteSpace(_petOutfitColorHex)
+        ? "Widgets.Pet.OutfitColor.System" : ColorHex.TryParse(_petOutfitColorHex, out _) ? "Widgets.Pet.OutfitColor.Hint" : "Widgets.Pet.Color.Invalid");
+    [RelayCommand]
+    private void SetPetOutfitColor(string? hex)
+    {
+        if (_disposed || !_configuration.IsActive) return;
+        _configuration.SetPetComponent(_configuration.Current.PetComponent with { OutfitColorHex = hex });
+        RefreshPetColor();
+    }
+    [RelayCommand]
+    private void ResetPetOutfitColor() => SetPetOutfitColor(null);
+
     public string PetColorStatus => Translations.Get(ColorHex.TryParse(_petFillColorHex, out _)
         ? "Widgets.Pet.Color.Hint" : "Widgets.Pet.Color.Invalid");
 
     private void RefreshPetColor()
     {
+        SetProperty(ref _petOutfitColorHex, _configuration.Current.PetComponent.OutfitColorHex ?? string.Empty, nameof(PetOutfitColorHex));
+        OnPropertyChanged(nameof(PetOutfitColorStatus));
         SetProperty(ref _petFillColorHex, _configuration.Current.PetComponent.FillColorHex, nameof(PetFillColorHex));
         OnPropertyChanged(nameof(PetColorStatus));
     }

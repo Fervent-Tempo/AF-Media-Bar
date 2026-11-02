@@ -127,7 +127,7 @@
     breath.setAttribute("transform", `translate(32 59) scale(${1 + amount * 0.025} ${1 - amount * 0.065}) translate(-32 -59)`);
     character.setAttribute("opacity", 1);
     const shape = geometry.update(clamp(v("morph"), 0, 1), p.core, v("yaw"), dt, full);
-    if (body.getAttribute("d") !== shape.d) { body.setAttribute("d", shape.d); bodyClip.setAttribute("d", shape.d); }
+    if (body.getAttribute("d") !== shape.d) { body.setAttribute("d", shape.d); bodyClip.setAttribute("d", shape.d); document.getElementById("body-rim").setAttribute("d", shape.d); document.getElementById("body-shading").setAttribute("d", shape.d); }
     moving ||= shape.moving;
     const fit = Math.min(1, 32 / (shape.radius * Math.max(v("sx"), v("sy")) + Math.max(Math.abs(v("x")), Math.abs(v("y") - v("lift"))) + 3));
     if (full) moving = spring(values.fit, fit, dt, 180, 26) || moving;
@@ -164,8 +164,11 @@
     outfit.setAttribute("stroke", state.highContrast ? state.eyeColor : state.accent || state.eyeColor);
     for (const id of ["headphones", "badge", "spectrum"])
       document.getElementById("outfit-" + id).style.display = state.outfit === id ? "" : "none";
-    body.setAttribute("stroke", state.highContrast ? state.eyeColor : "none");
-    body.setAttribute("stroke-width", "1.5");
+    body.setAttribute("stroke", state.highContrast ? state.eyeColor : "#161B26");
+    body.setAttribute("stroke-opacity", state.highContrast ? "1" : "0.7");
+    document.getElementById("body-rim").style.display = state.highContrast ? "none" : "";
+    document.getElementById("body-shading").style.display = state.highContrast ? "none" : "";
+    body.setAttribute("stroke-width", state.highContrast ? "1.5" : "0.8");
     for (const eye of eyeNodes) eye.setAttribute("fill", state.eyeColor);
     if (previous?.animation !== state.animation) { age = autoAge = 0; autoIndex = 2; }
     syncActive();

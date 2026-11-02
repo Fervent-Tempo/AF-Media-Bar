@@ -55,6 +55,17 @@ internal static class PetPresentationChecks
             Assert.IsTrue(control.IsPetComponentClick(surface));
             Assert.IsTrue(surface.IsHitTestVisible);
 
+            var inline = (FrameworkElement)control.FindName("TaskbarPet");
+            SettingsManager.Current.PetComponent = new() { SizeDip = 20 };
+            control.ApplyTaskbarExperienceSettings();
+            DrainLayout(window);
+            var smallWidth = inline.ActualWidth;
+            SettingsManager.Current.PetComponent = new() { SizeDip = 120 };
+            control.ApplyTaskbarExperienceSettings();
+            DrainLayout(window);
+            Assert.IsTrue(inline.ActualWidth > smallWidth, "增大设置不能被上一次槽位尺寸卡住。");
+            Assert.IsTrue(inline.ActualHeight <= surface.ActualHeight - 2, $"栏内宠物必须留出实际内边距。inline={inline.ActualWidth}x{inline.ActualHeight}, surface={surface.ActualWidth}x{surface.ActualHeight}");
+
             SettingsManager.Current.PetComponent = new() { SizeDip = 96, AllowOverflow = true };
             control.ApplyTaskbarExperienceSettings();
             control.ApplyPrimaryLength(500);

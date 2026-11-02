@@ -123,7 +123,9 @@ internal sealed class PetOverflowHost : IDisposable
             var screen = new Rect(info.rcMonitor.Left, info.rcMonitor.Top,
                 info.rcMonitor.Right - info.rcMonitor.Left, info.rcMonitor.Bottom - info.rcMonitor.Top);
             var bounds = PetPlacementPolicy.Arrange(new Rect(origin, end), screen,
-                _settings.SizeDip * scale, _vertical, _onLeft);
+                _settings.SizeDip * scale, _vertical, _onLeft,
+                _owner is AFMediaBar.Views.Windows.TaskbarWindow
+                    ? new Rect(info.rcWork.Left, info.rcWork.Top, info.rcWork.Right - info.rcWork.Left, info.rcWork.Bottom - info.rcWork.Top) : null);
             if (_lastBounds == bounds) return;
             if (SetWindowPos(_source.Handle, -1, (int)Math.Round(bounds.X), (int)Math.Round(bounds.Y),
                 (int)Math.Ceiling(bounds.Width), (int)Math.Ceiling(bounds.Height), SWP_NOACTIVATE)) _lastBounds = bounds;

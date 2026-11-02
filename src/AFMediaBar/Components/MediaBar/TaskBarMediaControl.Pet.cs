@@ -22,10 +22,22 @@ public partial class TaskBarMediaControl
     private PetWebEnvironment? _petEnvironment;
     private PetOverflowHost? _petOverflow;
     private double PetCrossSize => Math.Max(1, (_isVertical ? MainBorder.Width : MainBorder.Height) - 4);
-    private double PetInlineSize => Math.Min(PresentationSettings.PetComponent.SizeDip,
-        double.IsFinite(PetCrossSize) ? PetCrossSize : PetComponentSettings.DefaultSizeDip);
+    private double PetInlineSize
+    {
+        get
+        {
+            var size = Math.Min(PresentationSettings.PetComponent.SizeDip,
+                double.IsFinite(PetCrossSize) ? PetCrossSize : PetComponentSettings.DefaultSizeDip);
+            if (TaskbarPetSurface.ActualWidth > 2 && TaskbarPetSurface.ActualHeight > 2)
+                size = Math.Min(size, Math.Min(TaskbarPetSurface.ActualWidth, TaskbarPetSurface.ActualHeight) - 2);
+            // 向下对齐物理像素，避免分数 DPI 下布局取整侵入内边距。
+            var scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
+            return Math.Floor(size * scale) / scale;
+        }
+    }
     private double PetSurfaceLength => (PresentationSettings.PetComponent.AllowOverflow
-        ? PresentationSettings.PetComponent.SizeDip : PetInlineSize) + TaskbarWidgetPadding * 2;
+        ? PresentationSettings.PetComponent.SizeDip
+        : Math.Min(PresentationSettings.PetComponent.SizeDip, double.IsFinite(PetCrossSize) ? PetCrossSize : PetComponentSettings.DefaultSizeDip)) + TaskbarWidgetPadding * 2;
     private PetView ActivePet => _petOverflow?.IsVisible == true ? _petOverflow.View : TaskbarPet;
 
     public void BindPetInput(PetInputService source, PetWebEnvironment? environment = null, PetCompanionService? companion = null)
@@ -40,6 +52,8 @@ public partial class TaskBarMediaControl
         TaskbarPet.BindEnvironment(environment);
         UpdatePetPresentation();
     }
+
+    private void PetSurfaceSizeChanged(object sender, SizeChangedEventArgs args) => UpdatePetPresentation();
 
     private void UpdatePetPresentation()
     {

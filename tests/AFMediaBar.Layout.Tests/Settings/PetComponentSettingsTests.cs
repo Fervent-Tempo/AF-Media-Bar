@@ -40,6 +40,9 @@ public sealed class PetComponentSettingsTests
                 editor.PetAllowOverflow = true;
                 editor.PetAnimation = "radar";
                 editor.PetOutfit = "badge";
+                editor.PetOutfitColorHex = "#42CBA6";
+                editor.PetOutfitColorHex = "#12";
+                Assert.AreEqual("#42CBA6", SettingsManager.Current.PetComponent.OutfitColorHex);
                 editor.PetVoiceEnabled = true;
                 editor.PetVoiceVolume = 35;
                 editor.PetNotificationsEnabled = true;
@@ -65,6 +68,8 @@ public sealed class PetComponentSettingsTests
     [TestMethod]
     public void InvalidSizeAndAnimationCannotEscapeTheSettingsContract()
     {
+        Assert.IsNull(new PetComponentSettings().Normalize().OutfitColorHex);
+        Assert.IsNull((new PetComponentSettings { OutfitColorHex = "broken" }).Normalize().OutfitColorHex);
         Assert.AreEqual(48d, new PetComponentSettings().SizeDip);
         Assert.AreEqual(48d, (new PetComponentSettings { SizeDip = double.NaN }).Normalize().SizeDip);
         Assert.AreEqual(20d, (new PetComponentSettings { SizeDip = -1 }).Normalize().SizeDip);
@@ -87,6 +92,10 @@ public sealed class PetComponentSettingsTests
         Assert.IsTrue(PetOverflowHost.ContainsVisualPoint(new Point(32, 9)), "旋转后的球体顶端应能接收局部点击。");
         Assert.IsTrue(PetOverflowHost.ContainsVisualPoint(new Point(23.3, 6.1)), "歪身后移出的耳尖应能接收局部点击。");
         Assert.IsFalse(PetOverflowHost.ContainsVisualPoint(new Point(0, 0)), "空白角落不能扩大命中区域。");
+        Assert.AreEqual(new Rect(90, 920, 120, 120), PetPlacementPolicy.Arrange(new Rect(100, 1040, 100, 40),
+            new Rect(0, 0, 1920, 1080), 120, false, false, new Rect(0, 0, 1920, 1040)));
+        Assert.AreEqual(new Rect(-1880, 290, 120, 120), PetPlacementPolicy.Arrange(new Rect(-1920, 300, 40, 100),
+            new Rect(-1920, 0, 1920, 1080), 120, true, true, new Rect(-1880, 0, 1880, 1080)));
         Assert.AreEqual(new Rect(90, 960, 120, 120), PetPlacementPolicy.Arrange(new Rect(100, 1040, 100, 40),
             new Rect(0, 0, 1920, 1080), 120, false, false));
         Assert.AreEqual(new Rect(90, 0, 120, 120), PetPlacementPolicy.Arrange(new Rect(100, 0, 100, 40),

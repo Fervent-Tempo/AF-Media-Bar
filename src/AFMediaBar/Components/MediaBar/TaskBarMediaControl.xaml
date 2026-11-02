@@ -422,7 +422,7 @@
                 for the same buttons, so the menu, the tooltips, and the wheel semantics have one implementation each. Tag="MediaAction" makes
                 the host's drag logic pass the press through, otherwise the drag path marks it handled and the inner MouseLeftButtonUp never runs.
             -->
-            <Border x:Name="TaskbarPetSurface" Panel.ZIndex="4" Width="30" Height="32" Padding="1" CornerRadius="5"
+            <Border x:Name="TaskbarPetSurface" SizeChanged="PetSurfaceSizeChanged" Panel.ZIndex="4" Width="30" Height="32" Padding="1" CornerRadius="5"
                 HorizontalAlignment="Left" VerticalAlignment="Center" Background="Transparent" Visibility="Collapsed" Tag="MediaAction"
                 MouseEnter="PetSurfaceMouseEnter" MouseLeave="PetSurfaceMouseLeave" MouseDown="PetSurfaceMouseDown" MouseLeftButtonUp="PetSurfaceMouseUp" KeyDown="PetSurfaceKeyDown" Focusable="True" AutomationProperties.Name="{DynamicResource Loc.Widgets.Pet}">
                 <local:PetView x:Name="TaskbarPet" HorizontalAlignment="Center" VerticalAlignment="Center" />

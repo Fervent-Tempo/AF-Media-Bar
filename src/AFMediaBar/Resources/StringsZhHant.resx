@@ -3310,4 +3310,7 @@
   <data name="Widgets.Pet.Close" xml:space="preserve"><value>關閉</value></data>
   <data name="Widgets.Pet.Notifications" xml:space="preserve"><value>通知</value></data>
   <data name="Widgets.Pet.Details" xml:space="preserve"><value>查看詳情</value></data>
+  <data name="Widgets.Pet.OutfitColor" xml:space="preserve"><value>裝扮顏色</value></data>
+  <data name="Widgets.Pet.OutfitColor.System" xml:space="preserve"><value>跟隨系統</value></data>
+  <data name="Widgets.Pet.OutfitColor.Hint" xml:space="preserve"><value>選擇色塊或輸入 #RRGGBB。</value></data>
 </root>

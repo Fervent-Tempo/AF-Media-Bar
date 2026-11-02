@@ -3348,4 +3348,7 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Widgets.Pet.Close" xml:space="preserve"><value>Đóng</value></data>
   <data name="Widgets.Pet.Notifications" xml:space="preserve"><value>Thông báo</value></data>
   <data name="Widgets.Pet.Details" xml:space="preserve"><value>Xem chi tiết</value></data>
+  <data name="Widgets.Pet.OutfitColor" xml:space="preserve"><value>Màu phụ kiện</value></data>
+  <data name="Widgets.Pet.OutfitColor.System" xml:space="preserve"><value>Theo hệ thống</value></data>
+  <data name="Widgets.Pet.OutfitColor.Hint" xml:space="preserve"><value>Chọn màu hoặc nhập #RRGGBB.</value></data>
 </root>

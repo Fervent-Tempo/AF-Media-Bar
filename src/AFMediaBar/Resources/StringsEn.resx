@@ -3310,4 +3310,7 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Widgets.Pet.Close" xml:space="preserve"><value>Close</value></data>
   <data name="Widgets.Pet.Notifications" xml:space="preserve"><value>Notifications</value></data>
   <data name="Widgets.Pet.Details" xml:space="preserve"><value>View details</value></data>
+  <data name="Widgets.Pet.OutfitColor" xml:space="preserve"><value>Outfit color</value></data>
+  <data name="Widgets.Pet.OutfitColor.System" xml:space="preserve"><value>Follow system</value></data>
+  <data name="Widgets.Pet.OutfitColor.Hint" xml:space="preserve"><value>Choose a swatch or enter #RRGGBB.</value></data>
 </root>

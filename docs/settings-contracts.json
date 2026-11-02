@@ -142,6 +142,7 @@
     "petComponent": {
       "$release": "unreleased",
       "fillColorHex": "unreleased",
+      "outfitColorHex": "unreleased",
       "idleAnimationsEnabled": "unreleased",
       "sizeDip": "unreleased",
       "allowOverflow": "unreleased",

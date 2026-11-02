@@ -197,3 +197,11 @@ test("music pulse moves the pet, settles, and respects reduced motion", () => {
   p.advance(100);
   assert.match(p.nodes.get("pose").attributes.transform, /scale\(1 1\)/);
 });
+
+// 同名装扮会被 getElementById 绑定到眼睑层，必须由真实模板验证。
+test("outfit exists once outside gaze and eyelids", () => {
+  const html = source("index.html");
+  const ids = [...html.matchAll(/id="([^"]+)"/g)].map(match => match[1]);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.match(html, /id="eye-right"[\s\S]*?<\/g><\/g><\/g>\s*<g id="outfit"/);
+});
