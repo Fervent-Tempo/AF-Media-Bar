@@ -159,9 +159,9 @@ public partial class MainWindow
                 foreach (var target in ResolveTaskbarTargetDeviceIds())
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    var handle = _taskBarService.GetSelectedTaskbarHandle(target, out _);
-                    if (handle == nint.Zero || !seen.Add(handle)) continue;
-                    var window = CreateTaskbarWindow(target);
+                    var identity = ResolveTaskbarHost(target);
+                    if (identity.Handle == nint.Zero || !seen.Add(identity.Handle)) continue;
+                    var window = CreateTaskbarWindow(identity.Logical);
                     hosts.Add(window);
                     window.ApplySnapshot(_mediaSessionService.CurrentSnapshot ?? MediaSnapshot.Disconnected);
                 }

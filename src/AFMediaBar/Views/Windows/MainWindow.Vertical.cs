@@ -32,8 +32,8 @@ public partial class MainWindow
 
     private string GetExperimentalHostSignature() => string.Join("|", ResolveTaskbarTargetDeviceIds().Select(target =>
         {
-            var handle = _taskBarService.GetSelectedTaskbarHandle(target, out _);
-            return $"{handle}:{_taskBarService.IsTaskbarVertical(handle)}";
+            var host = ResolveTaskbarHost(target);
+            return $"{host.Logical}:{host.Actual}:{host.Handle}:{_taskBarService.IsTaskbarVertical(host.Handle)}";
         }));
 
     private void ExperimentalHostWatcher_Tick(object? sender, EventArgs e)

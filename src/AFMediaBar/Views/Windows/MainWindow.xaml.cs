@@ -725,9 +725,18 @@ namespace AFMediaBar.Views.Windows
             var targets = ResolveTaskbarTargetDeviceIds();
             return string.Join("|", targets.Select(target =>
             {
-                var handle = _taskBarService.GetSelectedTaskbarHandle(target, out _);
-                return $"{target}:{handle.ToInt64():X}";
+                var host = ResolveTaskbarHost(target);
+                return $"{host.Logical}:{host.Actual}:{host.Handle.ToInt64():X}";
             }));
+        }
+
+        private (string Logical, string Actual, nint Handle) ResolveTaskbarHost(string requestedDeviceId)
+        {
+            var handle = _taskBarService.GetSelectedTaskbarHandle(requestedDeviceId, out _);
+            var actual = handle == nint.Zero ? string.Empty : MonitorUtil.GetMonitor(handle).deviceId;
+            var logical = TaskbarTargetPolicy.ResolveHostDeviceId(requestedDeviceId, actual,
+                SettingsManager.Current.TaskbarTargetMonitorDeviceIds);
+            return (logical, actual, handle);
         }
 
         private IReadOnlyList<string> ResolveTaskbarTargetDeviceIds() =>
@@ -844,10 +853,6 @@ namespace AFMediaBar.Views.Windows
 
         private TaskbarWindow CreateTaskbarWindow(string targetDeviceId)
         {
-            // 所有所选显示器断开时只借主屏显示，保留逻辑归属以禁止回退位置污染原配置。
-            var configured = SettingsManager.Current.TaskbarTargetMonitorDeviceIds;
-            if (configured is { Count: > 0 } && !configured.Contains(targetDeviceId, StringComparer.OrdinalIgnoreCase))
-                targetDeviceId = configured[0];
             var window = _taskbarFactory(targetDeviceId, this);
             window.OpenFullPanelRequested += TaskbarWindow_OpenFullPanelRequested;
             window.InformationAutomaticallyHidden += TaskbarWindow_InformationAutomaticallyHidden;

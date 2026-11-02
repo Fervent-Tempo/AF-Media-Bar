@@ -65,6 +65,7 @@ internal static class TaskbarHostActivationChecks
             };
             parent.Show();
             var dock = new Dock(new WindowInteropHelper(parent).Handle);
+            var targetMonitor = MonitorUtil.GetMonitor(dock.Handle).deviceId;
             var actions = new Actions();
             using var runtime = new BarRuntimeCoordinator();
             var surfaceSessions = new TaskbarHostSurfaceSessions();
@@ -93,7 +94,7 @@ internal static class TaskbarHostActivationChecks
                             Bottom = (int)bounds.Bottom + 46
                         };
                     dock.ObservedRect = attempt == 0 ? hiddenRect : revealedRect;
-                    var window = new TaskbarWindow(battery, dock, "test", actions, appearance,
+                    var window = new TaskbarWindow(battery, dock, targetMonitor, actions, appearance,
                         new TaskbarOccupiedAreaService(probe), new TaskbarLengthConstraintsService(),
                         new GlobalInteractionRouter(media, audio), audio, monitor, null!, null!,
                         new ScreenBackgroundSampler(), mouse, prune, surfaceSessions, viewModel, null!, startImmediately: false);
@@ -146,9 +147,10 @@ internal static class TaskbarHostActivationChecks
             var firstOccupancy = new TaskbarOccupiedAreaService(firstPlacement);
             var settings = SettingsManager.Current;
             settings.TaskbarExperience = ComponentLayoutPolicy.SetVisible(settings, BarLayoutState.Idle, TaskbarRestComponent.InputDevice, true);
-            MonitorBarProfilePolicy.Store(settings, MonitorBarProfilePolicy.Capture(settings, BarConfigurationTarget.Taskbar, "test") with
+            settings.TaskbarExperience = ComponentLayoutPolicy.SetVisible(settings, BarLayoutState.Idle, TaskbarRestComponent.Volume, true);
+            MonitorBarProfilePolicy.Store(settings, MonitorBarProfilePolicy.Capture(settings, BarConfigurationTarget.Taskbar, targetMonitor) with
             { Detached = [new(TaskbarRestComponent.InputDevice, 300, 2)] });
-            var firstWindow = new TaskbarWindow(battery, dock, "test", actions, appearance,
+            var firstWindow = new TaskbarWindow(battery, dock, targetMonitor, actions, appearance,
                 firstOccupancy, new TaskbarLengthConstraintsService(),
                 new GlobalInteractionRouter(media, audio), audio, monitor, null!, null!,
                 new ScreenBackgroundSampler(), mouse, prune, surfaceSessions, viewModel, null!, startImmediately: false);
@@ -177,9 +179,31 @@ internal static class TaskbarHostActivationChecks
 
             var component = firstWindow.MediaControl.DetachedVisuals.Single(visual => visual.Component == TaskbarRestComponent.InputDevice);
             Assert.IsTrue(component.IsPlaced);
-            var componentLocation = new Point(Canvas.GetLeft(component.View), Canvas.GetTop(component.View));
             var orientation = firstWindow.IsVerticalPresentation ? LayoutOrientation.Vertical : LayoutOrientation.Horizontal;
             var dpi = dock.GetTaskbarDpiScale(dock.Handle);
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            void ReleaseBodyAt(int primary)
+            {
+                // 不发送系统输入，只准备宿主已经完成预览的释放事务。
+                typeof(TaskbarWindow).GetField("_isDragging", flags)!.SetValue(firstWindow, true);
+                typeof(TaskbarWindow).GetField("_bodyDragPrimary", flags)!.SetValue(firstWindow, primary);
+                typeof(TaskbarWindow).GetField("_bodyDragLength", flags)!.SetValue(firstWindow, 70);
+                typeof(TaskbarWindow).GetMethod("EndTaskbarDrag", flags)!.Invoke(firstWindow, [true]);
+            }
+            ReleaseBodyAt(100);
+            var savedHome = MonitorBarProfilePolicy.Find(SettingsManager.Current, BarConfigurationTarget.Taskbar, targetMonitor)!.BodyPrimaryDip;
+            Assert.IsNotNull(savedHome, "在线任务栏的正常拖动释放必须保存落点。");
+            var size = firstWindow.MediaControl.GetComponentSize(TaskbarRestComponent.Volume);
+            var drop = firstWindow.IsVerticalPresentation ? new Point(initialRect.Left + 2, initialRect.Top + 420)
+                : new Point(initialRect.Left + 420, initialRect.Top + 2);
+            var intent = new ComponentMoveIntentEventArgs(TaskbarRestComponent.Volume,
+                new Rect(drop, new Size(size.Width * dpi, size.Height * dpi)), BarLayoutState.Idle,
+                firstWindow.MediaControl.ComponentEntries, 0, false, true);
+            typeof(TaskbarWindow).GetMethod("OnComponentMoveIntent", flags)!.Invoke(firstWindow, [firstWindow.MediaControl, intent]);
+            Assert.IsTrue(MonitorBarProfilePolicy.Find(SettingsManager.Current, BarConfigurationTarget.Taskbar, targetMonitor)!.Detached
+                .Any(position => position.Component == TaskbarRestComponent.Volume), "在线任务栏上的组件释放必须能提交分离。");
+            firstWindow.ApplyExperienceSettings();
+            var componentLocation = new Point(Canvas.GetLeft(component.View), Canvas.GetTop(component.View));
             firstPlacement.Reject = true;
             firstOccupancy.InvalidateCache();
             await WaitUntilAsync(() => firstOccupancy.GetSnapshot(dock.Handle, initialRect, orientation, dpi, 20).Status == TaskbarProbeStatus.Failed);
@@ -188,6 +212,9 @@ internal static class TaskbarHostActivationChecks
                 "系统菜单使占用区暂时不可读时，独立组件必须保留画面。");
             Assert.AreEqual(componentLocation, new Point(Canvas.GetLeft(component.View), Canvas.GetTop(component.View)),
                 "非成功快照不能重新分配已显示组件的位置。");
+            ReleaseBodyAt(200);
+            Assert.AreEqual(savedHome, MonitorBarProfilePolicy.Find(SettingsManager.Current, BarConfigurationTarget.Taskbar, targetMonitor)!.BodyPrimaryDip,
+                "失败快照仍须禁止提交新落点。");
             firstPlacement.Reject = false;
             firstPlacement.NoSpace = true;
             firstOccupancy.InvalidateCache();
