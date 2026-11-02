@@ -3,6 +3,16 @@
   "latestRelease": "v1.6.0",
   "settingsSchemaVersion": 2,
   "settings": {
+    "monitorBarProfiles": {
+      "$release": "unreleased",
+      "$items": {
+        "target": "unreleased", "monitorDeviceId": "unreleased",
+        "resident": { "$release": "unreleased", "$items": { "component": "unreleased", "isVisible": "unreleased" } },
+        "idle": { "$release": "unreleased", "$items": { "component": "unreleased", "isVisible": "unreleased" } },
+        "detached": { "$release": "unreleased", "$items": { "component": "unreleased", "primaryDip": "unreleased", "crossDip": "unreleased" } },
+        "bodyPrimaryDip": "unreleased", "bodyAlignment": "unreleased"
+      }
+    },
     "experiments": {
       "bluetoothBattery": "v1.6.0",
       "memoryTools": "v1.6.0",
@@ -346,6 +356,13 @@
     }
   },
   "enums": {
+    "BarConfigurationTarget": {
+      "paths": ["settings.monitorBarProfiles[].target"],
+      "members": {
+        "Taskbar": { "value": 0, "release": "unreleased" },
+        "FloatingBar": { "value": 1, "release": "unreleased" }
+      }
+    },
     "BluetoothBatteryDisplayMode": {
       "paths": [
         "settings.bluetoothBatteryWidget.displayMode"
@@ -1056,6 +1073,7 @@
     "TaskbarBarPosition": {
       "paths": [
         "settings.position",
+        "settings.monitorBarProfiles[].bodyAlignment",
         "settings.floatingBar.profile.position",
         "settings.taskbarExperience.hoverAlignment"
       ],
@@ -1192,7 +1210,10 @@
         "settings.taskbarExperience.restComponentOrder",
         "settings.taskbarExperience.componentLayouts.resident[].component",
         "settings.taskbarExperience.componentLayouts.idle[].component",
-        "settings.taskbarExperience.componentLayouts.hover[].component"
+        "settings.taskbarExperience.componentLayouts.hover[].component",
+        "settings.monitorBarProfiles[].resident[].component",
+        "settings.monitorBarProfiles[].idle[].component",
+        "settings.monitorBarProfiles[].detached[].component"
       ],
       "members": {
         "Artwork": {

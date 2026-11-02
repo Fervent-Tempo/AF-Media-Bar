@@ -176,6 +176,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         MediaControl.ComponentReorderCommand = viewModel?.CommitComponentReorderCommand;
         PlayerMenu.ViewModel = menuViewModel;
         _targetMonitorDeviceId = targetMonitorDeviceId;
+        MediaControl.SetComponentScope(BarConfigurationTarget.Taskbar, targetMonitorDeviceId);
+        InitializeDetachedComponents(viewModel, screenBackgroundSampler);
         _surfaceSession = surfaceSessions.Get(targetMonitorDeviceId);
         _mouseInputMonitor = mouseInputMonitor;
         InitializeExternalFullPanelHandle(externalFullPanelHandleFactory);
@@ -263,7 +265,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         // Shell 展开期间 Background 优先级可能被布局与合成工作饿住，表现成任务栏已经出现而媒体栏迟到近一秒。
         // Input priority keeps the bounded stability probe responsive without running it at re-entrant Send priority.
         _taskbarMotionSettleTimer = new DispatcherTimer(DispatcherPriority.Input)
-            { Interval = TaskbarMotionSampleInterval };
+        { Interval = TaskbarMotionSampleInterval };
         _taskbarMotionSettleTimer.Tick += (_, _) => ObserveTaskbarMotion();
         _taskbarHiddenTrimTimer = new DispatcherTimer { Interval = TaskbarHiddenTrimDelay };
         _taskbarHiddenTrimTimer.Tick += (_, _) =>
@@ -303,7 +305,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         }
 
         _quickLaunchApplyTimer = new DispatcherTimer
-            { Interval = TimeSpan.FromMilliseconds(AudioApplyPolicy.OutputDevicePreviewDelayMilliseconds) };
+        { Interval = TimeSpan.FromMilliseconds(AudioApplyPolicy.OutputDevicePreviewDelayMilliseconds) };
         _quickLaunchApplyTimer.Tick += async (_, _) =>
         {
             MediaControl.CancelQuickLaunchInteraction();
@@ -326,7 +328,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         { _quickLaunchApplyTimer.Stop(); _pendingQuickLaunch = null; }, quickLaunchIcons);
 
         _volumeApplyTimer = new DispatcherTimer
-            { Interval = TimeSpan.FromMilliseconds(AudioApplyPolicy.ApplicationVolumeDelayMilliseconds) };
+        { Interval = TimeSpan.FromMilliseconds(AudioApplyPolicy.ApplicationVolumeDelayMilliseconds) };
         _volumeApplyTimer.Tick += async (_, _) =>
         {
             _volumeApplyTimer.Stop();
@@ -385,6 +387,15 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void SuspendHostInput()
     {
+        _bodyDragPrimary = null;
+        _isDragging = false; _isDragPending = false;
+        MediaControl.SetBarDragActive(false);
+        if (Mouse.Captured == MediaControl) Mouse.Capture(null);
+        MediaControl.CancelComponentPlacement();
+        if (ActiveComponentMenu is { } componentMenu) componentMenu.IsOpen = false;
+        foreach (var color in _componentColors.Values) color.Session.Invalidate(clearDecision: false);
+        foreach (var visual in MediaControl.DetachedVisuals)
+        { visual.View.IsHitTestVisible = false; if (visual.View.ContextMenu is { } menu) menu.IsOpen = false; }
         InvalidateSurfaceProbe();
         MediaControl.IsHitTestVisible = false;
         WindowHelper.SetInputTransparent(this, true);
@@ -591,6 +602,11 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
         if (_setupComplete && TaskbarHostMessagePolicy.IsEnvironmentChange(msg))
         {
+            MediaControl.CancelComponentPlacement();
+            _bodyDragPrimary = null;
+            _isDragging = false; _isDragPending = false;
+            MediaControl.SetBarDragActive(false);
+            if (Mouse.Captured == MediaControl) Mouse.Capture(null);
             _foregroundSamplingSession.Invalidate(clearDecision: false);
             // Explorer 重排任务栏期间只使用保守区间，避免同步 UI Automation 探测与 Shell 互相等待。
             // Use the conservative range while Explorer rearranges the taskbar so synchronous
@@ -830,17 +846,16 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
             // Place the bar on the canvas and clip the window to it
             RECT barRect = PositionBar(taskbarRect, dpiScale);
-            if (HasArea(barRect))
+            LayoutDetachedComponents(taskbarRect, dpiScale, barRect);
+            MediaControl.Opacity = HasArea(barRect) ? 1 : 0;
+            _hasSafePlacement = HasArea(barRect) || _detachedRects.Count > 0;
+            if (_hasSafePlacement)
             {
-                if (!_hasInputRegion || _inputRegionWindowHandle != taskbarWindowHandle ||
-                    !SameRect(_lastInputRegion, barRect))
-                {
-                    // 首次取得有效区域时请求重画。
-                    ApplyBarInputRegion(taskbarWindowHandle, barRect, redraw: !_hasInputRegion);
-                    _inputRegionWindowHandle = taskbarWindowHandle;
-                    _lastInputRegion = barRect;
-                    _hasInputRegion = true;
-                }
+                // 首次取得有效区域时请求重画。
+                ApplyBarInputRegion(taskbarWindowHandle, barRect, redraw: !_hasInputRegion);
+                _inputRegionWindowHandle = taskbarWindowHandle;
+                _lastInputRegion = barRect;
+                _hasInputRegion = true;
             }
             else
             {
@@ -883,7 +898,11 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     {
         var effective = TaskbarArrangementPolicy.ExtendZoomOverflow(
             baseRect, _artworkZoomExtensionPx, IsVerticalPresentation, MediaControl.ResolvedTaskbarArrangement);
-        _taskBarService.ApplyInputRegion(taskbarWindowHandle, [effective], redraw);
+        var regions = new List<RECT>();
+        if (HasArea(effective)) regions.Add(effective);
+        regions.AddRange(_detachedRects.Values);
+        if (_componentGhostRect is { } ghost) regions.Add(ghost);
+        if (regions.Count > 0) _taskBarService.ApplyInputRegion(taskbarWindowHandle, regions, redraw);
     }
 
     private bool CanVerifyHostSurface =>
@@ -1008,6 +1027,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             return;
         }
 
+        MediaControl.RefreshComponentScope();
         if (!SettingsManager.Current.TaskbarBarEnabled || _isClosing || _isEnvironmentSuspended)
             return;
 
@@ -1190,6 +1210,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     /// <summary>立即应用播放器与右键菜单外观。 / Immediately applies player and context-menu appearance.</summary>
     public void ApplyAppearanceSettings()
     {
+        MediaControl.RefreshComponentScope();
         MediaControl.ApplyAppearanceSettings();
         if (SettingsManager.Current.Appearance.PlayerForegroundMode == PlayerForegroundMode.Automatic)
             Dispatcher.BeginInvoke(_foregroundSamplingSession.RequestRefresh, DispatcherPriority.ContextIdle);
@@ -1248,8 +1269,9 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             (int)Math.Round(point.Y + active.ActualHeight * dpi.DpiScaleY));
     }
 
-    public void ApplyExperienceSettings()
+    public void ApplyExperienceSettings(bool profilesOnly = false)
     {
+        if (profilesOnly && MediaControl.ComponentScopeMatchesCurrent) return;
         _menuEnvironmentVersion++;
         MediaControl.SuspendQuickLaunchPresentation();
         _compactFlyout.Dismiss();
@@ -1371,8 +1393,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         PlayerMenu.IsOpen = false;
         _compactFlyout.Dismiss();
         MediaControl.ApplyHostVisibilitySuspension(true);
-        MediaControl.IsHitTestVisible = false;
-        WindowHelper.SetInputTransparent(this, true);
+        SuspendHostInput();
     }
 
     internal void ResumeAfterEnvironmentRecovery()
@@ -1477,6 +1498,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
         MediaControl.ApplyHostVisibilitySuspension(false);
         MediaControl.IsHitTestVisible = true;
+        foreach (var visual in MediaControl.DetachedVisuals)
+            visual.View.IsHitTestVisible = visual.HasContent && visual.IsPlaced;
         WindowHelper.SetInputTransparent(this, false);
         ApplyExtraFeaturesSettings();
         UpdatePosition();
@@ -1924,6 +1947,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void ApplyExtraFeaturesSettings()
     {
+        MediaControl.RefreshComponentScope();
         var spectrum = SettingsManager.Current.SpectrumComponent.Normalize();
         _spectrumSession.Interval = TimeSpan.FromMilliseconds(1000d / spectrum.RefreshRateHz);
         var performance = MediaControl.EffectivePerformanceSettings.Normalize();
@@ -1996,7 +2020,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         if (generation != _metricsSubscriptionGeneration || _isClosing || _isEnvironmentSuspended ||
             IsTaskbarPresentationSuspended)
             return;
-        var settings = SettingsManager.Current.PerformanceComponent.Normalize();
+        var settings = MediaControl.EffectivePerformanceSettings.Normalize();
         var metrics = settings.GetOrderedMetrics();
         if (metrics.Count == 0)
             return;
@@ -2104,6 +2128,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                 return;
             _isDragPending = false;
             _isDragging = true;
+            _bodyDragLength = (int)Math.Round((_appliedOrientation == LayoutOrientation.Vertical
+                ? MediaControl.CurrentLayout?.Canvas.Height ?? 168 : MediaControl.CurrentLayout?.Canvas.Width ?? 300) * dpiScale);
             MediaControl.SetBarDragActive(true);
             MediaControl.SuspendQuickLaunchPresentation();
             _externalFullPanelHandle?.Dismiss(immediate: true);
@@ -2129,20 +2155,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         var dragCanvas = MediaControl.CurrentLayout?.Canvas;
         var dragPrimarySize = (int)Math.Round(
             (dragIsVertical ? dragCanvas?.Height ?? 168 : dragCanvas?.Width ?? 300) * dragDpiScale);
-        var dragRange = GetPreferredSafeRange(
-            dragTaskbarRect,
-            _appliedOrientation ?? LayoutOrientation.Horizontal,
-            dragDpiScale,
-            dragPrimarySize,
-            out _);
-        SettingsManager.Current.TaskbarBarManualPadding = TaskbarBarPlacementCalculator.ResolveManualPadding(
-            targetPrimary,
-            dragRange.Start,
-            dragRange.End,
-            dragPrimarySize,
-            dragIsVertical ? dragTaskbarRect.Bottom - dragTaskbarRect.Top : dragTaskbarRect.Right - dragTaskbarRect.Left,
-            SettingsManager.Current.Position);
-        PreparePrimaryDrag(targetPrimary, dragPrimarySize, dragRange, dragTaskbarRect, dragDpiScale);
+        _bodyDragPrimary = targetPrimary;
 
         var windowHandle = new WindowInteropHelper(this).Handle;
         if (_lastTaskbarHandle != IntPtr.Zero && windowHandle != IntPtr.Zero)
@@ -2353,6 +2366,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             return;
         Dispatcher.BeginInvoke(() =>
         {
+            if (Mouse.LeftButton != MouseButtonState.Released) return;
+            MediaControl.CompleteComponentPlacement();
             if (_isDragPending && !_isDragging) EndTaskbarDrag();
             HealStaleMediaControlCapture();
         }, DispatcherPriority.Background);
@@ -2426,9 +2441,13 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void EndTaskbarDrag(bool releaseCapture = true)
     {
+        var commit = _isDragging && releaseCapture && Mouse.LeftButton == MouseButtonState.Released &&
+            _bodyDragPrimary.HasValue && CanSaveComponentPlacement;
+        var requested = _bodyDragPrimary;
         MediaControl.SetBarDragActive(false);
         _isDragging = false;
         _isDragPending = false;
+        _bodyDragPrimary = null;
         _isTaskManagerClickPending = false;
         if (releaseCapture)
         {
@@ -2443,6 +2462,22 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             MediaControl_DesiredSizeChanged(this, new MediaBarSizeRequestEventArgs(request));
         }
 
+        if (commit && requested is { } primary && _taskBarService.TryGetTaskbarRect(_lastTaskbarHandle, out var taskbar))
+        {
+            var dpi = _taskBarService.GetTaskbarDpiScale(_lastTaskbarHandle);
+            if (dpi > 0)
+            {
+                var free = ComponentPlacementPolicy.Subtract(CurrentComponentRanges(taskbar, dpi),
+                    _detachedRects.Values.Select(PrimaryRange), (int)Math.Ceiling(4 * dpi));
+                var landing = ComponentPlacementPolicy.Nearest(free, primary, _bodyDragLength) ?? primary;
+                var alignment = TaskbarPresentation.Position;
+                var anchor = landing + (alignment == TaskbarBarPosition.End ? _bodyDragLength : alignment == TaskbarBarPosition.Center ? _bodyDragLength / 2d : 0);
+                AFMediaBar.Classes.Services.Settings.MonitorBarProfilePolicy.Store(SettingsManager.Current,
+                    AFMediaBar.Classes.Services.Settings.MonitorBarProfilePolicy.Capture(SettingsManager.Current, BarConfigurationTarget.Taskbar, _targetMonitorDeviceId)
+                    with
+                    { BodyPrimaryDip = anchor / dpi, BodyAlignment = alignment });
+            }
+        }
         UpdatePosition();
     }
 
@@ -2451,6 +2486,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void Window_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
+        if (e.OriginalSource is DependencyObject source && MediaControl.IsDetachedComponentSource(source)) return;
+        _componentMenuTarget = null;
         // 阻止 WPF 把 Popup 绑定到会随 Explorer 收起的任务栏子窗口。
         e.Handled = true;
         if (!CanPublishMenu(_menuEnvironmentVersion) || IsTaskbarPresentationSuspended || _isRestoringTaskbarPresentation)
@@ -2549,6 +2586,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _compactFlyout.Dispose();
         ClosePlayerMenu();
         PlayerMenuOpenRequested = null;
+        ReleaseDetachedComponents();
         MediaControl.DisposePresentation();
         base.OnClosed(e);
     }

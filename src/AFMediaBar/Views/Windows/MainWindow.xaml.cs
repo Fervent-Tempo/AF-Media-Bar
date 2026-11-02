@@ -822,24 +822,32 @@ namespace AFMediaBar.Views.Windows
                 return;
             }
 
+            if (e is not MonitorBarProfilesChangedEventArgs) _experienceSettingsRequireAllHosts = true;
             if (_experienceSettingsUpdateScheduled)
                 return;
             _experienceSettingsUpdateScheduled = true;
             Dispatcher.BeginInvoke(() =>
             {
                 _experienceSettingsUpdateScheduled = false;
+                var profilesOnly = !_experienceSettingsRequireAllHosts;
+                _experienceSettingsRequireAllHosts = false;
                 if (_isClosing)
                     return;
                 foreach (var taskbarWindow in _taskbarWindows)
-                    taskbarWindow.ApplyExperienceSettings();
+                    taskbarWindow.ApplyExperienceSettings(profilesOnly);
             }, DispatcherPriority.Render);
         }
+        private bool _experienceSettingsRequireAllHosts;
 
         private void CreateTaskbarWindows()
         { QueueRuntimeRefresh(); }
 
         private TaskbarWindow CreateTaskbarWindow(string targetDeviceId)
         {
+            // 所有所选显示器断开时只借主屏显示，保留逻辑归属以禁止回退位置污染原配置。
+            var configured = SettingsManager.Current.TaskbarTargetMonitorDeviceIds;
+            if (configured is { Count: > 0 } && !configured.Contains(targetDeviceId, StringComparer.OrdinalIgnoreCase))
+                targetDeviceId = configured[0];
             var window = _taskbarFactory(targetDeviceId, this);
             window.OpenFullPanelRequested += TaskbarWindow_OpenFullPanelRequested;
             window.InformationAutomaticallyHidden += TaskbarWindow_InformationAutomaticallyHidden;
@@ -858,7 +866,29 @@ namespace AFMediaBar.Views.Windows
         private void TaskbarWindow_PlayerMenuOpenRequested(TaskbarWindow host, Point? screenAnchor)
         {
             if (_isClosing || TaskbarEnvironmentRecovering || !_taskbarWindows.Contains(host)) return;
-            ContextMenuHelper.OpenAtScreenAnchor(host.IsPerformanceMenuRequested ? _memoryMenu : host.IsBatteryMenuRequested ? _batteryMenu : host.PlayerContextMenu, this, screenAnchor);
+            OpenComponentAwareMenu(host.IsPerformanceMenuRequested ? _memoryMenu : host.IsBatteryMenuRequested ? _batteryMenu : host.PlayerContextMenu,
+                screenAnchor, host.CreateComponentReturnMenuItem(), menu => host.ActiveComponentMenu = menu);
+        }
+
+        private void OpenComponentAwareMenu(ContextMenu menu, Point? anchor, System.Windows.Controls.MenuItem? returnItem, Action<ContextMenu?> setOwnerMenu)
+        {
+            // 同一菜单可在不同屏幕复用，先完成前一次的租用清理再绑定当前组件。
+            if (menu.IsOpen) menu.IsOpen = false;
+            if (returnItem is null) { ContextMenuHelper.OpenAtScreenAnchor(menu, this, anchor); return; }
+            var separator = new System.Windows.Controls.Separator();
+            menu.Items.Add(separator); menu.Items.Add(returnItem);
+            setOwnerMenu(menu);
+            RoutedEventHandler? closed = null;
+            void Cleanup()
+            {
+                menu.Closed -= closed;
+                menu.Items.Remove(returnItem); menu.Items.Remove(separator);
+                setOwnerMenu(null);
+            }
+            closed = (_, _) => Cleanup();
+            menu.Closed += closed;
+            try { ContextMenuHelper.OpenAtScreenAnchor(menu, this, anchor); }
+            catch { Cleanup(); throw; }
         }
 
         private void TaskbarWindow_OpenFullPanelRequested(object? sender, FullPanelOpenRequestEventArgs e)

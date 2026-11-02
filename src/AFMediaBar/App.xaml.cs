@@ -278,6 +278,8 @@ namespace AFMediaBar
                     (target, actions) => ActivatorUtilities.CreateInstance<TaskbarWindow>(sp, target, actions, false));
                 services.AddSingleton<Func<string, DisplayMonitorInfo, FloatingBarWindow>>(sp =>
                     (target, monitor) => ActivatorUtilities.CreateInstance<FloatingBarWindow>(sp, target, monitor));
+                services.AddSingleton<Func<AFMediaBar.Components.DetachedComponentVisual, ComponentFloatingWindow>>(sp =>
+                    visual => ActivatorUtilities.CreateInstance<ComponentFloatingWindow>(sp, visual));
                 services.AddSingleton<AudioControlViewModel>();
                 services.AddSingleton<AudioControlFlyoutWindow>();
                 services.AddSingleton<Func<AudioControlFlyoutWindow>>(sp =>

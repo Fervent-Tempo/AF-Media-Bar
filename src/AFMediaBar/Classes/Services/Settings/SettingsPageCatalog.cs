@@ -19,7 +19,7 @@ public static class SettingsPageCatalog
         new SettingsPageDefinition(SettingsPageKey.FullPanel, "Settings.Page.FullPanel", "WindowConsole20", false, DescriptionKey: "Settings.Page.FullPanel.Description"),
         new SettingsPageDefinition(SettingsPageKey.Widgets, "Settings.Page.NoteAndLaunch", "MusicNote220", true, DescriptionKey: "Settings.Page.WidgetsSettings.Description"),
         new SettingsPageDefinition(SettingsPageKey.Spectrum, "Settings.Page.Spectrum", "DataBarVertical24", true, DescriptionKey: "Settings.Page.Spectrum.Description"),
-        new SettingsPageDefinition(SettingsPageKey.Performance, "Settings.Page.Performance", "Gauge24", true, DescriptionKey: "Settings.Page.Performance.Description"),
+        new SettingsPageDefinition(SettingsPageKey.Performance, "Settings.Page.Performance", "Gauge24", true, HasModeContent: true, DescriptionKey: "Settings.Page.Performance.Description"),
         new SettingsPageDefinition(SettingsPageKey.BluetoothBattery, "Settings.Page.BluetoothBattery", "Bluetooth24", true, DescriptionKey: "Settings.Page.BluetoothBattery.Description"),
         new SettingsPageDefinition(SettingsPageKey.ApplicationAppearance, "Common.Page.ApplicationAppearance", "Color24", true, DescriptionKey: "Settings.Personalization.Subtitle"),
         new SettingsPageDefinition(SettingsPageKey.Lyrics, "Settings.Page.TextAndLyrics", "TextQuote24", false, DescriptionKey: "Settings.Page.Lyrics.Description"),

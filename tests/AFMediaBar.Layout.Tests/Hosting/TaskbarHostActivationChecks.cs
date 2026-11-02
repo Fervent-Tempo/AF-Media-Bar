@@ -112,7 +112,10 @@ internal static class TaskbarHostActivationChecks
                     await WaitUntilAsync(() => window.IsVisible && window.MediaControl.IsHitTestVisible);
                     Assert.IsTrue(window.IsVisible && window.MediaControl.IsHitTestVisible,
                         "任务栏展开后必须自行恢复显示和交互，不能依赖手动重载或新的 Shell 事件。");
+                    var pendingDrag = typeof(TaskbarWindow).GetField("_isDragPending", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+                    pendingDrag.SetValue(window, true);
                     window.Suspend();
+                    Assert.IsFalse((bool)pendingDrag.GetValue(window)!, "环境挂起必须取消尚未越过阈值的本体拖动。");
                     dock.ObservedRect = attempt == 1 ? hiddenRect : revealedRect;
                     window.Resume();
                     if (attempt == 1)

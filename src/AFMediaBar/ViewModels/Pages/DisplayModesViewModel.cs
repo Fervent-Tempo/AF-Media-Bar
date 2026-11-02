@@ -382,7 +382,8 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
 
     /// <summary>横向任务栏对齐设置是否适用于当前编辑环境。</summary>
     public bool IsHorizontalLayout => _configuration.Context.Orientation != LayoutOrientation.Vertical;
-    public bool CanConfigureBarLayout => SettingsPageCatalog.CanEditProfile(_configuration.Context.Mode);
+    public bool CanConfigureBarLayout => SettingsPageCatalog.CanEditProfile(_configuration.Context.Mode) &&
+        (_configuration.Context.MonitorDeviceId is null || _configuration.Context.EnvironmentAvailable);
     public string AxisStartText => DirectionText("DisplayModes.Placement.Alignment.Start", "Settings.Direction.Top", "Settings.Direction.Start");
     public string AxisEndText => DirectionText("DisplayModes.Placement.Alignment.End", "Settings.Direction.Bottom", "Settings.Direction.End");
     public string ExpandStartText => DirectionText("DisplayModes.Placement.Arrangement.Left", "Settings.Direction.ExpandTop", "Settings.Direction.ExpandStart");

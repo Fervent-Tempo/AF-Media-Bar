@@ -22,7 +22,7 @@ public static class TaskbarPlacementPolicy
 
     public static TaskbarPlacementDecision Evaluate(TaskbarPlacementState previous,
         TaskbarOccupancySnapshot snapshot, TaskbarBarPosition alignment,
-        int taskbarLength, int manualPadding, int minimum, int desired)
+        int taskbarLength, int manualPadding, int minimum, int desired, long? preferredAnchorTwice = null)
     {
         var state = previous;
         if (minimum <= 0)
@@ -82,19 +82,19 @@ public static class TaskbarPlacementPolicy
         var fitting = safe.Where(range => range.Length >= minimum).ToArray();
         if (fitting.Length == 0)
             return Build(state with { IsVisible = false, SafeRanges = safe, MinimumNeedsValidation = false }, alignment, desired, false);
-        var range = state.IsDragSeed ? Nearest(fitting, state.AppliedAnchorTwice, minimum, alignment)
+        var range = preferredAnchorTwice.HasValue || state.IsDragSeed ? Nearest(fitting, preferredAnchorTwice ?? state.AppliedAnchorTwice, minimum, alignment)
             : alignment switch
             {
                 TaskbarBarPosition.Start => fitting[0],
                 TaskbarBarPosition.End => fitting[^1],
                 _ => Nearest(fitting, (long)taskbarLength + 2L * manualPadding, minimum, alignment)
             };
-        var preferred = state.IsDragSeed ? state.AppliedAnchorTwice : alignment switch
+        var preferred = preferredAnchorTwice ?? (state.IsDragSeed ? state.AppliedAnchorTwice : alignment switch
         {
             TaskbarBarPosition.Start => 2L * (range.Start + manualPadding),
             TaskbarBarPosition.End => 2L * (range.End + manualPadding),
             _ => (long)taskbarLength + 2L * manualPadding
-        };
+        });
         var anchor = Project(preferred, range, minimum, alignment);
         var budget = Budget(range, anchor, alignment);
         state = state with { SafeRanges = safe, Range = range, HasHome = true,

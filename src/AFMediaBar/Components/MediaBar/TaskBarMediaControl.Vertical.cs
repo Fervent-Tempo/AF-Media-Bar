@@ -203,6 +203,7 @@ public partial class TaskBarMediaControl
         TaskbarPerformanceSurface.Padding = new Thickness(1);
         TaskbarPerformanceSurface.Height = Math.Max(1, _verticalPerformanceLength - RestWidgetVerticalInset(TaskbarPerformanceHoverSurface));
         PlaceMetricSurfaces(layout, innerWidth);
+        UpdateDetachedVisuals();
         PlaceBarMoveHandle(layout, innerWidth);
         var buttonSize = VerticalAudioButtonSize(TaskbarDensityMetrics.From(experience.Density));
         foreach (var surface in new[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface })

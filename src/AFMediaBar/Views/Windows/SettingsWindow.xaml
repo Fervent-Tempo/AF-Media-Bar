@@ -130,6 +130,10 @@
             </ui:NavigationView.ContentOverlay>
         </ui:NavigationView>
         <Canvas x:Name="SidebarSelectionOverlay" IsHitTestVisible="False" ClipToBounds="True" />
+        <StackPanel x:Name="MonitorEditor" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Height="40" Margin="0,0,150,0" Visibility="Collapsed">
+            <TextBlock Text="{DynamicResource Loc.ComponentPlacement.EditingMonitor}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <ComboBox x:Name="MonitorEditorChoices" Width="210" DisplayMemberPath="DeviceName" SelectedValuePath="DeviceId" SelectionChanged="MonitorEditor_SelectionChanged"/>
+        </StackPanel>
         <ui:ContentDialogHost x:Name="RootContentDialog" Grid.Row="0" />
     </Grid>
 </ui:FluentWindow>

@@ -12,8 +12,8 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
     public bool IsActive => context.IsActive && Context.Mode is (SettingsMode.Taskbar or SettingsMode.FloatingBar) && runtime?.IsSwitching != true;
     public CancellationToken CancellationToken => context.CancellationToken;
     public BarConfigurationTarget Target => Context.Mode == SettingsMode.FloatingBar ? BarConfigurationTarget.FloatingBar : BarConfigurationTarget.Taskbar;
-    public AppSettings Current => Target == BarConfigurationTarget.Taskbar ? SettingsManager.Current
-        : (SettingsManager.Current.FloatingBar.Profile ?? BarDisplaySettings.Capture(SettingsManager.Current)).ApplyTo(SettingsManager.Current);
+    public AppSettings Current => Context.MonitorDeviceId is null && Target == BarConfigurationTarget.Taskbar
+        ? SettingsManager.Current : MonitorBarProfilePolicy.Project(SettingsManager.Current, Target, Context.MonitorDeviceId);
     public event EventHandler? Activated { add => context.Activated += value; remove => context.Activated -= value; }
 
     private void Update(Action<AppSettings> update)
@@ -24,7 +24,10 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
     private void UpdateGeometry(Action<AppSettings> update)
     {
         if (!IsActive || Context.Mode is not (SettingsMode.Taskbar or SettingsMode.FloatingBar)) return;
-        var current = Current;
+        // 模式几何不能以已经合成本屏位置覆盖的 Current 为基底。
+        var root = SettingsManager.Current;
+        var current = Target == BarConfigurationTarget.Taskbar ? root :
+            (root.FloatingBar.Profile ?? BarDisplaySettings.Capture(root)).ApplyTo(root);
         update(current);
         if (Target == BarConfigurationTarget.FloatingBar)
             SettingsManager.Current.FloatingBar = SettingsManager.Current.FloatingBar with { Profile = BarDisplaySettings.Capture(current) };
@@ -35,13 +38,43 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
         if (!IsActive) return;
         settings = settings.Normalize();
         var root = SettingsManager.Current;
-        root.TaskbarExperience = Target == BarConfigurationTarget.Taskbar ? settings : settings with
+        var previous = Current;
+        var proposed = previous.Clone();
+        proposed.TaskbarExperience = settings;
+        if (!string.IsNullOrWhiteSpace(Context.MonitorDeviceId) && new[] { BarLayoutState.Resident, BarLayoutState.Idle }
+            .Any(state => !ComponentLayoutPolicy.ResolveAll(previous, state).SequenceEqual(ComponentLayoutPolicy.ResolveAll(proposed, state))))
+        {
+            if (!Context.EnvironmentAvailable) return;
+            var profile = MonitorBarProfilePolicy.Capture(root, Target, Context.MonitorDeviceId);
+            MonitorBarProfilePolicy.Store(root, profile with
+            {
+                Resident = ComponentLayoutPolicy.ResolveAll(proposed, BarLayoutState.Resident),
+                Idle = ComponentLayoutPolicy.ResolveAll(proposed, BarLayoutState.Idle)
+            });
+        }
+        if (Context.MonitorDeviceId is not null)
+        {
+            var globalLayouts = root.TaskbarExperience.ComponentLayouts;
+            var incomingHover = settings.ComponentLayouts?.Hover;
+            var sameHover = incomingHover is null ? globalLayouts?.Hover is null : globalLayouts?.Hover is { } hover && incomingHover.SequenceEqual(hover);
+            settings = settings with
+            {
+                ComponentLayouts = sameHover ? globalLayouts :
+                (globalLayouts ?? new()) with { Hover = incomingHover }
+            };
+        }
+        var shared = Target == BarConfigurationTarget.Taskbar ? settings : settings with
         {
             LengthMode = root.TaskbarExperience.LengthMode,
             FixedLengthDip = root.TaskbarExperience.FixedLengthDip,
             Arrangement = root.TaskbarExperience.Arrangement
         };
-        if (Target == BarConfigurationTarget.FloatingBar)
+        // 归一化会复制列表；按序列化值比较，避免一次本屏排序额外发布全局外观变化。
+        if (System.Text.Json.JsonSerializer.Serialize(shared) != System.Text.Json.JsonSerializer.Serialize(root.TaskbarExperience))
+            root.TaskbarExperience = shared;
+        if (Target == BarConfigurationTarget.FloatingBar &&
+            (previous.TaskbarExperience.LengthMode != settings.LengthMode || previous.TaskbarExperience.FixedLengthDip != settings.FixedLengthDip ||
+                previous.TaskbarExperience.Arrangement != settings.Arrangement))
             UpdateGeometry(current => current.TaskbarExperience = current.TaskbarExperience with
             { LengthMode = settings.LengthMode, FixedLengthDip = settings.FixedLengthDip, Arrangement = settings.Arrangement });
     }
@@ -92,6 +125,27 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
     }
     public void SetTaskbarPlacement(bool? locked = null, bool? avoidIcons = null, double? crossAxisOffsetDip = null, bool reset = false, TaskbarBarPosition? alignment = null)
     {
+        if (!IsActive) return;
+        if (Context.MonitorDeviceId is { Length: > 0 } monitorId && (reset || alignment.HasValue))
+        {
+            if (!Context.EnvironmentAvailable) return;
+            var root = SettingsManager.Current;
+            if (reset)
+            {
+                MonitorBarProfilePolicy.ResetPlacement(root, SettingsManager.UserDefaults ?? new(), Target, monitorId);
+                if (Target == BarConfigurationTarget.FloatingBar)
+                {
+                    var positions = root.FloatingBar.Positions.Where(position => !string.Equals(position.MonitorDeviceId, monitorId, StringComparison.OrdinalIgnoreCase));
+                    var saved = (SettingsManager.UserDefaults ?? new()).FloatingBar.Positions
+                        .FirstOrDefault(position => string.Equals(position.MonitorDeviceId, monitorId, StringComparison.OrdinalIgnoreCase));
+                    root.FloatingBar = root.FloatingBar with { Positions = saved is null ? positions.ToArray() : positions.Append(saved).ToArray() };
+                }
+            }
+            else if (alignment is { } selected && Enum.IsDefined(selected))
+                MonitorBarProfilePolicy.Store(root, MonitorBarProfilePolicy.Capture(root, Target, monitorId) with
+                { BodyAlignment = selected, BodyPrimaryDip = null });
+            return;
+        }
         if (reset && IsActive && Target == BarConfigurationTarget.FloatingBar)
             SetFloatingBar(SettingsManager.Current.FloatingBar with { Positions = [] });
         UpdateGeometry(current =>
@@ -138,6 +192,31 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
     public void Reset(SettingsResetScope scope)
     {
         if (!IsActive) return;
+        if (Context.MonitorDeviceId is { Length: > 0 } localMonitor && scope is SettingsResetScope.RestState or SettingsResetScope.ContentLayout)
+        {
+            if (!Context.EnvironmentAvailable) return;
+            var localRoot = SettingsManager.Current;
+            var localDefaults = MonitorBarProfilePolicy.Project(SettingsManager.UserDefaults ?? new(), Target, localMonitor);
+            var profile = MonitorBarProfilePolicy.Capture(localRoot, Target, localMonitor);
+            MonitorBarProfilePolicy.Store(localRoot, profile with
+            {
+                Resident = ComponentLayoutPolicy.ResolveAll(localDefaults, BarLayoutState.Resident),
+                Idle = ComponentLayoutPolicy.ResolveAll(localDefaults, BarLayoutState.Idle)
+            });
+            if (scope == SettingsResetScope.RestState)
+                localRoot.TaskbarExperience = localRoot.TaskbarExperience with
+                {
+                    SmallArtwork = localDefaults.TaskbarExperience.SmallArtwork,
+                    ArtworkProgressVisible = localDefaults.TaskbarExperience.ArtworkProgressVisible,
+                    RestProgressVisible = localDefaults.TaskbarExperience.RestProgressVisible
+                };
+            return;
+        }
+        if (Context.MonitorDeviceId is { Length: > 0 } monitorId && scope == SettingsResetScope.Layout)
+        {
+            SetTaskbarPlacement(reset: true);
+            return;
+        }
         if (SettingsSectionResetPolicy.Handles(scope))
         {
             var sectionRoot = SettingsManager.Current;
@@ -145,12 +224,17 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
             if (Target == BarConfigurationTarget.FloatingBar)
                 sectionDefaults = (sectionDefaults.FloatingBar.Profile ?? BarDisplaySettings.Capture(sectionDefaults)).ApplyTo(sectionDefaults);
             var sectionNext = SettingsSectionResetPolicy.Apply(Current, sectionDefaults, scope);
+            var modeGeometry = Target == BarConfigurationTarget.Taskbar ? sectionRoot :
+                (sectionRoot.FloatingBar.Profile ?? BarDisplaySettings.Capture(sectionRoot)).ApplyTo(sectionRoot);
+            sectionNext.Position = modeGeometry.Position;
+            sectionNext.TaskbarBarManualPadding = modeGeometry.TaskbarBarManualPadding;
             if (Target == BarConfigurationTarget.FloatingBar)
             {
                 var sectionFloating = sectionNext.FloatingBar with { Profile = BarDisplaySettings.Capture(sectionNext) };
                 sectionNext = BarDisplaySettings.Capture(sectionRoot).ApplyTo(sectionNext);
                 sectionNext.FloatingBar = sectionFloating;
             }
+            MergeLocalLists(sectionNext, sectionDefaults, scope);
             SettingsManager.Replace(sectionNext, scope);
             return;
         }
@@ -213,5 +297,26 @@ public sealed class LegacySettingsConfiguration(SettingsPageContext context, AFM
         next = BarDisplaySettings.Capture(root).ApplyTo(next);
         next.FloatingBar = floating;
         SettingsManager.Replace(next, scope);
+    }
+
+    private void MergeLocalLists(AppSettings next, AppSettings defaults, SettingsResetScope scope)
+    {
+        if (Context.MonitorDeviceId is not { Length: > 0 } monitorId) return;
+        var root = SettingsManager.Current;
+        var profile = MonitorBarProfilePolicy.Capture(root, Target, monitorId);
+        var localDefaults = MonitorBarProfilePolicy.Project(defaults, Target, monitorId);
+        var restored = next.TaskbarExperience.ComponentLayouts;
+        if (scope is SettingsResetScope.RestState or SettingsResetScope.ContentLayout)
+            MonitorBarProfilePolicy.Store(next, profile with
+            {
+                Resident = ComponentLayoutPolicy.ResolveAll(localDefaults, BarLayoutState.Resident),
+                Idle = ComponentLayoutPolicy.ResolveAll(localDefaults, BarLayoutState.Idle)
+            });
+        var shared = root.TaskbarExperience.ComponentLayouts;
+        next.TaskbarExperience = next.TaskbarExperience with
+        {
+            ComponentLayouts = restored is null && shared is null ? null :
+            (restored ?? new()) with { Resident = shared?.Resident, Idle = shared?.Idle }
+        };
     }
 }

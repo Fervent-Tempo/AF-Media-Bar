@@ -388,6 +388,9 @@ public static class SettingsManager
             case nameof(AppSettings.LyricsSource): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.LyricsTextAlignment): LyricsSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.TaskbarExperience): TaskbarExperienceSettingsChanged?.Invoke(null, EventArgs.Empty); break;
+            case nameof(AppSettings.MonitorBarProfiles):
+                TaskbarExperienceSettingsChanged?.Invoke(null, new MonitorBarProfilesChangedEventArgs());
+                break;
             case nameof(AppSettings.Interaction): InteractionSettingsChanged?.Invoke(null, EventArgs.Empty); break;
             case nameof(AppSettings.Experiments):
                 InteractionSettingsChanged?.Invoke(null, EventArgs.Empty);

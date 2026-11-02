@@ -148,7 +148,7 @@ public partial class MainWindow
                         RoutedEventHandler? closed = null;
                         closed = (_, _) => { menu.Closed -= closed; hold.Dispose(); };
                         menu.Closed += closed;
-                        try { ContextMenuHelper.OpenAtScreenAnchor(menu, this, point); }
+                        try { OpenComponentAwareMenu(menu, point, host.CreateComponentReturnMenuItem(), value => host.ActiveComponentMenu = value); }
                         catch { menu.Closed -= closed; hold.Dispose(); throw; }
                     };
                 }

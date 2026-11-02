@@ -94,6 +94,7 @@ public partial class TaskBarMediaControl
         var current = _performanceMetrics.Count == 0 ? MetricKind.SystemMemory : _performanceMetrics[Math.Clamp(_performanceCycleIndex, 0, _performanceMetrics.Count - 1)];
         foreach (var pair in _metricSurfaces)
         {
+            if (IsDetachedElement(pair.Value)) continue;
             var component = parallel ? ComponentLayoutPolicy.Component(pair.Key) : TaskbarRestComponent.Performance;
             var placement = parallel || pair.Key == current ? layout.Find(component) : null;
             var surface = pair.Value;

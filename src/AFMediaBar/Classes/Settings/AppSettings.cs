@@ -18,6 +18,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private AppearanceSettings _appearance = AppearanceSettings.Default;
     private ExperimentalSettings _experiments = new();
     private FloatingBarSettings _floatingBar = new();
+    private IReadOnlyList<MonitorBarProfile> _monitorBarProfiles = [];
     private TrayWheelBehavior _trayWheelBehavior = TrayWheelBehavior.SwitchOutputDevice;
     private bool _lyricsEnabled = true;
     private bool _allowBrowserAndVideoLyrics;
@@ -83,6 +84,13 @@ public sealed class AppSettings : INotifyPropertyChanged
     public AppearanceSettings Appearance { get => _appearance; set => Set(ref _appearance, value.Normalize()); }
     public ExperimentalSettings Experiments { get => _experiments; set => Set(ref _experiments, value ?? new()); }
     public FloatingBarSettings FloatingBar { get => _floatingBar; set => Set(ref _floatingBar, (value ?? new()).Normalize()); }
+    public IReadOnlyList<MonitorBarProfile> MonitorBarProfiles
+    {
+        get => _monitorBarProfiles;
+        set => Set(ref _monitorBarProfiles, (value ?? []).Where(profile => profile is not null &&
+            Enum.IsDefined(profile.Target) && !string.IsNullOrWhiteSpace(profile.MonitorDeviceId))
+            .Select(profile => profile.Normalize()).DistinctBy(profile => (profile.Target, profile.MonitorDeviceId.ToUpperInvariant())).ToArray());
+    }
     public TrayWheelBehavior TrayWheelBehavior { get => _trayWheelBehavior; set => Set(ref _trayWheelBehavior, value); }
     public bool LyricsEnabled { get => _lyricsEnabled; set => Set(ref _lyricsEnabled, value); }
     public bool AllowBrowserAndVideoLyrics { get => _allowBrowserAndVideoLyrics; set => Set(ref _allowBrowserAndVideoLyrics, value); }
@@ -313,6 +321,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         Appearance = Appearance,
         Experiments = Experiments with { },
         FloatingBar = FloatingBar.Normalize(),
+        MonitorBarProfiles = MonitorBarProfiles,
         TrayWheelBehavior = TrayWheelBehavior,
         LyricsEnabled = LyricsEnabled,
         AllowBrowserAndVideoLyrics = AllowBrowserAndVideoLyrics,

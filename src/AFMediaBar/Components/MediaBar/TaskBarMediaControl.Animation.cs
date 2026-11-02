@@ -219,6 +219,7 @@ public partial class TaskBarMediaControl
         _isPlacementMotionActive = suspended;
         if (suspended)
         {
+            CancelComponentPlacement();
             _artworkHover.AnimateArtworkHover(false, immediate: true);
             HideTaskbarHoverLayer(immediate: true);
         }

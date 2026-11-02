@@ -12,6 +12,22 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class SettingsPageScopeTests
 {
     [TestMethod]
+    public void ParallelMetricEditorKeepsRunningModeAndSelectedMonitor()
+    {
+        var services = new ServiceCollection();
+        services.AddScoped<SettingsPageContext>(); services.AddScoped<Probe>();
+        using var provider = services.BuildServiceProvider();
+        using var cache = new SettingsPageScopeCache(provider.GetRequiredService<IServiceScopeFactory>());
+        cache.SetContext(new(SettingsMode.Taskbar, "A", LayoutOrientation.Horizontal, false, true));
+        var first = (Probe)cache.Get(typeof(Probe), SettingsPageCatalog.Find(SettingsPageKey.Performance, SettingsMode.Taskbar)!);
+        cache.SetContext(new(SettingsMode.FloatingBar, "B", LayoutOrientation.Vertical, false, true));
+        var second = (Probe)cache.Get(typeof(Probe), SettingsPageCatalog.Find(SettingsPageKey.Performance, SettingsMode.FloatingBar)!);
+        Assert.AreNotSame(first, second);
+        Assert.IsFalse(first.Context.IsActive);
+        Assert.AreEqual(SettingsMode.FloatingBar, second.Context.Snapshot.Mode);
+        Assert.AreEqual("B", second.Context.Snapshot.MonitorDeviceId);
+    }
+    [TestMethod]
     public void EditorsAreIsolatedByDisplayAndOrientationWhileGlobalPagesAreRetained()
     {
         var services = new ServiceCollection();

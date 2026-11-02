@@ -116,10 +116,12 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         WindowAppearanceService appearance, ScreenBackgroundSampler sampler, AppLogService log, FloatingBarLengthConstraints lengthConstraints,
         Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null,
         QuickLaunchService? quickLaunch = null,
-        QuickLaunchIconService? quickLaunchIcons = null)
+        QuickLaunchIconService? quickLaunchIcons = null,
+        Func<DetachedComponentVisual, ComponentFloatingWindow>? componentWindowFactory = null)
     {
         _quickLaunch = quickLaunch;
         TargetMonitorDeviceId = targetMonitorDeviceId;
+        _mediaControl.SetComponentScope(BarConfigurationTarget.FloatingBar, targetMonitorDeviceId);
         Monitor = monitor;
         _commands = commands;
         _mediaControl.ComponentReorderCommand = commands?.CommitComponentReorderCommand;
@@ -157,11 +159,15 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _edgeContrastSampling = new AdaptiveForegroundSamplingSession(sampler, Dispatcher, GetEdgeContrastBounds, ApplyEdgeContrast);
         _spectrumSession = new SpectrumPresentationSession(audioMonitor, Dispatcher,
             () => PresentationSettings.SpectrumComponent,
-            () => IsOperational && !IsEdgeFullyCollapsed && _mediaControl.IsSpectrumComponentVisible,
+            () => IsOperational && (!IsEdgeFullyCollapsed || _mediaControl.HasVisibleDetachedContent) && _mediaControl.IsSpectrumComponentVisible,
             (bands, count) => _mediaControl.ApplySpectrum(bands.AsSpan(0, count)),
             exception => _log.Warn("FloatingBar", $"频谱采样失败: {exception.Message}"));
         _backgroundTimer.Interval = TimeSpan.FromSeconds(2);
-        _backgroundTimer.Tick += (_, _) => _foregroundSamplingSession.RequestRefresh();
+        _backgroundTimer.Tick += (_, _) =>
+        {
+            _foregroundSamplingSession.RequestRefresh();
+            foreach (var entry in _componentWindows.Values) entry.Window.RefreshForeground();
+        };
         _fullscreenTimer.Interval = TimeSpan.FromMilliseconds(500);
         _fullscreenTimer.Tick += (_, _) => RefreshForegroundFullscreen();
         _sizeTimer.Interval = TimeSpan.FromMilliseconds(16);
@@ -207,11 +213,12 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _audioInteractionService.DeviceSwitches.Updated += OnAudioDeviceSwitchUpdated;
         _audioInteractionService.DeviceSwitches.Invalidated += OnAudioDeviceInvalidated;
         Closed += (_, _) => { _windowClosed = true; Dispose(); };
+        InitializeFloatingComponents(componentWindowFactory);
         ApplySettings();
     }
 
-    private static AppSettings ProjectSettings() =>
-        (SettingsManager.Current.FloatingBar.Profile ?? BarDisplaySettings.Capture(SettingsManager.Current)).ApplyTo(SettingsManager.Current);
+    private AppSettings ProjectSettings() =>
+        AFMediaBar.Classes.Services.Settings.MonitorBarProfilePolicy.Project(SettingsManager.Current, BarConfigurationTarget.FloatingBar, TargetMonitorDeviceId);
 
     private void ConnectInput()
     {
@@ -249,6 +256,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         PreviewMouseRightButtonUp += (_, args) =>
         {
             if (!IsOperational || DateTime.UtcNow < _suppressClickUntil || _mouse.ConsumeSuppressedClick()) return;
+            _componentMenuTarget = null;
             IsPerformanceMenuRequested = SettingsManager.Current.Experiments.MemoryTools && _mediaControl.IsPerformanceComponentClick(args.OriginalSource as DependencyObject);
             IsBatteryMenuRequested = _mediaControl.IsBatteryComponentClick(args.OriginalSource as DependencyObject);
             _externalFullPanelHandle?.Dismiss(immediate: true);
@@ -298,6 +306,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     {
         if (_isClosing || _savingPosition) return;
         if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(() => SettingsChanged(sender, args)); return; }
+        if (args.PropertyName == nameof(AppSettings.MonitorBarProfiles) && _mediaControl.ComponentScopeMatchesCurrent) return;
+        if (_dragPending || _dragging) CancelBodyDrag();
         if (IsLyricsPresentationSetting(args.PropertyName))
         {
             ApplyLyricsPresentationSettings();
@@ -563,6 +573,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _dragStart = new Point(cursor.X, cursor.Y);
         var bounds = GetPhysicalBounds();
         _dragCenter = new Point(bounds.Left + bounds.Width / 2, bounds.Top + bounds.Height / 2);
+        _bodyDragDockEdge = _dockEdge;
         _dragPending = true;
         _dragTimer.Start();
     }
@@ -570,6 +581,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private void ObserveDrag()
     {
         if (!_dragPending) return;
+        if ((GetAsyncKeyState(0x1B) & 0x8000) != 0) { CancelBodyDrag(); return; }
         if (!IsOperational || Mouse.LeftButton != MouseButtonState.Pressed) { EndDrag(); return; }
         if (!GetCursorPos(out var cursor)) return;
         var delta = new Vector(cursor.X - _dragStart.X, cursor.Y - _dragStart.Y);
@@ -598,7 +610,11 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
 
     private void LeftReleased(object? sender, NativeMouseButtonEventArgs args)
     {
-        if (!_isClosing) Dispatcher.BeginInvoke(EndDrag);
+        if (!_isClosing) Dispatcher.BeginInvoke(() =>
+        {
+            if (Mouse.LeftButton != MouseButtonState.Released) return;
+            _mediaControl.CompleteComponentPlacement(); EndDrag();
+        });
     }
 
     private void EndDrag()
@@ -607,15 +623,17 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _dragTimer.Stop();
         _dragPending = false;
         if (!_dragging) return;
-        if (!_isClosing && !_suspended && GetCursorPos(out var cursor)) ApplyDragPosition(cursor.X, cursor.Y);
+        var commit = !_bodyDragCancelled && !_isClosing && !_suspended && Mouse.LeftButton == MouseButtonState.Released;
+        if (commit && GetCursorPos(out var cursor)) ApplyDragPosition(cursor.X, cursor.Y);
+        if (!commit) _centerPx = _dragCenter;
         _dragging = false;
-        _dockEdge = SettingsManager.Current.FloatingBar.EdgeCollapseEnabled
+        _dockEdge = !commit ? _bodyDragDockEdge : SettingsManager.Current.FloatingBar.EdgeCollapseEnabled
             ? FloatingBarEdgeCollapsePolicy.DetectEdge(_normalBoundsDip, WorkAreaDip, IsVerticalPresentation) : FloatingBarDockEdge.None;
         if (!_isClosing && !_suspended) ApplyBounds();
         _mediaControl.ApplyPlacementMotionSuspension(false);
         if (Mouse.Captured == this) Mouse.Capture(null);
         _suppressClickUntil = DateTime.UtcNow.AddMilliseconds(450);
-        if (!_isClosing && !_suspended && string.Equals(TargetMonitorDeviceId, Monitor.DeviceId, StringComparison.OrdinalIgnoreCase))
+        if (commit && string.Equals(TargetMonitorDeviceId, Monitor.DeviceId, StringComparison.OrdinalIgnoreCase))
         {
             var bounds = _nativeBoundsPx is { } physical
                 ? new Rect(physical.X, physical.Y, physical.Width, physical.Height) : GetPhysicalBounds();
@@ -626,6 +644,9 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             _savingPosition = true;
             try
             {
+                var profile = AFMediaBar.Classes.Services.Settings.MonitorBarProfilePolicy.Capture(SettingsManager.Current,
+                    BarConfigurationTarget.FloatingBar, TargetMonitorDeviceId);
+                AFMediaBar.Classes.Services.Settings.MonitorBarProfilePolicy.Store(SettingsManager.Current, profile);
                 var settings = SettingsManager.Current.FloatingBar;
                 SettingsManager.Current.FloatingBar = settings with
                 {
@@ -666,11 +687,18 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _foregroundSamplingSession?.Invalidate(clearDecision: false);
     }
 
+    private void CancelBodyDrag()
+    {
+        _bodyDragCancelled = true;
+        try { EndDrag(); }
+        finally { _bodyDragCancelled = false; }
+    }
+
     private void SynchronizeResources()
     {
         SynchronizeMetricsSubscription(PresentationSettings.PerformanceComponent.Normalize());
         _spectrumSession.Interval = TimeSpan.FromMilliseconds(1000d / PresentationSettings.SpectrumComponent.Normalize().RefreshRateHz);
-        if (IsOperational && !IsEdgeFullyCollapsed && _mediaControl.IsSpectrumComponentVisible) _spectrumSession.Start(); else _spectrumSession.Stop();
+        if (IsOperational && (!IsEdgeFullyCollapsed || _mediaControl.HasDetachedContent) && _mediaControl.IsSpectrumComponentVisible) _spectrumSession.Start(); else _spectrumSession.Stop();
     }
 
     private void PruneChanged(object? sender, MemoryPruneLevelChangedEventArgs args)
@@ -711,8 +739,10 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     {
         if (_suspended || _isClosing) return;
         var visible = SettingsManager.Current.TaskbarBarEnabled && !_mediaControl.ShouldHideTaskbarWindow && !_foregroundFullscreen;
-        _mediaControl.ApplyHostVisibilitySuspension(!visible || IsBackgroundPruned || IsEdgeFullyCollapsed);
-        if (visible) { if (!IsVisible) Show(); } else { Hide(); StopEdgeCollapse(); ClearInteraction(); }
+        _mediaControl.ApplyHostVisibilitySuspension(!visible || IsBackgroundPruned || IsEdgeFullyCollapsed && !_mediaControl.HasVisibleDetachedContent);
+        if (visible && !_mediaControl.IsRestLayerEmpty) { if (!IsVisible) Show(); }
+        else { Hide(); StopEdgeCollapse(); if (!visible) ClearInteraction(); }
+        if (_componentsActivated) RefreshFloatingComponents();
         UpdateEdgeObservation();
     }
 
@@ -729,6 +759,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         ApplySettings();
         ApplySnapshot(_lastSnapshot);
         RegisterZOrder();
+        _componentsActivated = true;
+        RefreshFloatingComponents();
         _backgroundTimer.Start();
         _fullscreenTimer.Start();
     }
@@ -737,6 +769,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     {
         if (_isClosing || _suspended) return;
         _suspended = true;
+        SuspendFloatingComponents();
         if (!_windowClosed) Hide();
         StopEdgeCollapse();
         _lengthConstraints.Range.Remove(this);
@@ -755,6 +788,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     {
         if (_isClosing) return;
         _suspended = false;
+        _componentsActivated = true;
         ApplySettings();
         ApplySnapshot(_lastSnapshot);
         RegisterZOrder();
@@ -767,6 +801,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         if (_isClosing) return;
         Suspend();
         _isClosing = true;
+        DisposeFloatingComponents();
         _edgeHoverTimer.Tick -= ObserveEdgePointer;
         _edgeMotionTimer.Tick -= AdvanceEdgeMotion;
         _spectrumSession.Dispose();

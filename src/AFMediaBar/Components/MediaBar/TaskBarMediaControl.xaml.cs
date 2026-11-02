@@ -342,7 +342,7 @@ namespace AFMediaBar.Components
         public bool ShouldHideTaskbarWindow =>
             PresentationSettings.TaskbarBarEnabled &&
             !_isConnected &&
-            _isRestLayerEmpty &&
+            _isRestLayerEmpty && !HasDetachedContent &&
             !_restTransitionDefersHide;
 
         /// <summary>
@@ -1046,6 +1046,7 @@ namespace AFMediaBar.Components
         /// </summary>
         public void ApplyTaskbarExperienceSettings(bool publishSize = true)
         {
+            RefreshComponentScope();
             RefreshWheelTooltip();
             var isHorizontalTaskbar = IsBarPresentation && !_isVertical;
             var isTaskbar = IsBarPresentation;
@@ -1315,6 +1316,7 @@ namespace AFMediaBar.Components
             }
 
             ApplyMarqueeLayout(_restTransitionKeepsOutgoingText ? _outgoingTextWidth : textWidth);
+            UpdateDetachedVisuals();
         }
 
         /// <summary>
@@ -1332,7 +1334,9 @@ namespace AFMediaBar.Components
         /// <param name="layout">这次算出的静置层布局。/ The rest-layer layout computed this time.</param>
         private void ApplyRestComponentVisibility(TaskbarRestLayout layout)
         {
-            bool Visible(TaskbarRestComponent component) => layout.Find(component) is not null;
+            bool Visible(TaskbarRestComponent component) => layout.Find(component) is not null ||
+                IsDetached(component) && EffectiveRestEntries().Any(entry => entry.Component == component && entry.IsVisible) &&
+                (component != TaskbarRestComponent.BluetoothBattery || _batteryCanShow);
 
             var wasSpectrumVisible = TaskbarSpectrumHoverSurface.Visibility == Visibility.Visible;
             var wasPerformanceVisible = TaskbarPerformanceHoverSurface.Visibility == Visibility.Visible;
@@ -1588,6 +1592,9 @@ namespace AFMediaBar.Components
             _isHostVisibilitySuspended = suspended;
             if (suspended)
             {
+                CancelComponentPlacement();
+                foreach (var visual in _detachedVisuals.Values)
+                { visual.View.IsHitTestVisible = false; if (visual.View.ContextMenu is { } menu) menu.IsOpen = false; }
                 FinishColorTransitions();
                 SuspendQuickLaunchPresentation();
                 SettleTaskbarPointerVisuals();
@@ -1597,6 +1604,7 @@ namespace AFMediaBar.Components
             }
             else
             {
+                foreach (var visual in _detachedVisuals.Values) visual.View.IsHitTestVisible = true;
                 // 悬停层在挂起时被立刻收掉了，没有走它自己的收起计时器；恢复后指针若还停在文字区上，就把它重新排进队列，
                 // 否则用户要先把指针移开再移回来才会看到悬停按钮。
                 // The hover layer was collapsed outright on suspension instead of through its own close timer; if the pointer is still over the text
@@ -1794,6 +1802,7 @@ namespace AFMediaBar.Components
             MainBorder.Background = Brushes.Transparent;
             TopBorder.BorderBrush = Brushes.Transparent;
             ApplyTaskbarBackgroundMaterial(appearance, presentation.UsesLightText, colorDuration);
+            ReapplyDetachedForeground();
         }
 
         private void ApplyTaskbarBackgroundMaterial(

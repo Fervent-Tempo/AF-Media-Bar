@@ -15,6 +15,7 @@ public sealed class RestStateViewModel : ObservableObject, IDisposable
     public BluetoothBatterySettingsViewModel Battery { get; }
     public SettingsPreviewViewModel Preview { get; }
     public CancellationToken ContextCancellationToken => _configuration.CancellationToken;
+    public bool CanEditMonitor => _configuration.Context.EnvironmentAvailable;
     public bool BatteryAvailable => _configuration.Current.Experiments.BluetoothBattery && !string.IsNullOrEmpty(_configuration.Current.BluetoothBatteryWidget.DeviceId);
     public SettingsPageKey BatteryDestination => _configuration.Current.Experiments.BluetoothBattery ? SettingsPageKey.Widgets : SettingsPageKey.Experimental;
 
