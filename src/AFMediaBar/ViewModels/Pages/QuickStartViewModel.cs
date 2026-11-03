@@ -73,9 +73,8 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     public string OpenPullRequests => FormatCount(_project.OpenPullRequests);
     public bool HasPlayers => Players.Count != 0;
     public bool HasCustomizationTools => _customizationResult?.Tools.Count > 0;
-    public string CustomizationStatus => _customizationResult is null ? Translations.Get("Home.Customization.Checking")
-        : HasCustomizationTools ? Translations.Format("Home.Customization.Detected", string.Join("、", _customizationResult.Tools.Select(tool => tool.Name)))
-        : Translations.Get(_customizationResult.IsComplete ? "Home.Customization.NotDetected" : "Home.Customization.Incomplete");
+    public string CustomizationStatus => HasCustomizationTools
+        ? Translations.Format("Home.Customization.Detected", string.Join("、", _customizationResult!.Tools.Select(tool => tool.Name))) : string.Empty;
     public string CustomizationCoverage => Translations.Get("Home.Customization.Coverage") +
         (_customizationResult?.IsComplete == false && HasCustomizationTools ? "\n" + Translations.Get("Home.Customization.Incomplete") : "");
     public bool HasNoIssues => Issues.Count == 0;

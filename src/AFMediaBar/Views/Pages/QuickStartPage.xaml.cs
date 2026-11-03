@@ -91,29 +91,17 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
     /// <summary>按页面内容宽度切换 Hero、状态条动作、磁贴/教程/帮助/项目动态的列数与行位置。</summary>
     private void ApplyColumns(double width)
     {
-        var wide = width >= 1000d;
         var narrow = width < 700d;
-        if (narrow)
-        {
-            Grid.SetColumn(HeroCopy, 0); Grid.SetColumnSpan(HeroCopy, 3); Grid.SetRow(HeroCopy, 0);
-            Grid.SetColumn(HeroVisual, 0); Grid.SetColumnSpan(HeroVisual, 3); Grid.SetRow(HeroVisual, 1);
-            HeroVisual.Margin = new Thickness(0, 20, 0, 0);
-            HeroVisual.Height = 220d;
-            HeroTitle.FontSize = 22d; HeroTitle.LineHeight = 28d; HeroTitle.MaxHeight = 84d;
-        }
-        else
-        {
-            Grid.SetColumn(HeroCopy, 0); Grid.SetColumnSpan(HeroCopy, 1); Grid.SetRow(HeroCopy, 0);
-            Grid.SetColumn(HeroVisual, 2); Grid.SetColumnSpan(HeroVisual, 1); Grid.SetRow(HeroVisual, 0);
-            HeroVisual.Margin = new Thickness(0);
-            // 默认（1320 窗，内容宽约 1024）350，宽窗（1560 窗，内容宽约 1264）380，让图片显示更大。
-            HeroVisual.Height = width >= 1100d ? 380d : 350d;
-            HeroTitle.FontSize = wide ? 26d : 24d;
-            HeroTitle.LineHeight = wide ? 34d : 30d;
-            HeroTitle.MaxHeight = wide ? 102d : 90d;
-        }
-        // 文案行数变化只影响正文区域，位置胶囊始终贴齐固定区域底部。
-        HeroCopy.Height = narrow ? 340d : HeroVisual.Height;
+        // 图片独占整行，默认窗口也能看清；下方文字自适应高度，轮播交互保持原样。
+        Grid.SetColumn(HeroVisual, 0); Grid.SetColumnSpan(HeroVisual, 3); Grid.SetRow(HeroVisual, 0);
+        Grid.SetColumn(HeroCopy, 0); Grid.SetColumnSpan(HeroCopy, 3); Grid.SetRow(HeroCopy, 1);
+        HeroVisual.Margin = new Thickness(0);
+        HeroVisual.Height = Math.Clamp(width * 9d / 16d + 24d, 240d, 620d);
+        HeroCopy.Margin = new Thickness(0, 18, 0, 0);
+        HeroCopy.Height = double.NaN;
+        HeroTitle.FontSize = narrow ? 22d : 24d;
+        HeroTitle.LineHeight = narrow ? 28d : 32d;
+        HeroTitle.MaxHeight = narrow ? 84d : 64d;
         Grid.SetRow(PlayerActions, narrow ? 1 : 0);
         Grid.SetColumn(PlayerActions, narrow ? 0 : 1);
         Grid.SetColumnSpan(PlayerActions, narrow ? 2 : 1);
