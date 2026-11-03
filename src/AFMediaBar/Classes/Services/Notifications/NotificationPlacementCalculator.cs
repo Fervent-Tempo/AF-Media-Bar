@@ -2,9 +2,33 @@ using AFMediaBar.Classes.Settings;
 
 namespace AFMediaBar.Classes.Services;
 
+/// <summary>预设锚点与相对偏移，坐标单位与定位计算输入一致。</summary>
+public readonly record struct NotificationPlacement(TrackChangeNotificationPosition Position, double HorizontalOffset, double VerticalOffset);
+
 /// <summary>在物理像素工作区内计算曲目通知位置。 / Calculates track-notification placement in a physical-pixel work area.</summary>
 public static class NotificationPlacementCalculator
 {
+    /// <summary>将拖动落点约束在工作区内；靠近预设时归零偏移，否则相对最近锚点保存。</summary>
+    public static NotificationPlacement ResolveDrag(Rect workArea, Size windowSize, Point topLeft, double margin, double snapDistance)
+    {
+        var origin = Calculate(workArea, windowSize, TrackChangeNotificationPosition.TopLeft, margin);
+        var clamped = Calculate(workArea, windowSize, TrackChangeNotificationPosition.TopLeft, margin, topLeft.X - origin.X, topLeft.Y - origin.Y);
+        var nearest = TrackChangeNotificationPosition.TopLeft;
+        var anchor = origin;
+        var distance = double.PositiveInfinity;
+        foreach (var position in Enum.GetValues<TrackChangeNotificationPosition>())
+        {
+            var candidate = Calculate(workArea, windowSize, position, margin);
+            var currentDistance = (clamped - candidate).Length;
+            if (currentDistance >= distance) continue;
+            nearest = position;
+            anchor = candidate;
+            distance = currentDistance;
+        }
+        var snap = double.IsFinite(snapDistance) && distance <= Math.Max(0, snapDistance);
+        return new NotificationPlacement(nearest, snap ? 0 : clamped.X - anchor.X, snap ? 0 : clamped.Y - anchor.Y);
+    }
+
     /// <summary>把 WPF DIP 尺寸转换成目标显示器的物理像素。 / Converts a WPF DIP size to physical pixels for the target display.</summary>
     public static Size ToPhysicalSize(Size dipSize, uint dpiX, uint dpiY)
     {

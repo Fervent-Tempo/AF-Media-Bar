@@ -50,6 +50,30 @@ public sealed class NotificationCustomizationTests
     }
 
     [TestMethod]
+    public void DraggingSnapsToPresetsAndFreePositionsRoundTripWithinTheWorkArea()
+    {
+        var work = new Rect(-2560, -120, 2560, 1400);
+        var size = NotificationPlacementCalculator.ToPhysicalSize(new Size(320, 120), 144, 144);
+        foreach (var anchor in Enum.GetValues<TrackChangeNotificationPosition>())
+        {
+            var target = NotificationPlacementCalculator.Calculate(work, size, anchor, 24);
+            var snapped = NotificationPlacementCalculator.ResolveDrag(work, size, target + new Vector(12, -8), 24, 20);
+            Assert.AreEqual(anchor, snapped.Position);
+            Assert.AreEqual(0d, snapped.HorizontalOffset);
+            Assert.AreEqual(0d, snapped.VerticalOffset);
+        }
+        var point = new Point(work.Left + 635, work.Top + 340);
+        var free = NotificationPlacementCalculator.ResolveDrag(work, size, point, 24, 20);
+        Assert.AreEqual(point, NotificationPlacementCalculator.Calculate(work, size, free.Position, 24, free.HorizontalOffset, free.VerticalOffset));
+        var outside = NotificationPlacementCalculator.ResolveDrag(work, size, new Point(99999, -99999), 24, 20);
+        Assert.AreEqual(new NotificationPlacement(TrackChangeNotificationPosition.TopRight, 0, 0), outside);
+        var center = NotificationPlacementCalculator.Calculate(work, size, TrackChangeNotificationPosition.TopCenter, 24);
+        // 预览缩至四分之一时，吸附半径仍为界面上的 14 DIP。
+        Assert.AreEqual(0d, NotificationPlacementCalculator.ResolveDrag(work, size, center + new Vector(40, 0), 24, 14 / 0.25).HorizontalOffset);
+        Assert.AreEqual(40d, NotificationPlacementCalculator.ResolveDrag(work, size, center + new Vector(40, 0), 24, 14).HorizontalOffset);
+    }
+
+    [TestMethod]
     public void SharedContentAndScreenPreviewUpdateWithoutShowingAWindow()
     {
         StaTest.Run(_ =>
@@ -69,7 +93,13 @@ public sealed class NotificationCustomizationTests
             var before = Canvas.GetLeft(card);
             preview.Settings = settings with { HorizontalOffsetDip = 120 };
             Assert.AreEqual(before + 120, Canvas.GetLeft(card));
+            var anchors = (Canvas)preview.FindName("AnchorPoints");
+            var preset = anchors.Children.OfType<Button>().Single(button => (TrackChangeNotificationPosition)button.Tag == TrackChangeNotificationPosition.BottomRight);
+            preset.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.AreEqual(TrackChangeNotificationPosition.BottomRight, preview.Settings.Position);
+            Assert.AreEqual(0d, preview.Settings.HorizontalOffsetDip);
             return Task.CompletedTask;
         });
     }
+
 }

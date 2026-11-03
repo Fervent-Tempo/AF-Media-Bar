@@ -37,6 +37,20 @@ public sealed class TrackChangeNotificationCoordinator : IDisposable
         SettingsManager.TrackChangeNotificationSettingsChanged += OnNotificationSettingsChanged;
     }
 
+    /// <summary>显式请求一次示例通知，不改变自动通知开关或切歌判定基线。</summary>
+    public bool RequestPreview(MediaSnapshot snapshot, TrackChangeNotificationSettings settings)
+    {
+        if (_disposed || NotificationRequested is not { } handler) return false;
+        settings = settings.Normalize();
+        var monitor = _displayMonitorService.ResolveNotificationMonitor(settings.TargetMode, settings.FixedMonitorDeviceId);
+        if (monitor is null) return false;
+        // 示例替换当前通知后，不再把旧曲目的迟到封面或文字补全应用到它。
+        _presentedTrackIdentity = null;
+        _presentedSnapshot = null;
+        handler.Invoke(this, new TrackChangeNotificationRequest(snapshot, settings, monitor));
+        return true;
+    }
+
     private void OnSnapshotChanged(object? sender, MediaSnapshot snapshot)
     {
         if (_disposed)

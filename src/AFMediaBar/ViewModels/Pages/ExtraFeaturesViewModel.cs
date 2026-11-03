@@ -18,6 +18,8 @@ public partial class ExtraFeaturesViewModel : ObservableObject
     private readonly IDisplayMonitorService _displayMonitorService;
     private readonly LocalizationService _localization;
     private readonly QuickLaunchService _quickLaunch;
+    private readonly TrackChangeNotificationCoordinator _notifications;
+    private bool _notificationPreviewUnavailable;
 
     // 设置写入会同步通知订阅者，而写设置的那一方可能在后台线程上（更新检查的网络等待之后就是如此）：
     // 本页的 Sources 绑定到界面，跨线程改它们会让 WPF 的 CollectionView 抛异常，
@@ -93,8 +95,9 @@ public partial class ExtraFeaturesViewModel : ObservableObject
         MediaSourceRegistry sources,
         IMediaSourceCatalog mediaSessions,
         IDisplayMonitorService displayMonitorService,
-        LocalizationService localization, QuickLaunchService quickLaunch)
+        LocalizationService localization, QuickLaunchService quickLaunch, TrackChangeNotificationCoordinator notifications)
     {
+        _notifications = notifications;
         _quickLaunch = quickLaunch;
         _sources = sources;
         _mediaSessions = mediaSessions;
@@ -189,8 +192,25 @@ public partial class ExtraFeaturesViewModel : ObservableObject
         }
     }
     public TrackChangeNotificationSettings NotificationPreviewSettings => Notification.Normalize();
+    public string NotificationPreviewMessage => _notificationPreviewUnavailable ? Translations.Get("Notification.Preview.Unavailable") : string.Empty;
+    [RelayCommand]
+    private void SendNotificationPreview()
+    {
+        _notificationPreviewUnavailable = !_notifications.RequestPreview(NotificationPreviewSnapshot, NotificationPreviewSettings);
+        OnPropertyChanged(nameof(NotificationPreviewMessage));
+    }
+    [RelayCommand]
+    private void SetNotificationPlacement(NotificationPlacement placement) => UpdateNotification(Notification with
+    {
+        Position = placement.Position, HorizontalOffsetDip = placement.HorizontalOffset, VerticalOffsetDip = placement.VerticalOffset
+    });
+    [RelayCommand]
+    private void SetNotificationTitleColor(string? color) => NotificationTitleColor = color ?? string.Empty;
+    [RelayCommand]
+    private void SetNotificationArtistColor(string? color) => NotificationArtistColor = color ?? string.Empty;
     public MediaSnapshot NotificationPreviewSnapshot => MediaSnapshot.Disconnected with
     {
+        IsConnected = true, IsPlaying = true, SourceName = "AF Media Bar",
         Title = Translations.Get("Settings.Preview.Track"), Artist = Translations.Get("Settings.Preview.Artist")
     };
     public System.Windows.Size NotificationPreviewSize

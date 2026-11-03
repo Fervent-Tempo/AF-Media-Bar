@@ -13,7 +13,7 @@
                     <components:SettingsRow Description="{DynamicResource Loc.Media.Notification.Enabled.Description}" Icon="{ui:SymbolIcon MusicNote220}" Title="{DynamicResource Loc.Media.Notification.Enabled.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.TrackChangeNotificationEnabled, Mode=TwoWay}"/>
                     </components:SettingsRow>
-                    <components:TrackNotificationPreview Settings="{Binding ViewModel.NotificationPreviewSettings}" Snapshot="{Binding ViewModel.NotificationPreviewSnapshot}" WorkAreaSize="{Binding ViewModel.NotificationPreviewSize}"/>
+                    <components:TrackNotificationPreview Settings="{Binding ViewModel.NotificationPreviewSettings}" Snapshot="{Binding ViewModel.NotificationPreviewSnapshot}" WorkAreaSize="{Binding ViewModel.NotificationPreviewSize}" PlacementCommand="{Binding ViewModel.SetNotificationPlacementCommand}"/>
                     <components:SettingsRow Description="{DynamicResource Loc.Media.Notification.Fullscreen.Description}" Icon="{ui:SymbolIcon FullScreenMaximize24}" Title="{DynamicResource Loc.Media.Notification.Fullscreen.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.ShowTrackChangeNotificationWhenFullscreen, Mode=TwoWay}"/>
                     </components:SettingsRow>
@@ -27,12 +27,17 @@
                             <ComboBoxItem Content="{DynamicResource Loc.Media.Notification.Position.BottomRight}" Tag="{x:Static settings:TrackChangeNotificationPosition.BottomRight}"/>
                         </ComboBox>
                     </components:SettingsRow>
-                    <components:SettingsRow Title="{DynamicResource Loc.Notification.Offset.Horizontal}" Description="{DynamicResource Loc.Notification.Offset.Horizontal.Hint}" Icon="{ui:SymbolIcon TextFont24}">
-                        <components:SettingsNumericEditor Value="{Binding ViewModel.NotificationHorizontalOffsetDip, Mode=TwoWay}" Minimum="{Binding Source={x:Static settings:TrackChangeNotificationSettings.MinimumOffsetDip}}" Maximum="{Binding Source={x:Static settings:TrackChangeNotificationSettings.MaximumOffsetDip}}" Step="1"/>
-                    </components:SettingsRow>
-                    <components:SettingsRow Title="{DynamicResource Loc.Notification.Offset.Vertical}" Description="{DynamicResource Loc.Notification.Offset.Vertical.Hint}" Icon="{ui:SymbolIcon TextFont24}">
-                        <components:SettingsNumericEditor Value="{Binding ViewModel.NotificationVerticalOffsetDip, Mode=TwoWay}" Minimum="{Binding Source={x:Static settings:TrackChangeNotificationSettings.MinimumOffsetDip}}" Maximum="{Binding Source={x:Static settings:TrackChangeNotificationSettings.MaximumOffsetDip}}" Step="1"/>
-                    </components:SettingsRow>
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon Pin24}">
+                        <ui:CardExpander.Header><StackPanel><TextBlock Text="{DynamicResource Loc.Notification.PositionDetails.Title}"/><TextBlock Text="{DynamicResource Loc.Notification.PositionDetails.Hint}" Style="{StaticResource AfSettingsRowDescriptionStyle}"/></StackPanel></ui:CardExpander.Header>
+                        <StackPanel>
+                            <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Notification.Offset.Horizontal}" Description="{DynamicResource Loc.Notification.Offset.Horizontal.Hint}" Icon="{ui:SymbolIcon TextFont24}">
+                                <components:SettingsNumericEditor Value="{Binding ViewModel.NotificationHorizontalOffsetDip, Mode=TwoWay}" Minimum="{Binding Source={x:Static settings:TrackChangeNotificationSettings.MinimumOffsetDip}}" Maximum="{Binding Source={x:Static settings:TrackChangeNotificationSettings.MaximumOffsetDip}}" Step="1"/>
+                            </components:SettingsRow>
+                            <components:SettingsRow IsNested="True" Title="{DynamicResource Loc.Notification.Offset.Vertical}" Description="{DynamicResource Loc.Notification.Offset.Vertical.Hint}" Icon="{ui:SymbolIcon TextFont24}">
+                                <components:SettingsNumericEditor Value="{Binding ViewModel.NotificationVerticalOffsetDip, Mode=TwoWay}" Minimum="{Binding Source={x:Static settings:TrackChangeNotificationSettings.MinimumOffsetDip}}" Maximum="{Binding Source={x:Static settings:TrackChangeNotificationSettings.MaximumOffsetDip}}" Step="1"/>
+                            </components:SettingsRow>
+                        </StackPanel>
+                    </ui:CardExpander>
                     <components:SettingsRow Title="{DynamicResource Loc.Notification.Title.Size}" Icon="{ui:SymbolIcon TextFont24}">
                         <components:SettingsNumericEditor Value="{Binding ViewModel.NotificationTitleFontSize, Mode=TwoWay}" Minimum="{Binding Source={x:Static settings:TrackChangeNotificationSettings.MinimumFontSize}}" Maximum="{Binding Source={x:Static settings:TrackChangeNotificationSettings.MaximumFontSize}}" Step="1"/>
                     </components:SettingsRow>
@@ -40,11 +45,31 @@
                         <components:SettingsNumericEditor Value="{Binding ViewModel.NotificationArtistFontSize, Mode=TwoWay}" Minimum="{Binding Source={x:Static settings:TrackChangeNotificationSettings.MinimumFontSize}}" Maximum="{Binding Source={x:Static settings:TrackChangeNotificationSettings.MaximumFontSize}}" Step="1"/>
                     </components:SettingsRow>
                     <components:SettingsRow Title="{DynamicResource Loc.Notification.Title.Color}" Description="{DynamicResource Loc.Notification.Color.Hint}" Icon="{ui:SymbolIcon Color24}">
-                        <TextBox Width="140" MaxLength="7" Text="{Binding ViewModel.NotificationTitleColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        <StackPanel Width="300">
+                            <components:SettingsColorPalette SelectionCommand="{Binding ViewModel.SetNotificationTitleColorCommand}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBox Width="128" MaxLength="7" Text="{Binding ViewModel.NotificationTitleColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <ui:Button Margin="8,0,0,0" Content="{DynamicResource Loc.Notification.Color.Theme}" Command="{Binding ViewModel.SetNotificationTitleColorCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                            </StackPanel>
+                        </StackPanel>
                     </components:SettingsRow>
                     <components:SettingsRow Title="{DynamicResource Loc.Notification.Artist.Color}" Description="{DynamicResource Loc.Notification.Color.Hint}" Icon="{ui:SymbolIcon Color24}">
-                        <TextBox Width="140" MaxLength="7" Text="{Binding ViewModel.NotificationArtistColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        <StackPanel Width="300">
+                            <components:SettingsColorPalette SelectionCommand="{Binding ViewModel.SetNotificationArtistColorCommand}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBox Width="128" MaxLength="7" Text="{Binding ViewModel.NotificationArtistColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <ui:Button Margin="8,0,0,0" Content="{DynamicResource Loc.Notification.Color.Theme}" Command="{Binding ViewModel.SetNotificationArtistColorCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                            </StackPanel>
+                        </StackPanel>
                     </components:SettingsRow>
+                    <TextBlock Text="{DynamicResource Loc.Notification.Preview.Appearance}" Style="{DynamicResource AfSettingsSubsectionTitleStyle}"/>
+                    <Border Margin="0,8,0,16" HorizontalAlignment="Center" Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="10" MaxWidth="388">
+                        <components:TrackNotificationContent Snapshot="{Binding ViewModel.NotificationPreviewSnapshot}" Settings="{Binding ViewModel.NotificationPreviewSettings}"/>
+                    </Border>
+                    <components:SettingsRow Title="{DynamicResource Loc.Notification.Preview.Send}" Description="{DynamicResource Loc.Notification.Preview.Send.Hint}" Icon="{ui:SymbolIcon Alert24}">
+                        <ui:Button Content="{DynamicResource Loc.Notification.Preview.Send}" Command="{Binding ViewModel.SendNotificationPreviewCommand}" Style="{StaticResource AfSettingsButtonStyle}"/>
+                    </components:SettingsRow>
+                    <TextBlock Text="{Binding ViewModel.NotificationPreviewMessage}" Style="{StaticResource AfSettingsHintTextStyle}" TextWrapping="Wrap"/>
                     <components:SettingsRow Icon="{ui:SymbolIcon Timer24}" Title="{DynamicResource Loc.Media.Notification.Duration.Title}">
                         <components:SettingsNumericEditor Value="{Binding ViewModel.TrackChangeNotificationDurationSeconds, Mode=TwoWay}" Minimum="{Binding ViewModel.MinimumTrackChangeNotificationDurationSeconds}" Maximum="{Binding ViewModel.MaximumTrackChangeNotificationDurationSeconds}" Step="1" Unit="{DynamicResource Loc.Settings.Numeric.Seconds}"/>
                     </components:SettingsRow>

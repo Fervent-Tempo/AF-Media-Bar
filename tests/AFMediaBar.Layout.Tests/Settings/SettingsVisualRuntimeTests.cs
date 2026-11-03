@@ -487,7 +487,8 @@ public sealed class SettingsVisualRuntimeTests
             {
                 MediaSelection = new(MediaSelectionMode.PreferredApplication, "offline-player")
             };
-            var model = new ExtraFeaturesViewModel(registry, media, new NoMonitors(), localization, quickLaunch);
+            using var notifications = new TrackChangeNotificationCoordinator(media, new NoMonitors());
+            var model = new ExtraFeaturesViewModel(registry, media, new NoMonitors(), localization, quickLaunch, notifications);
             Assert.IsTrue(model.PreferredSourceOptions.Any(option => option.SourceId == "offline-player"));
             Assert.AreEqual("offline-player", model.PreferredSourceId);
             typeof(MediaSessionService).GetField("_lastDiscoveredSources", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
@@ -519,7 +520,8 @@ public sealed class SettingsVisualRuntimeTests
         try
         {
             SettingsManager.Current = new AppSettings();
-            var model = new ExtraFeaturesViewModel(registry, media, new NoMonitors(), localization, quickLaunch);
+            using var notifications = new TrackChangeNotificationCoordinator(media, new NoMonitors());
+            var model = new ExtraFeaturesViewModel(registry, media, new NoMonitors(), localization, quickLaunch, notifications);
             // 走真实入口写状态行：AddDetectedSource → AddQuickLaunch → SetStatus（“已添加到快速启动”）。
             // Write the status line through the real entry: AddDetectedSource -> AddQuickLaunch -> SetStatus ("added to quick launch").
             typeof(ExtraFeaturesViewModel).GetMethod("AddDetectedSource", BindingFlags.Instance | BindingFlags.NonPublic)!
@@ -549,6 +551,51 @@ public sealed class SettingsVisualRuntimeTests
         timer.Start();
         try { Dispatcher.PushFrame(frame); }
         finally { timer.Stop(); }
+    }
+
+    [TestMethod]
+    public Task ExplicitPreviewUsesCurrentStyleWithoutEnablingAutomaticNotificationsAndRejectsDisposedRequests() =>
+        RunIsolatedAsync(nameof(ExplicitPreviewUsesCurrentStyleWithoutEnablingAutomaticNotificationsAndRejectsDisposedRequests), _ =>
+        {
+            using var builder = new MediaSnapshotBuilder(null!);
+            var registry = new MediaSourceRegistry([]);
+            var catalog = new MediaSessionCatalog();
+            using var selection = new MediaSessionSelectionService(catalog, registry);
+            using var media = new MediaSessionService(registry, catalog, selection, builder, [], null!,
+                new MemoryPruneCoordinator(null!, null!, null!, []), null!);
+            var monitors = new PreviewMonitor();
+            using var coordinator = new TrackChangeNotificationCoordinator(media, monitors);
+            var saved = SettingsManager.Current.TrackChangeNotification;
+            TrackChangeNotificationRequest? received = null;
+            coordinator.NotificationRequested += (_, request) => received = request;
+            var sample = MediaSnapshot.Disconnected with { IsConnected = true, IsPlaying = true, Title = "Preview", Artist = "Artist" };
+            var settings = TrackChangeNotificationSettings.Default with { Enabled = false, HorizontalOffsetDip = 110, TitleColor = "#C42B1C", ArtistFontSize = 22 };
+            Assert.IsTrue(coordinator.RequestPreview(sample, settings));
+            Assert.IsNotNull(received);
+            Assert.AreEqual(sample, received.Snapshot);
+            Assert.AreEqual(settings, received.Settings);
+            Assert.AreEqual(monitors.Monitor, received.Monitor);
+            Assert.AreEqual(saved, SettingsManager.Current.TrackChangeNotification);
+            received = null;
+            monitors.Monitor = null;
+            Assert.IsFalse(coordinator.RequestPreview(sample, settings));
+            Assert.IsNull(received);
+            coordinator.Dispose();
+            monitors.Monitor = PreviewMonitor.CreateMonitor();
+            Assert.IsFalse(coordinator.RequestPreview(sample, settings));
+            Assert.IsNull(received);
+        });
+
+    private sealed class PreviewMonitor : IDisplayMonitorService
+    {
+        public DisplayMonitorInfo? Monitor { get; set; } = CreateMonitor();
+        public static DisplayMonitorInfo CreateMonitor() => new("preview", "Preview", true, new Rect(0, 0, 1920, 1080), new Rect(0, 0, 1920, 1040), 96, 96);
+        public event EventHandler? MonitorsChanged { add { } remove { } }
+        public IReadOnlyList<DisplayMonitorInfo> GetMonitors() => Monitor is { } monitor ? [monitor] : [];
+        public void Refresh() { }
+        public DisplayMonitorInfo? ResolveFixedMonitor(string? deviceId) => Monitor;
+        public DisplayMonitorInfo? ResolveNotificationMonitor(NotificationTargetMode mode, string? fixedDeviceId) => Monitor;
+        public bool IsForegroundWindowFullscreen() => true;
     }
 
     private sealed class NoMonitors : IDisplayMonitorService

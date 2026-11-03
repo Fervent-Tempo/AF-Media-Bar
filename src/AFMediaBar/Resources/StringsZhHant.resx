@@ -3891,4 +3891,11 @@
   <data name="Notification.Color.Hint" xml:space="preserve"><value>輸入 #RRGGBB，留空時跟隨佈景主題。</value></data>
   <data name="Notification.Offset.Horizontal.Hint" xml:space="preserve"><value>以預設位置為起點，正值向右、負值向左；限制在工作區內。</value></data>
   <data name="Notification.Offset.Vertical.Hint" xml:space="preserve"><value>以預設位置為起點，正值向下、負值向上；限制在工作區內。</value></data>
+  <data name="Notification.Preview.DragHint" xml:space="preserve"><value>拖曳通知調整位置，靠近定位點時自動吸附；也可點擊定位點。按 Esc 取消拖曳。</value></data>
+  <data name="Notification.PositionDetails.Title" xml:space="preserve"><value>位置細節</value></data>
+  <data name="Notification.PositionDetails.Hint" xml:space="preserve"><value>透過水平、垂直偏移精細調整位置。</value></data>
+  <data name="Notification.Color.Theme" xml:space="preserve"><value>跟隨主題</value></data>
+  <data name="Notification.Preview.Send" xml:space="preserve"><value>傳送一次通知</value></data>
+  <data name="Notification.Preview.Send.Hint" xml:space="preserve"><value>使用目前預覽內容與設定傳送真實通知，不變更自動通知開關。</value></data>
+  <data name="Notification.Preview.Unavailable" xml:space="preserve"><value>目前沒有可用的通知目標，無法傳送通知。</value></data>
 </root>

@@ -3928,4 +3928,11 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Notification.Color.Hint" xml:space="preserve"><value>Nhập #RRGGBB hoặc để trống để theo giao diện.</value></data>
   <data name="Notification.Offset.Horizontal.Hint" xml:space="preserve"><value>Tính từ vị trí đặt sẵn: số dương sang phải, số âm sang trái. Giới hạn trong vùng làm việc.</value></data>
   <data name="Notification.Offset.Vertical.Hint" xml:space="preserve"><value>Tính từ vị trí đặt sẵn: số dương xuống dưới, số âm lên trên. Giới hạn trong vùng làm việc.</value></data>
+  <data name="Notification.Preview.DragHint" xml:space="preserve"><value>Kéo thông báo để di chuyển; thông báo tự căn khi gần điểm neo. Bạn cũng có thể bấm điểm neo. Nhấn Esc để hủy kéo.</value></data>
+  <data name="Notification.PositionDetails.Title" xml:space="preserve"><value>Chi tiết vị trí</value></data>
+  <data name="Notification.PositionDetails.Hint" xml:space="preserve"><value>Tinh chỉnh vị trí bằng độ lệch ngang và dọc.</value></data>
+  <data name="Notification.Color.Theme" xml:space="preserve"><value>Theo chủ đề</value></data>
+  <data name="Notification.Preview.Send" xml:space="preserve"><value>Gửi một thông báo</value></data>
+  <data name="Notification.Preview.Send.Hint" xml:space="preserve"><value>Hiện thông báo thật với nội dung xem trước và cài đặt hiện tại, không đổi tùy chọn thông báo tự động.</value></data>
+  <data name="Notification.Preview.Unavailable" xml:space="preserve"><value>Hiện không có đích hiển thị thông báo khả dụng.</value></data>
 </root>

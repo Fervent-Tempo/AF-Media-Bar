@@ -1,21 +1,40 @@
 <UserControl x:Class="AFMediaBar.Components.TrackNotificationPreview"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:components="clr-namespace:AFMediaBar.Components" x:Name="Root">
+             xmlns:components="clr-namespace:AFMediaBar.Components" x:Name="Root"
+             Unloaded="OnUnloaded" PreviewKeyDown="OnPreviewKeyDown">
+    <UserControl.Resources>
+        <Style x:Key="NotificationAnchorStyle" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="{DynamicResource AfSettingsPreviewSurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="1000"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}"/></Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}"/></Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
     <StackPanel Margin="0,8,0,16">
         <TextBlock Text="{DynamicResource Loc.Notification.Preview.Position}" Style="{DynamicResource AfSettingsSubsectionTitleStyle}"/>
+        <TextBlock Margin="0,0,0,8" Text="{DynamicResource Loc.Notification.Preview.DragHint}" Style="{DynamicResource AfSettingsHintTextStyle}" TextWrapping="Wrap"/>
         <Border Height="240" Background="{DynamicResource AfSettingsPreviewSurfaceBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8">
-            <Viewbox Stretch="Uniform">
+            <Viewbox x:Name="ScreenView" Stretch="Uniform" SizeChanged="OnViewportSizeChanged">
                 <Canvas x:Name="Screen" Background="{DynamicResource SubtleFillColorSecondaryBrush}" ClipToBounds="True">
-                    <Border x:Name="PositionCard" Margin="6" Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="10" MaxWidth="388">
-                        <components:TrackNotificationContent Snapshot="{Binding Snapshot, ElementName=Root}" Settings="{Binding Settings, ElementName=Root}"/>
+                    <Canvas x:Name="AnchorPoints"/>
+                    <Border x:Name="PositionCard" Margin="6" Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="10" MaxWidth="400"
+                            Cursor="SizeAll" Focusable="True" ToolTip="{DynamicResource Loc.Notification.Preview.DragHint}"
+                            MouseLeftButtonDown="OnDragStarted" MouseMove="OnDragMoved" MouseLeftButtonUp="OnDragCompleted" LostMouseCapture="OnCaptureLost">
+                        <components:TrackNotificationContent IsHitTestVisible="False" Snapshot="{Binding Snapshot, ElementName=Root}" Settings="{Binding Settings, ElementName=Root}"/>
                     </Border>
                 </Canvas>
             </Viewbox>
-        </Border>
-        <TextBlock Text="{DynamicResource Loc.Notification.Preview.Appearance}" Style="{DynamicResource AfSettingsSubsectionTitleStyle}"/>
-        <Border HorizontalAlignment="Center" Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="10" MaxWidth="388">
-            <components:TrackNotificationContent Snapshot="{Binding Snapshot, ElementName=Root}" Settings="{Binding Settings, ElementName=Root}"/>
         </Border>
     </StackPanel>
 </UserControl>

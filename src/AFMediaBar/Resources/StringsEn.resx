@@ -3891,4 +3891,11 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
   <data name="Notification.Color.Hint" xml:space="preserve"><value>Enter #RRGGBB, or leave blank to follow the theme.</value></data>
   <data name="Notification.Offset.Horizontal.Hint" xml:space="preserve"><value>Offset from the preset: positive moves right, negative moves left. Clamped to the work area.</value></data>
   <data name="Notification.Offset.Vertical.Hint" xml:space="preserve"><value>Offset from the preset: positive moves down, negative moves up. Clamped to the work area.</value></data>
+  <data name="Notification.Preview.DragHint" xml:space="preserve"><value>Drag the notification to move it; nearby anchors snap into place. You can also click an anchor. Press Esc to cancel dragging.</value></data>
+  <data name="Notification.PositionDetails.Title" xml:space="preserve"><value>Position details</value></data>
+  <data name="Notification.PositionDetails.Hint" xml:space="preserve"><value>Fine-tune the position with horizontal and vertical offsets.</value></data>
+  <data name="Notification.Color.Theme" xml:space="preserve"><value>Follow theme</value></data>
+  <data name="Notification.Preview.Send" xml:space="preserve"><value>Send a notification</value></data>
+  <data name="Notification.Preview.Send.Hint" xml:space="preserve"><value>Show a real notification using the preview content and current settings, without changing automatic notifications.</value></data>
+  <data name="Notification.Preview.Unavailable" xml:space="preserve"><value>No notification target is currently available.</value></data>
 </root>
