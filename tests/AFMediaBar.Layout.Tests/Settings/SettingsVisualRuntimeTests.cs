@@ -329,6 +329,9 @@ public sealed class SettingsVisualRuntimeTests
             if (page.Content is SettingsPageLayout layout)
             {
                 layout.ApplyTemplate();
+                Assert.IsNotNull(layout.ScrollViewer, name + " page must expose its scroll surface.");
+                Assert.AreEqual(PanningMode.VerticalOnly, layout.ScrollViewer.PanningMode,
+                    name + " 的内容区必须支持触摸上下滑动。");
                 Assert.IsInstanceOfType<Panel>(layout.ScrollViewer?.Content,
                     name + " must expose its groups directly to the pinned group strip.");
                 if (name == "QuickStart") VerifyQuickStartScrolling(page, layout);

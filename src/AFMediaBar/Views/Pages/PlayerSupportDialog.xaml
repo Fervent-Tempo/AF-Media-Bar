@@ -25,7 +25,8 @@
             MaxHeight="380"
             Focusable="True"
             HorizontalScrollBarVisibility="Disabled"
-            VerticalScrollBarVisibility="Auto">
+            VerticalScrollBarVisibility="Auto"
+            PanningMode="VerticalOnly">
             <ItemsControl ItemsSource="{Binding SupportedPlayers}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
