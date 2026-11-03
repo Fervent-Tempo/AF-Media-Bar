@@ -21,10 +21,15 @@ Redesign the Settings home and category navigation, unify three-state component 
 - Lyric searches display their status. Instrumental tracks show a notice, with an optional title-and-artist-only mode that defaults to off.
 - Desktop floating mode gains an option to cover the taskbar, off by default. Add a small-artwork option, also off by default, and a no-zoom artwork hover mode while retaining existing modes.
 - The full-panel hover entry supports a 100–1000 ms delay, defaulting to 500 ms. Restore hover-button alignment settings.
+- Add an option to turn off music-note operation tooltips. The music-note and Quick Launch page lists available sources with add actions and added status, alongside a separate ordered list of launch entries.
+- Adjust the blur behind expanded hover controls with a shared slider and numeric editor, retaining the previous strength by default.
+- Keep six track-notification positions and add horizontal/vertical offsets, separate title and artist font sizes and colors, and live screen-position and actual-size previews. Empty colors follow the theme.
 
 ### Changed
 
-- Keep two home slides for version 1.7.0 and the new Settings pages, bundle the new README hero artwork, and prevent old-version or development entries from overriding them. Add a FAQ heading and place the third-party customization notice first.
+- Keep two home slides for version 1.7.0 and the new Settings pages, show the bundled README hero artwork at full width, retain slide interactions, and prevent old-version or development entries from overriding them. Add a FAQ heading and place the third-party customization notice first. Show customization detection only when a listed tool is found.
+- Expand the available-source list by default and move Quick Launch add actions to the music-note and Quick Launch page. Use switches for audio-device enablement and preview options, expand personal defaults initially, and remove full-panel preset actions.
+- Use 14 spectrum bars, enable every hover control and select large buttons for new configurations and built-in resets. Preserve saved explicit choices and personal-default snapshots.
 - Load Settings pages on demand and reduce repeated material, layout and preview creation. Unify related navigation, ordering feedback, groups and tutorial cards; expanding one tutorial no longer stretches adjacent cards.
 - Unify metric widths, markers and narrow-bar layouts, keep side-by-side settings consistent with rendering, avoid enlarged artwork, and retain trends through brief hiding.
 - Show audio windows before loading their content asynchronously and reject stale results. Spectrum device lists include only allowed, online output devices.

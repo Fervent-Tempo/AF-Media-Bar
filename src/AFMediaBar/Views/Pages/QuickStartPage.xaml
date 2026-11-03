@@ -379,7 +379,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- ② 整宽 Hero：左文案 36%，右图片 64%；无图时显示页面内静态演示场景。 -->
+            <!-- ② 整宽 Hero：上方大图、下方文案；无图时显示页面内静态演示场景。 -->
             <Grid x:Name="HeroGrid" Margin="0,28,0,0"
                   MouseEnter="OnHeroPointerChanged" MouseLeave="OnHeroPointerChanged"
                   IsKeyboardFocusWithinChanged="OnRotationVisibilityChanged" PreviewKeyDown="OnHeroKeyDown">
