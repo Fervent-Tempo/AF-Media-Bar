@@ -23,7 +23,8 @@ Redesign the Settings home and category navigation, unify three-state component 
 - The full-panel hover entry supports a 100–1000 ms delay, defaulting to 500 ms. Restore hover-button alignment settings.
 - Add an option to turn off music-note operation tooltips. The music-note and Quick Launch page lists available sources with add actions and added status, alongside a separate ordered list of launch entries.
 - Adjust the blur behind expanded hover controls with a shared slider and numeric editor, retaining the previous strength by default.
-- Keep six track-notification positions and add horizontal/vertical offsets, separate title and artist font sizes and colors, and live screen-position and actual-size previews. Empty colors follow the theme.
+- Drag notifications in the position preview and snap near six clickable anchors. Keep horizontal/vertical offsets in collapsed position details. Separate title and artist font sizes, shared preset color swatches and custom colors update live, with an actual-size preview below the text options and a follow-theme action.
+- Send a real notification using the current preview content without enabling automatic notifications. Fade the entire window and background in and out, preserve continuity during interruption, and respect system motion settings.
 
 ### Changed
 
