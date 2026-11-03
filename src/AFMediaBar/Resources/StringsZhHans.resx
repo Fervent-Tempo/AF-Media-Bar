@@ -3871,4 +3871,11 @@
   <data name="Start.Faq.Customization" xml:space="preserve"><value>使用第三方美化工具时需要注意什么？</value></data>
   <data name="Start.Faq.Customization.Body" xml:space="preserve"><value>除已兼容的 TranslucentTB 外，其他第三方美化工具，尤其是修改或替换原生任务栏的工具，目前尚未经过充分测试，可能出现不适配或无法使用的情况。安装或使用这些工具时，建议选择桌面悬浮模式；如遇问题，欢迎反馈工具名称、版本及复现步骤。</value></data>
   <data name="Home.Customization.OpenFloating" xml:space="preserve"><value>前往设置悬浮模式</value></data>
+  <data name="Home.Customization.Title" xml:space="preserve"><value>美化工具检测</value></data>
+  <data name="Home.Customization.Checking" xml:space="preserve"><value>正在检测本机工具…</value></data>
+  <data name="Home.Customization.Detected" xml:space="preserve"><value>检测到安装或运行记录：{0}</value></data>
+  <data name="Home.Customization.NotDetected" xml:space="preserve"><value>未检测到列表内的美化工具。</value></data>
+  <data name="Home.Customization.Incomplete" xml:space="preserve"><value>部分信息无法读取，检测结果可能不完整。</value></data>
+  <data name="Home.Customization.Coverage" xml:space="preserve"><value>仅检查本机安装与当前会话运行记录，不能确认任务栏修改是否启用；未检出也不代表完全兼容。TranslucentTB 不在检测范围。</value></data>
+  <data name="Home.Customization.Warning" xml:space="preserve"><value>这些工具的任务栏修改尚未经过充分测试，可能出现不适配或无法使用的情况。建议使用桌面悬浮模式；如遇问题，欢迎反馈。</value></data>
 </root>

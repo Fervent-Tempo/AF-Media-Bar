@@ -362,6 +362,23 @@
                 </Grid>
             </Border>
 
+            <Border Margin="0,10,0,0" Padding="20,14" Style="{StaticResource HomeCard}">
+                <StackPanel>
+                    <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}" Text="{DynamicResource Loc.Home.Customization.Title}" />
+                    <TextBlock Margin="0,6,0,0" Style="{StaticResource HomeBody}" Text="{Binding ViewModel.CustomizationStatus}" />
+                    <TextBlock Margin="0,4,0,0" Style="{StaticResource HomeHint}" Text="{Binding ViewModel.CustomizationCoverage}" />
+                    <StackPanel Visibility="{Binding ViewModel.HasCustomizationTools, Converter={StaticResource HomeVisibility}}">
+                        <components:SettingsCallout Margin="0,10,0,0" Symbol="Info24" IsAccent="True" Text="{DynamicResource Loc.Home.Customization.Warning}" />
+                        <WrapPanel Margin="0,10,0,0">
+                            <components:SettingsNavigationButton Margin="0,0,8,0" Content="{DynamicResource Loc.Home.Customization.OpenFloating}"
+                                                                 Destination="ScreenAndPlacement" GroupId="Common.Group.ChooseDisplayMode"
+                                                                 Style="{StaticResource HomeConfigureButton}" />
+                            <ui:Anchor Content="{DynamicResource Loc.Start.Report}" NavigateUri="https://github.com/Fervent-Tempo/AF-Media-Bar/issues" />
+                        </WrapPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!-- ② 整宽 Hero：左文案 36%，右图片 64%；无图时显示页面内静态演示场景。 -->
             <Grid x:Name="HeroGrid" Margin="0,28,0,0"
                   MouseEnter="OnHeroPointerChanged" MouseLeave="OnHeroPointerChanged"

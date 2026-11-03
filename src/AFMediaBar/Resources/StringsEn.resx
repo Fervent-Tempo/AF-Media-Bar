@@ -3871,4 +3871,11 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
   <data name="Start.Faq.Customization" xml:space="preserve"><value>What should I know about third-party customization tools?</value></data>
   <data name="Start.Faq.Customization.Body" xml:space="preserve"><value>Apart from the compatible TranslucentTB, other customization tools, especially those that modify or replace the native taskbar, have not been thoroughly tested. Layout conflicts or unavailable features may occur. We recommend desktop floating mode when using these tools. If you encounter problems, please report the tool name, version and steps to reproduce.</value></data>
   <data name="Home.Customization.OpenFloating" xml:space="preserve"><value>Open floating-mode settings</value></data>
+  <data name="Home.Customization.Title" xml:space="preserve"><value>Customization tool detection</value></data>
+  <data name="Home.Customization.Checking" xml:space="preserve"><value>Checking local tools…</value></data>
+  <data name="Home.Customization.Detected" xml:space="preserve"><value>Installation or running records found: {0}</value></data>
+  <data name="Home.Customization.NotDetected" xml:space="preserve"><value>No listed customization tools detected.</value></data>
+  <data name="Home.Customization.Incomplete" xml:space="preserve"><value>Some information could not be read; detection may be incomplete.</value></data>
+  <data name="Home.Customization.Coverage" xml:space="preserve"><value>Checks local installation and current-session process records only. It cannot confirm whether taskbar changes are enabled; no detection does not prove compatibility. TranslucentTB is excluded.</value></data>
+  <data name="Home.Customization.Warning" xml:space="preserve"><value>Taskbar changes made by these tools have not been thoroughly tested and may cause layout conflicts or unavailable features. We recommend desktop floating mode. Please report any problems.</value></data>
 </root>

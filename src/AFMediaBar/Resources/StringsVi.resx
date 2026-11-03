@@ -3908,4 +3908,11 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Start.Faq.Customization" xml:space="preserve"><value>Cần lưu ý gì khi dùng công cụ tùy biến bên thứ ba?</value></data>
   <data name="Start.Faq.Customization.Body" xml:space="preserve"><value>Ngoài TranslucentTB đã tương thích, các công cụ tùy biến khác, nhất là công cụ sửa hoặc thay thế thanh tác vụ gốc, chưa được kiểm thử đầy đủ. Có thể xảy ra xung đột bố cục hoặc không dùng được tính năng. Khi dùng các công cụ này, nên chọn chế độ nổi trên màn hình. Nếu gặp lỗi, vui lòng báo tên công cụ, phiên bản và cách tái hiện.</value></data>
   <data name="Home.Customization.OpenFloating" xml:space="preserve"><value>Mở cài đặt chế độ nổi</value></data>
+  <data name="Home.Customization.Title" xml:space="preserve"><value>Phát hiện công cụ tùy biến</value></data>
+  <data name="Home.Customization.Checking" xml:space="preserve"><value>Đang kiểm tra công cụ cục bộ…</value></data>
+  <data name="Home.Customization.Detected" xml:space="preserve"><value>Tìm thấy bản ghi cài đặt hoặc đang chạy: {0}</value></data>
+  <data name="Home.Customization.NotDetected" xml:space="preserve"><value>Không phát hiện công cụ tùy biến trong danh sách.</value></data>
+  <data name="Home.Customization.Incomplete" xml:space="preserve"><value>Không đọc được một số thông tin; kết quả có thể chưa đầy đủ.</value></data>
+  <data name="Home.Customization.Coverage" xml:space="preserve"><value>Chỉ kiểm tra bản ghi cài đặt cục bộ và tiến trình trong phiên hiện tại, không xác nhận thay đổi thanh tác vụ đã bật. Không phát hiện không có nghĩa là hoàn toàn tương thích. Loại trừ TranslucentTB.</value></data>
+  <data name="Home.Customization.Warning" xml:space="preserve"><value>Thay đổi thanh tác vụ của các công cụ này chưa được kiểm thử đầy đủ, có thể gây xung đột bố cục hoặc không dùng được tính năng. Nên dùng chế độ nổi trên màn hình. Vui lòng báo lỗi nếu gặp vấn đề.</value></data>
 </root>

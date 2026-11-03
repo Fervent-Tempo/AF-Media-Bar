@@ -36,6 +36,8 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
 {
     private static readonly TimeSpan RefreshCooldown = TimeSpan.FromMinutes(5);
     private readonly HomeContentService _home;
+    private readonly TaskbarCustomizationService _customization;
+    private CustomizationDetectionResult? _customizationResult;
     private readonly IHomeMediaState _media;
     private readonly LocalizationService _localization;
     private readonly AppLogService _log;
@@ -70,6 +72,12 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     public string RecentIssues => FormatCount(_project.RecentIssues);
     public string OpenPullRequests => FormatCount(_project.OpenPullRequests);
     public bool HasPlayers => Players.Count != 0;
+    public bool HasCustomizationTools => _customizationResult?.Tools.Count > 0;
+    public string CustomizationStatus => _customizationResult is null ? Translations.Get("Home.Customization.Checking")
+        : HasCustomizationTools ? Translations.Format("Home.Customization.Detected", string.Join("、", _customizationResult.Tools.Select(tool => tool.Name)))
+        : Translations.Get(_customizationResult.IsComplete ? "Home.Customization.NotDetected" : "Home.Customization.Incomplete");
+    public string CustomizationCoverage => Translations.Get("Home.Customization.Coverage") +
+        (_customizationResult?.IsComplete == false && HasCustomizationTools ? "\n" + Translations.Get("Home.Customization.Incomplete") : "");
     public bool HasNoIssues => Issues.Count == 0;
     public bool HasNoPullRequests => PullRequests.Count == 0;
     public bool HasMultipleFeatures => Features.Count > 1;
@@ -89,10 +97,11 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     public string PlayerFilter { get => _playerFilter; set { if (SetProperty(ref _playerFilter, value)) ProjectSupport(); } }
     public QuickStartViewModel(HomeContentService home, IHomeMediaState media,
         LocalizationService localization, AppLogService log, SettingsPreviewViewModel preview,
-        QuickLaunchIconService icons, MediaSourceActivationService sources)
+        QuickLaunchIconService icons, MediaSourceActivationService sources, TaskbarCustomizationService customization)
     {
         _home = home; _media = media; _localization = localization; _log = log; Preview = preview;
         _icons = icons; _sources = sources;
+        _customization = customization;
         _refreshCooldownTimer.Tick += OnRefreshCooldownElapsed;
         ProjectFeatures(); ProjectPlayers(); ProjectSupport();
     }
@@ -142,6 +151,7 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         var request = _request = new CancellationTokenSource();
         var token = request.Token;
         var generation = ++_generation;
+        var detection = DetectCustomizationAsync(token, generation);
         _playerSignature = string.Empty;
         ProjectPlayers();
         if (SelectedFeature is { } selected && !_images.ContainsKey(selected.ImageUrl ?? string.Empty))
@@ -165,14 +175,47 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
                 var result = await _home.RefreshProjectAsync(force, token);
                 if (IsCurrent()) { _project = result; ProjectActivity(); }
             }
-            await Task.WhenAll(CatalogueAsync(), ProjectAsync());
+            await Task.WhenAll(CatalogueAsync(), ProjectAsync(), detection);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception exception) { if (IsCurrent()) _log.Warn("Home", "首页刷新失败，保留可用内容", exception); }
-        finally { if (IsCurrent()) IsLoading = false; }
+        finally
+        {
+            // 即使远程资料先失败，也要观察独立的本机检测任务。
+            await detection;
+            if (IsCurrent()) IsLoading = false;
+        }
     }
-    [RelayCommand] private void NextFeature() => Advance(1);
-    [RelayCommand] private void PreviousFeature() => Advance(-1);
+    private async Task DetectCustomizationAsync(CancellationToken token, int generation)
+    {
+        try
+        {
+            var result = await _customization.DetectAsync(token);
+            if (!_active || _disposed || token.IsCancellationRequested || generation != _generation) return;
+            _customizationResult = result;
+            NotifyCustomization();
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            _log.Warn("Home", "美化工具检测未完成", exception);
+            if (_active && !_disposed && !token.IsCancellationRequested && generation == _generation)
+            {
+                _customizationResult = new([], false);
+                NotifyCustomization();
+            }
+        }
+    }
+    private void NotifyCustomization()
+    {
+        OnPropertyChanged(nameof(HasCustomizationTools));
+        OnPropertyChanged(nameof(CustomizationStatus));
+        OnPropertyChanged(nameof(CustomizationCoverage));
+    }
+    [RelayCommand]
+    private void NextFeature() => Advance(1);
+    [RelayCommand]
+    private void PreviousFeature() => Advance(-1);
     public void AdvanceAutomatically() => Advance(1);
     private void Advance(int direction)
     {
@@ -214,7 +257,7 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
             var copy = remote?.Localizations.GetValueOrDefault(Language);
             return new(id, Translations.Get("Home.Kind." + kind), copy?.Title ?? Translations.Get(titleKey),
                 copy?.Summary ?? Translations.Get(summaryKey), remote?.Url ?? HomeContentPolicy.RepositoryUrl, image)
-                { Tags = FeatureTags("Home.Kind." + kind, kind == "release" ? version : null, null) };
+            { Tags = FeatureTags("Home.Kind." + kind, kind == "release" ? version : null, null) };
         }
         HomeFeatureCard[] items =
         [
@@ -328,7 +371,7 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     {
         if (!_active || _disposed) return;
         ProjectFeatures(); ProjectPlayers(); ProjectSupport(); ProjectActivity();
-        ProjectFeatureTabs(); NotifyRefreshState();
+        ProjectFeatureTabs(); NotifyRefreshState(); NotifyCustomization();
     }
     public void Dispose() { if (_disposed) return; _disposed = true; Deactivate(); _refreshCooldownTimer.Stop(); _images.Clear(); }
 }
