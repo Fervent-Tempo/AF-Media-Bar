@@ -269,6 +269,16 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         _ => MediaRepeatMode.Unavailable
     };
 
+    /// <summary>
+    /// 缓存键里的请求：时长不参与曲目身份（它会随时间轴更新变化），来源写法归一成不带 .exe 的形式。
+    /// </summary>
+    private static LyricsRequest KeyRequest(LyricsRequest request) =>
+        request with
+        {
+            DurationSeconds = null,
+            PlaybackSourceId = LyricsSourceIdentity.Normalize(request.PlaybackSourceId)
+        };
+
     internal LyricsResult? GetLyrics(string sessionId, string sourceId, LyricsRequest request, bool isVideo = false, bool isPlaying = true)
     {
         if (_disposed) return null;
@@ -279,7 +289,9 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         }
         request = request with { PlaybackSourceId = sourceId };
         // SMTC 的总时长可能随时间轴更新变化；它用于匹配，不用于缓存或在途请求的曲目身份。
-        var key = (sessionId, request with { DurationSeconds = null });
+        // 来源标识同时归一成不带 .exe 的写法：同一个会话在兜底路径上会拿到 cloudmusic，常规路径拿到 cloudmusic.exe，
+        // 不归一就是同一首歌取两次词。
+        var key = (sessionId, KeyRequest(request));
         _lastLyricsKey = key;
         CancelPendingLyrics(key);
         if (_lyricsCache.TryGetValue(key, out var cached))
@@ -351,11 +363,12 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
 
         var request = new LyricsRequest(title, artist, string.Empty, durationSeconds is > 0 ? durationSeconds : null, null,
             PlaybackSourceId: sourceId);
+        var sourceIdentity = LyricsSourceIdentity.Normalize(sourceId);
         // The service snapshot has no album field; reuse the matching request already read from SMTC.
         (string SessionId, LyricsRequest Request) key = _lastLyricsKey is { } last && last.SessionId == sessionId &&
-                  last.Request.PlaybackSourceId == sourceId &&
+                  last.Request.PlaybackSourceId == sourceIdentity &&
                   last.Request.Title == title && last.Request.Artist == artist
-            ? last : (sessionId, request with { DurationSeconds = null });
+            ? last : (sessionId, KeyRequest(request));
         CancelPendingLyrics(key);
         if (_lyricsCache.TryGetValue(key, out _))
         {
