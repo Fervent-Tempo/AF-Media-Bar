@@ -4,11 +4,9 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Home;
-using AFMediaBar.Classes.Models.Updates;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Home;
 using AFMediaBar.Classes.Services.Localization;
-using AFMediaBar.Classes.Services.Updates;
 using AFMediaBar.Resources;
 namespace AFMediaBar.ViewModels.Pages;
 
@@ -37,7 +35,6 @@ public sealed partial class HomePlayerTile(HomePlayerCard player) : ObservableOb
 public partial class QuickStartViewModel : ObservableObject, IDisposable
 {
     private static readonly TimeSpan RefreshCooldown = TimeSpan.FromMinutes(5);
-    private readonly ReleaseHighlightsService _releases;
     private readonly HomeContentService _home;
     private readonly IHomeMediaState _media;
     private readonly LocalizationService _localization;
@@ -47,15 +44,11 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     private readonly DispatcherTimer _refreshCooldownTimer = new(DispatcherPriority.Background) { Interval = RefreshCooldown };
     private readonly System.Windows.Threading.Dispatcher _dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
     private CancellationTokenSource? _request;
-    private IReadOnlyList<ReleaseHighlights> _releaseData = [];
-    private bool _releaseIsCached = true;
-    private DateTimeOffset? _releaseFetchedAt;
     private HomeCatalogue _catalogue = new(1, []);
     private ProjectActivitySnapshot _project = HomeContentService.EmptyProject;
     private int _generation;
-    private DateTimeOffset _lastManualRefresh, _lastReleaseAttempt;
+    private DateTimeOffset _lastManualRefresh;
     private bool _active, _disposed;
-    private bool _hasShownLatest, _featureWasChosen;
     private string _playerFilter = string.Empty;
     private string _playerSignature = string.Empty;
     private string _additionalPlayersText = string.Empty;
@@ -94,11 +87,11 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         ? Translations.Get(_project.IsCached ? "Home.Cache" : "Home.Updated") + " · " + time.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
         : Translations.Get("Home.Unavailable");
     public string PlayerFilter { get => _playerFilter; set { if (SetProperty(ref _playerFilter, value)) ProjectSupport(); } }
-    public QuickStartViewModel(ReleaseHighlightsService releases, HomeContentService home, IHomeMediaState media,
+    public QuickStartViewModel(HomeContentService home, IHomeMediaState media,
         LocalizationService localization, AppLogService log, SettingsPreviewViewModel preview,
         QuickLaunchIconService icons, MediaSourceActivationService sources)
     {
-        _releases = releases; _home = home; _media = media; _localization = localization; _log = log; Preview = preview;
+        _home = home; _media = media; _localization = localization; _log = log; Preview = preview;
         _icons = icons; _sources = sources;
         _refreshCooldownTimer.Tick += OnRefreshCooldownElapsed;
         ProjectFeatures(); ProjectPlayers(); ProjectSupport();
@@ -140,7 +133,6 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     [RelayCommand] private void SelectFeature(HomeFeatureTab? tab)
     {
         if (tab is null || !Features.Contains(tab.Feature)) return;
-        _featureWasChosen = true;
         SelectedFeature = tab.Feature;
     }
     private async Task LoadAsync(bool force)
@@ -158,10 +150,6 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
         IsLoading = true;
         try
         {
-            var initialRelease = await _releases.ReadInitialAsync(token);
-            _releaseData = initialRelease.Releases;
-            _releaseIsCached = initialRelease.IsCached; _releaseFetchedAt = initialRelease.FetchedAt;
-            if (!IsCurrent()) return;
             _catalogue = (await _home.ReadCatalogueAsync(token)).Catalogue;
             if (!IsCurrent()) return;
             _project = await _home.ReadProjectAsync(token);
@@ -177,22 +165,14 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
                 var result = await _home.RefreshProjectAsync(force, token);
                 if (IsCurrent()) { _project = result; ProjectActivity(); }
             }
-            async Task ReleasesAsync()
-            {
-                if (DateTimeOffset.UtcNow - _lastReleaseAttempt < TimeSpan.FromMinutes(5)) return;
-                _lastReleaseAttempt = DateTimeOffset.UtcNow;
-                var expired = initialRelease.FetchedAt is not { } fetched || DateTimeOffset.UtcNow - fetched >= TimeSpan.FromHours(6);
-                var result = await _releases.LoadAsync(force || expired, token);
-                if (IsCurrent()) { _releaseData = result.Releases; _releaseIsCached = result.IsCached; _releaseFetchedAt = result.FetchedAt; ProjectFeatures(); }
-            }
-            await Task.WhenAll(CatalogueAsync(), ProjectAsync(), ReleasesAsync());
+            await Task.WhenAll(CatalogueAsync(), ProjectAsync());
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception exception) { if (IsCurrent()) _log.Warn("Home", "首页刷新失败，保留可用内容", exception); }
         finally { if (IsCurrent()) IsLoading = false; }
     }
-    [RelayCommand] private void NextFeature() { _featureWasChosen = true; Advance(1); }
-    [RelayCommand] private void PreviousFeature() { _featureWasChosen = true; Advance(-1); }
+    [RelayCommand] private void NextFeature() => Advance(1);
+    [RelayCommand] private void PreviousFeature() => Advance(-1);
     public void AdvanceAutomatically() => Advance(1);
     private void Advance(int direction)
     {
@@ -226,43 +206,25 @@ public partial class QuickStartViewModel : ObservableObject, IDisposable
     private void ProjectFeatures()
     {
         var oldId = SelectedFeature?.Id;
-        var items = new List<HomeFeatureCard>();
-        // 有有效远程目录时完全按目录展示；内置介绍和版本亮点只作为无目录时的回退。
-        var useFallback = _catalogue.Items.Count == 0;
-        if (useFallback && _releaseData.FirstOrDefault() is { } latest)
+        var version = InstalledVersion.TrimStart('v');
+        HomeFeatureCard Card(string id, string kind, string titleKey, string summaryKey, string image)
         {
-            var (copy, original) = ReleaseHighlightsPolicy.ResolveText(latest, Language);
-            var source = _releaseIsCached
-                ? Translations.Get(_releaseFetchedAt is null ? "Home.Bundled" : "Home.Cache")
-                : original ? Translations.Get("Home.Original") : null;
-            items.Add(new("latest", Translations.Get("Home.Kind.release") + " · v" + latest.Version + (original ? " · " + Translations.Get("Home.Original") : "") +
-                (_releaseIsCached ? " · " + source : ""),
-                copy.Title, string.Join(" ", copy.Highlights.Take(2)), latest.ReleaseNotesUrl ?? HomeContentPolicy.RepositoryUrl + "/releases", null)
-                { Tags = FeatureTags("Home.Kind.release", latest.Version, source) });
+            // 只接收当前版本的两项已定稿文案，旧缓存或开发中条目不能覆盖内置介绍。
+            var remote = _catalogue.Items.FirstOrDefault(item => item.Id == id && item.Kind == kind && item.Version == version);
+            var copy = remote?.Localizations.GetValueOrDefault(Language);
+            return new(id, Translations.Get("Home.Kind." + kind), copy?.Title ?? Translations.Get(titleKey),
+                copy?.Summary ?? Translations.Get(summaryKey), remote?.Url ?? HomeContentPolicy.RepositoryUrl, image)
+                { Tags = FeatureTags("Home.Kind." + kind, kind == "release" ? version : null, null) };
         }
-        foreach (var item in _catalogue.Items.Take(5))
-        {
-            var original = !item.Localizations.TryGetValue(Language, out var copy);
-            copy ??= item.Localizations.GetValueOrDefault("zh-Hans") ?? item.Localizations.Values.First();
-            items.Add(new(item.Id, Translations.Get("Home.Kind." + item.Kind) + (item.Version is null ? "" : " · v" + item.Version) +
-                (original ? " · " + Translations.Get("Home.Original") : ""), copy.Title, copy.Summary, item.Url ?? HomeContentPolicy.RepositoryUrl, item.Image)
-                { Tags = FeatureTags("Home.Kind." + item.Kind, item.Version, original ? Translations.Get("Home.Original") : null) });
-        }
-        if (useFallback)
-        {
-            items.Add(new("settings", Translations.Get("Home.Kind.development"), Translations.Get("Home.Feature.Settings"),
-                Translations.Get("Home.Feature.Settings.Body"), HomeContentPolicy.RepositoryUrl, "pack://application:,,,/AFMediaBar;component/Assets/Home/settings.png")
-                { Tags = FeatureTags("Home.Kind.development", null, null) });
-            items.Add(new("panel", Translations.Get("Home.Kind.development"), Translations.Get("Home.Feature.Panel"),
-                Translations.Get("Home.Feature.Panel.Body"), HomeContentPolicy.RepositoryUrl, "pack://application:,,,/AFMediaBar;component/Assets/Home/panel.png")
-                { Tags = FeatureTags("Home.Kind.development", null, null) });
-            items.Add(new("layers", Translations.Get("Home.Kind.feature"), Translations.Get("Start.Overview"),
-                Translations.Get("Start.Intro.Description"), HomeContentPolicy.RepositoryUrl, null)
-                { Tags = FeatureTags("Home.Kind.feature", null, null) });
-        }
-        Features.Clear(); foreach (var item in items.DistinctBy(item => item.Id).Take(5)) Features.Add(item);
-        SelectedFeature = useFallback && !_hasShownLatest && !_featureWasChosen && _releaseData.Count > 0 ? Features.First() : Features.FirstOrDefault(item => item.Id == oldId) ?? Features.First();
-        if (useFallback && _releaseData.Count > 0) _hasShownLatest = true;
+        HomeFeatureCard[] items =
+        [
+            Card("release", "release", "Home.Feature.Release", "Home.Feature.Release.Body",
+                "pack://application:,,,/AFMediaBar;component/Assets/Home/hero-" + (Language is "zh-Hans" or "zh-Hant" ? "zh" : "en") + ".png"),
+            Card("settings", "feature", "Home.Feature.Settings", "Home.Feature.Settings.Body",
+                "pack://application:,,,/AFMediaBar;component/Assets/Home/settings.png")
+        ];
+        Features.Clear(); foreach (var item in items) Features.Add(item);
+        SelectedFeature = Features.FirstOrDefault(item => item.Id == oldId) ?? Features.First();
         ProjectFeatureTabs();
         OnPropertyChanged(nameof(HasMultipleFeatures)); OnPropertyChanged(nameof(FeaturePosition));
     }

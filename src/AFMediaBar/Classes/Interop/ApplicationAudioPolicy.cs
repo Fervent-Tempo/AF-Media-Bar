@@ -1,5 +1,5 @@
 // 已知 AudioPolicyConfig ABI；接口与 HSTRING 由音频线程上的单次操作释放。
-// 布局参考 EarTrumpet 2.3.0.0 (MIT)，版权声明见 docs/third-party-audio-notices.md。
+// 布局参考 EarTrumpet 2.3.0.0 (MIT)，版权声明见 Resources/ThirdPartyAudioNotices.md。
 using System.Runtime.InteropServices;
 using AFMediaBar.Classes.Models;
 

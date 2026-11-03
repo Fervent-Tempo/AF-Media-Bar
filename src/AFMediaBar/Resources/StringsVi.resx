@@ -3743,10 +3743,10 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
     <value>Đang phát triển</value>
   </data>
   <data name="Home.Feature.Settings" xml:space="preserve">
-    <value>Trung tâm cài đặt gốc</value>
+    <value>Các trang cài đặt hoàn toàn mới</value>
   </data>
   <data name="Home.Feature.Settings.Body" xml:space="preserve">
-    <value>Sắp xếp cài đặt theo tác vụ, chỉnh hiển thị và thứ tự thành phần cùng nhau, rồi xem trước thay đổi. Chưa phát hành chính thức.</value>
+    <value>Sáu khu vực, tổng quan danh mục, tìm kiếm, liên kết và xem trước kiểu thực tế giúp chỉnh nội dung thường trực, điều khiển nhanh và tiện ích dễ hơn.</value>
   </data>
   <data name="Home.Feature.Panel" xml:space="preserve">
     <value>Bảng đầy đủ gọn hơn</value>
@@ -3901,4 +3901,11 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>Kéo để đổi thứ tự. Bạn cũng có thể kéo các thành phần trực tiếp trên thanh phương tiện.</value></data>
   <data name="ComponentLayout.Parallel" xml:space="preserve"><value>Chỉ số song song và thứ tự</value></data>
   <data name="ComponentLayout.ParallelDescription" xml:space="preserve"><value>Dùng chung hiển thị và thứ tự với bố cục thường trực trong trang Thường trực. Chỉnh bố cục khi không có phương tiện riêng trên trang đó.</value></data>
+  <data name="Home.Feature.Release" xml:space="preserve"><value>AF Media Bar 1.7.0 — Trang cài đặt mới, bố cục thành phần và lời cục bộ</value></data>
+  <data name="Home.Feature.Release.Body" xml:space="preserve"><value>Cài đặt và điều hướng được sắp xếp lại, giúp cấu hình ba trạng thái thành phần, biểu đồ hiệu năng và bảng đầy đủ dễ hơn; hỗ trợ đọc tệp lời cục bộ.</value></data>
+  <data name="Start.Highlight.Settings" xml:space="preserve"><value>Các trang cài đặt hoàn toàn mới</value></data>
+  <data name="Start.Faq" xml:space="preserve"><value>Câu hỏi thường gặp</value></data>
+  <data name="Start.Faq.Customization" xml:space="preserve"><value>Cần lưu ý gì khi dùng công cụ tùy biến bên thứ ba?</value></data>
+  <data name="Start.Faq.Customization.Body" xml:space="preserve"><value>Ngoài TranslucentTB đã tương thích, các công cụ tùy biến khác, nhất là công cụ sửa hoặc thay thế thanh tác vụ gốc, chưa được kiểm thử đầy đủ. Có thể xảy ra xung đột bố cục hoặc không dùng được tính năng. Khi dùng các công cụ này, nên chọn chế độ nổi trên màn hình. Nếu gặp lỗi, vui lòng báo tên công cụ, phiên bản và cách tái hiện.</value></data>
+  <data name="Home.Customization.OpenFloating" xml:space="preserve"><value>Mở cài đặt chế độ nổi</value></data>
 </root>

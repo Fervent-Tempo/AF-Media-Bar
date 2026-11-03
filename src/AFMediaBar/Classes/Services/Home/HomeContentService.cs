@@ -147,7 +147,9 @@ public sealed class HomeContentService : IDisposable
     public async Task<BitmapSource?> ReadImageAsync(string? url, CancellationToken cancellationToken)
     {
         if (url is "pack://application:,,,/AFMediaBar;component/Assets/Home/settings.png" or
-            "pack://application:,,,/AFMediaBar;component/Assets/Home/panel.png")
+            "pack://application:,,,/AFMediaBar;component/Assets/Home/panel.png" or
+            "pack://application:,,,/AFMediaBar;component/Assets/Home/hero-zh.png" or
+            "pack://application:,,,/AFMediaBar;component/Assets/Home/hero-en.png")
         {
             using var bundledRequest = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetimeToken);
             var image = await Task.Run(() =>

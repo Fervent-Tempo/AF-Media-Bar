@@ -3706,10 +3706,10 @@
     <value>开发中</value>
   </data>
   <data name="Home.Feature.Settings" xml:space="preserve">
-    <value>原生设置中心</value>
+    <value>全新设置页面</value>
   </data>
   <data name="Home.Feature.Settings.Body" xml:space="preserve">
-    <value>按对象组织设置，合并组件显隐与排序；支持搜索定位和局部预览。此功能尚未正式发布。</value>
+    <value>六大分区与分类概览，配合搜索、关联跳转和实际样式预览，更方便地调整常驻内容、快捷控制与小组件。</value>
   </data>
   <data name="Home.Feature.Panel" xml:space="preserve">
     <value>紧凑完整面板</value>
@@ -3864,4 +3864,11 @@
   <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>拖动调整顺序；也可在实际媒体栏上用鼠标拖动组件。</value></data>
   <data name="ComponentLayout.Parallel" xml:space="preserve"><value>并排指标与顺序</value></data>
   <data name="ComponentLayout.ParallelDescription" xml:space="preserve"><value>与“常驻状态”的常驻显示共用显隐和顺序；无媒体显示请到该页单独调整。</value></data>
+  <data name="Home.Feature.Release" xml:space="preserve"><value>AF Media Bar 1.7.0 — 全新设置首页、组件布局与本地歌词</value></data>
+  <data name="Home.Feature.Release.Body" xml:space="preserve"><value>重新整理设置与导航，让三状态组件布局、性能图表和完整面板更易配置，并支持读取本地歌词。</value></data>
+  <data name="Start.Highlight.Settings" xml:space="preserve"><value>全新设置页面</value></data>
+  <data name="Start.Faq" xml:space="preserve"><value>常见问题</value></data>
+  <data name="Start.Faq.Customization" xml:space="preserve"><value>使用第三方美化工具时需要注意什么？</value></data>
+  <data name="Start.Faq.Customization.Body" xml:space="preserve"><value>除已兼容的 TranslucentTB 外，其他第三方美化工具，尤其是修改或替换原生任务栏的工具，目前尚未经过充分测试，可能出现不适配或无法使用的情况。安装或使用这些工具时，建议选择桌面悬浮模式；如遇问题，欢迎反馈工具名称、版本及复现步骤。</value></data>
+  <data name="Home.Customization.OpenFloating" xml:space="preserve"><value>前往设置悬浮模式</value></data>
 </root>

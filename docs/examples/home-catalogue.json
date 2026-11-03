@@ -2,50 +2,52 @@
   "schemaVersion": 1,
   "items": [
     {
-      "id": "settings",
-      "kind": "development",
-      "image": "https://raw.githubusercontent.com/Fervent-Tempo/AF-Media-Bar/main/src/AFMediaBar/Assets/Home/settings.png",
+      "id": "release",
+      "kind": "release",
+      "version": "1.7.0",
+      "image": "https://raw.githubusercontent.com/Fervent-Tempo/AF-Media-Bar/main/docs/assets/readme/hero-zn.png",
       "url": "https://github.com/Fervent-Tempo/AF-Media-Bar",
       "localizations": {
         "zh-Hans": {
-          "title": "原生设置中心",
-          "summary": "按对象组织设置，合并组件显隐与排序；支持搜索定位和局部预览。此功能尚未正式发布。"
+          "title": "AF Media Bar 1.7.0 — 全新设置首页、组件布局与本地歌词",
+          "summary": "重新整理设置与导航，让三状态组件布局、性能图表和完整面板更易配置，并支持读取本地歌词。"
         },
         "zh-Hant": {
-          "title": "原生設定中心",
-          "summary": "依物件組織設定，合併元件顯示與排序；支援搜尋定位與局部預覽。此功能尚未正式發行。"
+          "title": "AF Media Bar 1.7.0 — 全新設定首頁、元件配置與本機歌詞",
+          "summary": "重新整理設定與導覽，讓三狀態元件配置、效能圖表和完整面板更易設定，並支援讀取本機歌詞。"
         },
         "en": {
-          "title": "Native settings centre",
-          "summary": "Organise settings by task, edit component visibility and order together, and preview changes. Not yet released."
+          "title": "AF Media Bar 1.7.0 — A new Settings home, component layouts and local lyrics",
+          "summary": "Reorganized Settings and navigation make three-state component layouts, performance charts and the full panel easier to configure, with support for local lyric files."
         },
         "vi": {
-          "title": "Trung tâm cài đặt gốc",
-          "summary": "Sắp xếp cài đặt theo tác vụ, chỉnh hiển thị và thứ tự thành phần cùng nhau, rồi xem trước thay đổi. Chưa phát hành chính thức."
+          "title": "AF Media Bar 1.7.0 — Trang cài đặt mới, bố cục thành phần và lời cục bộ",
+          "summary": "Cài đặt và điều hướng được sắp xếp lại, giúp cấu hình ba trạng thái thành phần, biểu đồ hiệu năng và bảng đầy đủ dễ hơn; hỗ trợ đọc tệp lời cục bộ."
         }
       }
     },
     {
-      "id": "panel",
-      "kind": "development",
-      "image": "https://raw.githubusercontent.com/Fervent-Tempo/AF-Media-Bar/main/src/AFMediaBar/Assets/Home/panel.png",
+      "id": "settings",
+      "kind": "feature",
+      "version": "1.7.0",
+      "image": "https://raw.githubusercontent.com/Fervent-Tempo/AF-Media-Bar/main/src/AFMediaBar/Assets/Home/settings.png",
       "url": "https://github.com/Fervent-Tempo/AF-Media-Bar",
       "localizations": {
         "zh-Hans": {
-          "title": "紧凑完整面板",
-          "summary": "三状态组件布局、独立指标样式和75%—200%面板缩放。此功能尚未正式发布。"
+          "title": "全新设置页面",
+          "summary": "六大分区与分类概览，配合搜索、关联跳转和实际样式预览，更方便地调整常驻内容、快捷控制与小组件。"
         },
         "zh-Hant": {
-          "title": "精簡完整面板",
-          "summary": "三狀態元件配置、獨立指標樣式與75%—200%面板縮放。此功能尚未正式發行。"
+          "title": "全新設定頁面",
+          "summary": "六大分區與分類概覽，搭配搜尋、關聯跳轉與實際樣式預覽，更方便調整常駐內容、快捷控制與小工具。"
         },
         "en": {
-          "title": "Compact full panel",
-          "summary": "Three component layouts, separate metric styles and 75%–200% panel scaling. Not yet released."
+          "title": "All-new Settings pages",
+          "summary": "Six areas, category overviews, search, related navigation and actual style previews make resident content, quick controls and widgets easier to configure."
         },
         "vi": {
-          "title": "Bảng đầy đủ gọn hơn",
-          "summary": "Ba bố cục thành phần, kiểu chỉ số riêng và tỷ lệ bảng 75%–200%. Chưa phát hành chính thức."
+          "title": "Các trang cài đặt hoàn toàn mới",
+          "summary": "Sáu khu vực, tổng quan danh mục, tìm kiếm, liên kết và xem trước kiểu thực tế giúp chỉnh nội dung thường trực, điều khiển nhanh và tiện ích dễ hơn."
         }
       }
     }

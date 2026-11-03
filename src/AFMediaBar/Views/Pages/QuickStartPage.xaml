@@ -805,6 +805,20 @@
                     </components:ColumnFlowPanel>
 
                     <StackPanel Margin="0,16,0,0">
+                        <TextBlock Style="{StaticResource HomeSection}" Text="{DynamicResource Loc.Start.Faq}" />
+                        <ui:CardExpander Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon QuestionCircle24}">
+                            <ui:CardExpander.Header>
+                                <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                           TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Faq.Customization}" />
+                            </ui:CardExpander.Header>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource HomeBody}" Text="{DynamicResource Loc.Start.Faq.Customization.Body}" />
+                                <components:SettingsNavigationButton Margin="0,12,0,0" HorizontalAlignment="Left"
+                                                                     Destination="ScreenAndPlacement" GroupId="Common.Group.ChooseDisplayMode"
+                                                                     Content="{DynamicResource Loc.Home.Customization.OpenFloating}"
+                                                                     Style="{StaticResource HomeConfigureButton}" />
+                            </StackPanel>
+                        </ui:CardExpander>
                         <ui:CardExpander Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon QuestionCircle24}">
                             <ui:CardExpander.Header>
                                 <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
