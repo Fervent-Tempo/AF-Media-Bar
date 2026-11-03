@@ -810,6 +810,13 @@ public sealed class MediaSessionService : IDisposable
         }
 
         snapshot = _browserPresentation.Project(snapshot);
+        // 来源身份在合并后已经规范过（cloudmusic.exe → cloudmusic），这里只标记它有没有专属通道；
+        // 界面在没有播放进度时据此区分“适配失效”和“该播放器本来就不上报”。值没变时不复制快照，避免每秒一次的多余分配。
+        var adaptedSource = _sources.IsAdapted(snapshot.SourceId);
+        if (snapshot.IsAdaptedSource != adaptedSource)
+        {
+            snapshot = snapshot with { IsAdaptedSource = adaptedSource };
+        }
         // 单项控制能力不代表 SMTC 会话缺失；同一来源连续缺少控制通道时只主动提示一次。
         var missingControlSourceId = snapshot.IsConnected && string.IsNullOrEmpty(_selectedSessionKey)
             ? snapshot.SourceId

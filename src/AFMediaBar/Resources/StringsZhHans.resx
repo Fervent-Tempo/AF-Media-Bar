@@ -1414,6 +1414,12 @@
   <data name="Lyrics.Searching" xml:space="preserve">
     <value>正在检索歌词</value>
   </data>
+  <data name="Panel.MediaBar.ProgressUnavailable.Adapted" xml:space="preserve">
+    <value>此版本播放器不提供播放进度</value>
+  </data>
+  <data name="Panel.MediaBar.ProgressUnavailable.Other" xml:space="preserve">
+    <value>此播放器不提供播放进度</value>
+  </data>
   <data name="Lyrics.Row.ChineseConversion.Title" xml:space="preserve">
     <value>歌词繁简转换</value>
   </data>

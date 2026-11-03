@@ -1477,6 +1477,12 @@
   <data name="Lyrics.Searching" xml:space="preserve">
     <value>Đang tìm lời bài hát</value>
   </data>
+  <data name="Panel.MediaBar.ProgressUnavailable.Adapted" xml:space="preserve">
+    <value>Phiên bản trình phát này không cung cấp tiến trình phát</value>
+  </data>
+  <data name="Panel.MediaBar.ProgressUnavailable.Other" xml:space="preserve">
+    <value>Trình phát này không cung cấp tiến trình phát</value>
+  </data>
   <data name="Lyrics.Row.LineGap.Badge" xml:space="preserve">
     <value>Hãy bật lời bài hát hai dòng trước</value>
   </data>

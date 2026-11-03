@@ -239,7 +239,23 @@ namespace AFMediaBar.Components
         private string _actualTitle = string.Empty;   // 实际标题（不含歌词）Actual title (without lyrics)
         private string _actualArtist = string.Empty;  // 实际艺术家 Actual artist
         private bool _isLyricsSearching;              // 当前曲目是否仍在检索歌词 Whether lyrics are still being searched
-        private string DisplayedArtist => _isLyricsSearching ? Translations.Get("Lyrics.Searching") : _actualArtist;
+        /// <summary>
+        /// 第二行显示什么：取词状态优先，其次是没有播放进度时的说明，最后才是歌手。
+        /// </summary>
+        private string DisplayedArtist
+        {
+            get
+            {
+                if (_isLyricsSearching) return Translations.Get("Lyrics.Searching");
+                if (!MediaPlaybackProgressPolicy.ExplainsMissingProgress(_snapshot, PresentationSettings.LyricsEnabled))
+                    return _actualArtist;
+                // 适配过的来源多半是客户端改版让内存通道失配，提示升级才有意义；其他播放器本来就不上报，
+                // 让用户去更新也解决不了问题。
+                return Translations.Get(_snapshot.IsAdaptedSource
+                    ? "Panel.MediaBar.ProgressUnavailable.Adapted"
+                    : "Panel.MediaBar.ProgressUnavailable.Other");
+            }
+        }
 
         private bool _isPaused;        // 是否暂停 Whether paused
         private bool _isConnected;

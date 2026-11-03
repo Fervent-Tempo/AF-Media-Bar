@@ -61,6 +61,13 @@ public static class LyricsPresentationProjector
         }
 
         var position = TaskbarExperiencePolicy.GetPosition(snapshot, now);
+        // 播放器没有时间轴时，位置永远停在 0；多数歌词的第一句也从 0 开始，于是整首歌会卡在第一句不动。
+        // 与其把第一句当成“正在唱”，不如让栏位显示标题、歌手和“不提供播放进度”的说明。
+        if (MediaPlaybackProgressPolicy.ExplainsMissingProgress(snapshot, settings.LyricsEnabled))
+        {
+            return LyricsPresentationFrame.Hidden;
+        }
+
         var index = LyricLineIndexPolicy.FindIndex(lines, position);
         if (index < 0)
         {
