@@ -290,10 +290,17 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
         set => _configuration.SetPetComponent(_configuration.Current.PetComponent with { SizeDip = value });
     }
 
-    public bool PetAllowOverflow
+    public IReadOnlyList<PetAnimationOption> PetPlacements => new[] { "inline", "docked", "free" }
+        .Select(id => new PetAnimationOption(id, Translations.Get("Widgets.Pet.Placement." + id))).ToArray();
+
+    public string PetPlacement
     {
-        get => _configuration.Current.PetComponent.AllowOverflow;
-        set => _configuration.SetPetComponent(_configuration.Current.PetComponent with { AllowOverflow = value });
+        get => !_configuration.Current.PetComponent.AllowOverflow ? "inline" : _configuration.Current.PetComponent.FreePlacement ? "free" : "docked";
+        set
+        {
+            if (value != PetPlacement && value is ("inline" or "docked" or "free"))
+                _configuration.SetPetComponent(_configuration.Current.PetComponent with { AllowOverflow = value != "inline", FreePlacement = value == "free" });
+        }
     }
 
     public string PetAnimation

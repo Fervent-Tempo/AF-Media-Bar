@@ -11,7 +11,9 @@ public sealed record PetComponentSettings
     public string FillColorHex { get; init; } = DefaultFillColorHex;
     public bool IdleAnimationsEnabled { get; init; } = true;
     public double SizeDip { get; init; } = DefaultSizeDip;
-    public bool AllowOverflow { get; init; }
+    public bool AllowOverflow { get; init; } = true;
+    public bool FreePlacement { get; init; }
+    public IReadOnlyList<FloatingBarPosition> Positions { get; init; } = [];
     public string? OutfitColorHex { get; init; }
     public string Outfit { get; init; } = "original";
     public bool VoiceEnabled { get; init; }
@@ -22,8 +24,13 @@ public sealed record PetComponentSettings
     public double MusicSensitivity { get; init; } = 100;
     public string Animation { get; init; } = "auto";
 
+    private static bool IsValidPosition(FloatingBarPosition? p) => p is not null && !string.IsNullOrWhiteSpace(p.MonitorDeviceId)
+        && double.IsFinite(p.CenterXDip) && double.IsFinite(p.CenterYDip);
+
     public PetComponentSettings Normalize() => this with
     {
+        FreePlacement = AllowOverflow && FreePlacement,
+        Positions = Positions is not { Count: > 0 } ? [] : Positions.All(IsValidPosition) ? Positions : Positions.Where(IsValidPosition).ToArray(),
         OutfitColorHex = ColorHex.TryParse(OutfitColorHex, out var outfitColor) ? ColorHex.Format(outfitColor) : null,
         Outfit = Outfit is "headphones" or "badge" or "spectrum" ? Outfit : "original",
         VoiceVolume = double.IsFinite(VoiceVolume) ? Math.Clamp(VoiceVolume, 0, 100) : 20,

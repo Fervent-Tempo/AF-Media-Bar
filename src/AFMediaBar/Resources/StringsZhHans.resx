@@ -3227,9 +3227,7 @@
   <data name="Widgets.Pet.Color.Invalid" xml:space="preserve"><value>请输入有效的 HEX 颜色；当前输入尚未保存。</value></data>
   <data name="Widgets.Pet.Color.Reset" xml:space="preserve"><value>恢复默认颜色</value></data>
   <data name="Widgets.Pet.Size" xml:space="preserve"><value>显示大小</value></data>
-  <data name="Widgets.Pet.Size.Description" xml:space="preserve"><value>20–160 DIP。关闭越界显示时，大小受媒体栏厚度限制。</value></data>
-  <data name="Widgets.Pet.Overflow" xml:space="preserve"><value>允许超出栏边界</value></data>
-  <data name="Widgets.Pet.Overflow.Description" xml:space="preserve"><value>放大的宠物向屏幕内侧伸出；随媒体栏一起移动和隐藏，不增加任务栏厚度。</value></data>
+  <data name="Widgets.Pet.Size.Description" xml:space="preserve"><value>20–160 DIP。选择「栏内」时，大小受媒体栏厚度限制。</value></data>
   <data name="Widgets.Pet.Animation" xml:space="preserve"><value>动画状态</value></data>
   <data name="Widgets.Pet.Animation.Description" xml:space="preserve"><value>指定动作优先；自动模式由“跟随播放状态”决定。形变和产品状态仍可手动预览。</value></data>
   <data name="Widgets.Pet.Preview" xml:space="preserve"><value>展开动画预览</value></data>
@@ -3279,11 +3277,6 @@
   <data name="Widgets.Pet.Animation.spin-dizzy" xml:space="preserve"><value>短动作 · 旋转后晕眩</value></data>
   <data name="Widgets.Pet.Animation.spin-wild" xml:space="preserve"><value>短动作 · 快速旋转</value></data>
   <data name="Widgets.Pet.Animation.particles" xml:space="preserve"><value>短动作 · 粒子散开</value></data>
-  <data name="Widgets.Pet.Say.Playing" xml:space="preserve"><value>正在听《{0}》 · {1}。这个节奏不错！</value></data>
-  <data name="Widgets.Pet.Say.Paused" xml:space="preserve"><value>《{0}》暂停了。休息一下吧。</value></data>
-  <data name="Widgets.Pet.Say.Hello0" xml:space="preserve"><value>我在这里，随时准备陪你听歌。</value></data>
-  <data name="Widgets.Pet.Say.Hello1" xml:space="preserve"><value>今天想听什么？</value></data>
-  <data name="Widgets.Pet.Say.Hello2" xml:space="preserve"><value>点到我啦！放首喜欢的歌吧。</value></data>
   <data name="Widgets.Pet.Appearance" xml:space="preserve"><value>外观</value></data>
   <data name="Widgets.Pet.Behavior" xml:space="preserve"><value>动作与律动</value></data>
   <data name="Widgets.Pet.Dialogue" xml:space="preserve"><value>对话与声音</value></data>
@@ -3313,4 +3306,46 @@
   <data name="Widgets.Pet.OutfitColor" xml:space="preserve"><value>装扮颜色</value></data>
   <data name="Widgets.Pet.OutfitColor.System" xml:space="preserve"><value>跟随系统</value></data>
   <data name="Widgets.Pet.OutfitColor.Hint" xml:space="preserve"><value>选择色块或输入 #RRGGBB。</value></data>
+  <data name="Widgets.Pet.Placement" xml:space="preserve"><value>位置</value></data>
+  <data name="Widgets.Pet.Placement.inline" xml:space="preserve"><value>栏内</value></data>
+  <data name="Widgets.Pet.Placement.docked" xml:space="preserve"><value>半嵌任务栏</value></data>
+  <data name="Widgets.Pet.Placement.free" xml:space="preserve"><value>自由摆放</value></data>
+  <data name="Widgets.Pet.Placement.Description" xml:space="preserve"><value>自由摆放时，按住宠物拖动。位置会按显示器保存。</value></data>
+  <data name="Widgets.Pet.ThisTrack" xml:space="preserve"><value>这首歌</value></data>
+  <data name="Widgets.Pet.Line.Playing.0" xml:space="preserve"><value>《{0}》开场，我就位了。</value></data>
+  <data name="Widgets.Pet.Line.Playing.1" xml:space="preserve"><value>这段借我摇一会儿。</value></data>
+  <data name="Widgets.Pet.Line.Playing.2" xml:space="preserve"><value>我的耳朵选了这首。</value></data>
+  <data name="Widgets.Pet.Line.Playing.3" xml:space="preserve"><value>再大一点点？算了，现在刚好。</value></data>
+  <data name="Widgets.Pet.Line.Playing.4" xml:space="preserve"><value>这拍我踩准了！</value></data>
+  <data name="Widgets.Pet.Line.Playing.5" xml:space="preserve"><value>《{0}》的旋律，我收到了。</value></data>
+  <data name="Widgets.Pet.Line.Playing.6" xml:space="preserve"><value>借你一只耳朵，一起听。</value></data>
+  <data name="Widgets.Pet.Line.Playing.7" xml:space="preserve"><value>等副歌，我有个动作。</value></data>
+  <data name="Widgets.Pet.Line.Playing.8" xml:space="preserve"><value>今天的桌面有配乐了。</value></data>
+  <data name="Widgets.Pet.Line.Playing.9" xml:space="preserve"><value>刚才那一下，很带劲。</value></data>
+  <data name="Widgets.Pet.Line.Playing.10" xml:space="preserve"><value>听着《{0}》，脚尖有点忙。</value></data>
+  <data name="Widgets.Pet.Line.Playing.11" xml:space="preserve"><value>嘘，让这段唱完。</value></data>
+  <data name="Widgets.Pet.Line.Paused.0" xml:space="preserve"><value>《{0}》先停在这里。</value></data>
+  <data name="Widgets.Pet.Line.Paused.1" xml:space="preserve"><value>我替你记着这一拍。</value></data>
+  <data name="Widgets.Pet.Line.Paused.2" xml:space="preserve"><value>耳朵也放个小假。</value></data>
+  <data name="Widgets.Pet.Line.Paused.3" xml:space="preserve"><value>你忙，我守着播放键。</value></data>
+  <data name="Widgets.Pet.Line.Paused.4" xml:space="preserve"><value>这一小段安静也挺好。</value></data>
+  <data name="Widgets.Pet.Line.Paused.5" xml:space="preserve"><value>要接着听的时候叫我。</value></data>
+  <data name="Widgets.Pet.Line.Paused.6" xml:space="preserve"><value>休息一下，伸个懒腰。</value></data>
+  <data name="Widgets.Pet.Line.Paused.7" xml:space="preserve"><value>刚才那段还在脑袋里转。</value></data>
+  <data name="Widgets.Pet.Line.Paused.8" xml:space="preserve"><value>下一拍，留给你按。</value></data>
+  <data name="Widgets.Pet.Line.Paused.9" xml:space="preserve"><value>音乐歇口气，我也歇口气。</value></data>
+  <data name="Widgets.Pet.Line.Paused.10" xml:space="preserve"><value>等会儿再见，《{0}》。</value></data>
+  <data name="Widgets.Pet.Line.Paused.11" xml:space="preserve"><value>我把耳机戴好了，随时继续。</value></data>
+  <data name="Widgets.Pet.Line.Idle.0" xml:space="preserve"><value>我在这里，陪你挑首歌。</value></data>
+  <data name="Widgets.Pet.Line.Idle.1" xml:space="preserve"><value>今天想从哪首开始？</value></data>
+  <data name="Widgets.Pet.Line.Idle.2" xml:space="preserve"><value>点到我啦。</value></data>
+  <data name="Widgets.Pet.Line.Idle.3" xml:space="preserve"><value>猜猜我藏了几拍？</value></data>
+  <data name="Widgets.Pet.Line.Idle.4" xml:space="preserve"><value>今天当你的随身听。</value></data>
+  <data name="Widgets.Pet.Line.Idle.5" xml:space="preserve"><value>给耳朵找点好听的吧。</value></data>
+  <data name="Widgets.Pet.Line.Idle.6" xml:space="preserve"><value>刚给桌面巡了一圈。</value></data>
+  <data name="Widgets.Pet.Line.Idle.7" xml:space="preserve"><value>你看，我又眨眼了。</value></data>
+  <data name="Widgets.Pet.Line.Idle.8" xml:space="preserve"><value>安静的时候也能结伴。</value></data>
+  <data name="Widgets.Pet.Line.Idle.9" xml:space="preserve"><value>有首想单曲循环的吗？</value></data>
+  <data name="Widgets.Pet.Line.Idle.10" xml:space="preserve"><value>我练了一支两拍的小舞。</value></data>
+  <data name="Widgets.Pet.Line.Idle.11" xml:space="preserve"><value>在等歌，也在等你。</value></data>
 </root>

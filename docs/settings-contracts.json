@@ -146,6 +146,8 @@
       "idleAnimationsEnabled": "unreleased",
       "sizeDip": "unreleased",
       "allowOverflow": "unreleased",
+      "freePlacement": "unreleased",
+      "positions": {"$release": "unreleased", "$items": {"monitorDeviceId": "unreleased", "centerXDip": "unreleased", "centerYDip": "unreleased", "dockEdge": "unreleased"}},
       "animation": "unreleased",
       "followPlayback": "unreleased",
       "musicMotionEnabled": "unreleased",

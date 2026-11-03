@@ -17,6 +17,7 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
     private readonly PetWebEnvironment? _petEnvironment;
     private bool _petPreviewExpanded;
     private readonly PetVoiceService? _petVoice;
+    private readonly PetCompanionService? _companion;
     private readonly AFMediaBar.Components.PetSpeechBubble _petBubble = new();
     private readonly System.Windows.Threading.DispatcherTimer _petDemoTimer = new() { Interval = TimeSpan.FromMilliseconds(50) };
     private long _petDemoUntil;
@@ -42,7 +43,7 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
     {
         _petDemoTimer.Stop();
         PetPreview.SetContext("happy", 0);
-        var text = AFMediaBar.Resources.Translations.Get("Widgets.Pet.Say.Hello0");
+        var text = _companion?.NextPhrase() ?? AFMediaBar.Resources.Translations.Get("Widgets.Pet.Line.Idle.0");
         _petBubble.Show(PetPreview, text);
         _petVoice?.Play(text);
     }
@@ -52,13 +53,14 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
         PetPreview.SetContext("notifying", 0);
         _petBubble.Show(PetPreview, AFMediaBar.Resources.Translations.Get("Widgets.Pet.Demo.Message"));
     }
-    private void PetDemoVoice(object sender, RoutedEventArgs args) => _petVoice?.Play(AFMediaBar.Resources.Translations.Get("Widgets.Pet.Say.Hello0"), true);
+    private void PetDemoVoice(object sender, RoutedEventArgs args) => _petVoice?.Play(_companion?.NextPhrase() ?? AFMediaBar.Resources.Translations.Get("Widgets.Pet.Line.Idle.0"), true);
 
-    public WidgetsSettingsPage(WidgetsSettingsViewModel viewModel, PetWebEnvironment? petEnvironment = null, PetVoiceService? petVoice = null)
+    public WidgetsSettingsPage(WidgetsSettingsViewModel viewModel, PetWebEnvironment? petEnvironment = null, PetVoiceService? petVoice = null, PetCompanionService? companion = null)
     {
         ViewModel = viewModel;
         _petEnvironment = petEnvironment;
         _petVoice = petVoice;
+        _companion = companion;
         DataContext = this;
         InitializeComponent();
         _petDemoTimer.Tick += AdvancePetDemo;

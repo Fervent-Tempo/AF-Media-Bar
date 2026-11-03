@@ -69,6 +69,7 @@ public sealed class PetVoiceService : IHostedService, IDisposable
         var notes = new[] { 0, 2, 5, 7, 9, 5, 2, 0, -2, 4 };
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream);
+        const int maxBytes = sampleRate * 2 * sizeof(short);
         var position = 0;
         // ponytail: 最长 80 个字符；长篇朗读需要流式调度。
         foreach (var character in (text ?? string.Empty).EnumerateRunes().Take(80))
@@ -76,9 +77,12 @@ public sealed class PetVoiceService : IHostedService, IDisposable
             if (Rune.IsPunctuation(character) || Rune.IsWhiteSpace(character))
             {
                 var pause = Rune.IsWhiteSpace(character) ? 0.06 : ".!?。！？".Contains(character.ToString()) ? 0.3 : 0.18;
-                writer.Write(new byte[(int)(sampleRate * pause) * 2]);
+                var pauseBytes = (int)(sampleRate * pause) * 2;
+                if (stream.Length + pauseBytes > maxBytes) break;
+                writer.Write(new byte[pauseBytes]);
                 continue;
             }
+            if (stream.Length + 3200 * sizeof(short) > maxBytes) break;
             var code = character.Value;
             var index = (code * 17 + position * 11) % 40;
             var semitones = notes[(code + position * 3) % notes.Length];

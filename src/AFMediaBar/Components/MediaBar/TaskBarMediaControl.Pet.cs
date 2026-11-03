@@ -71,7 +71,9 @@ public partial class TaskBarMediaControl
             if (_petOverflow is null)
             {
                 _petOverflow = new PetOverflowHost(TaskbarPetSurface, owner, _petEnvironment);
+                _petOverflow.Moved += _petBubble.Reposition;
                 _petOverflow.Activated += SpeakPet;
+                _petOverflow.PositionSaved += SavePetPosition;
             }
             _petOverflow.Show(settings, _isVertical, _verticalTaskbarOnLeft);
         }
@@ -88,6 +90,7 @@ public partial class TaskBarMediaControl
         {
             if (!ReferenceEquals(_petLeaseView, ActivePet))
             {
+                _petBubble.Close();
                 // 换到新的呈现窗口也要丢弃旧租约的排队点击。
                 _petLease?.Dispose();
                 _petLease = null;
@@ -143,6 +146,15 @@ public partial class TaskBarMediaControl
     {
         if (args.ChangedButton is MouseButton.Left or MouseButton.Right) ActivePet.Press();
         if (args.ChangedButton == MouseButton.Left) _petPressPoint = args.GetPosition(this);
+    }
+
+    private static void SavePetPosition(FloatingBarPosition position)
+    {
+        var settings = SettingsManager.Current.PetComponent;
+        SettingsManager.Current.PetComponent = settings with
+        {
+            Positions = settings.Positions.Where(p => !string.Equals(p.MonitorDeviceId, position.MonitorDeviceId, StringComparison.OrdinalIgnoreCase)).Append(position).ToArray()
+        };
     }
 
     private void SpeakPet()

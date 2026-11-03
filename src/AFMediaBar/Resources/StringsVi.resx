@@ -3265,9 +3265,7 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Widgets.Pet.Color.Invalid" xml:space="preserve"><value>Nhập mã màu HEX hợp lệ. Nội dung này chưa được lưu.</value></data>
   <data name="Widgets.Pet.Color.Reset" xml:space="preserve"><value>Khôi phục màu mặc định</value></data>
   <data name="Widgets.Pet.Size" xml:space="preserve"><value>Kích thước hiển thị</value></data>
-  <data name="Widgets.Pet.Size.Description" xml:space="preserve"><value>20–160 DIP. Khi tắt hiển thị vượt biên, thú cưng nằm trong độ dày của thanh phương tiện.</value></data>
-  <data name="Widgets.Pet.Overflow" xml:space="preserve"><value>Cho phép hiển thị vượt biên</value></data>
-  <data name="Widgets.Pet.Overflow.Description" xml:space="preserve"><value>Thú cưng lớn hơn vươn vào phía trong màn hình, di chuyển và ẩn cùng thanh phương tiện mà không tăng độ dày thanh tác vụ.</value></data>
+  <data name="Widgets.Pet.Size.Description" xml:space="preserve"><value>20–160 DIP. Ở chế độ trong thanh, kích thước bị giới hạn bởi độ dày của thanh.</value></data>
   <data name="Widgets.Pet.Animation" xml:space="preserve"><value>Trạng thái hoạt ảnh</value></data>
   <data name="Widgets.Pet.Animation.Description" xml:space="preserve"><value>Ưu tiên chuyển động đã chọn. Tự động theo trạng thái phát khi bật, nếu không sẽ luân phiên biểu cảm. Vẫn có thể xem thử biến hình.</value></data>
   <data name="Widgets.Pet.Preview" xml:space="preserve"><value>Mở bản xem trước hoạt ảnh</value></data>
@@ -3317,11 +3315,6 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Widgets.Pet.Animation.spin-dizzy" xml:space="preserve"><value>Động tác · Xoay chóng mặt</value></data>
   <data name="Widgets.Pet.Animation.spin-wild" xml:space="preserve"><value>Động tác · Xoay nhanh</value></data>
   <data name="Widgets.Pet.Animation.particles" xml:space="preserve"><value>Động tác · Hạt tỏa ra</value></data>
-  <data name="Widgets.Pet.Say.Playing" xml:space="preserve"><value>Đang nghe {0} · {1}. Nhịp điệu hay quá!</value></data>
-  <data name="Widgets.Pet.Say.Paused" xml:space="preserve"><value>{0} đang tạm dừng. Nghỉ một chút nhé.</value></data>
-  <data name="Widgets.Pet.Say.Hello0" xml:space="preserve"><value>Mình ở đây, sẵn sàng nghe nhạc cùng bạn.</value></data>
-  <data name="Widgets.Pet.Say.Hello1" xml:space="preserve"><value>Hôm nay bạn muốn nghe gì?</value></data>
-  <data name="Widgets.Pet.Say.Hello2" xml:space="preserve"><value>Chào bạn! Bật một bài yêu thích nhé.</value></data>
   <data name="Widgets.Pet.Appearance" xml:space="preserve"><value>Ngoại hình</value></data>
   <data name="Widgets.Pet.Behavior" xml:space="preserve"><value>Chuyển động và âm nhạc</value></data>
   <data name="Widgets.Pet.Dialogue" xml:space="preserve"><value>Hội thoại và âm thanh</value></data>
@@ -3351,4 +3344,46 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Widgets.Pet.OutfitColor" xml:space="preserve"><value>Màu phụ kiện</value></data>
   <data name="Widgets.Pet.OutfitColor.System" xml:space="preserve"><value>Theo hệ thống</value></data>
   <data name="Widgets.Pet.OutfitColor.Hint" xml:space="preserve"><value>Chọn màu hoặc nhập #RRGGBB.</value></data>
+  <data name="Widgets.Pet.Placement" xml:space="preserve"><value>Vị trí</value></data>
+  <data name="Widgets.Pet.Placement.inline" xml:space="preserve"><value>Trong thanh</value></data>
+  <data name="Widgets.Pet.Placement.docked" xml:space="preserve"><value>Nửa trong thanh tác vụ</value></data>
+  <data name="Widgets.Pet.Placement.free" xml:space="preserve"><value>Tự do</value></data>
+  <data name="Widgets.Pet.Placement.Description" xml:space="preserve"><value>Giữ và kéo thú cưng để di chuyển. Vị trí được lưu theo màn hình.</value></data>
+  <data name="Widgets.Pet.ThisTrack" xml:space="preserve"><value>bản nhạc này</value></data>
+  <data name="Widgets.Pet.Line.Playing.0" xml:space="preserve"><value>{0} bắt đầu rồi!</value></data>
+  <data name="Widgets.Pet.Line.Playing.1" xml:space="preserve"><value>Cho mình lắc lư đoạn này nhé.</value></data>
+  <data name="Widgets.Pet.Line.Playing.2" xml:space="preserve"><value>Tai mình chọn đúng bài rồi.</value></data>
+  <data name="Widgets.Pet.Line.Playing.3" xml:space="preserve"><value>Âm lượng vừa đẹp.</value></data>
+  <data name="Widgets.Pet.Line.Playing.4" xml:space="preserve"><value>Bắt đúng nhịp rồi!</value></data>
+  <data name="Widgets.Pet.Line.Playing.5" xml:space="preserve"><value>Giai điệu của {0} đây rồi.</value></data>
+  <data name="Widgets.Pet.Line.Playing.6" xml:space="preserve"><value>Mỗi đứa một bên tai nghe nhé?</value></data>
+  <data name="Widgets.Pet.Line.Playing.7" xml:space="preserve"><value>Chờ điệp khúc mình sẽ múa.</value></data>
+  <data name="Widgets.Pet.Line.Playing.8" xml:space="preserve"><value>Màn hình hôm nay có nhạc nền.</value></data>
+  <data name="Widgets.Pet.Line.Playing.9" xml:space="preserve"><value>Nhịp vừa rồi hay quá!</value></data>
+  <data name="Widgets.Pet.Line.Playing.10" xml:space="preserve"><value>Chân mình đang nhún theo {0}.</value></data>
+  <data name="Widgets.Pet.Line.Playing.11" xml:space="preserve"><value>Suỵt, nghe hết đoạn này đã.</value></data>
+  <data name="Widgets.Pet.Line.Paused.0" xml:space="preserve"><value>Tạm dừng {0} ở đây nhé.</value></data>
+  <data name="Widgets.Pet.Line.Paused.1" xml:space="preserve"><value>Mình giữ nhịp giúp bạn.</value></data>
+  <data name="Widgets.Pet.Line.Paused.2" xml:space="preserve"><value>Đôi tai cũng cần nghỉ.</value></data>
+  <data name="Widgets.Pet.Line.Paused.3" xml:space="preserve"><value>Bạn cứ làm việc, mình trông nút phát.</value></data>
+  <data name="Widgets.Pet.Line.Paused.4" xml:space="preserve"><value>Yên tĩnh một lát cũng hay.</value></data>
+  <data name="Widgets.Pet.Line.Paused.5" xml:space="preserve"><value>Gọi mình khi nghe tiếp nhé.</value></data>
+  <data name="Widgets.Pet.Line.Paused.6" xml:space="preserve"><value>Vươn vai một chút nào.</value></data>
+  <data name="Widgets.Pet.Line.Paused.7" xml:space="preserve"><value>Giai điệu vẫn quanh quẩn trong đầu.</value></data>
+  <data name="Widgets.Pet.Line.Paused.8" xml:space="preserve"><value>Nhịp tiếp theo dành cho bạn.</value></data>
+  <data name="Widgets.Pet.Line.Paused.9" xml:space="preserve"><value>Nhạc nghỉ, mình cũng nghỉ.</value></data>
+  <data name="Widgets.Pet.Line.Paused.10" xml:space="preserve"><value>Hẹn lát nữa nhé, {0}.</value></data>
+  <data name="Widgets.Pet.Line.Paused.11" xml:space="preserve"><value>Tai nghe đã sẵn sàng.</value></data>
+  <data name="Widgets.Pet.Line.Idle.0" xml:space="preserve"><value>Mình ở đây chọn nhạc cùng bạn.</value></data>
+  <data name="Widgets.Pet.Line.Idle.1" xml:space="preserve"><value>Hôm nay mở bài gì trước?</value></data>
+  <data name="Widgets.Pet.Line.Idle.2" xml:space="preserve"><value>Bạn tìm thấy mình rồi!</value></data>
+  <data name="Widgets.Pet.Line.Idle.3" xml:space="preserve"><value>Đố bạn mình biết mấy nhịp?</value></data>
+  <data name="Widgets.Pet.Line.Idle.4" xml:space="preserve"><value>Hôm nay mình là bạn nghe nhạc.</value></data>
+  <data name="Widgets.Pet.Line.Idle.5" xml:space="preserve"><value>Tìm món quà cho đôi tai nhé.</value></data>
+  <data name="Widgets.Pet.Line.Idle.6" xml:space="preserve"><value>Mình vừa đi tuần màn hình.</value></data>
+  <data name="Widgets.Pet.Line.Idle.7" xml:space="preserve"><value>Thấy mình nháy mắt không?</value></data>
+  <data name="Widgets.Pet.Line.Idle.8" xml:space="preserve"><value>Im lặng bên nhau cũng vui.</value></data>
+  <data name="Widgets.Pet.Line.Idle.9" xml:space="preserve"><value>Có bài nào muốn nghe mãi không?</value></data>
+  <data name="Widgets.Pet.Line.Idle.10" xml:space="preserve"><value>Mình vừa học điệu nhảy hai nhịp.</value></data>
+  <data name="Widgets.Pet.Line.Idle.11" xml:space="preserve"><value>Cùng đợi một giai điệu nhé.</value></data>
 </root>

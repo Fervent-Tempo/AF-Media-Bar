@@ -41,6 +41,16 @@ internal static class PetExperienceChecks
             lease.Dispose();
             SettingsManager.Current.PetComponent = SettingsManager.Current.PetComponent with { NotificationsEnabled = true };
             Assert.IsFalse(pet.TryNotify("title", "body"), "释放后不能吞掉原通知。");
+            foreach (var snapshot in new[] { MediaSnapshot.Disconnected, MediaSnapshot.Disconnected with { IsConnected = true },
+                MediaSnapshot.Disconnected with { IsConnected = true, IsPlaying = true } })
+            {
+                pet.UpdateSnapshot(snapshot);
+                var round = Enumerable.Range(0, 12).Select(_ => pet.NextPhrase()).ToArray();
+                Assert.AreEqual(12, round.Distinct().Count());
+                Assert.AreNotEqual(round[^1], pet.NextPhrase());
+            }
+            foreach (var phrase in new[] { new string('歌', 150), new string('！', 150) })
+                Assert.IsTrue(PetVoiceService.CreatePcm(100, phrase).Length <= 96000);
             pet.Dispose();
             pet.UpdateSnapshot(MediaSnapshot.Disconnected);
             Assert.IsFalse(pet.TryNotify("title", "body"));

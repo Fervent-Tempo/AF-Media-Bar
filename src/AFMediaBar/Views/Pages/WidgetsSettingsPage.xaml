@@ -164,8 +164,8 @@
                                 <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Size}" Description="{DynamicResource Loc.Widgets.Pet.Size.Description}" Icon="{ui:SymbolIcon ArrowSort24}">
                                     <components:SettingsNumericEditor Value="{Binding ViewModel.Components.PetSizeDip, Mode=TwoWay}" Minimum="20" Maximum="160" Step="2" Unit="{DynamicResource Loc.Settings.Numeric.Dip}"/>
                                 </components:SettingsRow>
-                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Overflow}" Description="{DynamicResource Loc.Widgets.Pet.Overflow.Description}" Icon="{ui:SymbolIcon Window24}">
-                                    <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetAllowOverflow, Mode=TwoWay}"/>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Placement}" Description="{DynamicResource Loc.Widgets.Pet.Placement.Description}" Icon="{ui:SymbolIcon Window24}">
+                                    <ComboBox ItemsSource="{Binding ViewModel.Components.PetPlacements}" DisplayMemberPath="DisplayName" SelectedValuePath="Id" SelectedValue="{Binding ViewModel.Components.PetPlacement, Mode=TwoWay}" MinWidth="{StaticResource AfSettingsSelectMinWidth}"/>
                                 </components:SettingsRow>
                                 <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Color}" Description="{Binding ViewModel.Components.PetColorStatus}" Icon="{ui:SymbolIcon Color24}">
                                     <StackPanel>

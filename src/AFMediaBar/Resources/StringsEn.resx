@@ -3227,9 +3227,7 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Widgets.Pet.Color.Invalid" xml:space="preserve"><value>Enter a valid HEX color. This input has not been saved.</value></data>
   <data name="Widgets.Pet.Color.Reset" xml:space="preserve"><value>Restore default color</value></data>
   <data name="Widgets.Pet.Size" xml:space="preserve"><value>Display size</value></data>
-  <data name="Widgets.Pet.Size.Description" xml:space="preserve"><value>20–160 DIP. With overflow off, the pet fits within the media bar thickness.</value></data>
-  <data name="Widgets.Pet.Overflow" xml:space="preserve"><value>Allow overflow beyond the bar</value></data>
-  <data name="Widgets.Pet.Overflow.Description" xml:space="preserve"><value>The larger pet extends toward the screen interior and moves and hides with the media bar, without increasing taskbar thickness.</value></data>
+  <data name="Widgets.Pet.Size.Description" xml:space="preserve"><value>20–160 DIP. Inside the bar, the pet fits its available height or width.</value></data>
   <data name="Widgets.Pet.Animation" xml:space="preserve"><value>Animation state</value></data>
   <data name="Widgets.Pet.Animation.Description" xml:space="preserve"><value>A selected motion takes priority. Auto follows playback when enabled, otherwise cycles moods. Morphs remain available for preview.</value></data>
   <data name="Widgets.Pet.Preview" xml:space="preserve"><value>Expand animation preview</value></data>
@@ -3279,11 +3277,6 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Widgets.Pet.Animation.spin-dizzy" xml:space="preserve"><value>Tricks · Dizzy spin</value></data>
   <data name="Widgets.Pet.Animation.spin-wild" xml:space="preserve"><value>Tricks · Fast spin</value></data>
   <data name="Widgets.Pet.Animation.particles" xml:space="preserve"><value>Tricks · Particles</value></data>
-  <data name="Widgets.Pet.Say.Playing" xml:space="preserve"><value>Listening to {0} · {1}. Nice rhythm!</value></data>
-  <data name="Widgets.Pet.Say.Paused" xml:space="preserve"><value>{0} is paused. Time for a little break.</value></data>
-  <data name="Widgets.Pet.Say.Hello0" xml:space="preserve"><value>I am here, ready for some music.</value></data>
-  <data name="Widgets.Pet.Say.Hello1" xml:space="preserve"><value>What would you like to listen to today?</value></data>
-  <data name="Widgets.Pet.Say.Hello2" xml:space="preserve"><value>Hello there! Put on a favourite song.</value></data>
   <data name="Widgets.Pet.Appearance" xml:space="preserve"><value>Appearance</value></data>
   <data name="Widgets.Pet.Behavior" xml:space="preserve"><value>Motion and music</value></data>
   <data name="Widgets.Pet.Dialogue" xml:space="preserve"><value>Dialogue and voice</value></data>
@@ -3313,4 +3306,46 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Widgets.Pet.OutfitColor" xml:space="preserve"><value>Outfit color</value></data>
   <data name="Widgets.Pet.OutfitColor.System" xml:space="preserve"><value>Follow system</value></data>
   <data name="Widgets.Pet.OutfitColor.Hint" xml:space="preserve"><value>Choose a swatch or enter #RRGGBB.</value></data>
+  <data name="Widgets.Pet.Placement" xml:space="preserve"><value>Position</value></data>
+  <data name="Widgets.Pet.Placement.inline" xml:space="preserve"><value>Inside bar</value></data>
+  <data name="Widgets.Pet.Placement.docked" xml:space="preserve"><value>Half on the taskbar</value></data>
+  <data name="Widgets.Pet.Placement.free" xml:space="preserve"><value>Free placement</value></data>
+  <data name="Widgets.Pet.Placement.Description" xml:space="preserve"><value>Hold and drag the pet to move it. Its position is saved per display.</value></data>
+  <data name="Widgets.Pet.ThisTrack" xml:space="preserve"><value>this track</value></data>
+  <data name="Widgets.Pet.Line.Playing.0" xml:space="preserve"><value>{0} is on. Ready!</value></data>
+  <data name="Widgets.Pet.Line.Playing.1" xml:space="preserve"><value>Let me dance to this bit.</value></data>
+  <data name="Widgets.Pet.Line.Playing.2" xml:space="preserve"><value>My ears picked this one.</value></data>
+  <data name="Widgets.Pet.Line.Playing.3" xml:space="preserve"><value>The volume feels just right.</value></data>
+  <data name="Widgets.Pet.Line.Playing.4" xml:space="preserve"><value>Caught that beat!</value></data>
+  <data name="Widgets.Pet.Line.Playing.5" xml:space="preserve"><value>I know that tune. Hello, {0}.</value></data>
+  <data name="Widgets.Pet.Line.Playing.6" xml:space="preserve"><value>One earbud each?</value></data>
+  <data name="Widgets.Pet.Line.Playing.7" xml:space="preserve"><value>Saving my best move for the chorus.</value></data>
+  <data name="Widgets.Pet.Line.Playing.8" xml:space="preserve"><value>Our desktop has a soundtrack.</value></data>
+  <data name="Widgets.Pet.Line.Playing.9" xml:space="preserve"><value>Ooh, that last beat!</value></data>
+  <data name="Widgets.Pet.Line.Playing.10" xml:space="preserve"><value>Busy tapping my toes to {0}.</value></data>
+  <data name="Widgets.Pet.Line.Playing.11" xml:space="preserve"><value>Shh, let this part play.</value></data>
+  <data name="Widgets.Pet.Line.Paused.0" xml:space="preserve"><value>Parking {0} right here.</value></data>
+  <data name="Widgets.Pet.Line.Paused.1" xml:space="preserve"><value>Holding that beat for you.</value></data>
+  <data name="Widgets.Pet.Line.Paused.2" xml:space="preserve"><value>Even ears need a break.</value></data>
+  <data name="Widgets.Pet.Line.Paused.3" xml:space="preserve"><value>I can watch the play button.</value></data>
+  <data name="Widgets.Pet.Line.Paused.4" xml:space="preserve"><value>A little quiet feels good.</value></data>
+  <data name="Widgets.Pet.Line.Paused.5" xml:space="preserve"><value>Tap play when you’re ready.</value></data>
+  <data name="Widgets.Pet.Line.Paused.6" xml:space="preserve"><value>Time for a stretch.</value></data>
+  <data name="Widgets.Pet.Line.Paused.7" xml:space="preserve"><value>That tune is still in my head.</value></data>
+  <data name="Widgets.Pet.Line.Paused.8" xml:space="preserve"><value>The next beat is yours.</value></data>
+  <data name="Widgets.Pet.Line.Paused.9" xml:space="preserve"><value>Music break. Snack break?</value></data>
+  <data name="Widgets.Pet.Line.Paused.10" xml:space="preserve"><value>Catch you later, {0}.</value></data>
+  <data name="Widgets.Pet.Line.Paused.11" xml:space="preserve"><value>Headphones ready when you are.</value></data>
+  <data name="Widgets.Pet.Line.Idle.0" xml:space="preserve"><value>Here to help pick a song.</value></data>
+  <data name="Widgets.Pet.Line.Idle.1" xml:space="preserve"><value>What should we start with?</value></data>
+  <data name="Widgets.Pet.Line.Idle.2" xml:space="preserve"><value>You found me!</value></data>
+  <data name="Widgets.Pet.Line.Idle.3" xml:space="preserve"><value>Guess how many beats I know.</value></data>
+  <data name="Widgets.Pet.Line.Idle.4" xml:space="preserve"><value>Your tiny listening buddy is here.</value></data>
+  <data name="Widgets.Pet.Line.Idle.5" xml:space="preserve"><value>Let’s find a treat for our ears.</value></data>
+  <data name="Widgets.Pet.Line.Idle.6" xml:space="preserve"><value>Just patrolled the desktop.</value></data>
+  <data name="Widgets.Pet.Line.Idle.7" xml:space="preserve"><value>Did you catch that wink?</value></data>
+  <data name="Widgets.Pet.Line.Idle.8" xml:space="preserve"><value>Quiet company counts too.</value></data>
+  <data name="Widgets.Pet.Line.Idle.9" xml:space="preserve"><value>Got a song you could loop all day?</value></data>
+  <data name="Widgets.Pet.Line.Idle.10" xml:space="preserve"><value>I learned a two-step.</value></data>
+  <data name="Widgets.Pet.Line.Idle.11" xml:space="preserve"><value>Waiting for a tune with you.</value></data>
 </root>

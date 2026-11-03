@@ -56,11 +56,11 @@ internal static class PetPresentationChecks
             Assert.IsTrue(surface.IsHitTestVisible);
 
             var inline = (FrameworkElement)control.FindName("TaskbarPet");
-            SettingsManager.Current.PetComponent = new() { SizeDip = 20 };
+            SettingsManager.Current.PetComponent = new() { SizeDip = 20, AllowOverflow = false };
             control.ApplyTaskbarExperienceSettings();
             DrainLayout(window);
             var smallWidth = inline.ActualWidth;
-            SettingsManager.Current.PetComponent = new() { SizeDip = 120 };
+            SettingsManager.Current.PetComponent = new() { SizeDip = 120, AllowOverflow = false };
             control.ApplyTaskbarExperienceSettings();
             DrainLayout(window);
             Assert.IsTrue(inline.ActualWidth > smallWidth, "增大设置不能被上一次槽位尺寸卡住。");

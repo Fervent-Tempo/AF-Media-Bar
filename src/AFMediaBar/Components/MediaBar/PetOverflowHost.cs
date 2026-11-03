@@ -34,19 +34,37 @@ internal sealed class PetOverflowHost : IDisposable
         var surface = new InputSurface { Child = _pet };
         surface.MouseEnter += (_, _) => _pet.SetHovered(true);
         surface.MouseLeave += (_, _) => _pet.SetHovered(false);
-        Point? press = null;
-        surface.MouseDown += (_, args) =>
+        surface.MouseLeftButtonDown += (_, args) =>
         {
-            if (args.ChangedButton is MouseButton.Left or MouseButton.Right) _pet.Press();
-            if (args.ChangedButton == MouseButton.Left) press = args.GetPosition(surface);
+            _pet.Press();
+            _pressPoint = surface.PointToScreen(args.GetPosition(surface));
+            _pressBounds = _lastBounds;
+            surface.CaptureMouse();
             args.Handled = true;
         };
-        surface.MouseUp += (_, args) =>
+        surface.MouseMove += (_, args) =>
         {
-            if (args.ChangedButton == MouseButton.Left && press is { } point && (args.GetPosition(surface) - point).Length < SystemParameters.MinimumHorizontalDragDistance) Activated?.Invoke();
-            press = null;
+            if (_pressPoint is not { } start || _pressBounds is not { } initial) return;
+            var delta = surface.PointToScreen(args.GetPosition(surface)) - start;
+            if (!_dragged && Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance * _scale &&
+                Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance * _scale) return;
+            _dragged = true;
+            if (!_settings.FreePlacement) return;
+            PositionAt(new Rect(initial.Location + delta, initial.Size), _screen);
+        };
+        surface.MouseLeftButtonUp += (_, args) =>
+        {
+            if (_pressPoint is null) return;
+            var clicked = !_dragged;
+            if (_dragged && _settings.FreePlacement && _lastBounds is { } saved)
+                PositionSaved?.Invoke(new FloatingBarPosition(_device, (saved.X + saved.Width / 2 - _work.Left) / _scale,
+                    (saved.Y + saved.Height / 2 - _work.Top) / _scale));
+            surface.ReleaseMouseCapture();
+            if (clicked) Activated?.Invoke();
             args.Handled = true;
         };
+        surface.LostMouseCapture += (_, _) => { _pressPoint = null; _dragged = false; };
+        surface.MouseRightButtonDown += (_, args) => { _pet.Press(); args.Handled = true; };
         surface.MouseWheel += (_, args) => args.Handled = true;
         _window = new Window
         {
@@ -66,6 +84,7 @@ internal sealed class PetOverflowHost : IDisposable
             Content = surface,
             UseLayoutRounding = true
         };
+        _window.LocationChanged += (_, _) => Moved?.Invoke();
         _window.SourceInitialized += OnSourceInitialized;
         _window.Closed += OnClosed;
         _anchor.LayoutUpdated += OnLayoutUpdated;
@@ -75,6 +94,14 @@ internal sealed class PetOverflowHost : IDisposable
         _owner.Closed += OnOwnerClosed;
     }
 
+    private Point? _pressPoint;
+    private Rect? _pressBounds;
+    private bool _dragged;
+    private double _scale = 1;
+    private Rect _screen, _work;
+    private string _device = string.Empty;
+    internal event Action<FloatingBarPosition>? PositionSaved;
+    internal event Action? Moved;
     internal event Action? Activated;
     internal PetView View => _pet;
     internal bool IsVisible => _visible && !_disposed;
@@ -109,7 +136,7 @@ internal sealed class PetOverflowHost : IDisposable
 
     private void Position()
     {
-        if (!_visible || _disposed || _positioning || !_anchor.IsVisible || _source is null ||
+        if (!_visible || _disposed || _pressPoint.HasValue || _positioning || !_anchor.IsVisible || _source is null ||
             PresentationSource.FromVisual(_anchor) is null) return;
         _positioning = true;
         try
@@ -126,11 +153,25 @@ internal sealed class PetOverflowHost : IDisposable
                 _settings.SizeDip * scale, _vertical, _onLeft,
                 _owner is AFMediaBar.Views.Windows.TaskbarWindow
                     ? new Rect(info.rcWork.Left, info.rcWork.Top, info.rcWork.Right - info.rcWork.Left, info.rcWork.Bottom - info.rcWork.Top) : null);
-            if (_lastBounds == bounds) return;
-            if (SetWindowPos(_source.Handle, -1, (int)Math.Round(bounds.X), (int)Math.Round(bounds.Y),
-                (int)Math.Ceiling(bounds.Width), (int)Math.Ceiling(bounds.Height), SWP_NOACTIVATE)) _lastBounds = bounds;
+            _screen = screen;
+            _work = new Rect(info.rcWork.Left, info.rcWork.Top, info.rcWork.Right - info.rcWork.Left, info.rcWork.Bottom - info.rcWork.Top);
+            _scale = scale;
+            _device = info.szDevice;
+            if (_settings.FreePlacement && _settings.Positions.LastOrDefault(p => string.Equals(p.MonitorDeviceId, _device, StringComparison.OrdinalIgnoreCase)) is { } position)
+                bounds.Location = new Point(_work.Left + position.CenterXDip * scale - bounds.Width / 2,
+                    _work.Top + position.CenterYDip * scale - bounds.Height / 2);
+            PositionAt(bounds, screen);
         }
         finally { _positioning = false; }
+    }
+
+    private void PositionAt(Rect bounds, Rect screen)
+    {
+        bounds.X = Math.Clamp(bounds.X, screen.Left, Math.Max(screen.Left, screen.Right - bounds.Width));
+        bounds.Y = Math.Clamp(bounds.Y, screen.Top, Math.Max(screen.Top, screen.Bottom - bounds.Height));
+        if (_lastBounds == bounds || _source is null) return;
+        if (SetWindowPos(_source.Handle, -1, (int)Math.Round(bounds.X), (int)Math.Round(bounds.Y),
+            (int)Math.Ceiling(bounds.Width), (int)Math.Ceiling(bounds.Height), SWP_NOACTIVATE)) _lastBounds = bounds;
     }
 
     private void OnSourceInitialized(object? sender, EventArgs args)

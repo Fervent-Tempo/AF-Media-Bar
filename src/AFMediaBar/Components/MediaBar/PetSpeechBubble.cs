@@ -13,6 +13,13 @@ internal sealed class PetSpeechBubble : IDisposable
     private readonly Popup _popup;
     private readonly Button _details = new() { HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
     private Action? _activation;
+    internal void Reposition()
+    {
+        if (!_popup.IsOpen) return;
+        _popup.HorizontalOffset += 1;
+        _popup.HorizontalOffset -= 1;
+    }
+
     internal bool IsOpen => _popup.IsOpen;
     private readonly TextBlock _text = new() { TextWrapping = TextWrapping.Wrap, MaxWidth = 280, FontSize = 13, Margin = new Thickness(0, 0, 8, 0) };
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(6) };

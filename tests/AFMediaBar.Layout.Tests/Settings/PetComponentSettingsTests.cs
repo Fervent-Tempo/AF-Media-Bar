@@ -37,7 +37,7 @@ public sealed class PetComponentSettingsTests
                 editor.PetFillColorHex = "ffcc00";
                 editor.PetIdleAnimationsEnabled = false;
                 editor.PetSizeDip = 96;
-                editor.PetAllowOverflow = true;
+                editor.PetPlacement = "free";
                 editor.PetAnimation = "radar";
                 editor.PetOutfit = "badge";
                 editor.PetOutfitColorHex = "#42CBA6";
@@ -55,7 +55,7 @@ public sealed class PetComponentSettingsTests
                 editor.PetFillColorHex = "#000000";
                 editor.PetIdleAnimationsEnabled = true;
                 editor.PetSizeDip = 32;
-                editor.PetAllowOverflow = false;
+                editor.PetPlacement = "inline";
                 editor.PetAnimation = "happy";
                 Assert.AreEqual(copy.PetComponent, SettingsManager.Current.PetComponent);
                 Assert.AreEqual(PetComponentSettings.DefaultFillColorHex, (new PetComponentSettings { FillColorHex = "broken" }).Normalize().FillColorHex);
@@ -77,7 +77,10 @@ public sealed class PetComponentSettingsTests
         Assert.AreEqual("auto", (new PetComponentSettings { Animation = null! }).Normalize().Animation);
         Assert.AreEqual("auto", (new PetComponentSettings { Animation = "unknown" }).Normalize().Animation);
         Assert.AreEqual("writing", (new PetComponentSettings { Animation = "writing" }).Normalize().Animation);
-        Assert.IsFalse(new PetComponentSettings().AllowOverflow);
+        var free = new PetComponentSettings { FreePlacement = true, Positions = [new("display", 10, 20)] };
+        Assert.AreEqual(free, free.Normalize(), "刷新绑定时已有效的位置不能触发新一轮设置变更。");
+        Assert.IsTrue(new PetComponentSettings().AllowOverflow);
+        Assert.IsFalse(JsonSerializer.Deserialize<PetComponentSettings>("""{"AllowOverflow":false}""")!.Normalize().AllowOverflow);
         Assert.AreEqual("original", (new PetComponentSettings { Outfit = "unknown" }).Normalize().Outfit);
         Assert.AreEqual(20d, (new PetComponentSettings { VoiceVolume = double.NaN }).Normalize().VoiceVolume);
         Assert.AreEqual(100d, (new PetComponentSettings { VoiceVolume = 500 }).Normalize().VoiceVolume);
@@ -92,9 +95,9 @@ public sealed class PetComponentSettingsTests
         Assert.IsTrue(PetOverflowHost.ContainsVisualPoint(new Point(32, 9)), "旋转后的球体顶端应能接收局部点击。");
         Assert.IsTrue(PetOverflowHost.ContainsVisualPoint(new Point(23.3, 6.1)), "歪身后移出的耳尖应能接收局部点击。");
         Assert.IsFalse(PetOverflowHost.ContainsVisualPoint(new Point(0, 0)), "空白角落不能扩大命中区域。");
-        Assert.AreEqual(new Rect(90, 920, 120, 120), PetPlacementPolicy.Arrange(new Rect(100, 1040, 100, 40),
+        Assert.AreEqual(new Rect(90, 960, 120, 120), PetPlacementPolicy.Arrange(new Rect(100, 1040, 100, 40),
             new Rect(0, 0, 1920, 1080), 120, false, false, new Rect(0, 0, 1920, 1040)));
-        Assert.AreEqual(new Rect(-1880, 290, 120, 120), PetPlacementPolicy.Arrange(new Rect(-1920, 300, 40, 100),
+        Assert.AreEqual(new Rect(-1920, 290, 120, 120), PetPlacementPolicy.Arrange(new Rect(-1920, 300, 40, 100),
             new Rect(-1920, 0, 1920, 1080), 120, true, true, new Rect(-1880, 0, 1880, 1080)));
         Assert.AreEqual(new Rect(90, 960, 120, 120), PetPlacementPolicy.Arrange(new Rect(100, 1040, 100, 40),
             new Rect(0, 0, 1920, 1080), 120, false, false));

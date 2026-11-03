@@ -13,8 +13,9 @@ internal static class PetPlacementPolicy
         else y = anchor.Top + anchor.Height / 2 < screen.Top + screen.Height / 2 ? anchor.Top : anchor.Bottom - size;
         if (workArea is { } work)
         {
-            if (vertical) x = onLeft ? work.Left : work.Right - size;
-            else y = anchor.Top + anchor.Height / 2 < screen.Top + screen.Height / 2 ? work.Top : work.Bottom - size;
+            if (vertical) x = (onLeft ? (work.Left > screen.Left ? work.Left : anchor.Right) : (work.Right < screen.Right ? work.Right : anchor.Left)) - size / 2;
+            else y = anchor.Top + anchor.Height / 2 < screen.Top + screen.Height / 2 ? (work.Top > screen.Top ? work.Top : anchor.Bottom) - size / 2
+                    : (work.Bottom < screen.Bottom ? work.Bottom : anchor.Top) - size / 2;
         }
         return new Rect(Math.Clamp(x, screen.Left, Math.Max(screen.Left, screen.Right - size)),
             Math.Clamp(y, screen.Top, Math.Max(screen.Top, screen.Bottom - size)), size, size);

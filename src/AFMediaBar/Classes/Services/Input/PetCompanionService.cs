@@ -14,7 +14,26 @@ public sealed class PetCompanionService : IDisposable
     private readonly AudioMonitorService _audio;
     private readonly List<Func<string, Action?, bool>> _messages = [];
     private readonly IDisplayMonitorService _display;
-    private int _phraseIndex;
+    private readonly Dictionary<string, Queue<int>> _phrases = [];
+    private readonly Dictionary<string, int> _lastPhrase = [];
+
+    internal string NextPhrase()
+    {
+        var group = !_snapshot.IsConnected ? "Idle" : _snapshot.IsPlaying ? "Playing" : "Paused";
+        if (!_phrases.TryGetValue(group, out var deck) || deck.Count == 0)
+        {
+            var order = Enumerable.Range(0, 12).ToArray();
+            Random.Shared.Shuffle(order);
+            if (_lastPhrase.TryGetValue(group, out var last) && order[0] == last)
+                (order[0], order[1]) = (order[1], order[0]);
+            _phrases[group] = deck = new Queue<int>(order);
+        }
+        var pick = deck.Dequeue();
+        _lastPhrase[group] = pick;
+        var title = string.IsNullOrWhiteSpace(_snapshot.Title) ? Translations.Get("Widgets.Pet.ThisTrack") : _snapshot.Title;
+        return Translations.Format($"Widgets.Pet.Line.{group}.{pick}", title);
+    }
+
     private long _reactionUntil;
     private string _reactionAnimation = "notifying";
 
@@ -23,9 +42,7 @@ public sealed class PetCompanionService : IDisposable
         _reactionAnimation = "happy";
         _reactionUntil = Environment.TickCount64 + 1800;
         Publish();
-        var text = _snapshot.IsConnected && !string.IsNullOrWhiteSpace(_snapshot.Title)
-            ? Translations.Format(_snapshot.IsPlaying ? "Widgets.Pet.Say.Playing" : "Widgets.Pet.Say.Paused", _snapshot.Title, _snapshot.Artist)
-            : Translations.Get("Widgets.Pet.Say.Hello" + (_phraseIndex++ % 3));
+        var text = NextPhrase();
         _voice.Play(text);
         return text;
     }
