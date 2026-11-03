@@ -2,45 +2,423 @@
   "schemaVersion": 1,
   "releases": [
     {
+      "version": "1.6.0",
+      "releaseDate": "2026-10-24",
+      "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.6.0",
+      "localizations": {
+        "zh-Hans": {
+          "title": "AF Media Bar 1.6.0 — 设备管理、桌面交互与歌词体验",
+          "highlights": [
+            "完善设备管理、桌面交互与歌词体验。10-24节日快乐！！",
+            "新版音频控制正式开放；设备支持别名、排序与循环快捷键，应用音量自动记忆。",
+            "桌面悬浮与竖向任务栏正式开放；悬浮支持四边贴边折叠，完整面板增加外侧横杆。竖向需系统任务栏位于左右侧。",
+            "歌词支持长逐字滚动、格式净化与假名标注过滤，改善日文显示和切行过渡；媒体来源可按最新会话或优先应用选择。",
+            "频谱可跟随媒体、系统默认或固定设备，仅影响设备采集；固定设备离线时暂停，跟随切换仍可能延迟。",
+            "快速启动支持列表或滚轮选择后双击启动，可显示应用图标；整理小组件和设置入口，更新亮点支持分组折叠。",
+            "新增蓝牙电量、内存诊断与系统优化实验，默认关闭。蓝牙需设备支持；系统清理需管理员授权，可能增加缓存重建开销。",
+            "长歌词滚动、格式净化与贴边折叠默认开启；假名标注过滤、低电量提醒和自动内存优化默认关闭。",
+            "改善取色过渡与封面交互，修复网速箭头漂移、启动提示残留和重复下载，减少启动资源开销。"
+          ],
+          "content": {
+            "summary": "完善音频设备管理与桌面媒体栏，新增媒体来源策略、频谱设备选择和实验性工具，改善歌词显示与日常操作。10-24节日快乐！！",
+            "sections": [
+              {
+                "title": "🎚️ 音频与设备",
+                "items": [
+                  {
+                    "title": "新版音频控制正式开放",
+                    "description": "播放与录音设备切换、应用设备路由及音量合成器不再需要实验开关。可分别设置点击和滚轮控制系统默认设备或前台应用，并按需同步通信设备。"
+                  },
+                  {
+                    "title": "集中管理设备名称、顺序与切换快捷键",
+                    "description": "在“设备管理”中为设备设置别名、调整启用与停用分组及拖动顺序，查看失联设备配置。可录制输入、输出设备循环快捷键，并直接打开 Windows 声音设置。"
+                  },
+                  {
+                    "title": "记住在 AF 中调整过的应用音量",
+                    "description": "在 AF 的音量合成器中调整应用音量后，后续新建的对应应用音频会话会恢复记忆音量，无需额外开启设置。"
+                  },
+                  {
+                    "title": "按需显示所选蓝牙设备电量",
+                    "description": "在“实验性功能”中开启蓝牙电量后，可在“小组件”中手动选择一个已配对设备，显示连接电量或仅在低电量时显示，并按需开启低电量提醒。实验默认关闭，提醒需单独开启。\n\n仅读取设备与 Windows 提供的标准电量信息；设备或驱动不支持时显示未知，尚需更多设备验证。"
+                  }
+                ]
+              },
+              {
+                "title": "🖥️ 桌面与任务栏",
+                "items": [
+                  {
+                    "title": "桌面悬浮与竖向任务栏正式开放",
+                    "description": "桌面悬浮模式与竖向任务栏不再需要实验开关，可在“显示与位置”中直接配置。升级保留已保存的悬浮位置与方向，未选择桌面模式时仍使用任务栏模式。\n\n竖向任务栏需要 Windows 任务栏本身已位于屏幕左侧或右侧。"
+                  },
+                  {
+                    "title": "桌面媒体栏支持四边自动折叠",
+                    "description": "将悬浮媒体栏拖至显示器工作区边缘，离开后可折叠为提示条，移入后恢复；支持左、右、上、下四边，并记住停靠方向。贴边自动折叠默认开启，可在“显示与位置”关闭。"
+                  },
+                  {
+                    "title": "通过外侧横杆打开完整面板",
+                    "description": "完整面板新增独立的外侧横杆入口，可选择点击或悬停打开，并适配任务栏与悬浮模式的展开方向。调整面板中的媒体信息与控制布局，修复封面放大时入口漂移、内容推挤方向错误的问题。\n\n入口默认显示、默认点击打开；无媒体时隐藏。"
+                  }
+                ]
+              },
+              {
+                "title": "🎵 歌词与媒体来源",
+                "items": [
+                  {
+                    "title": "长逐字歌词随演唱进度滚动",
+                    "description": "在跟随内容宽度时，超过宽度上限的逐字歌词可随演唱进度横向滚动，避免继续撑宽媒体栏。此选项默认开启，可在歌词相关设置中关闭；需要歌词具备逐字时间信息。"
+                  },
+                  {
+                    "title": "净化歌词格式并保留日语正文",
+                    "description": "新增默认开启的格式净化，清理来源附加的行首斜杠和整行装饰括号，仅影响显示。隐藏括号内日语假名标注的选项默认关闭，可按需开启，并改善括号人声保留。\n\n日文歌词不再参与简繁转换。切换逐字擦亮或显示过滤时保留换行过渡，未改变显示文本的设置调整不再重复刷新歌词。"
+                  },
+                  {
+                    "title": "选择自动切换媒体来源的规则",
+                    "description": "可使用自动选择、最新会话或优先应用策略；手动选择来源后保留其恢复状态，减少切源过程中旧信息覆盖当前内容。改善暂停期间重复取词，为同一曲目的自动失败重试设置上限。"
+                  }
+                ]
+              },
+              {
+                "title": "🧩 小组件与工具",
+                "items": [
+                  {
+                    "title": "为频谱选择跟随、默认或固定输出设备",
+                    "description": "在“小组件”的频谱设置中，可选择跟随当前媒体来源、使用系统默认输出设备，或固定某个设备。原有配置保留已有设备选择；固定设备离线时暂停采集，不自动改采其他设备。\n\n设备选择仅作用于“当前设备全部音频”范围；“所有程序”和“当前媒体程序”继续跨输出设备采集。跟随媒体来源时的设备刷新延迟仍有待改善。"
+                  },
+                  {
+                    "title": "快速启动支持先选择再双击启动",
+                    "description": "无媒体时的小音符入口支持列表启动，或滚轮选择后双击启动，并可在悬停时显示目标应用图标。列表启动仍为默认方式，选中的目标可跨入口保持一致。"
+                  },
+                  {
+                    "title": "新增内存诊断与系统优化实验",
+                    "description": "在“实验性功能”中按需开启内存工具与系统内存清理，可查看 AF 的内存读数、手动回收，并配置定时或阈值触发的系统优化。实验与自动策略均默认关闭；系统清理需要管理员授权，可按需配置持久授权。\n\n标准档清理低优先级待机页，深度档还处理系统文件缓存与全部待机页。清理可能增加后续缓存重建开销，读数下降不代表性能一定提升，尚未经充分测试，遇到问题欢迎反馈。"
+                  }
+                ]
+              },
+              {
+                "title": "🔧 体验与修复",
+                "items": [
+                  {
+                    "title": "整理设置入口与更新亮点",
+                    "description": "小组件改用独立设置页，统一分组、卡片、排序与相关设置跳转；精简标题下的说明文字并改善图标对齐。更新亮点按主题分组、逐项展开，快捷跳转后同步侧栏选中状态。"
+                  },
+                  {
+                    "title": "改善取色、封面与更新下载",
+                    "description": "自动取色增加平滑且可中断的颜色过渡，改善悬停时颜色稳定性。修复网速双行箭头随数值漂移、快速启动状态提示不消失，以及两个入口同时触发更新下载的问题；减少启动时不必要的分配与资源创建。"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "vi": {
+          "title": "AF Media Bar 1.6.0 — Quản lý thiết bị, tương tác màn hình và lời bài hát",
+          "highlights": [
+            "Điều khiển âm thanh mới trở thành tính năng chính thức, hỗ trợ bí danh, thứ tự và phím tắt chuyển thiết bị. Âm lượng ứng dụng đã chỉnh trong AF được khôi phục cho phiên âm thanh mới.",
+            "Chế độ nổi và thanh tác vụ dọc trở thành tính năng chính thức, giữ vị trí và hướng đã lưu. Thanh nổi tự thu gọn ở cả bốn cạnh, bảng đầy đủ có lối mở bên ngoài. Chế độ dọc cần thanh tác vụ Windows nằm bên trái hoặc phải.",
+            "Lời theo từng âm tiết có thể cuộn theo tiến độ hát. Làm sạch định dạng mặc định bật, lọc chú âm mặc định tắt; lời tiếng Nhật không đổi giản thể/phồn thể. Nguồn phát có chế độ tự động, phiên mới nhất hoặc ứng dụng ưu tiên.",
+            "Phổ tần có thể theo đầu ra nguồn phát, thiết bị mặc định hoặc thiết bị cố định; chỉ áp dụng cho thu âm theo thiết bị. Thiết bị cố định ngoại tuyến sẽ tạm dừng thu, chuyển theo nguồn phát vẫn có thể trễ. Mở nhanh hỗ trợ danh sách hoặc cuộn chọn rồi nhấp đúp; cài đặt tiện ích và điểm mới được sắp xếp lại.",
+            "Thử nghiệm pin Bluetooth, công cụ bộ nhớ và dọn bộ nhớ hệ thống mặc định tắt; cảnh báo pin yếu và dọn tự động cần bật riêng. Đọc pin phụ thuộc thiết bị và Windows. Dọn hệ thống cần quyền quản trị, có thể tăng chi phí tạo lại bộ nhớ đệm và vẫn cần kiểm thử trên nhiều thiết bị hơn."
+          ],
+          "content": {
+            "summary": "Quản lý thiết bị, tương tác màn hình và lời bài hát.",
+            "sections": [
+              {
+                "title": "✨ Tính năng và trải nghiệm",
+                "items": [
+                  {
+                    "title": "Quản lý thiết bị và ghi nhớ âm lượng ứng dụng",
+                    "description": "Điều khiển âm thanh mới trở thành tính năng chính thức, hỗ trợ bí danh, thứ tự và phím tắt chuyển thiết bị. Âm lượng ứng dụng đã chỉnh trong AF được khôi phục cho phiên âm thanh mới."
+                  },
+                  {
+                    "title": "Dùng chế độ nổi và thanh tác vụ dọc trực tiếp",
+                    "description": "Chế độ nổi và thanh tác vụ dọc trở thành tính năng chính thức, giữ vị trí và hướng đã lưu. Thanh nổi tự thu gọn ở cả bốn cạnh, bảng đầy đủ có lối mở bên ngoài. Chế độ dọc cần thanh tác vụ Windows nằm bên trái hoặc phải."
+                  },
+                  {
+                    "title": "Cải thiện lời bài hát và chọn nguồn phát",
+                    "description": "Lời theo từng âm tiết có thể cuộn theo tiến độ hát. Làm sạch định dạng mặc định bật, lọc chú âm mặc định tắt; lời tiếng Nhật không đổi giản thể/phồn thể. Nguồn phát có chế độ tự động, phiên mới nhất hoặc ứng dụng ưu tiên."
+                  },
+                  {
+                    "title": "Chọn thiết bị phổ tần và mở ứng dụng",
+                    "description": "Phổ tần có thể theo đầu ra nguồn phát, thiết bị mặc định hoặc thiết bị cố định; chỉ áp dụng cho thu âm theo thiết bị. Thiết bị cố định ngoại tuyến sẽ tạm dừng thu, chuyển theo nguồn phát vẫn có thể trễ. Mở nhanh hỗ trợ danh sách hoặc cuộn chọn rồi nhấp đúp; cài đặt tiện ích và điểm mới được sắp xếp lại."
+                  },
+                  {
+                    "title": "Bật thử nghiệm pin Bluetooth và bộ nhớ khi cần",
+                    "description": "Thử nghiệm pin Bluetooth, công cụ bộ nhớ và dọn bộ nhớ hệ thống mặc định tắt; cảnh báo pin yếu và dọn tự động cần bật riêng. Đọc pin phụ thuộc thiết bị và Windows. Dọn hệ thống cần quyền quản trị, có thể tăng chi phí tạo lại bộ nhớ đệm và vẫn cần kiểm thử trên nhiều thiết bị hơn."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "zh-Hant": {
+          "title": "AF Media Bar 1.6.0 — 裝置管理、桌面互動與歌詞體驗",
+          "highlights": [
+            "新版音訊控制正式開放，可設定裝置別名、順序與循環快捷鍵；在 AF 調整過的應用程式音量會在新音訊工作階段恢復。",
+            "桌面浮動與直向工作列正式開放，保留既有位置與方向。浮動列可四邊自動折疊，完整面板增加外側入口；直向模式需要系統工作列位於左側或右側。",
+            "長逐字歌詞可隨演唱進度捲動，格式淨化預設開啟，假名標註過濾預設關閉；日文不參與簡繁轉換。媒體來源支援自動、最新工作階段與優先應用程式策略。",
+            "頻譜可跟隨媒體、系統預設或固定輸出裝置，僅影響裝置擷取；固定裝置離線時暫停，跟隨切換仍可能延遲。快速啟動支援清單或滾輪選擇後按兩下啟動，並整理小工具與更新亮點設定。",
+            "藍牙電量、記憶體工具與系統清理實驗預設關閉，低電量提醒與自動清理需另行啟用。藍牙依賴裝置及 Windows 支援；系統清理需要管理員授權，可能增加快取重建負擔，尚需更多裝置驗證。"
+          ],
+          "content": {
+            "summary": "裝置管理、桌面互動與歌詞體驗.",
+            "sections": [
+              {
+                "title": "✨ 功能與體驗",
+                "items": [
+                  {
+                    "title": "管理裝置並記住應用程式音量",
+                    "description": "新版音訊控制正式開放，可設定裝置別名、順序與循環快捷鍵；在 AF 調整過的應用程式音量會在新音訊工作階段恢復。"
+                  },
+                  {
+                    "title": "直接使用桌面與直向工作列模式",
+                    "description": "桌面浮動與直向工作列正式開放，保留既有位置與方向。浮動列可四邊自動折疊，完整面板增加外側入口；直向模式需要系統工作列位於左側或右側。"
+                  },
+                  {
+                    "title": "改善歌詞與媒體來源選擇",
+                    "description": "長逐字歌詞可隨演唱進度捲動，格式淨化預設開啟，假名標註過濾預設關閉；日文不參與簡繁轉換。媒體來源支援自動、最新工作階段與優先應用程式策略。"
+                  },
+                  {
+                    "title": "選擇頻譜裝置並快速啟動應用程式",
+                    "description": "頻譜可跟隨媒體、系統預設或固定輸出裝置，僅影響裝置擷取；固定裝置離線時暫停，跟隨切換仍可能延遲。快速啟動支援清單或滾輪選擇後按兩下啟動，並整理小工具與更新亮點設定。"
+                  },
+                  {
+                    "title": "按需開啟藍牙電量與記憶體實驗",
+                    "description": "藍牙電量、記憶體工具與系統清理實驗預設關閉，低電量提醒與自動清理需另行啟用。藍牙依賴裝置及 Windows 支援；系統清理需要管理員授權，可能增加快取重建負擔，尚需更多裝置驗證。"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "en": {
+          "title": "AF Media Bar 1.6.0 — Device management, desktop interactions and lyrics",
+          "highlights": [
+            "The new audio controls are generally available, with device aliases, ordering and cycle shortcuts. Application volume adjusted in AF is restored for subsequent audio sessions.",
+            "Desktop floating and vertical taskbar modes are generally available and retain saved positions and orientation. Floating bars collapse at all four edges, and the full panel has an outer entry. Vertical mode requires the Windows taskbar on the left or right.",
+            "Long syllable-timed lyrics can scroll with singing progress. Format cleanup defaults to on, furigana filtering defaults to off, and Japanese lyrics are excluded from Chinese conversion. Media selection supports automatic, newest-session and preferred-application strategies.",
+            "Spectrum capture can follow media output, the system default or a fixed device; this only affects device capture. An offline fixed device pauses capture, and following media changes may still be delayed. Quick Launch supports a list or wheel selection followed by a double-click. Widget and release-highlight settings are reorganized.",
+            "Bluetooth battery, memory tools and system cleanup experiments default to off; low-battery alerts and automatic cleanup require separate opt-in. Battery readings depend on device and Windows support. System cleanup requires administrator approval and may increase cache-rebuild costs; broader device testing remains necessary."
+          ],
+          "content": {
+            "summary": "Device management, desktop interactions and lyrics.",
+            "sections": [
+              {
+                "title": "✨ Features and experience",
+                "items": [
+                  {
+                    "title": "Manage devices and remember application volume",
+                    "description": "The new audio controls are generally available, with device aliases, ordering and cycle shortcuts. Application volume adjusted in AF is restored for subsequent audio sessions."
+                  },
+                  {
+                    "title": "Use desktop and vertical taskbar modes directly",
+                    "description": "Desktop floating and vertical taskbar modes are generally available and retain saved positions and orientation. Floating bars collapse at all four edges, and the full panel has an outer entry. Vertical mode requires the Windows taskbar on the left or right."
+                  },
+                  {
+                    "title": "Improve lyrics and media-source selection",
+                    "description": "Long syllable-timed lyrics can scroll with singing progress. Format cleanup defaults to on, furigana filtering defaults to off, and Japanese lyrics are excluded from Chinese conversion. Media selection supports automatic, newest-session and preferred-application strategies."
+                  },
+                  {
+                    "title": "Choose spectrum devices and launch applications",
+                    "description": "Spectrum capture can follow media output, the system default or a fixed device; this only affects device capture. An offline fixed device pauses capture, and following media changes may still be delayed. Quick Launch supports a list or wheel selection followed by a double-click. Widget and release-highlight settings are reorganized."
+                  },
+                  {
+                    "title": "Opt into Bluetooth battery and memory experiments",
+                    "description": "Bluetooth battery, memory tools and system cleanup experiments default to off; low-battery alerts and automatic cleanup require separate opt-in. Battery readings depend on device and Windows support. System cleanup requires administrator approval and may increase cache-rebuild costs; broader device testing remains necessary."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
       "version": "1.5.0",
       "releaseDate": "2026-10-17",
       "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.5.0",
       "localizations": {
         "zh-Hans": {
-          "title": "桌面悬浮、竖向任务栏与音频控制",
+          "title": "AF Media Bar 1.5.0 — 桌面悬浮、竖向任务栏与音频控制",
           "highlights": [
             "新增桌面悬浮、竖向任务栏与新版音频控制实验，均默认关闭，可在实验性功能页开启，尚未经充分测试。",
             "支持输入与输出设备切换、应用设备路由和紧凑音量合成器。",
             "歌词来源可自定义优先级，组件、歌词来源与快速启动等列表支持拖动排序。",
             "改善小任务栏信息显示、横竖切换、封面播放反馈与自动隐藏任务栏下的菜单。"
-          ]
+          ],
+          "content": {
+            "summary": "这次更新带来桌面悬浮模式、竖向任务栏和新版音频控制，支持自定义歌词来源优先级，并改善小任务栏显示与日常交互。\n\n桌面悬浮模式、竖向任务栏和新版音频控制均为实验性功能，默认关闭，可在设置的“实验性功能”页按需开启。这些功能尚未经充分测试，遇到问题欢迎反馈。",
+            "sections": [
+              {
+                "title": "✨ 更多显示方式",
+                "items": [
+                  {
+                    "title": "在桌面自由放置媒体栏",
+                    "description": "新增桌面悬浮模式，可在桌面上拖动媒体栏，选择横向或竖向布局、桌面显示或始终置顶，并按显示器记住位置；开启实验后，在“显示与位置”切换。"
+                  },
+                  {
+                    "title": "支持左右侧竖向任务栏",
+                    "description": "支持左侧与右侧的竖向任务栏，标题、歌手和歌词竖排显示，控制面板向屏幕内侧展开。"
+                  }
+                ]
+              },
+              {
+                "title": "🎚️ 新版音频控制",
+                "items": [
+                  {
+                    "title": "分别选择播放与录音设备",
+                    "description": "可切换扬声器、耳机和麦克风，也可为不同应用分别选择播放与录音设备。"
+                  },
+                  {
+                    "title": "使用紧凑应用音量合成器",
+                    "description": "音量合成器采用紧凑应用列表，支持独立调节音量、点击应用图标静音，并展开设备选择。"
+                  },
+                  {
+                    "title": "配置麦克风和设备切换",
+                    "description": "新增麦克风组件与滚轮切换输入设备；可隐藏不常用的设备，并分别设置点击和滚轮控制系统默认设备或前台应用。"
+                  }
+                ]
+              },
+              {
+                "title": "🎵 歌词与设置",
+                "items": [
+                  {
+                    "title": "自定义歌词来源优先级",
+                    "description": "歌词来源支持自定义优先级，可选择逐个或同时尝试，以及优先采用哪个结果。"
+                  },
+                  {
+                    "title": "拖动调整列表顺序",
+                    "description": "组件、歌词来源、性能指标和快速启动等列表支持拖动排序，拖动时可预览顺序；也可使用 Alt＋↑／↓ 调整。"
+                  }
+                ]
+              },
+              {
+                "title": "🔧 体验与修复",
+                "items": [
+                  {
+                    "title": "适配小任务栏空间",
+                    "description": "小任务栏自动减少留白，空间不足时优先显示歌词或标题，空间恢复后重新显示副信息。"
+                  },
+                  {
+                    "title": "改善切行与横竖切换",
+                    "description": "修复歌词切行时悬停控件和完整面板意外收起、横竖切换后文字裁切及竖向任务栏闪烁；改善悬浮拖动与任务栏动画。"
+                  },
+                  {
+                    "title": "稳定放大封面的播放反馈",
+                    "description": "修复点击放大封面播放／暂停时的缩放跳动，播放提示跟随封面颜色，滚轮提示避让封面。"
+                  },
+                  {
+                    "title": "改善菜单与音量反馈",
+                    "description": "改善自动隐藏任务栏下的右键与音频菜单；修复音量或静音操作失败后显示不准确的问题，完善设备菜单主题与设置卡片悬停反馈。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "zh-Hant": {
-          "title": "桌面浮動、直向工作列與音訊控制",
+          "title": "AF Media Bar 1.5.0 — 桌面浮動、直向工作列與音訊控制",
           "highlights": [
             "新增桌面浮動、直向工作列與新版音訊控制實驗，均預設關閉，可在實驗性功能頁啟用，尚未經充分測試。",
             "支援輸入與輸出裝置切換、應用程式裝置路由與精簡音量混音器。",
             "歌詞來源可自訂優先順序，元件、歌詞來源與快速啟動等清單支援拖曳排序。",
             "改善小型工作列資訊顯示、橫直切換、封面播放回饋與自動隱藏工作列下的選單。"
-          ]
+          ],
+          "content": {
+            "summary": "桌面浮動、直向工作列與音訊控制。",
+            "sections": [
+              {
+                "title": "✨ 功能與體驗",
+                "items": [
+                  {
+                    "title": "按需開啟顯示與音訊實驗",
+                    "description": "新增桌面浮動、直向工作列與新版音訊控制實驗，均預設關閉，可在實驗性功能頁啟用，尚未經充分測試。"
+                  },
+                  {
+                    "title": "切換裝置與應用程式路由",
+                    "description": "支援輸入與輸出裝置切換、應用程式裝置路由與精簡音量混音器。"
+                  },
+                  {
+                    "title": "調整歌詞來源及清單順序",
+                    "description": "歌詞來源可自訂優先順序，元件、歌詞來源與快速啟動等清單支援拖曳排序。"
+                  },
+                  {
+                    "title": "改善小型工作列與日常操作",
+                    "description": "改善小型工作列資訊顯示、橫直切換、封面播放回饋與自動隱藏工作列下的選單。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "en": {
-          "title": "Desktop floating mode, vertical taskbars and audio controls",
+          "title": "AF Media Bar 1.5.0 — Desktop floating mode, vertical taskbars and audio controls",
           "highlights": [
             "Add desktop floating, vertical taskbar and new audio-control experiments; all default to off and can be enabled in Experimental features. They have not been thoroughly tested.",
             "Support input and output switching, per-application device routing and a compact volume mixer.",
             "Allow custom lyric-source priority and drag ordering for components, lyric sources and quick-launch entries.",
             "Improve narrow-taskbar information, orientation changes, artwork playback feedback and menus with auto-hidden taskbars."
-          ]
+          ],
+          "content": {
+            "summary": "Desktop floating mode, vertical taskbars and audio controls.",
+            "sections": [
+              {
+                "title": "✨ Features and experience",
+                "items": [
+                  {
+                    "title": "Enable display and audio experiments",
+                    "description": "Add desktop floating, vertical taskbar and new audio-control experiments; all default to off and can be enabled in Experimental features. They have not been thoroughly tested."
+                  },
+                  {
+                    "title": "Switch devices and application routes",
+                    "description": "Support input and output switching, per-application device routing and a compact volume mixer."
+                  },
+                  {
+                    "title": "Order lyric sources and settings lists",
+                    "description": "Allow custom lyric-source priority and drag ordering for components, lyric sources and quick-launch entries."
+                  },
+                  {
+                    "title": "Improve narrow taskbars and everyday controls",
+                    "description": "Improve narrow-taskbar information, orientation changes, artwork playback feedback and menus with auto-hidden taskbars."
+                  }
+                ]
+              }
+            ]
+          }
         },
         "vi": {
-          "title": "Thanh nổi trên màn hình, thanh tác vụ dọc và điều khiển âm thanh",
+          "title": "AF Media Bar 1.5.0 — Thanh nổi trên màn hình, thanh tác vụ dọc và điều khiển âm thanh",
           "highlights": [
             "Thêm thử nghiệm thanh nổi, thanh tác vụ dọc và điều khiển âm thanh mới; mặc định đều tắt, có thể bật trong Tính năng thử nghiệm và chưa được kiểm thử đầy đủ.",
             "Hỗ trợ chuyển thiết bị đầu vào và đầu ra, định tuyến thiết bị cho từng ứng dụng và bộ trộn âm lượng gọn.",
             "Cho phép đặt thứ tự ưu tiên nguồn lời và kéo thả để sắp xếp thành phần, nguồn lời và mục khởi chạy nhanh.",
             "Cải thiện hiển thị trên thanh tác vụ nhỏ, đổi hướng, phản hồi phát trên ảnh bìa và menu khi thanh tác vụ tự ẩn."
-          ]
+          ],
+          "content": {
+            "summary": "Thanh nổi trên màn hình, thanh tác vụ dọc và điều khiển âm thanh.",
+            "sections": [
+              {
+                "title": "✨ Tính năng và trải nghiệm",
+                "items": [
+                  {
+                    "title": "Bật thử nghiệm hiển thị và âm thanh",
+                    "description": "Thêm thử nghiệm thanh nổi, thanh tác vụ dọc và điều khiển âm thanh mới; mặc định đều tắt, có thể bật trong Tính năng thử nghiệm và chưa được kiểm thử đầy đủ."
+                  },
+                  {
+                    "title": "Chuyển thiết bị và định tuyến ứng dụng",
+                    "description": "Hỗ trợ chuyển thiết bị đầu vào và đầu ra, định tuyến thiết bị cho từng ứng dụng và bộ trộn âm lượng gọn."
+                  },
+                  {
+                    "title": "Sắp xếp nguồn lời và danh sách",
+                    "description": "Cho phép đặt thứ tự ưu tiên nguồn lời và kéo thả để sắp xếp thành phần, nguồn lời và mục khởi chạy nhanh."
+                  },
+                  {
+                    "title": "Cải thiện thanh tác vụ nhỏ và thao tác",
+                    "description": "Cải thiện hiển thị trên thanh tác vụ nhỏ, đổi hướng, phản hồi phát trên ảnh bìa và menu khi thanh tác vụ tự ẩn."
+                  }
+                ]
+              }
+            ]
+          }
         }
       }
     },
@@ -50,40 +428,187 @@
       "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.4.0",
       "localizations": {
         "zh-Hans": {
-          "title": "设置与任务栏体验更新",
+          "title": "AF Media Bar 1.4.0 — 设置与任务栏体验更新",
           "highlights": [
             "重新组织设置导航，增加精确数值输入和越南语界面。",
             "新增磨砂背景、封面边缘进度、原地放大与大图预览，改善任务栏避让和长标题滚动。",
             "歌词支持简繁转换与视图恢复，性能组件增加网络速率，频谱可选择音频采集范围。",
             "改进媒体进度、音频浮窗、退出与重启，内置开发人员和赞助名单。"
-          ]
+          ],
+          "content": {
+            "summary": "这次更新重新整理设置页，增加任务栏背景、封面、歌词和性能组件选项，并改善任务栏定位、媒体恢复与退出。",
+            "sections": [
+              {
+                "title": "🧭 设置与语言",
+                "items": [
+                  {
+                    "title": "重新组织设置与精确输入",
+                    "description": "设置页类别重构；滑杆支持精确数值输入。"
+                  },
+                  {
+                    "title": "新增越南语界面与安装向导",
+                    "description": "新增越南语界面与安装向导。"
+                  }
+                ]
+              },
+              {
+                "title": "🖥️ 外观与任务栏",
+                "items": [
+                  {
+                    "title": "选择磨砂背景与音符颜色",
+                    "description": "新增磨砂背景选项；小音符支持自选颜色。"
+                  },
+                  {
+                    "title": "调整内容排布与封面交互",
+                    "description": "支持左右内容排布、封面悬停放大和大图预览；新增封面边缘播放进度。"
+                  },
+                  {
+                    "title": "改善避让和长标题滚动",
+                    "description": "优化任务栏图标避让算法、空间缩窄提醒与恢复、长标题循环滚动。"
+                  }
+                ]
+              },
+              {
+                "title": "🎵 歌词与小组件",
+                "items": [
+                  {
+                    "title": "转换中文歌词并恢复异常视图",
+                    "description": "歌词可在简体与繁体间转换；歌词显示异常时提供恢复或重启提示。"
+                  },
+                  {
+                    "title": "选择频谱采集范围",
+                    "description": "频谱可选择采集当前输出设备、所有应用、当前媒体应用。"
+                  },
+                  {
+                    "title": "显示网络速率并排列指标",
+                    "description": "性能组件增加网络上传和下载速率，支持轮换、并排显示和指标排序。"
+                  }
+                ]
+              },
+              {
+                "title": "🔧 体验与修复",
+                "items": [
+                  {
+                    "title": "改善媒体、音频浮窗和导航",
+                    "description": "改善媒体来源与播放进度更新，修复音频浮窗、窗口材质切换及设置导航问题。"
+                  },
+                  {
+                    "title": "改善退出与重启",
+                    "description": "改进退出、后台资源停止和重启交接，减少退出卡住桌面或残留进程的风险。"
+                  },
+                  {
+                    "title": "离线查看开发人员与赞助名单",
+                    "description": "开发人员与赞助名单提供离线副本和更新按钮。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "zh-Hant": {
-          "title": "設定與工作列體驗更新",
+          "title": "AF Media Bar 1.4.0 — 設定與工作列體驗更新",
           "highlights": [
             "重新整理設定導覽，加入精確數值輸入與越南語介面。",
             "新增磨砂背景、封面邊緣進度、原地放大與大圖預覽，改善工作列避讓與長標題捲動。",
             "歌詞支援簡繁轉換與檢視恢復，效能元件加入網路速率，頻譜可選擇音訊擷取範圍。",
             "改善媒體進度、音訊浮窗、結束與重新啟動，內建開發人員與贊助名單。"
-          ]
+          ],
+          "content": {
+            "summary": "設定與工作列體驗更新。",
+            "sections": [
+              {
+                "title": "✨ 功能與體驗",
+                "items": [
+                  {
+                    "title": "整理設定並加入越南語",
+                    "description": "重新整理設定導覽，加入精確數值輸入與越南語介面。"
+                  },
+                  {
+                    "title": "調整背景與封面呈現",
+                    "description": "新增磨砂背景、封面邊緣進度、原地放大與大圖預覽，改善工作列避讓與長標題捲動。"
+                  },
+                  {
+                    "title": "擴充歌詞、網速與頻譜",
+                    "description": "歌詞支援簡繁轉換與檢視恢復，效能元件加入網路速率，頻譜可選擇音訊擷取範圍。"
+                  },
+                  {
+                    "title": "改善媒體、結束與離線名單",
+                    "description": "改善媒體進度、音訊浮窗、結束與重新啟動，內建開發人員與贊助名單。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "en": {
-          "title": "Settings and taskbar improvements",
+          "title": "AF Media Bar 1.4.0 — Settings and taskbar improvements",
           "highlights": [
             "Reorganize Settings navigation, add precise numeric input and a Vietnamese interface.",
             "Add frosted backgrounds, artwork-edge progress, in-place zoom and large previews; improve taskbar avoidance and long-title scrolling.",
             "Add Chinese lyric conversion and view recovery, network rates in metrics, and selectable spectrum capture.",
             "Improve media progress, audio flyouts, shutdown and restart; bundle developer and sponsor lists."
-          ]
+          ],
+          "content": {
+            "summary": "Settings and taskbar improvements.",
+            "sections": [
+              {
+                "title": "✨ Features and experience",
+                "items": [
+                  {
+                    "title": "Reorganize Settings and add Vietnamese",
+                    "description": "Reorganize Settings navigation, add precise numeric input and a Vietnamese interface."
+                  },
+                  {
+                    "title": "Customize backgrounds and artwork",
+                    "description": "Add frosted backgrounds, artwork-edge progress, in-place zoom and large previews; improve taskbar avoidance and long-title scrolling."
+                  },
+                  {
+                    "title": "Extend lyrics, network rates and spectrum",
+                    "description": "Add Chinese lyric conversion and view recovery, network rates in metrics, and selectable spectrum capture."
+                  },
+                  {
+                    "title": "Improve media, shutdown and offline credits",
+                    "description": "Improve media progress, audio flyouts, shutdown and restart; bundle developer and sponsor lists."
+                  }
+                ]
+              }
+            ]
+          }
         },
         "vi": {
-          "title": "Cải thiện cài đặt và thanh tác vụ",
+          "title": "AF Media Bar 1.4.0 — Cải thiện cài đặt và thanh tác vụ",
           "highlights": [
             "Sắp xếp lại cài đặt, thêm nhập số chính xác và giao diện tiếng Việt.",
             "Thêm nền mờ, tiến trình quanh ảnh bìa, phóng to tại chỗ và xem trước ảnh lớn; cải thiện tránh biểu tượng và cuộn tiêu đề dài.",
             "Thêm chuyển đổi chữ Hán cho lời bài hát, khôi phục khung hiển thị, tốc độ mạng và lựa chọn nguồn âm thanh cho phổ tần.",
             "Cải thiện tiến trình phát, bảng âm thanh, thoát và khởi động lại; tích hợp danh sách nhà phát triển và nhà tài trợ."
-          ]
+          ],
+          "content": {
+            "summary": "Cải thiện cài đặt và thanh tác vụ.",
+            "sections": [
+              {
+                "title": "✨ Tính năng và trải nghiệm",
+                "items": [
+                  {
+                    "title": "Sắp xếp cài đặt và thêm tiếng Việt",
+                    "description": "Sắp xếp lại cài đặt, thêm nhập số chính xác và giao diện tiếng Việt."
+                  },
+                  {
+                    "title": "Tùy chỉnh nền và ảnh bìa",
+                    "description": "Thêm nền mờ, tiến trình quanh ảnh bìa, phóng to tại chỗ và xem trước ảnh lớn; cải thiện tránh biểu tượng và cuộn tiêu đề dài."
+                  },
+                  {
+                    "title": "Mở rộng lời bài hát, mạng và phổ tần",
+                    "description": "Thêm chuyển đổi chữ Hán cho lời bài hát, khôi phục khung hiển thị, tốc độ mạng và lựa chọn nguồn âm thanh cho phổ tần."
+                  },
+                  {
+                    "title": "Cải thiện phát nhạc, thoát và danh sách ngoại tuyến",
+                    "description": "Cải thiện tiến trình phát, bảng âm thanh, thoát và khởi động lại; tích hợp danh sách nhà phát triển và nhà tài trợ."
+                  }
+                ]
+              }
+            ]
+          }
         }
       }
     },
@@ -93,44 +618,164 @@
       "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.3.2",
       "localizations": {
         "zh-Hans": {
-          "title": "设置体验与稳定性修复",
+          "title": "AF Media Bar 1.3.2 — 设置体验与稳定性修复",
           "highlights": [
             "外观页打开与切换更顺畅，改善设置搜索、开机启动和快速打开列表重置。",
             "新增全局艺术家分隔符管理，改善歌词匹配并减少重复加载。",
             "修复封面不显示、裁切及透明封面颜色异常，提升浅色模式下资源监控的可读性。",
             "修复自动隐藏任务栏时的媒体栏错位，以及任务栏右键菜单打开后的避让问题。",
             "修复音量合成器遮挡和设备下拉框误选，改善更新安装、背景回退与日志保存。"
-          ]
+          ],
+          "content": {
+            "summary": "设置体验与稳定性修复。",
+            "sections": [
+              {
+                "title": "✨ 功能与体验",
+                "items": [
+                  {
+                    "title": "更顺畅地打开外观设置",
+                    "description": "外观页打开与切换更顺畅，改善设置搜索、开机启动和快速打开列表重置。"
+                  },
+                  {
+                    "title": "管理艺术家分隔符",
+                    "description": "新增全局艺术家分隔符管理，改善歌词匹配并减少重复加载。"
+                  },
+                  {
+                    "title": "修复封面与浅色指标显示",
+                    "description": "修复封面不显示、裁切及透明封面颜色异常，提升浅色模式下资源监控的可读性。"
+                  },
+                  {
+                    "title": "修复任务栏显隐与避让",
+                    "description": "修复自动隐藏任务栏时的媒体栏错位，以及任务栏右键菜单打开后的避让问题。"
+                  },
+                  {
+                    "title": "改善音频菜单和更新体验",
+                    "description": "修复音量合成器遮挡和设备下拉框误选，改善更新安装、背景回退与日志保存。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "zh-Hant": {
-          "title": "設定體驗與穩定性修正",
+          "title": "AF Media Bar 1.3.2 — 設定體驗與穩定性修正",
           "highlights": [
             "外觀頁開啟與切換更順暢，改善設定搜尋、開機啟動和快速開啟清單重設。",
             "新增全域藝術家分隔符管理，改善歌詞匹配並減少重複載入。",
             "修正封面不顯示、裁切及透明封面顏色異常，提升淺色模式下資源監控的可讀性。",
             "修正自動隱藏工作列時的媒體列錯位，以及工作列右鍵選單開啟後的避讓問題。",
             "修正音量混音器遮擋和裝置下拉選單誤選，改善更新安裝、背景回退與日誌儲存。"
-          ]
+          ],
+          "content": {
+            "summary": "設定體驗與穩定性修正。",
+            "sections": [
+              {
+                "title": "✨ 功能與體驗",
+                "items": [
+                  {
+                    "title": "更順暢地開啟外觀設定",
+                    "description": "外觀頁開啟與切換更順暢，改善設定搜尋、開機啟動和快速開啟清單重設。"
+                  },
+                  {
+                    "title": "管理藝術家分隔符",
+                    "description": "新增全域藝術家分隔符管理，改善歌詞匹配並減少重複載入。"
+                  },
+                  {
+                    "title": "修正封面與淺色指標顯示",
+                    "description": "修正封面不顯示、裁切及透明封面顏色異常，提升淺色模式下資源監控的可讀性。"
+                  },
+                  {
+                    "title": "修正工作列顯隱與避讓",
+                    "description": "修正自動隱藏工作列時的媒體列錯位，以及工作列右鍵選單開啟後的避讓問題。"
+                  },
+                  {
+                    "title": "改善音訊選單與更新體驗",
+                    "description": "修正音量混音器遮擋和裝置下拉選單誤選，改善更新安裝、背景回退與日誌儲存。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "en": {
-          "title": "Settings responsiveness and stability",
+          "title": "AF Media Bar 1.3.2 — Settings responsiveness and stability",
           "highlights": [
             "Open and switch Appearance settings more smoothly, with fixes for search, startup and Quick Launch resets.",
             "Manage global artist separators to improve lyric matching and reduce repeated retrieval.",
             "Fix missing or clipped artwork and incorrect transparent-artwork colors; improve resource-monitor readability in light mode.",
             "Fix media-bar placement during taskbar auto-hide and avoidance when the taskbar context menu is open.",
             "Fix mixer overlap and accidental device selection, and improve update installation, backdrop fallback and log saving."
-          ]
+          ],
+          "content": {
+            "summary": "Settings responsiveness and stability.",
+            "sections": [
+              {
+                "title": "✨ Features and experience",
+                "items": [
+                  {
+                    "title": "Open Appearance settings more smoothly",
+                    "description": "Open and switch Appearance settings more smoothly, with fixes for search, startup and Quick Launch resets."
+                  },
+                  {
+                    "title": "Manage artist separators",
+                    "description": "Manage global artist separators to improve lyric matching and reduce repeated retrieval."
+                  },
+                  {
+                    "title": "Fix artwork and light-theme metrics",
+                    "description": "Fix missing or clipped artwork and incorrect transparent-artwork colors; improve resource-monitor readability in light mode."
+                  },
+                  {
+                    "title": "Fix taskbar visibility and avoidance",
+                    "description": "Fix media-bar placement during taskbar auto-hide and avoidance when the taskbar context menu is open."
+                  },
+                  {
+                    "title": "Improve audio menus and updates",
+                    "description": "Fix mixer overlap and accidental device selection, and improve update installation, backdrop fallback and log saving."
+                  }
+                ]
+              }
+            ]
+          }
         },
         "vi": {
-          "title": "Cải thiện phần cài đặt và độ ổn định",
+          "title": "AF Media Bar 1.3.2 — Cải thiện phần cài đặt và độ ổn định",
           "highlights": [
             "Mở và chuyển trang Giao diện mượt hơn; sửa tìm kiếm, khởi động cùng Windows và đặt lại danh sách mở nhanh.",
             "Quản lý dấu phân cách tên nghệ sĩ để cải thiện việc tìm lời và giảm tải lại.",
             "Sửa ảnh bìa không hiển thị, bị cắt và màu ảnh trong suốt; cải thiện bảng tài nguyên ở giao diện sáng.",
             "Sửa vị trí thanh nhạc khi thanh tác vụ tự ẩn và khi mở menu chuột phải.",
             "Sửa nội dung bộ trộn âm lượng bị che và chọn nhầm thiết bị; cải thiện cài đặt cập nhật, nền và lưu nhật ký."
-          ]
+          ],
+          "content": {
+            "summary": "Cải thiện phần cài đặt và độ ổn định.",
+            "sections": [
+              {
+                "title": "✨ Tính năng và trải nghiệm",
+                "items": [
+                  {
+                    "title": "Mở cài đặt giao diện mượt hơn",
+                    "description": "Mở và chuyển trang Giao diện mượt hơn; sửa tìm kiếm, khởi động cùng Windows và đặt lại danh sách mở nhanh."
+                  },
+                  {
+                    "title": "Quản lý dấu phân cách nghệ sĩ",
+                    "description": "Quản lý dấu phân cách tên nghệ sĩ để cải thiện việc tìm lời và giảm tải lại."
+                  },
+                  {
+                    "title": "Sửa ảnh bìa và chỉ số giao diện sáng",
+                    "description": "Sửa ảnh bìa không hiển thị, bị cắt và màu ảnh trong suốt; cải thiện bảng tài nguyên ở giao diện sáng."
+                  },
+                  {
+                    "title": "Sửa hiển thị và tránh thanh tác vụ",
+                    "description": "Sửa vị trí thanh nhạc khi thanh tác vụ tự ẩn và khi mở menu chuột phải."
+                  },
+                  {
+                    "title": "Cải thiện menu âm thanh và cập nhật",
+                    "description": "Sửa nội dung bộ trộn âm lượng bị che và chọn nhầm thiết bị; cải thiện cài đặt cập nhật, nền và lưu nhật ký."
+                  }
+                ]
+              }
+            ]
+          }
         }
       }
     },
@@ -140,34 +785,124 @@
       "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.3.1",
       "localizations": {
         "zh-Hans": {
-          "title": "性能优化与稳定性修复",
+          "title": "AF Media Bar 1.3.1 — 性能优化与稳定性修复",
           "highlights": [
             "频谱隐藏时停止采样，减少播放进度、文字样式和动画的重复处理。",
             "歌词按需加载，关闭或持续无歌词时释放资源；关屏和锁屏时尝试挂起。",
             "媒体栏跟随自动隐藏任务栏滑入、滑出，运动期间暂停交互。",
             "修复 WebView2 数据目录、恢复默认封面开关及空间音效状态问题。",
             "再次检查更新保留就绪安装包，安装前重新校验文件与路径。"
-          ]
+          ],
+          "content": {
+            "summary": "性能优化与稳定性修复。",
+            "sections": [
+              {
+                "title": "✨ 功能与体验",
+                "items": [
+                  {
+                    "title": "减少隐藏频谱与动画开销",
+                    "description": "频谱隐藏时停止采样，减少播放进度、文字样式和动画的重复处理。"
+                  },
+                  {
+                    "title": "按需加载和释放歌词资源",
+                    "description": "歌词按需加载，关闭或持续无歌词时释放资源；关屏和锁屏时尝试挂起。"
+                  },
+                  {
+                    "title": "跟随自动隐藏任务栏",
+                    "description": "媒体栏跟随自动隐藏任务栏滑入、滑出，运动期间暂停交互。"
+                  },
+                  {
+                    "title": "修复歌词视图与封面开关",
+                    "description": "修复 WebView2 数据目录、恢复默认封面开关及空间音效状态问题。"
+                  },
+                  {
+                    "title": "保留并重新校验待安装包",
+                    "description": "再次检查更新保留就绪安装包，安装前重新校验文件与路径。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "zh-Hant": {
-          "title": "效能最佳化與穩定性修正",
+          "title": "AF Media Bar 1.3.1 — 效能最佳化與穩定性修正",
           "highlights": [
             "頻譜隱藏時停止取樣，減少播放進度、文字樣式和動畫的重複處理。",
             "歌詞依需求載入，關閉或持續無歌詞時釋放資源；關閉螢幕和鎖定時嘗試暫停。",
             "媒體列跟隨自動隱藏工作列滑入、滑出，移動期間暫停互動。",
             "修正 WebView2 資料目錄、還原預設封面開關及空間音效狀態問題。",
             "再次檢查更新保留就緒安裝套件，安裝前重新驗證檔案與路徑。"
-          ]
+          ],
+          "content": {
+            "summary": "效能最佳化與穩定性修正。",
+            "sections": [
+              {
+                "title": "✨ 功能與體驗",
+                "items": [
+                  {
+                    "title": "減少隱藏頻譜與動畫負擔",
+                    "description": "頻譜隱藏時停止取樣，減少播放進度、文字樣式和動畫的重複處理。"
+                  },
+                  {
+                    "title": "按需載入與釋放歌詞資源",
+                    "description": "歌詞依需求載入，關閉或持續無歌詞時釋放資源；關閉螢幕和鎖定時嘗試暫停。"
+                  },
+                  {
+                    "title": "跟隨自動隱藏工作列",
+                    "description": "媒體列跟隨自動隱藏工作列滑入、滑出，移動期間暫停互動。"
+                  },
+                  {
+                    "title": "修正歌詞檢視與封面開關",
+                    "description": "修正 WebView2 資料目錄、還原預設封面開關及空間音效狀態問題。"
+                  },
+                  {
+                    "title": "保留並重新驗證待安裝套件",
+                    "description": "再次檢查更新保留就緒安裝套件，安裝前重新驗證檔案與路徑。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "en": {
-          "title": "Performance and stability",
+          "title": "AF Media Bar 1.3.1 — Performance and stability",
           "highlights": [
             "Spectrum sampling stops when hidden; playback, text and animation updates do less repeated work.",
             "Lyrics load on demand and release unused resources; screen-off and lock states suspend work where possible.",
             "The media bar follows taskbar auto-hide motion and suspends interaction while moving.",
             "Fixed WebView2 data paths, artwork reset and spatial-audio status.",
             "Checking again retains ready installers; files and paths are revalidated before installation."
-          ]
+          ],
+          "content": {
+            "summary": "Performance and stability.",
+            "sections": [
+              {
+                "title": "✨ Features and experience",
+                "items": [
+                  {
+                    "title": "Reduce hidden-spectrum and animation work",
+                    "description": "Spectrum sampling stops when hidden; playback, text and animation updates do less repeated work."
+                  },
+                  {
+                    "title": "Load and release lyric resources on demand",
+                    "description": "Lyrics load on demand and release unused resources; screen-off and lock states suspend work where possible."
+                  },
+                  {
+                    "title": "Follow taskbar auto-hide motion",
+                    "description": "The media bar follows taskbar auto-hide motion and suspends interaction while moving."
+                  },
+                  {
+                    "title": "Fix lyric-view and artwork settings",
+                    "description": "Fixed WebView2 data paths, artwork reset and spatial-audio status."
+                  },
+                  {
+                    "title": "Retain and revalidate pending installers",
+                    "description": "Checking again retains ready installers; files and paths are revalidated before installation."
+                  }
+                ]
+              }
+            ]
+          }
         }
       }
     },
@@ -177,34 +912,124 @@
       "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.3.0",
       "localizations": {
         "zh-Hans": {
-          "title": "歌词与媒体栏体验更新",
+          "title": "AF Media Bar 1.3.0 — 歌词与媒体栏体验更新",
           "highlights": [
             "歌词采用 WebView2 呈现，统一逐字高亮、译文和音译，支持行距、字距和区域长度调节。",
             "无媒体音符与封面、歌词之间连贯展开、收起，减少尺寸调整时的抖动和裁切。",
             "新增滚轮提示开关、交互按钮尺寸、独立组件设置页及静置层封面开关。",
             "改进媒体恢复、歌词进度与封面匹配，修复低音量频谱和托盘旧状态提示。",
             "右键菜单支持快速打开绑定应用，发现新版本时提供更新入口。"
-          ]
+          ],
+          "content": {
+            "summary": "歌词与媒体栏体验更新。",
+            "sections": [
+              {
+                "title": "✨ 功能与体验",
+                "items": [
+                  {
+                    "title": "统一歌词呈现与尺寸调节",
+                    "description": "歌词采用 WebView2 呈现，统一逐字高亮、译文和音译，支持行距、字距和区域长度调节。"
+                  },
+                  {
+                    "title": "连贯切换无媒体与播放状态",
+                    "description": "无媒体音符与封面、歌词之间连贯展开、收起，减少尺寸调整时的抖动和裁切。"
+                  },
+                  {
+                    "title": "补充交互和组件设置",
+                    "description": "新增滚轮提示开关、交互按钮尺寸、独立组件设置页及静置层封面开关。"
+                  },
+                  {
+                    "title": "改善媒体恢复与播放反馈",
+                    "description": "改进媒体恢复、歌词进度与封面匹配，修复低音量频谱和托盘旧状态提示。"
+                  },
+                  {
+                    "title": "从右键菜单快速打开应用",
+                    "description": "右键菜单支持快速打开绑定应用，发现新版本时提供更新入口。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "zh-Hant": {
-          "title": "歌詞與媒體列體驗更新",
+          "title": "AF Media Bar 1.3.0 — 歌詞與媒體列體驗更新",
           "highlights": [
             "歌詞採用 WebView2 呈現，統一逐字醒目提示、譯文和音譯，支援行距、字距及區域長度調整。",
             "無媒體音符與封面、歌詞之間連貫展開、收合，減少尺寸調整時的抖動和裁切。",
             "新增滾輪提示開關、互動按鈕尺寸、獨立元件設定頁及靜置層封面開關。",
             "改善媒體恢復、歌詞進度與封面比對，修正低音量頻譜及系統匣舊狀態提示。",
             "右鍵選單支援快速開啟綁定應用程式，發現新版本時提供更新入口。"
-          ]
+          ],
+          "content": {
+            "summary": "歌詞與媒體列體驗更新。",
+            "sections": [
+              {
+                "title": "✨ 功能與體驗",
+                "items": [
+                  {
+                    "title": "統一歌詞呈現與尺寸調整",
+                    "description": "歌詞採用 WebView2 呈現，統一逐字醒目提示、譯文和音譯，支援行距、字距及區域長度調整。"
+                  },
+                  {
+                    "title": "連貫切換無媒體與播放狀態",
+                    "description": "無媒體音符與封面、歌詞之間連貫展開、收合，減少尺寸調整時的抖動和裁切。"
+                  },
+                  {
+                    "title": "補充互動與元件設定",
+                    "description": "新增滾輪提示開關、互動按鈕尺寸、獨立元件設定頁及靜置層封面開關。"
+                  },
+                  {
+                    "title": "改善媒體恢復與播放回饋",
+                    "description": "改善媒體恢復、歌詞進度與封面比對，修正低音量頻譜及系統匣舊狀態提示。"
+                  },
+                  {
+                    "title": "從右鍵選單快速開啟應用程式",
+                    "description": "右鍵選單支援快速開啟綁定應用程式，發現新版本時提供更新入口。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "en": {
-          "title": "Lyrics and media bar improvements",
+          "title": "AF Media Bar 1.3.0 — Lyrics and media bar improvements",
           "highlights": [
             "WebView2 lyrics unify syllable highlighting, translation and transliteration, with spacing and width controls.",
             "Smoother transitions between idle and playback reduce layout jitter and clipping.",
             "Added wheel hints, button sizing, a component settings page and an independent artwork toggle.",
             "Improved session recovery, lyric timing and artwork matching; fixed quiet-audio spectrum and stale tray hints.",
             "Context menus can launch linked apps and show an entry when an update is available."
-          ]
+          ],
+          "content": {
+            "summary": "Lyrics and media bar improvements.",
+            "sections": [
+              {
+                "title": "✨ Features and experience",
+                "items": [
+                  {
+                    "title": "Unify lyric rendering and sizing",
+                    "description": "WebView2 lyrics unify syllable highlighting, translation and transliteration, with spacing and width controls."
+                  },
+                  {
+                    "title": "Transition smoothly between playback states",
+                    "description": "Smoother transitions between idle and playback reduce layout jitter and clipping."
+                  },
+                  {
+                    "title": "Add interaction and component settings",
+                    "description": "Added wheel hints, button sizing, a component settings page and an independent artwork toggle."
+                  },
+                  {
+                    "title": "Improve media recovery and playback feedback",
+                    "description": "Improved session recovery, lyric timing and artwork matching; fixed quiet-audio spectrum and stale tray hints."
+                  },
+                  {
+                    "title": "Launch applications from context menus",
+                    "description": "Context menus can launch linked apps and show an entry when an update is available."
+                  }
+                ]
+              }
+            ]
+          }
         }
       }
     },
@@ -214,34 +1039,124 @@
       "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.2.1",
       "localizations": {
         "zh-Hans": {
-          "title": "任务栏显隐与多显示器修复",
+          "title": "AF Media Bar 1.2.1 — 任务栏显隐与多显示器修复",
           "highlights": [
             "修复自动隐藏任务栏的卡顿、跳位，以及截图和录屏时的媒体栏错位。",
             "支持在所有启用的任务栏同时显示，修复切换显示器后的性能监测。",
             "新增逐字高亮开关，关闭后保留歌词时间轴和滚动轨迹。",
             "修复内存整理竞争、设置说明条缺失崩溃和窗口稳定性问题。",
             "调整滚轮命中范围、完整层信息、私人 FM 取词与静置层组件顺序。"
-          ]
+          ],
+          "content": {
+            "summary": "任务栏显隐与多显示器修复。",
+            "sections": [
+              {
+                "title": "✨ 功能与体验",
+                "items": [
+                  {
+                    "title": "稳定跟随任务栏显隐",
+                    "description": "修复自动隐藏任务栏的卡顿、跳位，以及截图和录屏时的媒体栏错位。"
+                  },
+                  {
+                    "title": "在多个任务栏同时显示",
+                    "description": "支持在所有启用的任务栏同时显示，修复切换显示器后的性能监测。"
+                  },
+                  {
+                    "title": "按需关闭逐字高亮",
+                    "description": "新增逐字高亮开关，关闭后保留歌词时间轴和滚动轨迹。"
+                  },
+                  {
+                    "title": "修复内存整理与设置异常",
+                    "description": "修复内存整理竞争、设置说明条缺失崩溃和窗口稳定性问题。"
+                  },
+                  {
+                    "title": "改善滚轮、面板与歌词体验",
+                    "description": "调整滚轮命中范围、完整层信息、私人 FM 取词与静置层组件顺序。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "zh-Hant": {
-          "title": "工作列顯隱與多螢幕修正",
+          "title": "AF Media Bar 1.2.1 — 工作列顯隱與多螢幕修正",
           "highlights": [
             "修正自動隱藏工作列的延遲、跳位，以及螢幕擷取和錄影時的媒體列錯位。",
             "支援在所有啟用的工作列同時顯示，修正切換螢幕後的效能監測。",
             "新增逐字醒目提示開關，關閉後保留歌詞時間軸和捲動軌跡。",
             "修正記憶體整理競爭、設定說明列缺失當機及視窗穩定性問題。",
             "調整滾輪作用範圍、完整層資訊、私人 FM 歌詞取得及靜置層元件順序。"
-          ]
+          ],
+          "content": {
+            "summary": "工作列顯隱與多螢幕修正。",
+            "sections": [
+              {
+                "title": "✨ 功能與體驗",
+                "items": [
+                  {
+                    "title": "穩定跟隨工作列顯隱",
+                    "description": "修正自動隱藏工作列的延遲、跳位，以及螢幕擷取和錄影時的媒體列錯位。"
+                  },
+                  {
+                    "title": "在多個工作列同時顯示",
+                    "description": "支援在所有啟用的工作列同時顯示，修正切換螢幕後的效能監測。"
+                  },
+                  {
+                    "title": "按需關閉逐字高亮",
+                    "description": "新增逐字醒目提示開關，關閉後保留歌詞時間軸和捲動軌跡。"
+                  },
+                  {
+                    "title": "修正記憶體整理與設定異常",
+                    "description": "修正記憶體整理競爭、設定說明列缺失當機及視窗穩定性問題。"
+                  },
+                  {
+                    "title": "改善滾輪、面板與歌詞體驗",
+                    "description": "調整滾輪作用範圍、完整層資訊、私人 FM 歌詞取得及靜置層元件順序。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "en": {
-          "title": "Taskbar and multiple-display fixes",
+          "title": "AF Media Bar 1.2.1 — Taskbar and multiple-display fixes",
           "highlights": [
             "Fixed auto-hide stutter and jumps, including displacement during screen capture.",
             "The bar can appear on all enabled taskbars; metrics recover after display changes.",
             "Added a syllable-highlight toggle that keeps lyric timing and scrolling unchanged.",
             "Fixed memory-pruning races, missing-callout crashes and window stability.",
             "Refined wheel hit areas, full-panel information, private-FM lyrics and component order."
-          ]
+          ],
+          "content": {
+            "summary": "Taskbar and multiple-display fixes.",
+            "sections": [
+              {
+                "title": "✨ Features and experience",
+                "items": [
+                  {
+                    "title": "Follow taskbar visibility reliably",
+                    "description": "Fixed auto-hide stutter and jumps, including displacement during screen capture."
+                  },
+                  {
+                    "title": "Show the bar on multiple taskbars",
+                    "description": "The bar can appear on all enabled taskbars; metrics recover after display changes."
+                  },
+                  {
+                    "title": "Turn syllable highlighting off independently",
+                    "description": "Added a syllable-highlight toggle that keeps lyric timing and scrolling unchanged."
+                  },
+                  {
+                    "title": "Fix memory trimming and settings failures",
+                    "description": "Fixed memory-pruning races, missing-callout crashes and window stability."
+                  },
+                  {
+                    "title": "Improve wheel, panel and lyric interactions",
+                    "description": "Refined wheel hit areas, full-panel information, private-FM lyrics and component order."
+                  }
+                ]
+              }
+            ]
+          }
         }
       }
     },
@@ -251,34 +1166,124 @@
       "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.2.0",
       "localizations": {
         "zh-Hans": {
-          "title": "全新界面与任务栏歌词",
+          "title": "AF Media Bar 1.2.0 — 全新界面与任务栏歌词",
           "highlights": [
             "重做界面与交互，加入任务栏歌词和多来源匹配。",
             "新增安装程序、程序内下载与静默安装，以及目标显示器选择。",
             "支持主题、材质、强调色、曲目通知和媒体来源允许列表。",
             "新增快速启动、托盘滚轮交互、音频面板及波形和像素频谱样式。",
             "后台内存分档回收；旧版设置留档后需重新配置，竖向任务栏与悬浮模式暂不支持。"
-          ]
+          ],
+          "content": {
+            "summary": "全新界面与任务栏歌词。",
+            "sections": [
+              {
+                "title": "✨ 功能与体验",
+                "items": [
+                  {
+                    "title": "全新界面与任务栏歌词",
+                    "description": "重做界面与交互，加入任务栏歌词和多来源匹配。"
+                  },
+                  {
+                    "title": "使用安装版与程序内更新",
+                    "description": "新增安装程序、程序内下载与静默安装，以及目标显示器选择。"
+                  },
+                  {
+                    "title": "配置外观、通知与来源",
+                    "description": "支持主题、材质、强调色、曲目通知和媒体来源允许列表。"
+                  },
+                  {
+                    "title": "快速启动并操作音频和频谱",
+                    "description": "新增快速启动、托盘滚轮交互、音频面板及波形和像素频谱样式。"
+                  },
+                  {
+                    "title": "了解设置重置与模式限制",
+                    "description": "后台内存分档回收；旧版设置留档后需重新配置，竖向任务栏与悬浮模式暂不支持。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "zh-Hant": {
-          "title": "全新介面與工作列歌詞",
+          "title": "AF Media Bar 1.2.0 — 全新介面與工作列歌詞",
           "highlights": [
             "重新設計介面與互動，加入工作列歌詞及多來源比對。",
             "新增安裝程式、程式內下載與無訊息安裝，以及目標螢幕選擇。",
             "支援佈景主題、材質、強調色、曲目通知及媒體來源允許清單。",
             "新增快速啟動、系統匣滾輪互動、音訊面板及波形和像素頻譜樣式。",
             "背景記憶體分級回收；舊版設定保留後需重新設定，垂直工作列及浮動模式暫不支援。"
-          ]
+          ],
+          "content": {
+            "summary": "全新介面與工作列歌詞。",
+            "sections": [
+              {
+                "title": "✨ 功能與體驗",
+                "items": [
+                  {
+                    "title": "全新介面與工作列歌詞",
+                    "description": "重新設計介面與互動，加入工作列歌詞及多來源比對。"
+                  },
+                  {
+                    "title": "使用安裝版與程式內更新",
+                    "description": "新增安裝程式、程式內下載與無訊息安裝，以及目標螢幕選擇。"
+                  },
+                  {
+                    "title": "設定外觀、通知與來源",
+                    "description": "支援佈景主題、材質、強調色、曲目通知及媒體來源允許清單。"
+                  },
+                  {
+                    "title": "快速啟動並操作音訊與頻譜",
+                    "description": "新增快速啟動、系統匣滾輪互動、音訊面板及波形和像素頻譜樣式。"
+                  },
+                  {
+                    "title": "了解設定重設與模式限制",
+                    "description": "背景記憶體分級回收；舊版設定保留後需重新設定，垂直工作列及浮動模式暫不支援。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "en": {
-          "title": "Rebuilt interface and taskbar lyrics",
+          "title": "AF Media Bar 1.2.0 — Rebuilt interface and taskbar lyrics",
           "highlights": [
             "Rebuilt the interface and interactions, with taskbar lyrics and multiple lyric sources.",
             "Added an installer, in-app download and silent installation, plus target-display selection.",
             "Added theme, material and accent settings, track notifications and media filtering.",
             "Added quick launch, tray wheel controls, an audio panel and waveform and pixel spectra.",
             "Staged background memory trimming. Older settings are archived and must be reconfigured; vertical and floating modes are unavailable."
-          ]
+          ],
+          "content": {
+            "summary": "Rebuilt interface and taskbar lyrics.",
+            "sections": [
+              {
+                "title": "✨ Features and experience",
+                "items": [
+                  {
+                    "title": "New interface and taskbar lyrics",
+                    "description": "Rebuilt the interface and interactions, with taskbar lyrics and multiple lyric sources."
+                  },
+                  {
+                    "title": "Use the installer and in-app updates",
+                    "description": "Added an installer, in-app download and silent installation, plus target-display selection."
+                  },
+                  {
+                    "title": "Configure appearance, notifications and sources",
+                    "description": "Added theme, material and accent settings, track notifications and media filtering."
+                  },
+                  {
+                    "title": "Quick-launch applications and control audio",
+                    "description": "Added quick launch, tray wheel controls, an audio panel and waveform and pixel spectra."
+                  },
+                  {
+                    "title": "Review settings reset and mode limitations",
+                    "description": "Staged background memory trimming. Older settings are archived and must be reconfigured; vertical and floating modes are unavailable."
+                  }
+                ]
+              }
+            ]
+          }
         }
       }
     },
@@ -288,31 +1293,109 @@
       "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.1.1",
       "localizations": {
         "zh-Hans": {
-          "title": "窗口恢复与媒体稳定性",
+          "title": "AF Media Bar 1.1.1 — 窗口恢复与媒体稳定性",
           "highlights": [
             "修复悬浮窗口、托盘唤醒和桌面边缘尺寸恢复。",
             "修复浏览器封面刷新、断线媒体切换及暂停后的自动切源。",
             "完善三种界面语言的即时切换，改进设置、日志、字体与外观调节。",
             "资源监控区域新增任务管理器快捷操作。"
-          ]
+          ],
+          "content": {
+            "summary": "窗口恢复与媒体稳定性。",
+            "sections": [
+              {
+                "title": "✨ 功能与体验",
+                "items": [
+                  {
+                    "title": "恢复悬浮窗口与托盘唤醒",
+                    "description": "修复悬浮窗口、托盘唤醒和桌面边缘尺寸恢复。"
+                  },
+                  {
+                    "title": "改善封面与自动切源",
+                    "description": "修复浏览器封面刷新、断线媒体切换及暂停后的自动切源。"
+                  },
+                  {
+                    "title": "即时切换语言并调整外观",
+                    "description": "完善三种界面语言的即时切换，改进设置、日志、字体与外观调节。"
+                  },
+                  {
+                    "title": "从资源监控打开任务管理器",
+                    "description": "资源监控区域新增任务管理器快捷操作。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "zh-Hant": {
-          "title": "視窗恢復與媒體穩定性",
+          "title": "AF Media Bar 1.1.1 — 視窗恢復與媒體穩定性",
           "highlights": [
             "修正浮動視窗、系統匣喚醒及桌面邊緣尺寸恢復。",
             "修正瀏覽器封面更新、斷線媒體切換及暫停後自動切換來源。",
             "完善三種介面語言的即時切換，改善設定、記錄、字型及外觀調整。",
             "資源監控區域新增工作管理員快捷操作。"
-          ]
+          ],
+          "content": {
+            "summary": "視窗恢復與媒體穩定性。",
+            "sections": [
+              {
+                "title": "✨ 功能與體驗",
+                "items": [
+                  {
+                    "title": "恢復浮動視窗與系統匣喚醒",
+                    "description": "修正浮動視窗、系統匣喚醒及桌面邊緣尺寸恢復。"
+                  },
+                  {
+                    "title": "改善封面與自動切源",
+                    "description": "修正瀏覽器封面更新、斷線媒體切換及暫停後自動切換來源。"
+                  },
+                  {
+                    "title": "即時切換語言並調整外觀",
+                    "description": "完善三種介面語言的即時切換，改善設定、記錄、字型及外觀調整。"
+                  },
+                  {
+                    "title": "從資源監控開啟工作管理員",
+                    "description": "資源監控區域新增工作管理員快捷操作。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "en": {
-          "title": "Window recovery and media stability",
+          "title": "AF Media Bar 1.1.1 — Window recovery and media stability",
           "highlights": [
             "Fixed floating-window recovery, tray wake-up and edge sizing.",
             "Fixed browser artwork refresh, disconnected-session switching and source changes after pausing.",
             "Improved live language switching, settings, logs, fonts and appearance controls.",
             "Added a Task Manager shortcut in the resource-monitoring area."
-          ]
+          ],
+          "content": {
+            "summary": "Window recovery and media stability.",
+            "sections": [
+              {
+                "title": "✨ Features and experience",
+                "items": [
+                  {
+                    "title": "Restore floating windows and tray activation",
+                    "description": "Fixed floating-window recovery, tray wake-up and edge sizing."
+                  },
+                  {
+                    "title": "Improve artwork and automatic source changes",
+                    "description": "Fixed browser artwork refresh, disconnected-session switching and source changes after pausing."
+                  },
+                  {
+                    "title": "Switch languages and adjust appearance",
+                    "description": "Improved live language switching, settings, logs, fonts and appearance controls."
+                  },
+                  {
+                    "title": "Open Task Manager from resource metrics",
+                    "description": "Added a Task Manager shortcut in the resource-monitoring area."
+                  }
+                ]
+              }
+            ]
+          }
         }
       }
     },
@@ -322,31 +1405,109 @@
       "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.1.0",
       "localizations": {
         "zh-Hans": {
-          "title": "兼容性与外观设置扩展",
+          "title": "AF Media Bar 1.1.0 — 兼容性与外观设置扩展",
           "highlights": [
             "加入 Windows 10 支持、系统主题跟随与独立主题设置。",
             "该版本支持横向、竖向任务栏布局，以及浮动窗口、边缘收起和可见性选项。",
             "重构设置窗口与任务栏窗口托管，修复右键菜单层级。",
             "新增自动更新检查、备用清单源与跳过版本。"
-          ]
+          ],
+          "content": {
+            "summary": "兼容性与外观设置扩展。",
+            "sections": [
+              {
+                "title": "✨ 功能与体验",
+                "items": [
+                  {
+                    "title": "支持 Windows 10 与系统主题",
+                    "description": "加入 Windows 10 支持、系统主题跟随与独立主题设置。"
+                  },
+                  {
+                    "title": "扩展布局、悬浮与边缘收起",
+                    "description": "该版本支持横向、竖向任务栏布局，以及浮动窗口、边缘收起和可见性选项。"
+                  },
+                  {
+                    "title": "整理设置和窗口层级",
+                    "description": "重构设置窗口与任务栏窗口托管，修复右键菜单层级。"
+                  },
+                  {
+                    "title": "自动检查更新并跳过版本",
+                    "description": "新增自动更新检查、备用清单源与跳过版本。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "zh-Hant": {
-          "title": "相容性與外觀設定擴充",
+          "title": "AF Media Bar 1.1.0 — 相容性與外觀設定擴充",
           "highlights": [
             "加入 Windows 10 支援、系統佈景主題跟隨及獨立主題設定。",
             "該版本支援水平、垂直工作列配置，以及浮動視窗、邊緣收合和可見性選項。",
             "重構設定視窗與工作列視窗管理，修正右鍵選單層級。",
             "新增自動更新檢查、備用清單來源及略過版本。"
-          ]
+          ],
+          "content": {
+            "summary": "相容性與外觀設定擴充。",
+            "sections": [
+              {
+                "title": "✨ 功能與體驗",
+                "items": [
+                  {
+                    "title": "支援 Windows 10 與系統佈景主題",
+                    "description": "加入 Windows 10 支援、系統佈景主題跟隨及獨立主題設定。"
+                  },
+                  {
+                    "title": "擴充布局、浮動與邊緣收起",
+                    "description": "該版本支援水平、垂直工作列配置，以及浮動視窗、邊緣收合和可見性選項。"
+                  },
+                  {
+                    "title": "整理設定與視窗層級",
+                    "description": "重構設定視窗與工作列視窗管理，修正右鍵選單層級。"
+                  },
+                  {
+                    "title": "自動檢查更新並略過版本",
+                    "description": "新增自動更新檢查、備用清單來源及略過版本。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "en": {
-          "title": "Compatibility and appearance settings",
+          "title": "AF Media Bar 1.1.0 — Compatibility and appearance settings",
           "highlights": [
             "Added Windows 10 support and automatic or independent themes.",
             "This release supported horizontal and vertical layouts, floating windows and edge visibility options.",
             "Reworked settings and taskbar window hosting; fixed context-menu layering.",
             "Added automatic update checks, fallback manifest sources and version skipping."
-          ]
+          ],
+          "content": {
+            "summary": "Compatibility and appearance settings.",
+            "sections": [
+              {
+                "title": "✨ Features and experience",
+                "items": [
+                  {
+                    "title": "Support Windows 10 and system themes",
+                    "description": "Added Windows 10 support and automatic or independent themes."
+                  },
+                  {
+                    "title": "Extend layouts, floating mode and edge collapse",
+                    "description": "This release supported horizontal and vertical layouts, floating windows and edge visibility options."
+                  },
+                  {
+                    "title": "Reorganize Settings and window layering",
+                    "description": "Reworked settings and taskbar window hosting; fixed context-menu layering."
+                  },
+                  {
+                    "title": "Check for updates and skip versions",
+                    "description": "Added automatic update checks, fallback manifest sources and version skipping."
+                  }
+                ]
+              }
+            ]
+          }
         }
       }
     },
@@ -356,28 +1517,94 @@
       "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.0.1",
       "localizations": {
         "zh-Hans": {
-          "title": "自动隐藏跟随与单文件分发",
+          "title": "AF Media Bar 1.0.1 — 自动隐藏跟随与单文件分发",
           "highlights": [
             "缩短 Windows 11 任务栏自动隐藏的跟随延迟，普通显隐过程保持窗口存活。",
             "更换应用图标与 README 品牌图片。",
             "自包含 win-x64 发布包改为单个可执行文件，无需另装 .NET 运行时。"
-          ]
+          ],
+          "content": {
+            "summary": "自动隐藏跟随与单文件分发。",
+            "sections": [
+              {
+                "title": "✨ 功能与体验",
+                "items": [
+                  {
+                    "title": "更快跟随任务栏自动隐藏",
+                    "description": "缩短 Windows 11 任务栏自动隐藏的跟随延迟，普通显隐过程保持窗口存活。"
+                  },
+                  {
+                    "title": "更新应用图标与品牌图片",
+                    "description": "更换应用图标与 README 品牌图片。"
+                  },
+                  {
+                    "title": "以单个自包含程序分发",
+                    "description": "自包含 win-x64 发布包改为单个可执行文件，无需另装 .NET 运行时。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "zh-Hant": {
-          "title": "自動隱藏跟隨與單一檔案發佈",
+          "title": "AF Media Bar 1.0.1 — 自動隱藏跟隨與單一檔案發佈",
           "highlights": [
             "縮短 Windows 11 工作列自動隱藏的跟隨延遲，一般顯隱過程保持視窗運作。",
             "更新應用程式圖示及 README 品牌圖片。",
             "獨立 win-x64 發佈套件改為單一執行檔，無需另外安裝 .NET 執行階段。"
-          ]
+          ],
+          "content": {
+            "summary": "自動隱藏跟隨與單一檔案發佈。",
+            "sections": [
+              {
+                "title": "✨ 功能與體驗",
+                "items": [
+                  {
+                    "title": "更快跟隨工作列自動隱藏",
+                    "description": "縮短 Windows 11 工作列自動隱藏的跟隨延遲，一般顯隱過程保持視窗運作。"
+                  },
+                  {
+                    "title": "更新應用程式圖示與品牌圖片",
+                    "description": "更新應用程式圖示及 README 品牌圖片。"
+                  },
+                  {
+                    "title": "以單一自含程式發佈",
+                    "description": "獨立 win-x64 發佈套件改為單一執行檔，無需另外安裝 .NET 執行階段。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "en": {
-          "title": "Auto-hide tracking and single-file builds",
+          "title": "AF Media Bar 1.0.1 — Auto-hide tracking and single-file builds",
           "highlights": [
             "Reduced Windows 11 auto-hide tracking delay and avoided recreating windows during ordinary transitions.",
             "Introduced updated app icons and README branding.",
             "Self-contained win-x64 builds use a single executable without a separate .NET runtime."
-          ]
+          ],
+          "content": {
+            "summary": "Auto-hide tracking and single-file builds.",
+            "sections": [
+              {
+                "title": "✨ Features and experience",
+                "items": [
+                  {
+                    "title": "Follow taskbar auto-hide sooner",
+                    "description": "Reduced Windows 11 auto-hide tracking delay and avoided recreating windows during ordinary transitions."
+                  },
+                  {
+                    "title": "Refresh the application icon and branding",
+                    "description": "Introduced updated app icons and README branding."
+                  },
+                  {
+                    "title": "Distribute one self-contained executable",
+                    "description": "Self-contained win-x64 builds use a single executable without a separate .NET runtime."
+                  }
+                ]
+              }
+            ]
+          }
         }
       }
     },
@@ -387,31 +1614,109 @@
       "releaseNotesUrl": "https://github.com/Fervent-Tempo/AF-Media-Bar/releases/tag/v1.0.0",
       "localizations": {
         "zh-Hans": {
-          "title": "首个正式版本",
+          "title": "AF Media Bar 1.0.0 — 首个正式版本",
           "highlights": [
             "在 Windows 11 任务栏显示封面、标题、作者和媒体播放控制。",
             "支持多个 GSMTC 媒体来源，通过滚轮切换。",
             "支持手动定位、位置锁定、自动隐藏与全屏隐藏。",
             "切换默认输出设备，调节媒体应用音量，提供音频可视化与可选系统指标。"
-          ]
+          ],
+          "content": {
+            "summary": "首个正式版本。",
+            "sections": [
+              {
+                "title": "✨ 功能与体验",
+                "items": [
+                  {
+                    "title": "在任务栏查看和控制媒体",
+                    "description": "在 Windows 11 任务栏显示封面、标题、作者和媒体播放控制。"
+                  },
+                  {
+                    "title": "通过滚轮切换媒体来源",
+                    "description": "支持多个 GSMTC 媒体来源，通过滚轮切换。"
+                  },
+                  {
+                    "title": "配置位置与可见性",
+                    "description": "支持手动定位、位置锁定、自动隐藏与全屏隐藏。"
+                  },
+                  {
+                    "title": "切换设备并查看音频和系统指标",
+                    "description": "切换默认输出设备，调节媒体应用音量，提供音频可视化与可选系统指标。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "zh-Hant": {
-          "title": "首個正式版本",
+          "title": "AF Media Bar 1.0.0 — 首個正式版本",
           "highlights": [
             "在 Windows 11 工作列顯示封面、標題、作者及媒體播放控制。",
             "支援多個 GSMTC 媒體來源，可透過滾輪切換。",
             "支援手動定位、位置鎖定、自動隱藏及全螢幕隱藏。",
             "切換預設輸出裝置、調整媒體應用程式音量，提供音訊視覺化及選用系統指標。"
-          ]
+          ],
+          "content": {
+            "summary": "首個正式版本。",
+            "sections": [
+              {
+                "title": "✨ 功能與體驗",
+                "items": [
+                  {
+                    "title": "在工作列查看與控制媒體",
+                    "description": "在 Windows 11 工作列顯示封面、標題、作者及媒體播放控制。"
+                  },
+                  {
+                    "title": "透過滾輪切換媒體來源",
+                    "description": "支援多個 GSMTC 媒體來源，可透過滾輪切換。"
+                  },
+                  {
+                    "title": "設定位置與可見性",
+                    "description": "支援手動定位、位置鎖定、自動隱藏及全螢幕隱藏。"
+                  },
+                  {
+                    "title": "切換裝置並查看音訊與系統指標",
+                    "description": "切換預設輸出裝置、調整媒體應用程式音量，提供音訊視覺化及選用系統指標。"
+                  }
+                ]
+              }
+            ]
+          }
         },
         "en": {
-          "title": "First stable release",
+          "title": "AF Media Bar 1.0.0 — First stable release",
           "highlights": [
             "Shows artwork, title, artist and playback controls on the Windows 11 taskbar.",
             "Supports multiple GSMTC media sources with wheel switching.",
             "Provides manual positioning, position locking, auto-hide and full-screen hiding.",
             "Switches output devices, controls media-app volume, and offers audio visualisation and optional system metrics."
-          ]
+          ],
+          "content": {
+            "summary": "First stable release.",
+            "sections": [
+              {
+                "title": "✨ Features and experience",
+                "items": [
+                  {
+                    "title": "View and control media in the taskbar",
+                    "description": "Shows artwork, title, artist and playback controls on the Windows 11 taskbar."
+                  },
+                  {
+                    "title": "Switch media sources with the wheel",
+                    "description": "Supports multiple GSMTC media sources with wheel switching."
+                  },
+                  {
+                    "title": "Configure position and visibility",
+                    "description": "Provides manual positioning, position locking, auto-hide and full-screen hiding."
+                  },
+                  {
+                    "title": "Switch devices and view audio and system metrics",
+                    "description": "Switches output devices, controls media-app volume, and offers audio visualisation and optional system metrics."
+                  }
+                ]
+              }
+            ]
+          }
         }
       }
     }
