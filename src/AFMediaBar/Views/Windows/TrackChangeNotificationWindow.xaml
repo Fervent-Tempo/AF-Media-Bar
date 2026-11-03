@@ -18,7 +18,7 @@
             Background="Transparent"
             BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1"
             Effect="{DynamicResource AfNotificationShadowEffect}"
-            Opacity="0">
+            Opacity="1">
         <Border.RenderTransform>
             <TransformGroup>
                 <ScaleTransform x:Name="EntryScaleTransform" ScaleX="1" ScaleY="1" />
