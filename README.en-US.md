@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/readme/hero-promo.png" width="100%" alt="AF Media Bar promotional image: media control and light customization on the Windows desktop">
+  <img src="docs/assets/readme/hero-us.png" width="100%" alt="AF Media Bar promotional image: media control and light customization on the Windows desktop">
 </p>
 
 <p align="center">

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/readme/hero-promo.png" width="100%" alt="AF Media Bar 宣传图：Windows 桌面上的媒体控制与轻度美化软件">
+  <img src="docs/assets/readme/hero-zn.png" width="100%" alt="AF Media Bar 宣传图：Windows 桌面上的媒体控制与轻度美化软件">
 </p>
 
 <p align="center">
