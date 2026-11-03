@@ -139,10 +139,10 @@ public readonly record struct TaskbarHoverControlsSettings(
     // 保留已发布字段的读取，悬停层进度已移除，不再参与呈现或宽度计算。
     bool ProgressVisible)
 {
-    /// <summary>手势优先的默认悬停控制组合。 / Default gesture-first hover-control combination.</summary>
+    /// <summary>默认显示全部可用悬停控制。</summary>
     public bool InputDeviceVisible { get; init; }
 
-    public static TaskbarHoverControlsSettings Default { get; } = new(false, false, true, true, true);
+    public static TaskbarHoverControlsSettings Default { get; } = new(true, true, true, true, true) { InputDeviceVisible = true };
 }
 
 /// <summary>
@@ -183,6 +183,10 @@ public readonly record struct TaskbarExperienceSettings(
 
     /// <summary>悬停层按钮之间的间距（DIP）。/ Gap between hover-layer buttons in DIP.</summary>
     public double HoverButtonSpacingDip { get; init; } = 2;
+    public const int DefaultHoverTextBlurRadius = 4;
+    public const int MaximumHoverTextBlurRadius = 20;
+    private readonly int? _hoverTextBlurRadius;
+    public int HoverTextBlurRadius { get => _hoverTextBlurRadius ?? DefaultHoverTextBlurRadius; init => _hoverTextBlurRadius = value; }
 
     /// <summary>标题和歌手文字的对齐方式。 / Alignment of title and artist text.</summary>
     public TaskbarMediaTextAlignment MediaTextAlignment { get; init; } = TaskbarMediaTextAlignment.Center;
@@ -328,7 +332,7 @@ public readonly record struct TaskbarExperienceSettings(
     public static TaskbarExperienceSettings Default { get; } = new(
         true,
         true,
-        TaskbarInformationDensity.Balanced,
+        TaskbarInformationDensity.Information,
         TaskbarContentLayout.AdaptiveStack,
         TaskbarFullPanelSettings.Default,
         TaskbarLengthMode.FollowContent,
@@ -344,6 +348,7 @@ public readonly record struct TaskbarExperienceSettings(
             FullLayerEnabled = true,
             FullPanelEntryTrigger = Enum.IsDefined(FullPanelEntryTrigger) ? FullPanelEntryTrigger : FullPanelHandleTrigger.Click,
             FullPanelEntryHoverDelayMilliseconds = NormalizeFullPanelEntryHoverDelay(FullPanelEntryHoverDelayMilliseconds),
+            HoverTextBlurRadius = Math.Clamp(HoverTextBlurRadius, 0, MaximumHoverTextBlurRadius),
             Density = Enum.IsDefined(Density) ? Density : defaults.Density,
             ContentLayout = Enum.IsDefined(ContentLayout) ? ContentLayout : defaults.ContentLayout,
             MediaTextAlignment = Enum.IsDefined(MediaTextAlignment) ? MediaTextAlignment : defaults.MediaTextAlignment,

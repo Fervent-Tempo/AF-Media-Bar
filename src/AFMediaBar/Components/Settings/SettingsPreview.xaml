@@ -1,4 +1,4 @@
-<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" x:Class="AFMediaBar.Components.SettingsPreview">
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" x:Class="AFMediaBar.Components.SettingsPreview">
     <StackPanel>
         <Border Background="{DynamicResource AfSettingsPreviewSurfaceBrush}" CornerRadius="8">
             <Border.Style>
@@ -33,7 +33,7 @@
                 </Style>
             </TextBlock.Style>
         </TextBlock>
-        <CheckBox Margin="0,14,0,0" Content="{DynamicResource Loc.Settings.Preview.Idle}" IsChecked="{Binding ShowIdle, Mode=TwoWay}" FontSize="13" Visibility="{Binding IsRest, Converter={StaticResource AfBooleanToVisibilityConverter}}"/>
+        <ui:ToggleSwitch Margin="0,14,0,0" Content="{DynamicResource Loc.Settings.Preview.Idle}" IsChecked="{Binding ShowIdle, Mode=TwoWay}" FontSize="13" Visibility="{Binding IsRest, Converter={StaticResource AfBooleanToVisibilityConverter}}"/>
         <TextBlock Margin="0,12,0,0" Text="{DynamicResource Loc.Settings.Preview.Note}" TextWrapping="Wrap" FontSize="13" LineHeight="20" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
             <TextBlock.Style>
                 <Style TargetType="TextBlock">

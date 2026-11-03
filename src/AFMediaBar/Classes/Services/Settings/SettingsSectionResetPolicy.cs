@@ -35,6 +35,7 @@ internal static class SettingsSectionResetPolicy
             case SettingsResetScope.QuickControls:
                 next.TaskbarExperience = rest with { HoverLayerEnabled = target.HoverLayerEnabled, HoverControls = target.HoverControls,
                     Density = target.Density, HoverButtonSpacingDip = target.HoverButtonSpacingDip, HoverAlignment = target.HoverAlignment,
+                    HoverTextBlurRadius = target.HoverTextBlurRadius,
                     ComponentLayouts = rest.ComponentLayouts is null && target.ComponentLayouts?.Hover is null ? null : (rest.ComponentLayouts ?? new()) with { Hover = target.ComponentLayouts?.Hover } };
                 break;
             case SettingsResetScope.FullPanel:

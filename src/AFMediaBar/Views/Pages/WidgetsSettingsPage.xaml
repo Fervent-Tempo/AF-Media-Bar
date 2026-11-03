@@ -63,9 +63,31 @@
                     <components:SettingsRow Icon="{ui:SymbolIcon MusicNote220}" Title="{DynamicResource Loc.Widgets.Note.HoverIcon.Title}" Description="{DynamicResource Loc.Widgets.Note.HoverIcon.Description}" Visibility="{Binding ViewModel.Note.IsSelectThenLaunch, Converter={StaticResource AfBooleanToVisibilityConverter}}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.Note.ShowApplicationIconOnHover, Mode=TwoWay}"/>
                     </components:SettingsRow>
+                    <components:SettingsRow Title="{DynamicResource Loc.Widgets.Note.Tooltips}" Icon="{ui:SymbolIcon Info24}" KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.Note.ShowTooltips, Mode=TwoWay}"/>
+                    </components:SettingsRow>
                     <components:SettingsRow Description="{DynamicResource Loc.Media.QuickLaunch.FromNote.Description}" Icon="{ui:SymbolIcon MusicNote220}" Title="{DynamicResource Loc.Media.QuickLaunch.FromNote.Title}">
                         <ui:Button Click="BrowseQuickLaunch_Click" Content="{DynamicResource Loc.Media.QuickLaunch.Browse}" Icon="{ui:SymbolIcon FolderOpen24}" Style="{StaticResource AfSettingsButtonStyle}"/>
                     </components:SettingsRow>
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="True" Icon="{ui:SymbolIcon AppsList24}">
+                        <ui:CardExpander.Header>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Media.SourceList.Title}"/>
+                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Media.SourceList.Description}"/>
+                            </StackPanel>
+                        </ui:CardExpander.Header>
+                        <ItemsControl ItemsSource="{Binding ViewModel.Note.AvailableSources}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <components:SettingsRow Title="{Binding Descriptor.DisplayName}" Description="{Binding Descriptor.SourceId}" IsNested="True" Icon="{ui:SymbolIcon MusicNote220}" KeepControlInline="True">
+                                        <ui:Button Content="{Binding ActionText}" IsEnabled="{Binding CanAdd}" Style="{StaticResource AfSettingsButtonStyle}"
+                                                   Command="{Binding DataContext.ViewModel.Note.AddSourceCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}"
+                                                   ToolTip="{DynamicResource Loc.Media.SourceList.AddToQuickLaunch.ToolTip}" ToolTipService.ShowOnDisabled="True"/>
+                                    </components:SettingsRow>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ui:CardExpander>
                     <components:SettingsRow Description="{DynamicResource Loc.Media.QuickLaunch.Entries.Description}" Icon="{ui:SymbolIcon AppsListDetail24}" Title="{DynamicResource Loc.Media.QuickLaunch.Entries.Title}">
                         <TextBlock Style="{StaticResource AfSettingsRowValueStyle}" Text="{Binding ViewModel.Note.QuickLaunchEntryCountText}"/>
                     </components:SettingsRow>

@@ -550,8 +550,6 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
     [RelayCommand] private void SwitchToDynamicIslandMode() => SelectMode(DisplayModeSelection.DynamicIsland);
     [RelayCommand] private void SwitchToDesktopCardMode() => SelectMode(DisplayModeSelection.DesktopCard);
     [RelayCommand] private void SwitchToFloatingBallMode() => SelectMode(DisplayModeSelection.FloatingBall);
-    [RelayCommand] private void ApplyCompactFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Compact with { ScalePercent = FullPanelSettings.ScalePercent, PerformanceVisuals = FullPanelSettings.PerformanceVisuals });
-    [RelayCommand] private void ApplyFullFullPanelPreset() => UpdateFullPanel(TaskbarFullPanelSettings.Full with { ScalePercent = FullPanelSettings.ScalePercent, PerformanceVisuals = FullPanelSettings.PerformanceVisuals });
 
     [RelayCommand]
     private void ResetTaskbarPosition()

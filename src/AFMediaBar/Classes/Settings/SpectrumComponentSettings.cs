@@ -96,7 +96,7 @@ public readonly record struct SpectrumComponentSettings(int BandCount, int Refre
     public const int MaximumBandCount = 24;
 
     /// <summary>柱数默认值。 / Default bar count.</summary>
-    public const int DefaultBandCount = 9;
+    public const int DefaultBandCount = 14;
 
     /// <summary>刷新率下限（Hz）。 / Lower refresh-rate bound in hertz.</summary>
     public const int MinimumRefreshRateHz = 5;

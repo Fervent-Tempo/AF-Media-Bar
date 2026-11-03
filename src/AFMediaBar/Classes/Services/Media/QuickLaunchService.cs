@@ -84,6 +84,7 @@ public sealed class QuickLaunchService : IDisposable
             if (_disposed) return;
             var next = Settings;
             if (_observed.InteractionMode == next.InteractionMode && _observed.ShowApplicationIconOnHover == next.ShowApplicationIconOnHover &&
+                _observed.ShowTooltips == next.ShowTooltips &&
                 _observed.SelectedEntryId == next.SelectedEntryId && (_observed.Entries ?? []).SequenceEqual(next.Entries ?? [])) return;
             _observed = next;
             Changed?.Invoke(this, new(_wheelDelta));

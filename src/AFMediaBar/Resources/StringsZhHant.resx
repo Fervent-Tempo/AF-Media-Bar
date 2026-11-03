@@ -3872,10 +3872,23 @@
   <data name="Start.Faq.Customization.Body" xml:space="preserve"><value>除已相容的 TranslucentTB 外，其他第三方美化工具，尤其是修改或取代原生工作列的工具，目前尚未經過充分測試，可能出現不相容或無法使用的情況。安裝或使用這些工具時，建議選擇桌面浮動模式；如遇問題，歡迎回報工具名稱、版本及重現步驟。</value></data>
   <data name="Home.Customization.OpenFloating" xml:space="preserve"><value>前往設定浮動模式</value></data>
   <data name="Home.Customization.Title" xml:space="preserve"><value>美化工具偵測</value></data>
-  <data name="Home.Customization.Checking" xml:space="preserve"><value>正在偵測本機工具…</value></data>
   <data name="Home.Customization.Detected" xml:space="preserve"><value>偵測到安裝或執行記錄：{0}</value></data>
-  <data name="Home.Customization.NotDetected" xml:space="preserve"><value>未偵測到清單內的美化工具。</value></data>
   <data name="Home.Customization.Incomplete" xml:space="preserve"><value>部分資訊無法讀取，偵測結果可能不完整。</value></data>
-  <data name="Home.Customization.Coverage" xml:space="preserve"><value>僅檢查本機安裝與目前工作階段執行記錄，無法確認工作列修改是否啟用；未偵測到也不代表完全相容。TranslucentTB 不在偵測範圍。</value></data>
+  <data name="Home.Customization.Coverage" xml:space="preserve"><value>僅依據安裝與執行記錄提示，無法確認工具是否已啟用工作列修改。</value></data>
   <data name="Home.Customization.Warning" xml:space="preserve"><value>這些工具的工作列修改尚未經過充分測試，可能出現不相容或無法使用的情況。建議使用桌面浮動模式；如遇問題，歡迎回報。</value></data>
+  <data name="Widgets.Note.Tooltips" xml:space="preserve"><value>顯示小音符操作提示</value></data>
+  <data name="Media.QuickLaunch.Added" xml:space="preserve"><value>已新增</value></data>
+  <data name="Controls.TextBlur.Title" xml:space="preserve"><value>懸停時的文字模糊程度</value></data>
+  <data name="Controls.TextBlur.Description" xml:space="preserve"><value>調整快捷控制開啟後，被遮蓋標題和歌詞的模糊程度。0 表示不模糊。</value></data>
+  <data name="Notification.Preview.Position" xml:space="preserve"><value>螢幕位置預覽</value></data>
+  <data name="Notification.Preview.Appearance" xml:space="preserve"><value>通知外觀預覽（實際字號）</value></data>
+  <data name="Notification.Offset.Horizontal" xml:space="preserve"><value>水平偏移</value></data>
+  <data name="Notification.Offset.Vertical" xml:space="preserve"><value>垂直偏移</value></data>
+  <data name="Notification.Title.Size" xml:space="preserve"><value>標題字號</value></data>
+  <data name="Notification.Artist.Size" xml:space="preserve"><value>歌手字號</value></data>
+  <data name="Notification.Title.Color" xml:space="preserve"><value>標題色彩</value></data>
+  <data name="Notification.Artist.Color" xml:space="preserve"><value>歌手色彩</value></data>
+  <data name="Notification.Color.Hint" xml:space="preserve"><value>輸入 #RRGGBB，留空時跟隨佈景主題。</value></data>
+  <data name="Notification.Offset.Horizontal.Hint" xml:space="preserve"><value>以預設位置為起點，正值向右、負值向左；限制在工作區內。</value></data>
+  <data name="Notification.Offset.Vertical.Hint" xml:space="preserve"><value>以預設位置為起點，正值向下、負值向上；限制在工作區內。</value></data>
 </root>

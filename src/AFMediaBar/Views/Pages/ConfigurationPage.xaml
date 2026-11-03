@@ -18,7 +18,7 @@
                     <components:SettingsRow Description="{DynamicResource Loc.About.Row.ResetAll.Description}" Icon="{ui:SymbolIcon ArrowReset24}" Title="{DynamicResource Loc.About.Row.ResetAll.Title}">
                         <ui:Button Click="ResetAllButton_Click" Content="{DynamicResource Loc.About.Row.ResetAll.Button}" Icon="{ui:SymbolIcon ArrowReset24}" Style="{StaticResource AfSettingsButtonStyle}"/>
                     </components:SettingsRow>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="False" Icon="{ui:SymbolIcon Save24}">
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="True" Icon="{ui:SymbolIcon Save24}">
                         <ui:CardExpander.Header>
                             <StackPanel>
                                 <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Settings.Advanced.Defaults.Title}"/>

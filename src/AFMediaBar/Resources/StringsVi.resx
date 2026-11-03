@@ -3909,10 +3909,23 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Start.Faq.Customization.Body" xml:space="preserve"><value>Ngoài TranslucentTB đã tương thích, các công cụ tùy biến khác, nhất là công cụ sửa hoặc thay thế thanh tác vụ gốc, chưa được kiểm thử đầy đủ. Có thể xảy ra xung đột bố cục hoặc không dùng được tính năng. Khi dùng các công cụ này, nên chọn chế độ nổi trên màn hình. Nếu gặp lỗi, vui lòng báo tên công cụ, phiên bản và cách tái hiện.</value></data>
   <data name="Home.Customization.OpenFloating" xml:space="preserve"><value>Mở cài đặt chế độ nổi</value></data>
   <data name="Home.Customization.Title" xml:space="preserve"><value>Phát hiện công cụ tùy biến</value></data>
-  <data name="Home.Customization.Checking" xml:space="preserve"><value>Đang kiểm tra công cụ cục bộ…</value></data>
   <data name="Home.Customization.Detected" xml:space="preserve"><value>Tìm thấy bản ghi cài đặt hoặc đang chạy: {0}</value></data>
-  <data name="Home.Customization.NotDetected" xml:space="preserve"><value>Không phát hiện công cụ tùy biến trong danh sách.</value></data>
   <data name="Home.Customization.Incomplete" xml:space="preserve"><value>Không đọc được một số thông tin; kết quả có thể chưa đầy đủ.</value></data>
-  <data name="Home.Customization.Coverage" xml:space="preserve"><value>Chỉ kiểm tra bản ghi cài đặt cục bộ và tiến trình trong phiên hiện tại, không xác nhận thay đổi thanh tác vụ đã bật. Không phát hiện không có nghĩa là hoàn toàn tương thích. Loại trừ TranslucentTB.</value></data>
+  <data name="Home.Customization.Coverage" xml:space="preserve"><value>Dựa trên bản ghi cài đặt và đang chạy; không xác nhận thay đổi thanh tác vụ đã bật.</value></data>
   <data name="Home.Customization.Warning" xml:space="preserve"><value>Thay đổi thanh tác vụ của các công cụ này chưa được kiểm thử đầy đủ, có thể gây xung đột bố cục hoặc không dùng được tính năng. Nên dùng chế độ nổi trên màn hình. Vui lòng báo lỗi nếu gặp vấn đề.</value></data>
+  <data name="Widgets.Note.Tooltips" xml:space="preserve"><value>Hiển thị chú giải thao tác nốt nhạc</value></data>
+  <data name="Media.QuickLaunch.Added" xml:space="preserve"><value>Đã thêm</value></data>
+  <data name="Controls.TextBlur.Title" xml:space="preserve"><value>Độ mờ chữ sau điều khiển khi rê chuột</value></data>
+  <data name="Controls.TextBlur.Description" xml:space="preserve"><value>Điều chỉnh độ mờ tiêu đề và lời bài hát sau điều khiển mở rộng. Chọn 0 để không làm mờ.</value></data>
+  <data name="Notification.Preview.Position" xml:space="preserve"><value>Xem trước vị trí trên màn hình</value></data>
+  <data name="Notification.Preview.Appearance" xml:space="preserve"><value>Xem trước thông báo (cỡ chữ thực)</value></data>
+  <data name="Notification.Offset.Horizontal" xml:space="preserve"><value>Độ lệch ngang</value></data>
+  <data name="Notification.Offset.Vertical" xml:space="preserve"><value>Độ lệch dọc</value></data>
+  <data name="Notification.Title.Size" xml:space="preserve"><value>Cỡ chữ tiêu đề</value></data>
+  <data name="Notification.Artist.Size" xml:space="preserve"><value>Cỡ chữ nghệ sĩ</value></data>
+  <data name="Notification.Title.Color" xml:space="preserve"><value>Màu tiêu đề</value></data>
+  <data name="Notification.Artist.Color" xml:space="preserve"><value>Màu nghệ sĩ</value></data>
+  <data name="Notification.Color.Hint" xml:space="preserve"><value>Nhập #RRGGBB hoặc để trống để theo giao diện.</value></data>
+  <data name="Notification.Offset.Horizontal.Hint" xml:space="preserve"><value>Tính từ vị trí đặt sẵn: số dương sang phải, số âm sang trái. Giới hạn trong vùng làm việc.</value></data>
+  <data name="Notification.Offset.Vertical.Hint" xml:space="preserve"><value>Tính từ vị trí đặt sẵn: số dương xuống dưới, số âm lên trên. Giới hạn trong vùng làm việc.</value></data>
 </root>

@@ -141,7 +141,7 @@ public sealed class SettingsReorderTests
             QuickLaunchTargetKind.Executable, "player" + index + ".exe")).ToArray();
         SettingsManager.Current.QuickLaunch = new(entries) { SelectedEntryId = "0" };
         using var selection = new QuickLaunchService();
-        using var model = new QuickLaunchSettingsViewModel(selection, configuration, localization);
+        using var model = new QuickLaunchSettingsViewModel(selection, configuration, localization, new EmptyMediaSourceCatalog());
         var request = new SettingsReorderRequest(model.QuickLaunchEntries[0], 3, model.QuickLaunchEntries);
         model.ReorderQuickLaunchCommand.Execute(request);
         CollectionAssert.AreEqual(new[] { "1", "2", "3", "0" }, SettingsManager.Current.QuickLaunch.Entries!.Select(entry => entry.Id).ToArray());

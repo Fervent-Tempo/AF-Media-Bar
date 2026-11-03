@@ -35,6 +35,9 @@
             </components:SettingsGroup>
             <components:SettingsGroup GroupId="Appearance.Group.InteractionButtons" Header="{DynamicResource Loc.Appearance.Group.InteractionButtons}" Icon="{ui:SymbolIcon CursorClick24}">
                 <StackPanel>
+                    <components:SettingsRow Title="{DynamicResource Loc.Controls.TextBlur.Title}" Description="{DynamicResource Loc.Controls.TextBlur.Description}" Icon="{ui:SymbolIcon TextAlignJustify24}">
+                        <components:SettingsNumericEditor Value="{Binding ViewModel.Layout.HoverTextBlurRadius, Mode=TwoWay}" Minimum="0" Maximum="{Binding Source={x:Static settings:TaskbarExperienceSettings.MaximumHoverTextBlurRadius}}" Step="1"/>
+                    </components:SettingsRow>
                     <components:SettingsRow Description="{DynamicResource Loc.Appearance.Row.InteractionButtonSize.Description}" Icon="{ui:SymbolIcon TextAlignJustify24}" Title="{DynamicResource Loc.Appearance.Row.InteractionButtonSize.Title}">
                         <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}" SelectedValue="{Binding ViewModel.Layout.InteractionButtonSize, Mode=TwoWay}" SelectedValuePath="Tag">
                             <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Rest.Density.Minimal}" Tag="{x:Static settings:TaskbarInformationDensity.Minimal}"/>

@@ -59,6 +59,7 @@ public partial class TaskBarMediaControl
             InvalidateQuickLaunchRequests();
         }
         _quickLaunchSettings = settings;
+        ApplyArtworkTooltipOwner();
         _quickLaunchTarget = target;
         ApplyQuickLaunchEntries(settings.Entries ?? []);
         if (!_isConnected && target is not null && SongImageBorder.IsMouseOver) SetQuickLaunchPreview(target);

@@ -27,7 +27,7 @@
                     <components:SettingsRow Description="{DynamicResource Loc.Media.SourceFilter.Description}" Icon="{ui:SymbolIcon Filter24}" Title="{DynamicResource Loc.Media.SourceFilter.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.SmtcFilterEnabled, Mode=TwoWay}"/>
                     </components:SettingsRow>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon AppsList24}">
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" IsExpanded="True" Icon="{ui:SymbolIcon AppsList24}">
                         <ui:CardExpander.Header>
                             <StackPanel>
                                 <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Media.SourceList.Title}"/>
@@ -40,7 +40,6 @@
                                     <components:SettingsRow Description="{Binding Descriptor.SourceId}" IsNested="True" Title="{Binding Descriptor.DisplayName}" Icon="{ui:SymbolIcon Filter24}">
                                         <WrapPanel Style="{StaticResource AfSettingsActionsStyle}">
                                             <ui:ToggleSwitch Margin="{StaticResource AfSettingsActionGap}" Content="{DynamicResource Loc.Media.SourceList.Allow}" IsChecked="{Binding IsAllowed, Mode=TwoWay}"/>
-                                            <ui:Button Margin="{StaticResource AfSettingsActionGap}" Click="AddDetectedSource_Click" Content="{DynamicResource Loc.Media.SourceList.AddToQuickLaunch}" Style="{StaticResource AfSettingsButtonStyle}" ToolTip="{DynamicResource Loc.Media.SourceList.AddToQuickLaunch.ToolTip}" ToolTipService.ShowOnDisabled="True"/>
                                         </WrapPanel>
                                     </components:SettingsRow>
                                 </DataTemplate>

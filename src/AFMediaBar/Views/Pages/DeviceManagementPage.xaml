@@ -64,7 +64,7 @@
                                 </TextBlock.Style>
                             </TextBlock>
                         </StackPanel>
-                        <CheckBox Grid.Column="1" Content="{DynamicResource Loc.Device.Enabled}" IsChecked="{Binding IsAllowed, Mode=TwoWay}" AutomationProperties.Name="{Binding DisplayName}" VerticalAlignment="Center" Margin="12,0"/>
+                        <ui:ToggleSwitch Grid.Column="1" Content="{DynamicResource Loc.Device.Enabled}" IsChecked="{Binding IsAllowed, Mode=TwoWay}" AutomationProperties.Name="{Binding DisplayName}" VerticalAlignment="Center" Margin="12,0"/>
                         <components:SettingsReorderHandle Grid.Column="2" ItemKey="{Binding EndpointId}" AutomationProperties.Name="{Binding DisplayName}" Visibility="{Binding CanReorder, Converter={StaticResource AfBooleanToVisibilityConverter}}"/>
                     </Grid>
                     <ui:CardExpander Visibility="{Binding CanRebind, Converter={StaticResource AfBooleanToVisibilityConverter}}" Style="{StaticResource AfSettingsNestedExpanderStyle}" Icon="{ui:SymbolIcon ArrowSync24}">

@@ -15,6 +15,7 @@ public readonly record struct QuickLaunchSettings(IReadOnlyList<QuickLaunchEntry
 
     public QuickLaunchInteractionMode InteractionMode { get; init; }
     public bool ShowApplicationIconOnHover { get; init; } = true;
+    public bool ShowTooltips { get; init; } = true;
     public string? SelectedEntryId { get; init; }
     public static QuickLaunchSettings Default { get; } = new([]);
 

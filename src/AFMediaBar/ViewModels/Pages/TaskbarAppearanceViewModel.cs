@@ -196,6 +196,11 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
         get => _configuration.Current.TaskbarExperience.HoverButtonSpacingDip;
         set => UpdateTaskbarExperience(_configuration.Current.TaskbarExperience with { HoverButtonSpacingDip = value });
     }
+    public int HoverTextBlurRadius
+    {
+        get => _configuration.Current.TaskbarExperience.HoverTextBlurRadius;
+        set => UpdateTaskbarExperience(_configuration.Current.TaskbarExperience with { HoverTextBlurRadius = value });
+    }
 
     public bool FollowMediaTextLength
     {
@@ -275,6 +280,7 @@ public partial class TaskbarAppearanceViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(MediaTextAlignment));
         OnPropertyChanged(nameof(ComponentSpacingDip));
         OnPropertyChanged(nameof(HoverButtonSpacingDip));
+        OnPropertyChanged(nameof(HoverTextBlurRadius));
         OnPropertyChanged(nameof(FollowMediaTextLength));
         OnPropertyChanged(nameof(UsesFixedTaskbarLength));
         OnPropertyChanged(nameof(CanEditFixedTaskbarLength));

@@ -15,6 +15,9 @@ public sealed class ComponentLayoutTests
     public void ResidentTransportIsOptInAndEachButtonMovesIndependently()
     {
         var settings = new AppSettings();
+        Assert.IsTrue(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Hover).Where(entry => ComponentLayoutPolicy.TransportComponents.Contains(entry.Component)).All(entry => entry.IsVisible));
+        // 保留显式关闭的旧偏好，常驻层编辑不能覆盖它。
+        settings.TaskbarExperience = settings.TaskbarExperience with { HoverControls = TaskbarHoverControlsSettings.Default with { PlayPauseVisible = false, PreviousNextVisible = false } };
         foreach (var component in ComponentLayoutPolicy.TransportComponents)
         {
             Assert.IsFalse(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident).Single(entry => entry.Component == component).IsVisible);
@@ -68,7 +71,7 @@ public sealed class ComponentLayoutTests
     public void EmptyIdleAndIndependentTransportButtonsDoNotChangeOtherStates()
     {
         var settings = new AppSettings();
-        settings.TaskbarExperience = settings.TaskbarExperience with { ComponentLayouts = new() { Idle = [] } };
+        settings.TaskbarExperience = settings.TaskbarExperience with { ComponentLayouts = new() { Idle = [] }, HoverControls = TaskbarHoverControlsSettings.Default with { PreviousNextVisible = false } };
         Assert.IsFalse(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Idle).Any(entry => entry.IsVisible));
         settings.TaskbarExperience = ComponentLayoutPolicy.SetVisible(settings, BarLayoutState.Hover, TaskbarRestComponent.PreviousTrack, true);
         Assert.IsTrue(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Hover).Single(entry => entry.Component == TaskbarRestComponent.PreviousTrack).IsVisible);

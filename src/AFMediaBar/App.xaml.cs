@@ -165,6 +165,7 @@ namespace AFMediaBar
                 services.AddSingleton<QuickLaunchService>();
                 services.AddSingleton<QuickLaunchIconService>();
                 services.AddSingleton<MediaSessionService>();
+                services.AddSingleton<AFMediaBar.Classes.Abstractions.IMediaSourceCatalog>(provider => provider.GetRequiredService<MediaSessionService>());
                 services.AddSingleton<TrackChangeNotificationCoordinator>();
                 services.AddSingleton<MediaSourceProcessResolver>();
                 services.AddSingleton<SpectrumCaptureProcessResolver>();

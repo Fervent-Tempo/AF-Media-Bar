@@ -76,12 +76,6 @@
                             </StackPanel>
                         </ui:CardExpander.Header>
                         <StackPanel>
-                            <components:SettingsRow Description="{DynamicResource Loc.DisplayModes.Full.Row.Preset.Description}" Icon="{ui:SymbolIcon ArrowSync24}" IsNested="True" Title="{DynamicResource Loc.DisplayModes.Full.Row.Preset.Title}">
-                                <WrapPanel Style="{StaticResource AfSettingsActionsStyle}">
-                                    <ui:Button Margin="{StaticResource AfSettingsActionGap}" Command="{Binding ViewModel.Layers.ApplyCompactFullPanelPresetCommand}" Content="{DynamicResource Loc.DisplayModes.Full.Preset.Compact}" Style="{StaticResource AfSettingsButtonStyle}"/>
-                                    <ui:Button Margin="{StaticResource AfSettingsActionGap}" Command="{Binding ViewModel.Layers.ApplyFullFullPanelPresetCommand}" Content="{DynamicResource Loc.DisplayModes.Full.Preset.Full}" Style="{StaticResource AfSettingsButtonStyle}"/>
-                                </WrapPanel>
-                            </components:SettingsRow>
                             <components:SettingsRow Icon="{ui:SymbolIcon Info24}" IsNested="True" Title="{DynamicResource Loc.DisplayModes.Full.Row.MediaInfo.Title}" KeepControlInline="True">
                                 <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.FullPanelMediaInfoVisible, Mode=TwoWay}" IsEnabled="{Binding ViewModel.Layers.CanToggleFullPanelMediaInfo}"/>
                             </components:SettingsRow>

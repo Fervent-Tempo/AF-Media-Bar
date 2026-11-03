@@ -317,7 +317,6 @@ namespace AFMediaBar.Components
         /// </summary>
         private const double TaskbarWidgetPadding = SpectrumPresentationPolicy.SurfacePaddingDip;
 
-        private const double TaskbarCoveredBlurRadius = 4;
         private const double TaskbarCoveredOpacity = 0.32;
 
         /// <summary>
@@ -507,7 +506,7 @@ namespace AFMediaBar.Components
         /// </summary>
         private void ReassertQuickLaunchTooltip()
         {
-            if (!CanShowPlayerTooltip || !SongImageBorder.IsMouseOver)
+            if (!_quickLaunchSettings.ShowTooltips || !CanShowPlayerTooltip || !SongImageBorder.IsMouseOver)
             {
                 return;
             }
@@ -718,7 +717,7 @@ namespace AFMediaBar.Components
             var action = ChordWheelHeld ? settings.ChordWheelAction : settings.PrimaryWheelAction;
             var owner = _isConnected
                 ? settings.ShowWheelTooltips && action != WheelAction.Disabled ? _artworkWheelTooltip : null
-                : _quickLaunchTooltip.Content is null ? null : _quickLaunchTooltip;
+                : !_quickLaunchSettings.ShowTooltips || _quickLaunchTooltip.Content is null ? null : _quickLaunchTooltip;
             SetArtworkTooltipOwner(owner);
             RefreshWheelTooltip();
         }

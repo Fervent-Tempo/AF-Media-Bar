@@ -291,7 +291,7 @@ public partial class TaskBarMediaControl
             SongInfoStackPanel.Effect = null;
         }
 
-        var targetRadius = motion.UseDecorativeEffects && isCovered ? TaskbarCoveredBlurRadius : 0;
+        var targetRadius = motion.UseDecorativeEffects && isCovered ? PresentationSettings.TaskbarExperience.HoverTextBlurRadius : 0;
         var targetOpacity = isCovered ? TaskbarCoveredOpacity : 1;
         if (immediate || !motion.UseTransitions)
         {
