@@ -22,7 +22,9 @@ public static class NotificationPlacementCalculator
         Rect workArea,
         Size windowSize,
         TrackChangeNotificationPosition position,
-        double margin)
+        double margin,
+        double horizontalOffset = 0,
+        double verticalOffset = 0)
     {
         if (workArea.IsEmpty || workArea.Width <= 0 || workArea.Height <= 0)
             return new Point(0, 0);
@@ -47,6 +49,8 @@ public static class NotificationPlacementCalculator
             ? minY
             : maxY;
 
+        x += double.IsFinite(horizontalOffset) ? horizontalOffset : 0;
+        y += double.IsFinite(verticalOffset) ? verticalOffset : 0;
         return new Point(Math.Clamp(x, minX, maxX), Math.Clamp(y, minY, maxY));
     }
 }

@@ -156,6 +156,7 @@
       "$release": "v1.2.0",
       "interactionMode": "v1.6.0",
       "showApplicationIconOnHover": "v1.6.0",
+      "showTooltips": "unreleased",
       "selectedEntryId": "v1.6.0",
       "entries": {
         "$release": "v1.2.0",
@@ -222,6 +223,7 @@
       "fullPanelEntryTrigger": "v1.6.0",
       "hoverAlignment": "unreleased",
       "hoverButtonSpacingDip": "v1.3.0",
+      "hoverTextBlurRadius": "unreleased",
       "hoverControls": {
         "$release": "v1.2.0",
         "audioControlVisible": "v1.2.0",
@@ -278,6 +280,12 @@
     "taskbarTargetMonitorDeviceId": "v1.2.0",
     "taskbarTargetMonitorDeviceIds": "v1.2.1",
     "trackChangeNotification": {
+      "horizontalOffsetDip": "unreleased",
+      "verticalOffsetDip": "unreleased",
+      "titleFontSize": "unreleased",
+      "artistFontSize": "unreleased",
+      "titleColor": "unreleased",
+      "artistColor": "unreleased",
       "$release": "v1.2.0",
       "durationMilliseconds": "v1.2.0",
       "enabled": "v1.2.0",

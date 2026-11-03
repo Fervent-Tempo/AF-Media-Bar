@@ -24,6 +24,7 @@ public partial class TrackChangeNotificationWindow : FluentWindow
     private readonly DispatcherTimer _hideTimer;
     private DisplayMonitorInfo? _currentMonitor;
     private TrackChangeNotificationPosition _currentPosition;
+    private TrackChangeNotificationSettings _currentSettings;
     private bool _hasCompletedInitialLayout;
     private int _presentationVersion;
 
@@ -58,7 +59,9 @@ public partial class TrackChangeNotificationWindow : FluentWindow
         StopAnimations();
         ApplyMotionEffects();
         _currentMonitor = request.Monitor;
-        _currentPosition = request.Settings.Position;
+        _currentSettings = request.Settings.Normalize();
+        _currentPosition = _currentSettings.Position;
+        NotificationContent.Settings = _currentSettings;
         ApplySnapshot(request.Snapshot);
 
         if (!IsVisible)
@@ -152,22 +155,7 @@ public partial class TrackChangeNotificationWindow : FluentWindow
         PositionOnMonitor(_currentMonitor, _currentPosition);
     }
 
-    private void ApplySnapshot(MediaSnapshot snapshot)
-    {
-        TitleText.Text = snapshot.Title;
-        ArtistText.Text = string.IsNullOrWhiteSpace(snapshot.Artist)
-            ? snapshot.SourceName
-            : snapshot.Artist;
-        ArtworkImage.Source = snapshot.Artwork;
-        ArtworkPlaceholder.Visibility = snapshot.Artwork is null ? Visibility.Visible : Visibility.Collapsed;
-        // 与任务栏封面共用宽高比约束；极端宽高比使用留白，避免通知将视频封面裁成正方形。
-        // Match the taskbar artwork box; extreme aspects letterbox instead of cropping the notification image.
-        var bitmap = snapshot.Artwork as BitmapSource;
-        var box = ArtworkBoxPolicy.Resolve(ArtworkBorder.Height, bitmap?.PixelWidth ?? 0, bitmap?.PixelHeight ?? 0);
-        ArtworkBorder.Width = box.Width;
-        ArtworkColumn.Width = new GridLength(box.Width);
-        ArtworkImage.Stretch = Stretch.Uniform;
-    }
+    private void ApplySnapshot(MediaSnapshot snapshot) => NotificationContent.Snapshot = snapshot;
 
     /// <summary>立即隐藏通知并取消动画和计时。 / Immediately hides the notification and cancels animations and timing.</summary>
     public void HideImmediately()
@@ -197,7 +185,9 @@ public partial class TrackChangeNotificationWindow : FluentWindow
             monitor.WorkArea,
             pixelSize,
             position,
-            16 * Math.Max(scaleX, scaleY));
+            16 * Math.Max(scaleX, scaleY),
+            _currentSettings.HorizontalOffsetDip * scaleX,
+            _currentSettings.VerticalOffsetDip * scaleY);
         var handle = new WindowInteropHelper(this).Handle;
         if (handle == IntPtr.Zero)
             return;

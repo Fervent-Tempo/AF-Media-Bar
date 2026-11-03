@@ -32,6 +32,18 @@ public readonly record struct TrackChangeNotificationSettings(
     NotificationTargetMode TargetMode,
     string? FixedMonitorDeviceId)
 {
+    public TrackChangeNotificationSettings() : this(false, false, 0, default, default, null) { }
+    public const int MaximumOffsetDip = 4096;
+    public const int MinimumOffsetDip = -MaximumOffsetDip;
+    public const int MinimumFontSize = 8;
+    public const int MaximumFontSize = 40;
+    public double HorizontalOffsetDip { get; init; }
+    public double VerticalOffsetDip { get; init; }
+    public int TitleFontSize { get; init; } = 15;
+    public int ArtistFontSize { get; init; } = 12;
+    public string? TitleColor { get; init; }
+    public string? ArtistColor { get; init; }
+
     /// <summary>Minimum track notification duration stored in milliseconds.</summary>
     public const int MinimumDurationMilliseconds = 1000;
     /// <summary>Maximum track notification duration stored in milliseconds.</summary>
@@ -53,6 +65,12 @@ public readonly record struct TrackChangeNotificationSettings(
         {
             DurationMilliseconds = Math.Clamp(DurationMilliseconds, MinimumDurationMilliseconds, MaximumDurationMilliseconds),
             Position = Enum.IsDefined(Position) ? Position : defaults.Position,
+            HorizontalOffsetDip = double.IsFinite(HorizontalOffsetDip) ? Math.Clamp(HorizontalOffsetDip, -MaximumOffsetDip, MaximumOffsetDip) : 0,
+            VerticalOffsetDip = double.IsFinite(VerticalOffsetDip) ? Math.Clamp(VerticalOffsetDip, -MaximumOffsetDip, MaximumOffsetDip) : 0,
+            TitleFontSize = Math.Clamp(TitleFontSize, MinimumFontSize, MaximumFontSize),
+            ArtistFontSize = Math.Clamp(ArtistFontSize, MinimumFontSize, MaximumFontSize),
+            TitleColor = Classes.Utils.ColorHex.TryParse(TitleColor, out var title) ? Classes.Utils.ColorHex.Format(title) : null,
+            ArtistColor = Classes.Utils.ColorHex.TryParse(ArtistColor, out var artist) ? Classes.Utils.ColorHex.Format(artist) : null,
             TargetMode = Enum.IsDefined(TargetMode) ? TargetMode : defaults.TargetMode,
             FixedMonitorDeviceId = string.IsNullOrWhiteSpace(FixedMonitorDeviceId)
                 ? null
