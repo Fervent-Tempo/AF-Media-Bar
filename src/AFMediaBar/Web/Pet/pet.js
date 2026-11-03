@@ -80,7 +80,7 @@
       lift: full && state.hovered ? 0.6 : 0, squash: full && now < pressUntil ? 1 : 0,
       morph: p.morph, effect: p.effect ? (["humming", "notifying"].includes(p.effect) ? 1 : p.morph) : 0, lid: p.lid
     };
-    document.getElementById("outfit-bars").setAttribute("transform", `translate(0 ${53 * (1 - (1 + beat * 0.25))}) scale(1 ${1 + beat * 0.25})`);
+    document.getElementById("outfit-bars").setAttribute("transform", `translate(0 ${52 * (1 - (1 + beat * 0.25))}) scale(1 ${1 + beat * 0.25})`);
     targets.y -= beat * 3.2;
     targets.sy += beat * 0.045;
     targets.sx -= beat * 0.025;
@@ -161,7 +161,11 @@
     const previous = state; state = message.state;
     body.setAttribute("fill", state.bodyColor);
     const outfit = document.getElementById("outfit");
-    outfit.setAttribute("stroke", state.highContrast ? state.eyeColor : state.accent || state.eyeColor);
+    const accent = state.highContrast ? state.eyeColor : state.accent || state.eyeColor;
+    outfit.setAttribute("color", accent);
+    outfit.setAttribute("stroke", accent);
+    const rgb = parseInt(accent.slice(1), 16);
+    outfit.setAttribute("style", "--pet-ink:" + (((rgb >> 16) * 299 + ((rgb >> 8) & 255) * 587 + (rgb & 255) * 114 > 140000) ? "#18232c" : "#fff"));
     for (const id of ["headphones", "badge", "spectrum"])
       document.getElementById("outfit-" + id).style.display = state.outfit === id ? "" : "none";
     body.setAttribute("stroke", state.highContrast ? state.eyeColor : "#161B26");
