@@ -279,8 +279,8 @@ namespace AFMediaBar.Components
         /// <summary>兜底收起比退出动画多等的余量，确保正常动画回调先跑。/ Extra margin the fallback waits beyond the exit animation, so the normal animation callback runs first.</summary>
         private static readonly TimeSpan HoverHideFallbackMargin = TimeSpan.FromMilliseconds(150);
 
-        /// <summary>暂停时盖在主封面上的遮罩不透明度，取 1 − 旧实现的封面画刷不透明度（0.4）：淡化浓度与改动前一致，只是从"压封面画刷"换成"主动盖遮罩"，理由见 <see cref="ApplyArtworkDimming"/>。颜色另由 <see cref="ApplyAppearanceSettings"/> 按任务栏表面的明暗给出。替身封面共用同一把画刷，浓度与颜色都自动跟随。/ The opacity of the scrim laid over the main artwork while paused, i.e. 1 − the cover-brush opacity the old implementation used (0.4): the dimming strength matches the previous look and only moves from "lower the cover brush" to "lay a scrim", as <see cref="ApplyArtworkDimming"/> explains. Its colour is a separate matter, set by <see cref="ApplyAppearanceSettings"/> from the taskbar surface's lightness. The stand-in cover shares the very same brush, so both strength and colour follow by themselves.</summary>
-        private const double ArtworkPausedScrimOpacity = 0.6;
+        /// <summary>暂停遮罩仅提供轻量状态提示，避免深色封面明显泛白；主封面与放大替身共用画刷。</summary>
+        private const double ArtworkPausedScrimOpacity = 0.2;
 
         private readonly DispatcherTimer _wheelTooltipTimer;
 
