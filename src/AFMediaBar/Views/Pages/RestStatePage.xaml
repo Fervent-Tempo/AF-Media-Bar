@@ -15,7 +15,7 @@
             <components:SettingsPreview DataContext="{Binding ViewModel.Preview}"/>
         </components:SettingsPageLayout.Preview>
         <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded">
-            <components:SettingsGroup GroupId="Common.RestLayer" Header="{DynamicResource Loc.ComponentLayout.Resident}">
+            <components:SettingsGroup GroupId="Common.RestLayer" Header="{DynamicResource Loc.ComponentLayout.Resident}" IsEnabled="{Binding ViewModel.CanEditMonitor}">
                 <StackPanel>
                     <AdornerDecorator>
                         <ItemsControl ItemsSource="{Binding ViewModel.Layers.ResidentLayoutEntries}" Style="{StaticResource AfSettingsSortableListStyle}" components:SettingsReorderBehavior.ShowMediaBarHint="True" ItemTemplate="{StaticResource AfSettingsComponentRowTemplate}" components:SettingsReorderBehavior.MoveCommand="{Binding ViewModel.Layers.ReorderLayoutCommand}"/>
@@ -35,7 +35,7 @@
                     </components:SettingsRow>
                 </StackPanel>
             </components:SettingsGroup>
-            <components:SettingsGroup GroupId="Settings.RestState.Idle" Header="{DynamicResource Loc.ComponentLayout.Idle}">
+            <components:SettingsGroup GroupId="Settings.RestState.Idle" Header="{DynamicResource Loc.ComponentLayout.Idle}" IsEnabled="{Binding ViewModel.CanEditMonitor}">
                 <StackPanel>
                     <components:SettingsCallout Text="{DynamicResource Loc.Settings.RestState.IdleDescription}"/>
                     <AdornerDecorator>

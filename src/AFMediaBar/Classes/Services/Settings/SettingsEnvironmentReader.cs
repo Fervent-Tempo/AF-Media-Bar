@@ -27,18 +27,23 @@ public sealed class SettingsEnvironmentReader(IDisplayMonitorService monitors, I
             if (floating)
             {
                 var floatingIds = floatingTargets.Length == 0 ? displays.Where(d => d.IsPrimary).Select(d => d.DeviceId) : floatingTargets;
-                var contexts = floatingIds.Select(id => monitors.ResolveFixedMonitor(id)).Where(d => d is not null)
-                    .DistinctBy(d => d!.DeviceId).Select(d => new SettingsMonitorContext(d!.DeviceId, d.DeviceName, d.IsPrimary, floatingOrientation, false, true)).ToArray();
+                var contexts = floatingIds.Distinct(StringComparer.OrdinalIgnoreCase).Select(id =>
+                {
+                    var display = displays.FirstOrDefault(value => string.Equals(value.DeviceId, id, StringComparison.OrdinalIgnoreCase));
+                    return new SettingsMonitorContext(id, display?.DeviceName ?? id, display?.IsPrimary ?? false,
+                        floatingOrientation, false, display is not null);
+                }).ToArray();
                 cancellationToken.ThrowIfCancellationRequested();
                 return new SettingsEnvironmentSnapshot(SettingsMode.FloatingBar, contexts);
             }
-            var targets = TaskbarTargetPolicy.ResolveDeviceIds(displays, configured, legacy);
+            var targets = configured is { Length: > 0 } ? configured : TaskbarTargetPolicy.ResolveDeviceIds(displays, configured, legacy);
             var result = new List<SettingsMonitorContext>();
             foreach (var deviceId in targets)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var display = displays.FirstOrDefault(value => string.Equals(value.DeviceId, deviceId, StringComparison.OrdinalIgnoreCase));
-                if (display is null) continue;
+                if (display is null)
+                { result.Add(new(deviceId, deviceId, false, null, false, false)); continue; }
                 var handle = taskbars.GetSelectedTaskbarHandle(deviceId, out _);
                 NativeMethods.RECT rect = default;
                 var available = handle != IntPtr.Zero && taskbars.TryGetTaskbarRect(handle, out rect);

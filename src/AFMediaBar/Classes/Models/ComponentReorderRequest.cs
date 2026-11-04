@@ -3,4 +3,8 @@ using AFMediaBar.Classes.Settings;
 namespace AFMediaBar.Classes.Models;
 
 public sealed record ComponentReorderRequest(BarLayoutState State, TaskbarRestComponent Component,
-    int TargetIndex, IReadOnlyList<ComponentLayoutEntry> OriginalEntries);
+    int TargetIndex, IReadOnlyList<ComponentLayoutEntry> OriginalEntries)
+{
+    public BarConfigurationTarget? Target { get; init; }
+    public string? MonitorDeviceId { get; init; }
+}

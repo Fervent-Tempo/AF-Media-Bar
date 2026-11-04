@@ -62,13 +62,13 @@ public partial class TaskbarWindow
         TaskbarBarPosition Alignment, int Padding, bool Avoid);
 
     private PlacementContext GetPlacementContext(RECT rect, double dpi) => new(
-        _lastTaskbarHandle, IsVerticalPresentation ? rect.Bottom - rect.Top : rect.Right - rect.Left, dpi, _appliedOrientation ?? LayoutOrientation.Horizontal, SettingsManager.Current.Position,
-        SettingsManager.Current.TaskbarBarManualPadding, SettingsManager.Current.TaskbarBarAvoidIcons);
+        _lastTaskbarHandle, IsVerticalPresentation ? rect.Bottom - rect.Top : rect.Right - rect.Left, dpi, _appliedOrientation ?? LayoutOrientation.Horizontal, TaskbarPresentation.Position,
+        TaskbarPresentation.TaskbarBarManualPadding, SettingsManager.Current.TaskbarBarAvoidIcons);
 
     private void QueueOccupancyRefresh()
     {
         if (_isClosing || _isEnvironmentSuspended || IsBackgroundPruned || IsTaskbarPresentationSuspended ||
-            !SettingsManager.Current.TaskbarBarAvoidIcons || MediaControl.IsRestLayerEmpty) return;
+            !SettingsManager.Current.TaskbarBarAvoidIcons || !HasAnyTaskbarContent) return;
         _occupancyRefresh.Changed(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency);
         _occupancyRefreshTimer.Start();
     }
@@ -83,7 +83,7 @@ public partial class TaskbarWindow
     {
         var seconds = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
         if (_isClosing || _isEnvironmentSuspended || IsBackgroundPruned || IsTaskbarPresentationSuspended ||
-            _isDragging || MediaControl.IsRestLayerEmpty ||
+            _isDragging || !HasAnyTaskbarContent ||
             !SettingsManager.Current.TaskbarBarAvoidIcons || !_occupancyRefresh.IsActive(seconds))
         {
             StopOccupancyRefresh();
@@ -113,12 +113,30 @@ public partial class TaskbarWindow
         else
             snapshot = _occupiedAreaService.GetSnapshot(_lastTaskbarHandle, rect, _appliedOrientation ?? LayoutOrientation.Horizontal, dpi, EdgePadding);
         var desired = double.IsFinite(desiredDip) ? (int)Math.Ceiling(Math.Max(0, desiredDip) * dpi) : minimum;
-        return TaskbarPlacementPolicy.Evaluate(state, snapshot, context.Alignment, context.Length, context.Padding, minimum, desired);
+        if (snapshot.Status == TaskbarProbeStatus.Success && _detachedRects.Count > 0)
+            snapshot = snapshot with
+            {
+                Ranges = ComponentPlacementPolicy.Subtract(snapshot.Ranges,
+                _detachedRects.Values.Select(PrimaryRange), (int)Math.Ceiling(4 * dpi))
+            };
+        var home = AFMediaBar.Classes.Services.Settings.MonitorBarProfilePolicy.Find(SettingsManager.Current,
+            BarConfigurationTarget.Taskbar, _targetMonitorDeviceId)?.BodyPrimaryDip;
+        return TaskbarPlacementPolicy.Evaluate(state, snapshot, context.Alignment, context.Length, context.Padding, minimum, desired,
+            home.HasValue ? (long)Math.Round(Math.Clamp(home.Value * dpi * 2, 0, context.Length * 2d)) : null);
     }
 
     private RECT PositionPrimaryBar(RECT rect, double dpi)
     {
         var canvas = MediaControl.CurrentLayout?.Canvas;
+        if (_isDragging && _bodyDragPrimary is { } moving)
+        {
+            var dragCrossLength = IsVerticalPresentation ? rect.Right - rect.Left : rect.Bottom - rect.Top;
+            var dragThickness = Math.Min(dragCrossLength, (int)Math.Round((IsVerticalPresentation ? canvas?.Width ?? 48 : canvas?.Height ?? 44) * dpi));
+            _hasSafePlacement = true;
+            var dragCross = Math.Clamp((dragCrossLength - dragThickness) / 2 +
+                (int)Math.Round(SettingsManager.Current.TaskbarBarCrossAxisOffsetDip * dpi), 0, Math.Max(0, dragCrossLength - dragThickness));
+            return ApplyPrimaryFrame(moving, _bodyDragLength, dpi, dragCross, dragThickness);
+        }
         var desired = _lastDesiredSizeRequest?.PrimaryLength ?? (IsVerticalPresentation ? canvas?.Height : canvas?.Width) ?? 300;
         var decision = PreviewPlacement(rect, dpi, desired, out var snapshot);
         _pendingPlacementContext = GetPlacementContext(rect, dpi);
@@ -179,7 +197,7 @@ public partial class TaskbarWindow
     {
         var left = (int)Math.Round(position);
         var pixels = (int)Math.Round(width);
-        var alignment = SettingsManager.Current.Position;
+        var alignment = TaskbarPresentation.Position;
         var anchor = 2L * left + (alignment == TaskbarBarPosition.End ? 2L * pixels : alignment == TaskbarBarPosition.Center ? pixels : 0);
         MediaControl.ApplyPlacementAnchor(left, anchor, dpi);
         if (MediaControl.CurrentLayout is not { } layout || Math.Abs((IsVerticalPresentation ? layout.Canvas.Height : layout.Canvas.Width) * dpi - pixels) >= 0.5)

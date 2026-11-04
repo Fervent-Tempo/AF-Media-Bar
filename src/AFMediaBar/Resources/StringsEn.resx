@@ -3864,4 +3864,6 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
   <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>Drag to reorder. You can also drag components directly on the media bar.</value></data>
   <data name="ComponentLayout.Parallel" xml:space="preserve"><value>Parallel metrics and order</value></data>
   <data name="ComponentLayout.ParallelDescription" xml:space="preserve"><value>Shares visibility and order with the resident layout in At rest. Configure the no-media layout separately on that page.</value></data>
+  <data name="ComponentPlacement.EditingMonitor" xml:space="preserve"><value>Display being configured</value></data>
+  <data name="ComponentPlacement.Attach" xml:space="preserve"><value>Return to media bar</value></data>
 </root>

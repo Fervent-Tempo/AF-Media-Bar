@@ -9,8 +9,11 @@ namespace AFMediaBar.Classes.Settings;
 
 
 /// <summary>设置重置范围。 / Settings reset scope.</summary>
-public enum SettingsResetScope { General, Appearance, Layout, DisplayModes, ExtraFeatures, Interaction, Lyrics, All, Components, ContentLayout, DeviceManagement, RestState,
-    BarAppearance, TextAndLyrics, QuickControls, FullPanel, QuickLaunch, Spectrum, Performance, BluetoothBattery, MediaSource, TrackNotifications }
+public enum SettingsResetScope
+{
+    General, Appearance, Layout, DisplayModes, ExtraFeatures, Interaction, Lyrics, All, Components, ContentLayout, DeviceManagement, RestState,
+    BarAppearance, TextAndLyrics, QuickControls, FullPanel, QuickLaunch, Spectrum, Performance, BluetoothBattery, MediaSource, TrackNotifications
+}
 
 /// <summary>设置变更通知参数。 / Settings change notification arguments.</summary>
 public sealed class SettingsChangedEventArgs(SettingsResetScope? resetScope = null, string? propertyName = null) : EventArgs
@@ -18,6 +21,8 @@ public sealed class SettingsChangedEventArgs(SettingsResetScope? resetScope = nu
     public SettingsResetScope? ResetScope { get; } = resetScope;
     public string? PropertyName { get; } = propertyName;
 }
+/// <summary>只有局部显示器布局变化，未修改共享呈现参数。</summary>
+internal sealed class MonitorBarProfilesChangedEventArgs : EventArgs;
 
 /// <summary>外观设置变更参数。 / Appearance settings change arguments.</summary>
 public sealed class AppearanceSettingsChangedEventArgs(AppearanceSettings appearance) : EventArgs { public AppearanceSettings Appearance { get; } = appearance; }

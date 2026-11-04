@@ -79,7 +79,7 @@ public sealed partial class FloatingBarWindow
         UpdateEdgeObservation();
         if (!_edgeHoverTimer.IsEnabled) return;
         RefreshEdgeContrast();
-        if (_edgeHoldCount > 0 || _isFullPanelOpen || _compactFlyout.IsVisible || _dragPending)
+        if (_edgeHoldCount > 0 || _isFullPanelOpen || _compactFlyout.IsVisible || _dragPending || _mediaControl.HasComponentGesture)
         {
             SetEdgeTarget(collapse: false);
             return;
@@ -175,7 +175,7 @@ public sealed partial class FloatingBarWindow
         _edgeContrastRefreshTick = 0;
         _edgeBodySuspended = IsEdgeFullyCollapsed;
         _mediaControl.Visibility = _edgeBodySuspended ? Visibility.Hidden : Visibility.Visible;
-        _mediaControl.ApplyHostVisibilitySuspension(_edgeBodySuspended || !IsOperational);
+        _mediaControl.ApplyHostVisibilitySuspension(_edgeBodySuspended && !_mediaControl.HasVisibleDetachedContent || !IsOperational);
         SynchronizeResources();
         if (_edgeBodySuspended)
         {

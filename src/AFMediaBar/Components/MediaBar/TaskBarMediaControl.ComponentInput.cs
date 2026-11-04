@@ -5,6 +5,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
@@ -22,14 +23,23 @@ public partial class TaskBarMediaControl
     private bool _suppressComponentRelease;
     private bool _finishingComponentGesture;
     private ComponentReorderRequest? _componentGesture;
-    private Point _componentPress;
     private bool _componentVertical;
     private DpiScale _componentDpi;
     private readonly Dictionary<TaskbarRestComponent, Rect> _componentStartBounds = new();
     private IReadOnlyList<ComponentLayoutEntry>? _componentPreview;
     private IInputElement? _componentPreviousFocus;
+    private UIElement? _componentCaptureElement;
+    private Point _componentScreenPress;
+    private Rect _componentScreenBounds;
+    private Rect _componentBarBounds;
+    private bool _componentDetachedOrigin;
+    private bool _componentDetachPreview;
+    private bool _componentDockCandidate;
+    private ComponentMoveIntentEventArgs? _componentMovePreview;
+    private DispatcherTimer? _componentDragTimer;
     public ICommand? ComponentReorderCommand { get; set; }
     public bool HasComponentGesture => _componentGesture is not null;
+    internal int ComponentGestureGeneration { get; private set; }
 
     private Dictionary<TaskbarRestComponent, FrameworkElement> HoverElements() => new()
     {
@@ -108,11 +118,14 @@ public partial class TaskBarMediaControl
         SizeChanged += ComponentSizeChanged;
         Unloaded += ComponentUnloaded;
         SettingsManager.SettingsChanged += ComponentSettingsChanged;
+        _componentDragTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(16) };
+        _componentDragTimer.Tick += ComponentDragTick;
     }
 
     private void DisposeComponentLayoutInput()
     {
-        CancelComponentGesture();
+        ReleaseDetachedVisuals();
+        if (_componentDragTimer is not null) { _componentDragTimer.Stop(); _componentDragTimer.Tick -= ComponentDragTick; }
         SettingsManager.SettingsChanged -= ComponentSettingsChanged;
         ComponentReorderCommand = null;
         ResetBarMoveHandle();
@@ -121,6 +134,7 @@ public partial class TaskBarMediaControl
     private void ComponentSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
         if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(() => ComponentSettingsChanged(sender, args)); return; }
+        if (args.PropertyName == nameof(AppSettings.MonitorBarProfiles) && ComponentScopeMatchesCurrent) return;
         // Any changed setting can affect the source layer, its geometry or available commands.
         CancelComponentGesture();
         RefreshBarMoveHandle();
@@ -129,7 +143,7 @@ public partial class TaskBarMediaControl
     private void ComponentBarLeft(object sender, MouseEventArgs args)
     {
         RefreshBarMoveHandle();
-        if (HasComponentGesture && !IsValidComponentDrop(args.GetPosition(this))) CancelComponentGesture();
+        if (_componentGesture?.State == BarLayoutState.Hover && !IsValidComponentDrop(args.GetPosition(this))) CancelComponentGesture();
     }
     private void ComponentVisibilityChanged(object sender, DependencyPropertyChangedEventArgs args)
     {
@@ -149,7 +163,7 @@ public partial class TaskBarMediaControl
     }
     private void ComponentCaptureLost(object sender, MouseEventArgs args)
     {
-        if (!_finishingComponentGesture && HasComponentGesture && Mouse.Captured != this) CancelComponentGesture();
+        if (!_finishingComponentGesture && HasComponentGesture && Mouse.Captured != _componentCaptureElement) CancelComponentGesture();
     }
 
     public bool IsBarDragHandleHit(DependencyObject? source)
@@ -175,8 +189,11 @@ public partial class TaskBarMediaControl
             if (!immediate && Math.Abs(currentOpacity - targetOpacity) > 0.001)
                 _barMoveHandle.BeginAnimation(OpacityProperty, new DoubleAnimation
                 {
-                    From = currentOpacity, To = targetOpacity, Duration = motion.FastDuration,
-                    EasingFunction = CreateEaseOut(), FillBehavior = FillBehavior.Stop
+                    From = currentOpacity,
+                    To = targetOpacity,
+                    Duration = motion.FastDuration,
+                    EasingFunction = CreateEaseOut(),
+                    FillBehavior = FillBehavior.Stop
                 }, HandoffBehavior.SnapshotAndReplace);
         }
         var locked = PresentationSettings.TaskbarBarPositionLocked;
@@ -262,41 +279,129 @@ public partial class TaskBarMediaControl
         _suppressComponentRelease = false;
         var hit = HitComponent(args.OriginalSource as DependencyObject);
         if (hit is not { } source || !ComponentLayoutPolicy.CanMove(source.Component)) return;
+        BeginComponentGesture(source.Component, source.State, this, args);
+    }
+    private void DetachedPointerDown(TaskbarRestComponent component, MouseButtonEventArgs args)
+    {
+        if (args.ChangedButton != MouseButton.Left || PresentationSettings.TaskbarBarPositionLocked) return;
+        if (_detachedVisuals.TryGetValue(component, out var visual)) BeginComponentGesture(component, RestLayoutState, visual.View, args);
+    }
+    private void BeginComponentGesture(TaskbarRestComponent component, BarLayoutState state, UIElement capture, MouseButtonEventArgs args)
+    {
+        CancelComponentGesture();
+        _suppressComponentRelease = false;
+        var source = (Component: component, State: state);
         var entries = ComponentLayoutPolicy.Resolve(PresentationSettings, source.State).Select(entry => entry with { }).ToArray();
         if (!entries.Any(entry => entry.Component == source.Component && entry.IsVisible)) return;
-        _componentGesture = new(source.State, source.Component, Array.FindIndex(entries, entry => entry.Component == source.Component), entries);
-        _componentPress = args.GetPosition(this);
+        ComponentGestureGeneration++;
+        _componentGesture = new(source.State, source.Component, Array.FindIndex(entries, entry => entry.Component == source.Component), entries)
+        { Target = ComponentTarget, MonitorDeviceId = ComponentMonitorDeviceId };
+        _componentCaptureElement = capture;
+        if (!Classes.Interop.NativeMethods.GetCursorPos(out var cursor)) { _componentGesture = null; return; }
+        _componentScreenPress = new Point(cursor.X, cursor.Y);
+        _componentDetachedOrigin = capture != this;
+        _componentDetachPreview = _componentDetachedOrigin;
+        _componentDockCandidate = false;
+        _componentBarBounds = IsVisible && !_isRestLayerEmpty && Opacity > 0 ? new Rect(PointToScreen(new Point()), new Size(ActualWidth * VisualTreeHelper.GetDpi(this).DpiScaleX,
+            ActualHeight * VisualTreeHelper.GetDpi(this).DpiScaleY)) : Rect.Empty;
+        var componentElement = state == BarLayoutState.Hover ? HoverElements().GetValueOrDefault(component) : GetComponentVisual(component) as FrameworkElement;
+        if (componentElement is null) { _componentGesture = null; return; }
+        var componentDpi = VisualTreeHelper.GetDpi(componentElement);
+        _componentScreenBounds = new Rect(componentElement.PointToScreen(new Point()),
+            new Size(componentElement.ActualWidth * componentDpi.DpiScaleX, componentElement.ActualHeight * componentDpi.DpiScaleY));
+        if (component == TaskbarRestComponent.Performance)
+        {
+            var size = GetComponentSize(component);
+            _componentScreenBounds.Size = new Size(size.Width * componentDpi.DpiScaleX, size.Height * componentDpi.DpiScaleY);
+        }
         _componentVertical = _isVertical;
         _componentDpi = VisualTreeHelper.GetDpi(this);
+        _componentDragTimer?.Start();
         var elements = source.State == BarLayoutState.Hover ? HoverElements() : RestElements();
         _componentStartBounds.Clear();
-        foreach (var pair in elements.Where(pair => pair.Value.Visibility == Visibility.Visible && pair.Value.ActualWidth > 0 && pair.Value.ActualHeight > 0))
+        foreach (var pair in elements.Where(pair => !IsDetachedElement(pair.Value) && pair.Value.Visibility == Visibility.Visible && pair.Value.ActualWidth > 0 && pair.Value.ActualHeight > 0))
             _componentStartBounds[pair.Key] = pair.Value.TransformToAncestor(this).TransformBounds(new Rect(pair.Value.RenderSize));
     }
     private void ComponentPointerMove(object sender, MouseEventArgs args)
     {
         if (_componentGesture is not { } gesture) return;
         if (args.LeftButton != MouseButtonState.Pressed || !GestureStillValid()) { CancelComponentGesture(); return; }
-        var position = args.GetPosition(this);
-        var delta = position - _componentPress;
+        if (!Classes.Interop.NativeMethods.GetCursorPos(out var cursor)) return;
+        var screen = new Point(cursor.X, cursor.Y);
+        var position = PointFromScreen(screen);
+        var delta = screen - _componentScreenPress;
         if (!_componentGestureActive)
         {
-            if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+            if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance * _componentDpi.DpiScaleX &&
+                Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance * _componentDpi.DpiScaleY) return;
             _componentGestureActive = true;
             _suppressComponentRelease = true;
             _hoverOpenTimer.Stop(); _hoverCloseTimer.Stop(); _hoverHideFallbackTimer.Stop();
             _componentPreviousFocus = Keyboard.FocusedElement;
             // 先接管按钮捕获再转移焦点，避免 ButtonBase 失焦释放捕获时取消排序。
             // 保留内部容器的真实命中；Element 捕获会让其误收 MouseLeave 并清理当前排序。
-            if (!Mouse.Capture(this, CaptureMode.SubTree)) { CancelComponentGesture(); return; }
-            if (_componentGesture is not null) { Focusable = true; Focus(); }
+            var capture = _componentCaptureElement!;
+            if (!Mouse.Capture(capture, CaptureMode.SubTree)) { CancelComponentGesture(); return; }
+            if (_componentGesture is not null) { capture.Focusable = true; capture.Focus(); }
             if (_componentGesture is null)
             {
-                if (IsMouseCaptured) ReleaseMouseCapture();
+                if (Mouse.Captured == capture) Mouse.Capture(null);
                 return;
             }
         }
-        if (!IsValidComponentDrop(position)) { CancelComponentGesture(); args.Handled = true; return; }
+        if (gesture.State != BarLayoutState.Hover && !PresentationSettings.TaskbarBarPositionLocked)
+        {
+            var outer = _componentBarBounds;
+            if (!outer.IsEmpty) outer.Inflate(12 * _componentDpi.DpiScaleX, 12 * _componentDpi.DpiScaleY);
+            if (_componentDetachedOrigin)
+            {
+                var dockBounds = _componentBarBounds;
+                if (!dockBounds.IsEmpty) dockBounds.Inflate((_componentDockCandidate ? 20 : 12) * _componentDpi.DpiScaleX,
+                    (_componentDockCandidate ? 20 : 12) * _componentDpi.DpiScaleY);
+                _componentDockCandidate = !dockBounds.IsEmpty && dockBounds.Contains(screen);
+            }
+            else if (outer.IsEmpty || !outer.Contains(screen)) _componentDetachPreview = true;
+            else if (_componentBarBounds.Contains(screen))
+            {
+                _componentDetachPreview = false;
+                if (_componentMovePreview is { } previousMove)
+                {
+                    _componentMovePreview = null;
+                    ComponentMoveIntent?.Invoke(this, new(previousMove.Component, previousMove.ScreenBounds, previousMove.State,
+                        previousMove.OriginalEntries, previousMove.TargetIndex, false, true, true));
+                }
+            }
+            if (_componentDetachPreview)
+            {
+                if (_componentDockCandidate)
+                {
+                    gesture = ResolveComponentDock(screen, gesture, out _);
+                    _componentGesture = gesture;
+                }
+                var screenBounds = _componentScreenBounds;
+                screenBounds.Offset(screen - _componentScreenPress);
+                _componentMovePreview = new(gesture.Component, screenBounds, gesture.State, gesture.OriginalEntries,
+                    gesture.TargetIndex, _componentDockCandidate, false);
+                ComponentMoveIntent?.Invoke(this, _componentMovePreview);
+                _componentDockCandidate = _componentMovePreview.CanDock;
+                if (_componentInsertionMarker is { } insertion)
+                {
+                    insertion.Visibility = _componentDockCandidate ? Visibility.Visible : Visibility.Collapsed;
+                    insertion.Width = _isVertical ? ActualWidth : 2;
+                    insertion.Height = _isVertical ? 2 : ActualHeight;
+                    var selected = gesture.OriginalEntries.ElementAtOrDefault(gesture.TargetIndex);
+                    var targetBounds = selected is not null && _componentStartBounds.TryGetValue(selected.Component, out var rectangle) ? rectangle : new Rect(RenderSize);
+                    var originalIndex = gesture.OriginalEntries.ToList().FindIndex(entry => entry.Component == gesture.Component);
+                    var isBefore = gesture.TargetIndex <= originalIndex;
+                    var isReversed = !_isVertical && ResolvedTaskbarArrangement == TaskbarContentArrangement.Right;
+                    insertion.Margin = _isVertical ? new Thickness(targetBounds.Left, isBefore ? targetBounds.Top : targetBounds.Bottom, 0, 0)
+                        : new Thickness(isBefore != isReversed ? targetBounds.Left : targetBounds.Right, targetBounds.Top, 0, 0);
+                }
+                args.Handled = true;
+                return;
+            }
+        }
+        if (!IsValidComponentDrop(position)) { if (gesture.State == BarLayoutState.Hover) CancelComponentGesture(); args.Handled = true; return; }
         var primary = _isVertical ? position.Y : position.X;
         var reversed = !_isVertical && gesture.State != BarLayoutState.Hover && ResolvedTaskbarArrangement == TaskbarContentArrangement.Right;
         var candidates = gesture.OriginalEntries.Where(entry => entry.IsVisible && ComponentLayoutPolicy.CanMove(entry.Component) && _componentStartBounds.ContainsKey(entry.Component)).ToArray();
@@ -332,6 +437,26 @@ public partial class TaskBarMediaControl
         if (_componentGesture?.State != BarLayoutState.Hover) return true;
         return HoverRevealHost.TransformToAncestor(this).TransformBounds(new Rect(HoverRevealHost.RenderSize)).Contains(point);
     }
+
+    private ComponentReorderRequest ResolveComponentDock(Point screen, ComponentReorderRequest gesture, out bool dock)
+    {
+        var dockBounds = _componentBarBounds;
+        if (!dockBounds.IsEmpty) dockBounds.Inflate((_componentDockCandidate ? 20 : 12) * _componentDpi.DpiScaleX,
+            (_componentDockCandidate ? 20 : 12) * _componentDpi.DpiScaleY);
+        dock = !dockBounds.IsEmpty && dockBounds.Contains(screen);
+        if (!dock) return gesture;
+        var pointer = PointFromScreen(screen);
+        var primary = _isVertical ? pointer.Y : pointer.X;
+        var target = gesture.OriginalEntries.Where(entry => entry.IsVisible && ComponentLayoutPolicy.CanMove(entry.Component) &&
+            entry.Component != gesture.Component && _componentStartBounds.ContainsKey(entry.Component))
+            .OrderBy(entry =>
+            {
+                var bounds = _componentStartBounds[entry.Component];
+                return Math.Abs(primary - (_isVertical ? bounds.Top + bounds.Height / 2 : bounds.Left + bounds.Width / 2));
+            }).FirstOrDefault();
+        return target is null ? gesture : gesture with
+        { TargetIndex = gesture.OriginalEntries.ToList().FindIndex(entry => entry.Component == target.Component) };
+    }
     private void ComponentPointerUp(object sender, MouseButtonEventArgs args)
     {
         if (args.ChangedButton != MouseButton.Left) return;
@@ -341,8 +466,17 @@ public partial class TaskBarMediaControl
             return;
         }
         var active = _componentGestureActive;
-        var valid = GestureStillValid() && IsValidComponentDrop(args.GetPosition(this));
+        if (active && _componentDetachPreview && _componentMovePreview is { } move)
+        {
+            if (Classes.Interop.NativeMethods.GetCursorPos(out var released))
+                FinishComponentMove(gesture, move, new Point(released.X, released.Y));
+            else CancelComponentGesture();
+            args.Handled = true;
+            return;
+        }
         var hit = HitComponent(args.OriginalSource as DependencyObject);
+        var valid = GestureStillValid() && (_componentDetachedOrigin
+            ? hit?.Component == gesture.Component : IsValidComponentDrop(args.GetPosition(this)));
         if (active)
         {
             args.Handled = true;
@@ -382,19 +516,62 @@ public partial class TaskBarMediaControl
         _finishingComponentGesture = true;
         var wasActive = _componentGestureActive;
         var wasHover = _componentGesture.State == BarLayoutState.Hover;
+        ComponentGestureGeneration++;
         _componentGesture = null; _componentPreview = null; _componentGestureActive = false;
+        _componentDragTimer?.Stop();
+        if (_componentMovePreview is { } move)
+        {
+            _componentMovePreview = null;
+            ComponentMoveIntent?.Invoke(this, new(move.Component, move.ScreenBounds, move.State, move.OriginalEntries,
+                move.TargetIndex, move.Dock, true, true));
+        }
         _componentStartBounds.Clear();
         if (_componentInsertionMarker is not null) _componentInsertionMarker.Visibility = Visibility.Collapsed;
         if (wasActive)
         {
-            if (Mouse.Captured == this) Mouse.Capture(null);
+            if (Mouse.Captured == _componentCaptureElement) Mouse.Capture(null);
             if (wasHover) { ApplyHoverComponentLayout(); if (_isVertical) ConfigureVerticalHoverGeometry(); }
             else if (_isVertical) ApplyVerticalSectionGeometry(MainBorder.Height);
             else ApplyTaskbarSectionGeometry(MainBorder.Width);
-            if (_componentPreviousFocus is { } focused && Window.GetWindow(this)?.IsActive == true && ReferenceEquals(Keyboard.FocusedElement, this)) Keyboard.Focus(focused);
+            if (_componentCaptureElement is { } capture && _componentPreviousFocus is { } focused && Window.GetWindow(capture)?.IsActive == true &&
+                ReferenceEquals(Keyboard.FocusedElement, capture)) Keyboard.Focus(focused);
             _componentPreviousFocus = null;
             if (!IsMouseOver) HideTaskbarHoverLayer();
         }
         _finishingComponentGesture = false;
+    }
+    public void CancelComponentPlacement() => CancelComponentGesture();
+    private void FinishComponentMove(ComponentReorderRequest gesture, ComponentMoveIntentEventArgs move, Point released)
+    {
+        if (!GestureStillValid() || ComponentPlacementAllowed?.Invoke() == false) { CancelComponentGesture(); return; }
+        var bounds = _componentScreenBounds;
+        bounds.Offset(released - _componentScreenPress);
+        // 最后一帧也可新进入归还区；宿主随后重新验证空间，不沿用上一帧的否决。
+        var index = ResolveComponentDock(released, gesture, out var dock).TargetIndex;
+        _componentMovePreview = null;
+        _finishingComponentGesture = true;
+        try { ComponentMoveIntent?.Invoke(this, new(move.Component, bounds, move.State, move.OriginalEntries, index, dock, true)); }
+        finally { _finishingComponentGesture = false; CancelComponentGesture(); _suppressComponentRelease = false; }
+    }
+
+    public void CompleteComponentPlacement(Point? releasedScreen = null)
+    {
+        if (!_componentGestureActive || Mouse.LeftButton != MouseButtonState.Released) return;
+        if (releasedScreen is { } screen && _componentDetachPreview && _componentGesture is { } gesture && _componentMovePreview is { } move)
+            FinishComponentMove(gesture, move, screen);
+        else ComponentPointerUp(this,
+            new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = Mouse.MouseUpEvent });
+    }
+    private void ComponentDragTick(object? sender, EventArgs args)
+    {
+        if (_componentGesture is null) { _componentDragTimer?.Stop(); return; }
+        if ((Classes.Interop.NativeMethods.GetAsyncKeyState(0x1B) & 0x8000) != 0) { CancelComponentGesture(); return; }
+        if (Mouse.LeftButton == MouseButtonState.Released)
+        {
+            if (_componentGestureActive) CompleteComponentPlacement(); else CancelComponentGesture();
+            return;
+        }
+        // 处理器会设置 Handled；即使直接调用，也必须为合成参数指定路由事件。
+        ComponentPointerMove(this, new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount) { RoutedEvent = Mouse.MouseMoveEvent });
     }
 }

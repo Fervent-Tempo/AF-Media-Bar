@@ -20,6 +20,7 @@ public partial class TaskBarMediaControl
     private IReadOnlyList<ComponentLayoutEntry> EffectiveRestEntries() => ComponentLayoutPolicy.Resolve(PresentationSettings, RestLayoutState);
     private TaskbarRestComponent[] EffectiveRestComponents() => PreviewRestEntries()
         .Where(entry => entry.IsVisible && (entry.Component != TaskbarRestComponent.BluetoothBattery || _batteryCanShow))
+        .Where(entry => !IsDetached(entry.Component))
         .Select(entry => entry.Component).ToArray();
     private TaskbarRestComponent[] RestComponentsWithHandle()
     {

@@ -12,7 +12,7 @@ namespace AFMediaBar.Classes.Services.Audio;
 
 /// <summary>所选蓝牙设备的电量与提醒，独立于默认音频设备。</summary>
 public sealed class BluetoothBatteryService(BluetoothBatteryReader reader, BluetoothBatteryCache cache,
-    ISystemNotificationService notifications, AppLogService log) : IHostedService, IDisposable
+    ISystemNotificationService notifications, AppLogService log, IDisplayMonitorService? displays = null) : IHostedService, IDisposable
 {
     private sealed class Session(string deviceId)
     {
@@ -59,12 +59,15 @@ public sealed class BluetoothBatteryService(BluetoothBatteryReader reader, Bluet
         SettingsManager.SettingsChanged += OnSettingsChanged;
         Reconfigure();
     }, DispatcherPriority.Normal, cancellationToken).Task;
-    private static bool WidgetRequested(AppSettings settings) => new[] { BarLayoutState.Resident, BarLayoutState.Idle }
-        .Any(state => ComponentLayoutPolicy.Resolve(settings, state).Any(entry => entry.Component == TaskbarRestComponent.BluetoothBattery && entry.IsVisible));
+    private bool WidgetRequested(AppSettings settings) =>
+        AFMediaBar.Classes.Services.Settings.MonitorBarProfilePolicy.IsRequested(settings, TaskbarRestComponent.BluetoothBattery,
+            displays?.GetMonitors().Where(display => display.IsPrimary).Select(display => display.DeviceId).ToArray());
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs args)
     {
-        if (_disposed || args.PropertyName is not (null or nameof(AppSettings.Experiments) or nameof(AppSettings.TaskbarExperience) or nameof(AppSettings.BluetoothBatteryWidget))) return;
+        if (_disposed || args.PropertyName is not (null or nameof(AppSettings.Experiments) or nameof(AppSettings.TaskbarExperience) or
+            nameof(AppSettings.BluetoothBatteryWidget) or nameof(AppSettings.MonitorBarProfiles) or nameof(AppSettings.WindowMode) or
+            nameof(AppSettings.FloatingBar) or nameof(AppSettings.TaskbarTargetMonitorDeviceIds))) return;
         // 初始状态和配置变更也会通知呈现订阅，与读取结果使用同一 UI 线程。
         var dispatcher = Application.Current.Dispatcher;
         if (dispatcher.CheckAccess()) Reconfigure();

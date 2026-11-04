@@ -3901,4 +3901,6 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>Kéo để đổi thứ tự. Bạn cũng có thể kéo các thành phần trực tiếp trên thanh phương tiện.</value></data>
   <data name="ComponentLayout.Parallel" xml:space="preserve"><value>Chỉ số song song và thứ tự</value></data>
   <data name="ComponentLayout.ParallelDescription" xml:space="preserve"><value>Dùng chung hiển thị và thứ tự với bố cục thường trực trong trang Thường trực. Chỉnh bố cục khi không có phương tiện riêng trên trang đó.</value></data>
+  <data name="ComponentPlacement.EditingMonitor" xml:space="preserve"><value>Màn hình đang cấu hình</value></data>
+  <data name="ComponentPlacement.Attach" xml:space="preserve"><value>Đưa về thanh phương tiện</value></data>
 </root>

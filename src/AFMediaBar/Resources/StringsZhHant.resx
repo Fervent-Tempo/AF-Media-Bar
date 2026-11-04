@@ -3864,4 +3864,6 @@
   <data name="Settings.Reorder.MediaBarHelp" xml:space="preserve"><value>拖曳調整順序；也可在實際媒體列上用滑鼠拖曳元件。</value></data>
   <data name="ComponentLayout.Parallel" xml:space="preserve"><value>並排指標與順序</value></data>
   <data name="ComponentLayout.ParallelDescription" xml:space="preserve"><value>與「常駐狀態」的常駐顯示共用顯隱和順序；無媒體顯示請到該頁另行調整。</value></data>
+  <data name="ComponentPlacement.EditingMonitor" xml:space="preserve"><value>正在設定的顯示器</value></data>
+  <data name="ComponentPlacement.Attach" xml:space="preserve"><value>放回媒體列</value></data>
 </root>

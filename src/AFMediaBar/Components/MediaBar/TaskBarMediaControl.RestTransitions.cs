@@ -71,7 +71,7 @@ public partial class TaskBarMediaControl
 
     private Dictionary<TaskbarRestComponent, RestVisual>? CaptureRestVisuals(bool targetConnected)
     {
-        if (!AllowRestConnectionTransition || !IsLoaded || _isHostVisibilitySuspended || _isPlacementMotionActive ||
+        if (DetachedPositions.Count > 0 || !AllowRestConnectionTransition || !IsLoaded || _isHostVisibilitySuspended || _isPlacementMotionActive ||
             _backgroundPruneLevel >= MemoryPruneLevel.DisplayOff || !IsBarPresentation ||
             _isVertical || !CurrentMotion.UseTransitions)
             return null;

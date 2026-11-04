@@ -449,6 +449,8 @@ namespace AFMediaBar.Views.Windows
         }
         private void UpdatePageHeader()
         {
+            MonitorEditor.Visibility = _currentSectionId is null && _currentPage is (SettingsPageKey.RestState or SettingsPageKey.ScreenAndPlacement or SettingsPageKey.Performance)
+                ? Visibility.Visible : Visibility.Collapsed;
             if (_closed || FindDescendant<SettingsGroupStrip>(RootNavigation) is not { } strip) return;
             strip.BackCommand = GoBackCommand;
             if (_currentSectionId is not null)
@@ -618,6 +620,13 @@ namespace AFMediaBar.Views.Windows
         private void OnContextChanged(object? sender, EventArgs e)
         {
             if (_closed) return;
+            _updatingMonitorEditor = true;
+            try
+            {
+                MonitorEditorChoices.ItemsSource = _contexts.Monitors;
+                MonitorEditorChoices.SelectedValue = _contexts.Current.MonitorDeviceId;
+            }
+            finally { _updatingMonitorEditor = false; }
             var contextChanged = _displayedContext != _contexts.Current;
             _pages.SetContext(_contexts.Current);
             RebuildNavigation();
@@ -631,7 +640,7 @@ namespace AFMediaBar.Views.Windows
             else if (contextChanged && (!definition.IsGlobal || definition.HasModeContent))
             {
                 var content = (UIElement)_pages.GetPage(SettingsPageProvider.PageTypes[_currentPage])!;
-                if (!definition.IsGlobal || _currentPage == SettingsPageKey.ScreenAndPlacement) RootNavigation.ReplaceContent(content);
+                if (!definition.IsGlobal || definition.HasModeContent) RootNavigation.ReplaceContent(content);
             }
             _displayedContext = _contexts.Current;
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(UpdatePageHeader));
@@ -653,5 +662,11 @@ namespace AFMediaBar.Views.Windows
             else Navigate(SettingsPageProvider.PageTypes[page]);
         }
         private void OnContextRefreshFailed(object? sender, Exception exception) => _log.Error("Settings", "读取设置页任务栏环境失败，保留上次有效上下文", exception);
+        private void MonitorEditor_SelectionChanged(object sender, SelectionChangedEventArgs args)
+        {
+            if (!_updatingMonitorEditor && MonitorEditorChoices.SelectedValue is string monitorId && monitorId != _contexts.Current.MonitorDeviceId)
+                _contexts.SelectMonitor(monitorId);
+        }
+        private bool _updatingMonitorEditor;
     }
 }

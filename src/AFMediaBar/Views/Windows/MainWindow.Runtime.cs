@@ -148,7 +148,7 @@ public partial class MainWindow
                         RoutedEventHandler? closed = null;
                         closed = (_, _) => { menu.Closed -= closed; hold.Dispose(); };
                         menu.Closed += closed;
-                        try { ContextMenuHelper.OpenAtScreenAnchor(menu, this, point); }
+                        try { OpenComponentAwareMenu(menu, point, host.CreateComponentReturnMenuItem(), value => host.ActiveComponentMenu = value); }
                         catch { menu.Closed -= closed; hold.Dispose(); throw; }
                     };
                 }
@@ -159,9 +159,9 @@ public partial class MainWindow
                 foreach (var target in ResolveTaskbarTargetDeviceIds())
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    var handle = _taskBarService.GetSelectedTaskbarHandle(target, out _);
-                    if (handle == nint.Zero || !seen.Add(handle)) continue;
-                    var window = CreateTaskbarWindow(target);
+                    var identity = ResolveTaskbarHost(target);
+                    if (identity.Handle == nint.Zero || !seen.Add(identity.Handle)) continue;
+                    var window = CreateTaskbarWindow(identity.Logical);
                     hosts.Add(window);
                     window.ApplySnapshot(_mediaSessionService.CurrentSnapshot ?? MediaSnapshot.Disconnected);
                 }

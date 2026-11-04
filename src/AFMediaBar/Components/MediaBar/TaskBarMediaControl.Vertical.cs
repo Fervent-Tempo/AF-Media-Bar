@@ -143,6 +143,7 @@ public partial class TaskBarMediaControl
 
     private void ApplyVerticalSectionGeometry(double primaryLength)
     {
+        RestoreAttachedComponents();
         _verticalSpectrumLength = TaskbarSpectrum.Width + RestWidgetVerticalInset(TaskbarSpectrumHoverSurface);
         var width = Math.Max(1, MainBorder.Width);
         var innerWidth = Math.Max(1, width - 4);
@@ -203,6 +204,7 @@ public partial class TaskBarMediaControl
         TaskbarPerformanceSurface.Padding = new Thickness(1);
         TaskbarPerformanceSurface.Height = Math.Max(1, _verticalPerformanceLength - RestWidgetVerticalInset(TaskbarPerformanceHoverSurface));
         PlaceMetricSurfaces(layout, innerWidth);
+        UpdateDetachedVisuals();
         PlaceBarMoveHandle(layout, innerWidth);
         var buttonSize = VerticalAudioButtonSize(TaskbarDensityMetrics.From(experience.Density));
         foreach (var surface in new[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface })

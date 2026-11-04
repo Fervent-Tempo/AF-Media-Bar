@@ -416,7 +416,7 @@ public sealed partial class FloatingBarWindow
         performance = _mediaControl.EffectivePerformanceSettings.Normalize();
         var metrics = performance.GetOrderedMetrics().ToArray();
         var interval = TimeSpan.FromMilliseconds(performance.RefreshIntervalMilliseconds);
-        var shouldSubscribe = IsOperational && !IsEdgeFullyCollapsed && _mediaControl.IsPerformanceComponentVisible;
+        var shouldSubscribe = IsOperational && (!IsEdgeFullyCollapsed || _mediaControl.HasVisibleDetachedContent) && _mediaControl.IsPerformanceComponentVisible;
         var configurationChanged = _metricsSubscription is not null &&
                                    (!_subscribedMetricKinds.SequenceEqual(metrics) ||
                                     _subscribedMetricInterval != interval);
@@ -448,7 +448,7 @@ public sealed partial class FloatingBarWindow
 
     private void ApplyMetricsSnapshot(int generation, SystemMetricsSnapshot snapshot)
     {
-        if (generation != _metricsSubscriptionGeneration || !IsOperational || IsEdgeFullyCollapsed)
+        if (generation != _metricsSubscriptionGeneration || !IsOperational || IsEdgeFullyCollapsed && !_mediaControl.HasVisibleDetachedContent)
             return;
         var settings = _mediaControl.EffectivePerformanceSettings.Normalize();
         var metrics = settings.GetOrderedMetrics();

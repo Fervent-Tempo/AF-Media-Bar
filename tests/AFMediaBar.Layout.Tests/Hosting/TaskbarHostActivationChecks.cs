@@ -1,5 +1,6 @@
 // 在隔离 WPF 进程中激活真实任务栏宿主；测试自有父 HWND，不触碰 Explorer 或音频设备。
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
@@ -9,6 +10,7 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Audio;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Services.Media.Smtc;
+using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Classes.Services.Updates;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
@@ -63,6 +65,7 @@ internal static class TaskbarHostActivationChecks
             };
             parent.Show();
             var dock = new Dock(new WindowInteropHelper(parent).Handle);
+            var targetMonitor = MonitorUtil.GetMonitor(dock.Handle).deviceId;
             var actions = new Actions();
             using var runtime = new BarRuntimeCoordinator();
             var surfaceSessions = new TaskbarHostSurfaceSessions();
@@ -91,7 +94,7 @@ internal static class TaskbarHostActivationChecks
                             Bottom = (int)bounds.Bottom + 46
                         };
                     dock.ObservedRect = attempt == 0 ? hiddenRect : revealedRect;
-                    var window = new TaskbarWindow(battery, dock, "test", actions, appearance,
+                    var window = new TaskbarWindow(battery, dock, targetMonitor, actions, appearance,
                         new TaskbarOccupiedAreaService(probe), new TaskbarLengthConstraintsService(),
                         new GlobalInteractionRouter(media, audio), audio, monitor, null!, null!,
                         new ScreenBackgroundSampler(), mouse, prune, surfaceSessions, viewModel, null!, startImmediately: false);
@@ -112,7 +115,10 @@ internal static class TaskbarHostActivationChecks
                     await WaitUntilAsync(() => window.IsVisible && window.MediaControl.IsHitTestVisible);
                     Assert.IsTrue(window.IsVisible && window.MediaControl.IsHitTestVisible,
                         "任务栏展开后必须自行恢复显示和交互，不能依赖手动重载或新的 Shell 事件。");
+                    var pendingDrag = typeof(TaskbarWindow).GetField("_isDragPending", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+                    pendingDrag.SetValue(window, true);
                     window.Suspend();
+                    Assert.IsFalse((bool)pendingDrag.GetValue(window)!, "环境挂起必须取消尚未越过阈值的本体拖动。");
                     dock.ObservedRect = attempt == 1 ? hiddenRect : revealedRect;
                     window.Resume();
                     if (attempt == 1)
@@ -138,8 +144,14 @@ internal static class TaskbarHostActivationChecks
                 Bottom = (int)monitorBounds.Bottom + 46
             };
             var firstPlacement = new FirstPlacementProbe();
-            var firstWindow = new TaskbarWindow(battery, dock, "test", actions, appearance,
-                new TaskbarOccupiedAreaService(firstPlacement), new TaskbarLengthConstraintsService(),
+            var firstOccupancy = new TaskbarOccupiedAreaService(firstPlacement);
+            var settings = SettingsManager.Current;
+            settings.TaskbarExperience = ComponentLayoutPolicy.SetVisible(settings, BarLayoutState.Idle, TaskbarRestComponent.InputDevice, true);
+            settings.TaskbarExperience = ComponentLayoutPolicy.SetVisible(settings, BarLayoutState.Idle, TaskbarRestComponent.Volume, true);
+            MonitorBarProfilePolicy.Store(settings, MonitorBarProfilePolicy.Capture(settings, BarConfigurationTarget.Taskbar, targetMonitor) with
+            { Detached = [new(TaskbarRestComponent.InputDevice, 300, 2)] });
+            var firstWindow = new TaskbarWindow(battery, dock, targetMonitor, actions, appearance,
+                firstOccupancy, new TaskbarLengthConstraintsService(),
                 new GlobalInteractionRouter(media, audio), audio, monitor, null!, null!,
                 new ScreenBackgroundSampler(), mouse, prune, surfaceSessions, viewModel, null!, startImmediately: false);
             Assert.IsTrue(await runtime.SwitchAsync(WindowMode.Taskbar,
@@ -164,6 +176,65 @@ internal static class TaskbarHostActivationChecks
             Assert.AreEqual(firstHandle, new WindowInteropHelper(firstWindow).Handle, "首次显示不得靠重建宿主完成。");
             Assert.AreEqual(0, actions.Rebuilds);
             slowTimer.Interval = originalInterval;
+
+            var component = firstWindow.MediaControl.DetachedVisuals.Single(visual => visual.Component == TaskbarRestComponent.InputDevice);
+            Assert.IsTrue(component.IsPlaced);
+            var orientation = firstWindow.IsVerticalPresentation ? LayoutOrientation.Vertical : LayoutOrientation.Horizontal;
+            var dpi = dock.GetTaskbarDpiScale(dock.Handle);
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            void ReleaseBodyAt(int primary)
+            {
+                // 不发送系统输入，只准备宿主已经完成预览的释放事务。
+                GetCursorPos(out var cursor);
+                typeof(TaskbarWindow).GetField("_dragStartCursorPrimary", flags)!.SetValue(firstWindow, firstWindow.IsVerticalPresentation ? cursor.Y : cursor.X);
+                typeof(TaskbarWindow).GetField("_dragStartBarPrimary", flags)!.SetValue(firstWindow, primary);
+                typeof(TaskbarWindow).GetField("_dragPrimaryLimit", flags)!.SetValue(firstWindow,
+                    (firstWindow.IsVerticalPresentation ? initialRect.Bottom - initialRect.Top : initialRect.Right - initialRect.Left) - 70);
+                Assert.IsTrue(firstWindow.MediaControl.CaptureMouse());
+                typeof(TaskbarWindow).GetField("_isDragging", flags)!.SetValue(firstWindow, true);
+                typeof(TaskbarWindow).GetField("_bodyDragPrimary", flags)!.SetValue(firstWindow, primary);
+                typeof(TaskbarWindow).GetField("_bodyDragLength", flags)!.SetValue(firstWindow, 70);
+                var up = new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount,
+                    System.Windows.Input.MouseButton.Left)
+                { RoutedEvent = System.Windows.Input.Mouse.MouseUpEvent };
+                typeof(TaskbarWindow).GetMethod("MediaControl_PreviewMouseLeftButtonUp", flags)!.Invoke(firstWindow, [firstWindow.MediaControl, up]);
+                Assert.IsTrue(up.Handled, "正常抬起必须完成事务，不能先因释放捕获取消。");
+                Assert.IsFalse(firstWindow.MediaControl.IsMouseCaptured);
+            }
+            ReleaseBodyAt(100);
+            var savedHome = MonitorBarProfilePolicy.Find(SettingsManager.Current, BarConfigurationTarget.Taskbar, targetMonitor)!.BodyPrimaryDip;
+            Assert.IsNotNull(savedHome, "在线任务栏的正常拖动释放必须保存落点。");
+            var size = firstWindow.MediaControl.GetComponentSize(TaskbarRestComponent.Volume);
+            var drop = firstWindow.IsVerticalPresentation ? new Point(initialRect.Left + 2, initialRect.Top + 420)
+                : new Point(initialRect.Left + 420, initialRect.Top + 2);
+            var intent = new ComponentMoveIntentEventArgs(TaskbarRestComponent.Volume,
+                new Rect(drop, new Size(size.Width * dpi, size.Height * dpi)), BarLayoutState.Idle,
+                firstWindow.MediaControl.ComponentEntries, 0, false, true);
+            typeof(TaskbarWindow).GetMethod("OnComponentMoveIntent", flags)!.Invoke(firstWindow, [firstWindow.MediaControl, intent]);
+            Assert.IsTrue(MonitorBarProfilePolicy.Find(SettingsManager.Current, BarConfigurationTarget.Taskbar, targetMonitor)!.Detached
+                .Any(position => position.Component == TaskbarRestComponent.Volume), "在线任务栏上的组件释放必须能提交分离。");
+            firstWindow.ApplyExperienceSettings();
+            var componentLocation = new Point(Canvas.GetLeft(component.View), Canvas.GetTop(component.View));
+            firstPlacement.Reject = true;
+            firstOccupancy.InvalidateCache();
+            await WaitUntilAsync(() => firstOccupancy.GetSnapshot(dock.Handle, initialRect, orientation, dpi, 20).Status == TaskbarProbeStatus.Failed);
+            await firstWindow.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+            Assert.IsTrue(component.IsPlaced && component.View.Visibility == Visibility.Visible,
+                "系统菜单使占用区暂时不可读时，独立组件必须保留画面。");
+            Assert.AreEqual(componentLocation, new Point(Canvas.GetLeft(component.View), Canvas.GetTop(component.View)),
+                "非成功快照不能重新分配已显示组件的位置。");
+            ReleaseBodyAt(200);
+            Assert.AreEqual(savedHome, MonitorBarProfilePolicy.Find(SettingsManager.Current, BarConfigurationTarget.Taskbar, targetMonitor)!.BodyPrimaryDip,
+                "失败快照仍须禁止提交新落点。");
+            firstPlacement.Reject = false;
+            firstPlacement.NoSpace = true;
+            firstOccupancy.InvalidateCache();
+            await WaitUntilAsync(() => firstOccupancy.GetSnapshot(dock.Handle, initialRect, orientation, dpi, 20).Status == TaskbarProbeStatus.Success && !component.IsPlaced);
+            Assert.IsFalse(component.IsPlaced, "成功快照证明没有空间时仍必须隐藏组件。");
+            firstPlacement.NoSpace = false;
+            firstOccupancy.InvalidateCache();
+            await WaitUntilAsync(() => firstOccupancy.GetSnapshot(dock.Handle, initialRect, orientation, dpi, 20).Status == TaskbarProbeStatus.Success && component.IsPlaced);
+            Assert.IsTrue(component.IsPlaced, "重新发布足够空间后必须恢复组件。");
 
             var active = (TaskbarWindow)runtime.Hosts.Single();
             var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -199,6 +270,8 @@ internal static class TaskbarHostActivationChecks
         private IReadOnlyList<TaskbarPrimaryRange> _ranges = [];
         private bool _hasCompleted;
         public int Requests { get; private set; }
+        public bool Reject { get; set; }
+        public bool NoSpace { get; set; }
         public string? FirstRequest { get; private set; }
         public TaskCompletionSource Requested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -206,9 +279,10 @@ internal static class TaskbarHostActivationChecks
             Action<IReadOnlyList<TaskbarPrimaryRange>> succeeded, Action failed)
         {
             Requests++;
+            if (Reject) { failed(); return; }
             FirstRequest ??= $"handle={handle}, rect=({rect.Left},{rect.Top})-({rect.Right},{rect.Bottom})";
             var length = orientation == LayoutOrientation.Horizontal ? rect.Right - rect.Left : rect.Bottom - rect.Top;
-            _ranges = [new(padding, length - padding)];
+            _ranges = NoSpace ? [] : [new(padding, length - padding)];
             if (_hasCompleted) succeeded(_ranges);
             else _complete = succeeded;
             Requested.TrySetResult();

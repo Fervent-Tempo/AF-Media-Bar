@@ -12,6 +12,18 @@ public static class TaskbarTargetPolicy
     public static bool IsLegacyAllTaskbars(string? deviceId) =>
         string.Equals(deviceId, LegacyAllTaskbarsDeviceId, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>优先归属实际任务栏上已选中的屏幕；借用未选屏时保留原请求，防止回退位置污染。</summary>
+    public static string ResolveHostDeviceId(string requestedDeviceId, string? actualDeviceId,
+        IReadOnlyCollection<string>? configuredDeviceIds)
+    {
+        var configured = configuredDeviceIds ?? [];
+        if (!string.IsNullOrWhiteSpace(actualDeviceId) && (configured.Count == 0 ||
+            configured.Contains(actualDeviceId, StringComparer.OrdinalIgnoreCase))) return actualDeviceId;
+        if (configured.Count > 0 && !configured.Contains(requestedDeviceId, StringComparer.OrdinalIgnoreCase))
+            return configured.First();
+        return requestedDeviceId;
+    }
+
     /// <summary>
     /// 返回当前可用的显式目标；多选按主屏优先稳定排序。只有全部所选目标都断开时才临时回退到主屏，设置中的重连偏好不会被丢弃。
     /// Returns currently available explicit targets, stably ordered with the primary first. Only when every selected target is disconnected does it
