@@ -4,13 +4,15 @@
 // story); the millisecond position address came from a later Cheat Engine pass.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Text;
+using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Services.Win32;
 
 namespace AFMediaBar.Classes.Services.Media.Sources.KuGou;
 
 /// <summary>
-/// 从酷狗音乐进程内存读取播放进度与曲目时长。
-/// Reads the playback position and track duration from the KuGou process memory.
+/// 独占酷狗进程的只读句柄，读取时间轴、播放状态与实时窗口标题；Dispose 释放句柄。
 ///
 /// 进度是 kgplayer.dll 内的静态 double（毫秒精度）；时长挂在一条入口相对 kugou.dll 模块基址固定的多级指针链上（int32 秒）。
 /// 本类只负责"把地址与链走通并读数"，数值是否可信（是否真是一对进度/时长）由调用方判定。
@@ -38,21 +40,33 @@ public sealed class KuGou : IDisposable
     // The CE table lists <Offsets> bottom-up and they apply in reverse order.
     private const nint PositionModuleOffset = 0x3929D8;
 
-    private const nint DurationBaseOffset = 0x023C9B68;
+    private const nint LegacyDurationBaseOffset = 0x023C9B68;
     private static readonly nint[] DurationOffsets = [0x70, 0x30, 0x0, 0x24];
+    private const nint GraphBaseOffset = 0x3936A8;
+    private static readonly nint[] GraphOffsets = [0xC0, 0xB8];
 
     private readonly Process _process;
     private readonly ProcessMemory _memory;
     private readonly nint _positionModuleBase;
     private readonly nint _durationModuleBase;
+    private readonly nint _durationBaseOffset;
+    private nint _quartzBase;
+    private int _quartzSize;
+    private readonly bool _supportsIndependentRead;
+    private nint _metadataWindow;
     private bool _disposed;
 
-    private KuGou(Process process, ProcessMemory memory, nint positionModuleBase, nint durationModuleBase)
+    private KuGou(Process process, ProcessMemory memory, nint positionModuleBase, nint durationModuleBase,
+        nint quartzBase, int quartzSize, bool supportsIndependentRead, nint durationBaseOffset)
     {
         _process = process;
         _memory = memory;
         _positionModuleBase = positionModuleBase;
         _durationModuleBase = durationModuleBase;
+        _durationBaseOffset = durationBaseOffset;
+        _quartzBase = quartzBase;
+        _quartzSize = quartzSize;
+        _supportsIndependentRead = supportsIndependentRead;
     }
 
     /// <summary>
@@ -88,6 +102,10 @@ public sealed class KuGou : IDisposable
     {
         nint positionModuleBase;
         nint durationModuleBase;
+        nint quartzBase;
+        int quartzSize;
+        bool supportsIndependentRead;
+        nint durationBaseOffset;
         try
         {
             var modules = process.Modules.OfType<ProcessModule>().ToArray();
@@ -102,6 +120,18 @@ public sealed class KuGou : IDisposable
 
             positionModuleBase = position.BaseAddress;
             durationModuleBase = duration.BaseAddress;
+            var quartz = modules.FirstOrDefault(candidate => "quartz.dll".Equals(candidate.ModuleName, StringComparison.OrdinalIgnoreCase));
+            quartzBase = quartz?.BaseAddress ?? 0;
+            quartzSize = quartz?.ModuleMemorySize ?? 0;
+            var engineVersion = position.FileVersionInfo;
+            var clientVersion = duration.FileVersionInfo;
+            // 私有偏移按已验证版本选择；未知版本继续尝试原有 SMTC 时间轴增强。
+            supportsIndependentRead = engineVersion.FileMajorPart == 1 && engineVersion.FileMinorPart == 2 &&
+                engineVersion.FileBuildPart == 0 && engineVersion.FilePrivatePart == 519 &&
+                clientVersion.FileMajorPart == 20 && clientVersion.FileMinorPart == 1 && clientVersion.FileBuildPart == 51 &&
+                clientVersion.FilePrivatePart is 27972 or 27974;
+            durationBaseOffset = supportsIndependentRead && clientVersion.FilePrivatePart == 27974
+                ? 0x023C7B68 : LegacyDurationBaseOffset;
         }
         catch
         {
@@ -110,7 +140,8 @@ public sealed class KuGou : IDisposable
             return null;
         }
 
-        var reader = new KuGou(process, new ProcessMemory(process.Id), positionModuleBase, durationModuleBase);
+        var reader = new KuGou(process, new ProcessMemory(process.Id), positionModuleBase, durationModuleBase,
+            quartzBase, quartzSize, supportsIndependentRead, durationBaseOffset);
         if (reader.TryReadTimeline(out _, out _))
         {
             return reader;
@@ -144,7 +175,7 @@ public sealed class KuGou : IDisposable
             return false;
         }
 
-        if (!TryReadChain(DurationBaseOffset, DurationOffsets, out var durationSeconds) || durationSeconds < 0)
+        if (!TryReadChain(_durationBaseOffset, DurationOffsets, out var durationSeconds) || durationSeconds < 0)
         {
             return false;
         }
@@ -170,6 +201,73 @@ public sealed class KuGou : IDisposable
 
         return _memory.TryReadInt32(address, out value);
     }
+
+    internal bool TryReadPlayback(out KuGouPlaybackInfo? info)
+    {
+        info = null;
+        if (_disposed || !_supportsIndependentRead || _process.HasExited) return false;
+        if (_quartzBase == 0)
+        {
+            // 启动时可能尚未加载播放图模块，播放开始后重新枚举，避免永久停留在 SMTC 回退。
+            _process.Refresh();
+            var quartz = _process.Modules.OfType<ProcessModule>().FirstOrDefault(
+                candidate => "quartz.dll".Equals(candidate.ModuleName, StringComparison.OrdinalIgnoreCase));
+            _quartzBase = quartz?.BaseAddress ?? 0;
+            _quartzSize = quartz?.ModuleMemorySize ?? 0;
+            if (_quartzBase == 0) return false;
+        }
+        var caption = ReadCaption();
+        if (!KuGouTrackMetadata.TryParse(caption, out var title, out var artist) ||
+            !TryReadTimeline(out var position, out var duration) || duration <= 0 || duration > 86_400 || position > duration + 2)
+            return false;
+
+        // DirectShow 播放图的 FilterState：1 暂停，2 播放。先验证对象虚表属于 quartz.dll。
+        var address = _positionModuleBase + GraphBaseOffset;
+        foreach (var offset in GraphOffsets)
+        {
+            if (!_memory.TryReadInt64(address, out var pointer) || pointer == 0) return false;
+            address = (nint)pointer + offset;
+        }
+        if (!_memory.TryReadInt64(address, out var filter) || filter == 0 ||
+            !_memory.TryReadInt64((nint)filter, out var table) || table < _quartzBase || table >= _quartzBase + _quartzSize ||
+            !_memory.TryReadInt32((nint)filter + 0x28, out var state) || state is not (1 or 2))
+            return false;
+
+        // 前后核对窗口标题，丢弃读取过程中发生的切歌。
+        if (!string.Equals(caption, ReadCaption(), StringComparison.Ordinal)) return false;
+        info = new(title, artist, position, duration, state == 2);
+        return true;
+    }
+
+    private string ReadCaption()
+    {
+        string Read(nint window)
+        {
+            NativeMethods.GetWindowThreadProcessId(window, out int pid);
+            // 桌面歌词窗口也带有“ - 酷狗音乐”后缀，排除工具窗口和有所有者的弹窗。
+            if (pid != _process.Id || (NativeMethods.GetWindowLong(window, NativeMethods.GWL_EXSTYLE) & 0x80) != 0 ||
+                NativeMethods.GetWindow(window, 4) != 0) return string.Empty;
+            var text = new StringBuilder(1024);
+            _ = GetWindowText(window, text, text.Capacity);
+            return text.ToString();
+        }
+
+        var caption = _metadataWindow == 0 ? string.Empty : Read(_metadataWindow);
+        if (KuGouTrackMetadata.TryParse(caption, out _, out _)) return caption;
+        // EnumWindows 包含隐藏到托盘的顶层窗口，不能依赖只寻找可见窗口的 Process.MainWindowTitle。
+        NativeMethods.EnumWindows((window, parameter) =>
+        {
+            var candidate = Read(window);
+            if (!KuGouTrackMetadata.TryParse(candidate, out _, out _)) return true;
+            _metadataWindow = window;
+            caption = candidate;
+            return false;
+        }, 0);
+        return caption;
+    }
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowTextW", CharSet = CharSet.Unicode)]
+    private static extern int GetWindowText(nint window, StringBuilder text, int count);
 
     public void Dispose()
     {
