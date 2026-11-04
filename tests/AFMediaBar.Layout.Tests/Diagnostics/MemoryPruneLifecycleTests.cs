@@ -75,10 +75,15 @@ public sealed class MemoryPruneLifecycleTests
             Assert.AreSame(sink, Field(power, "_messageSink").GetValue(power));
             var calls = 0;
             power.StateChanged += (_, _) => calls++;
-            // UI 暂不让出；后台完成投递后立刻释放，续体必须丢弃捕获的旧订阅。
-            Task.Run(() => typeof(PowerStateMonitor).GetMethod("SetSuspended", BindingFlags.NonPublic | BindingFlags.Instance)!
-                .Invoke(power, [true])).GetAwaiter().GetResult();
-            power.Dispose(); power.Dispose();
+            // STA 等待可能泵送消息；显式暂停调度，确保回调仍在排队时释放监听器。
+            using (dispatcher.DisableProcessing())
+            {
+                Task.Run(() => typeof(PowerStateMonitor).GetMethod("SetSuspended", BindingFlags.NonPublic | BindingFlags.Instance)!
+                    .Invoke(power, [true])).WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+                Assert.IsTrue(power.IsSuspended);
+                Assert.AreEqual(0, calls, "投递准备期间不能执行 UI 回调。");
+                power.Dispose(); power.Dispose();
+            }
             await dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
             Assert.AreEqual(0, calls);
             Assert.IsNull(Field(power, "_messageSink").GetValue(power));
