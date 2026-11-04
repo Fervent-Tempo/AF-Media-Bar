@@ -54,6 +54,7 @@ public sealed class DetachedComponentPresentationTests
                     app.Resources.MergedDictionaries.Add(new ResourceDictionary
                     { Source = new Uri($"/AFMediaBar;component/Resources/{resource}.xaml", UriKind.Relative) });
                 DetachedComponentPresentationChecks.Verify();
+                DragSnapGuideChecks.Verify();
             }
             finally { app.Shutdown(); }
             return Task.CompletedTask;

@@ -29,6 +29,8 @@ internal static class DetachedComponentPresentationChecks
             settings.PerformanceComponent = settings.PerformanceComponent with { Metrics = [MetricKind.SystemCpu], DisplayMode = PerformanceDisplayMode.Cycle, OpenTaskManagerOnClick = true };
             settings.TaskbarExperience = ComponentLayoutPolicy.SetVisible(settings, BarLayoutState.Resident, TaskbarRestComponent.PlayPause, true);
             settings.TaskbarExperience = ComponentLayoutPolicy.SetVisible(settings, BarLayoutState.Resident, TaskbarRestComponent.Performance, true);
+            settings.TaskbarExperience = ComponentLayoutPolicy.SetVisible(settings, BarLayoutState.Resident, TaskbarRestComponent.NextTrack, true);
+            settings.TaskbarExperience = ComponentLayoutPolicy.SetVisible(settings, BarLayoutState.Resident, TaskbarRestComponent.PreviousTrack, true);
             var profile = MonitorBarProfilePolicy.Capture(settings, BarConfigurationTarget.Taskbar, "A") with
             { Detached = [new(TaskbarRestComponent.PlayPause, 100, 0), new(TaskbarRestComponent.Performance, 200, 0)] };
             MonitorBarProfilePolicy.Store(settings, profile);
@@ -71,6 +73,7 @@ internal static class DetachedComponentPresentationChecks
             metricSurface.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left)
             { RoutedEvent = Mouse.PreviewMouseUpEvent });
             Assert.AreEqual(1, taskManagerRequests, "独立性能表面的短按必须保留任务管理器输入意图。");
+            VerifyFinalComponentRelease(control, metricSurface);
             control.UpdateSongInfo(snapshot with { CanPlayPause = false, IsPlaying = false });
             Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
             Assert.IsFalse(play.IsEnabled, "独立按钮不能保留已失效的媒体能力。");
@@ -97,5 +100,49 @@ internal static class DetachedComponentPresentationChecks
             control.DisposePresentation(); detached.Close(); owner.Close();
             SettingsManager.Current = previous;
         }
+    }
+
+    private static void VerifyFinalComponentRelease(TaskBarMediaControl control, FrameworkElement surface)
+    {
+        var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        void Set(string name, object value) => typeof(TaskBarMediaControl).GetField(name, flags)!.SetValue(control, value);
+        var origin = control.PointToScreen(new Point());
+        var dpi = VisualTreeHelper.GetDpi(control);
+        var entries = control.ComponentEntries;
+        var oldIndex = entries.ToList().FindIndex(entry => entry.Component == TaskbarRestComponent.NextTrack);
+        var finalIndex = entries.ToList().FindIndex(entry => entry.Component == TaskbarRestComponent.PreviousTrack);
+        Assert.IsTrue(oldIndex >= 0 && finalIndex >= 0 && oldIndex != finalIndex);
+        ComponentMoveIntentEventArgs? finished = null;
+        void OnMove(object? sender, ComponentMoveIntentEventArgs intent) { if (intent.Finished && !intent.Cancelled) finished = intent; }
+        control.ComponentMoveIntent += OnMove;
+        try
+        {
+            foreach (var dock in new[] { true, false })
+            {
+                surface.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left)
+                { RoutedEvent = Mouse.PreviewMouseDownEvent });
+                Assert.IsTrue(control.HasComponentGesture);
+                Set("_componentGestureActive", true);
+                var gesture = (ComponentReorderRequest)typeof(TaskBarMediaControl).GetField("_componentGesture", flags)!.GetValue(control)!;
+                Set("_componentGesture", gesture with { TargetIndex = oldIndex });
+                Set("_componentDockCandidate", false);
+                Set("_componentBarBounds", new Rect(origin, new Size(600 * dpi.DpiScaleX, 44 * dpi.DpiScaleY)));
+                var starts = (Dictionary<TaskbarRestComponent, Rect>)typeof(TaskBarMediaControl).GetField("_componentStartBounds", flags)!.GetValue(control)!;
+                starts.Clear();
+                starts[TaskbarRestComponent.NextTrack] = new Rect(30, 0, 40, 44);
+                starts[TaskbarRestComponent.PreviousTrack] = new Rect(300, 0, 40, 44);
+                Set("_componentMovePreview", new ComponentMoveIntentEventArgs(TaskbarRestComponent.Performance,
+                    new Rect(origin, new Size(60, 44)), BarLayoutState.Resident, entries, oldIndex, false, false));
+                finished = null;
+                var released = dock ? new Point(origin.X + 320 * dpi.DpiScaleX, origin.Y + 20 * dpi.DpiScaleY)
+                    : new Point(origin.X + 1000 * dpi.DpiScaleX, origin.Y + 200 * dpi.DpiScaleY);
+                control.CompleteComponentPlacement(released);
+                Assert.IsNotNull(finished, "真实结束路径必须发布释放意图。");
+                Assert.AreEqual(dock, finished.Dock, "最终点可新进入归还区，也可离开退出范围。");
+                Assert.AreEqual(dock ? finalIndex : oldIndex, finished.TargetIndex, "插入位置必须来自最终原始指针。");
+                Assert.IsFalse(control.HasComponentGesture);
+            }
+        }
+        finally { control.ComponentMoveIntent -= OnMove; control.CancelComponentPlacement(); }
     }
 }

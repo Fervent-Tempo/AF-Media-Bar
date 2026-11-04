@@ -183,16 +183,25 @@ public partial class TaskbarWindow
         var left = Math.Clamp((int)Math.Round(intent.ScreenBounds.Left - taskbar.Left), 0, Math.Max(0, taskbar.Right - taskbar.Left - width));
         var top = Math.Clamp((int)Math.Round(intent.ScreenBounds.Top - taskbar.Top), 0, Math.Max(0, taskbar.Bottom - taskbar.Top - height));
         var preview = new RECT { Left = left, Top = top, Right = left + width, Bottom = top + height };
+        var dock = intent.Dock;
+        if (dock)
+        {
+            var available = ComponentPlacementPolicy.Subtract(CurrentComponentRanges(taskbar, dpi, duringGesture: !intent.Finished),
+                _detachedRects.Where(pair => pair.Key != intent.Component).Select(pair => PrimaryRange(pair.Value)), (int)Math.Ceiling(4 * dpi));
+            var required = (int)Math.Ceiling(MediaControl.GetMinimumPrimaryLength(dpi) * dpi) +
+                (IsVerticalPresentation ? height : width) + (int)Math.Ceiling(4 * dpi);
+            dock = available.Any(range => range.Length >= required);
+        }
+        intent.CanDock = dock;
+        // 合并候选来自控件的原始指针；吸附后的矩形不能反向触发归还。
+        if (!_dragSnap.TryResolve(intent.ScreenBounds, SnapContext(taskbar, dpi), dock, out var snapped))
+        { ClearComponentGhost(); MediaControl.CancelComponentPlacement(); return; }
+        left = (int)Math.Round(snapped.Left - taskbar.Left);
+        top = (int)Math.Round(snapped.Top - taskbar.Top);
+        preview = new RECT { Left = left, Top = top, Right = left + width, Bottom = top + height };
         if (!intent.Finished)
         {
-            if (intent.Dock)
-            {
-                var available = ComponentPlacementPolicy.Subtract(CurrentComponentRanges(taskbar, dpi, duringGesture: true),
-                    _detachedRects.Where(pair => pair.Key != intent.Component).Select(pair => PrimaryRange(pair.Value)), (int)Math.Ceiling(4 * dpi));
-                var required = (int)Math.Ceiling(MediaControl.GetMinimumPrimaryLength(dpi) * dpi) +
-                    (IsVerticalPresentation ? height : width) + (int)Math.Ceiling(4 * dpi);
-                intent.CanDock = available.Any(range => range.Length >= required);
-            }
+            if (!dock) ShowTaskbarSnap(taskbar, dpi, IsVerticalPresentation ? height : width, intent.Component);
             if (_componentGhost is null)
             {
                 _componentGhost = new Rectangle
@@ -215,7 +224,6 @@ public partial class TaskbarWindow
         if (!_componentRangesCurrent) { UpdatePosition(); return; }
         var others = _detachedRects.Where(pair => pair.Key != intent.Component).Select(pair => PrimaryRange(pair.Value));
         var free = ComponentPlacementPolicy.Subtract(ranges, others, (int)Math.Ceiling(4 * dpi));
-        var dock = intent.Dock;
         if (dock)
         {
             // 合并后的本体必须仍有可容纳空间；否则本次保持独立。
@@ -239,6 +247,7 @@ public partial class TaskbarWindow
 
     private void ClearComponentGhost()
     {
+        _dragSnap.Reset();
         if (_componentGhost is not null) WidgetCanvas.Children.Remove(_componentGhost);
         _componentGhost = null; _componentGhostRect = null;
         if (_windowHandle != IntPtr.Zero && !_isClosing && !_isEnvironmentSuspended && !IsTaskbarPresentationSuspended)

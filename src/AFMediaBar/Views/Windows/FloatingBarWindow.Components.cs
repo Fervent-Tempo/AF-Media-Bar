@@ -86,15 +86,19 @@ public sealed partial class FloatingBarWindow
     {
         if (intent.Cancelled || !CanSaveFloatingComponent)
         {
-            _componentGhostWindow?.Dispose(); _componentGhostWindow = null;
-            var restore = _movingComponent.HasValue;
-            _movingComponent = null;
-            if (restore && CanSaveFloatingComponent && _componentsActivated) RefreshFloatingComponents();
+            CancelFloatingComponentPreview();
             return;
         }
-        var bounds = ClampComponent(intent.ScreenBounds);
+        if (!_dragSnap.TryResolve(intent.ScreenBounds, FloatingSnapContext, intent.Dock, out var bounds))
+        {
+            // 最终释放期间控件拒绝重入取消；宿主必须先自行撤去提示和预览。
+            CancelFloatingComponentPreview();
+            _mediaControl.CancelComponentPlacement();
+            return;
+        }
         if (!intent.Finished)
         {
+            if (!intent.Dock) _dragSnap.Show();
             if (_componentWindows.TryGetValue(intent.Component, out var moving))
             {
                 _movingComponent = intent.Component;
@@ -116,6 +120,7 @@ public sealed partial class FloatingBarWindow
             _componentGhostWindow.Place(bounds, _layer, _overlayTaskbar, true);
             return;
         }
+        _dragSnap.Reset();
         _componentGhostWindow?.Dispose(); _componentGhostWindow = null;
         _movingComponent = null;
         var position = intent.Dock ? null : new DetachedComponentPosition(intent.Component,
@@ -127,8 +132,18 @@ public sealed partial class FloatingBarWindow
         RefreshFloatingComponents();
     }
 
+    private void CancelFloatingComponentPreview()
+    {
+        _dragSnap.Reset();
+        _componentGhostWindow?.Dispose(); _componentGhostWindow = null;
+        var restore = _movingComponent.HasValue;
+        _movingComponent = null;
+        if (restore && CanSaveFloatingComponent && _componentsActivated) RefreshFloatingComponents();
+    }
+
     private void SuspendFloatingComponents()
     {
+        _dragSnap.Reset();
         if (ActiveComponentMenu is { } menu) menu.IsOpen = false;
         ActiveComponentMenu = null;
         _mediaControl.CancelComponentPlacement();

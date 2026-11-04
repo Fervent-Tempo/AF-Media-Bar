@@ -185,10 +185,21 @@ internal static class TaskbarHostActivationChecks
             void ReleaseBodyAt(int primary)
             {
                 // 不发送系统输入，只准备宿主已经完成预览的释放事务。
+                GetCursorPos(out var cursor);
+                typeof(TaskbarWindow).GetField("_dragStartCursorPrimary", flags)!.SetValue(firstWindow, firstWindow.IsVerticalPresentation ? cursor.Y : cursor.X);
+                typeof(TaskbarWindow).GetField("_dragStartBarPrimary", flags)!.SetValue(firstWindow, primary);
+                typeof(TaskbarWindow).GetField("_dragPrimaryLimit", flags)!.SetValue(firstWindow,
+                    (firstWindow.IsVerticalPresentation ? initialRect.Bottom - initialRect.Top : initialRect.Right - initialRect.Left) - 70);
+                Assert.IsTrue(firstWindow.MediaControl.CaptureMouse());
                 typeof(TaskbarWindow).GetField("_isDragging", flags)!.SetValue(firstWindow, true);
                 typeof(TaskbarWindow).GetField("_bodyDragPrimary", flags)!.SetValue(firstWindow, primary);
                 typeof(TaskbarWindow).GetField("_bodyDragLength", flags)!.SetValue(firstWindow, 70);
-                typeof(TaskbarWindow).GetMethod("EndTaskbarDrag", flags)!.Invoke(firstWindow, [true]);
+                var up = new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount,
+                    System.Windows.Input.MouseButton.Left)
+                { RoutedEvent = System.Windows.Input.Mouse.MouseUpEvent };
+                typeof(TaskbarWindow).GetMethod("MediaControl_PreviewMouseLeftButtonUp", flags)!.Invoke(firstWindow, [firstWindow.MediaControl, up]);
+                Assert.IsTrue(up.Handled, "正常抬起必须完成事务，不能先因释放捕获取消。");
+                Assert.IsFalse(firstWindow.MediaControl.IsMouseCaptured);
             }
             ReleaseBodyAt(100);
             var savedHome = MonitorBarProfilePolicy.Find(SettingsManager.Current, BarConfigurationTarget.Taskbar, targetMonitor)!.BodyPrimaryDip;

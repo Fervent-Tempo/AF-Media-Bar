@@ -274,6 +274,7 @@ namespace AFMediaBar
                 services.AddSingleton<BarRuntimeCoordinator>();
                 services.AddSingleton<FloatingBarLengthConstraints>();
                 services.AddSingleton<DesktopWidgetZOrderService>();
+                services.AddSingleton<Func<DragSnapGuideWindow>>(_ => () => new DragSnapGuideWindow());
                 services.AddSingleton<Func<string, AFMediaBar.Classes.Abstractions.ITaskbarWindowHostActions, TaskbarWindow>>(sp =>
                     (target, actions) => ActivatorUtilities.CreateInstance<TaskbarWindow>(sp, target, actions, false));
                 services.AddSingleton<Func<string, DisplayMonitorInfo, FloatingBarWindow>>(sp =>

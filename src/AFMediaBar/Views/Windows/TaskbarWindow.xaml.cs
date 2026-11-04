@@ -167,8 +167,11 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         bool startImmediately = true,
         Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null,
         QuickLaunchService? quickLaunch = null,
-        QuickLaunchIconService? quickLaunchIcons = null)
+        QuickLaunchIconService? quickLaunchIcons = null,
+        Func<DragSnapGuideWindow>? dragSnapGuideFactory = null)
     {
+        _dragSnap = new(dragSnapGuideFactory);
+        _bodyDragTimer.Tick += BodyDragTick;
         _quickLaunch = quickLaunch;
         WindowHelper.SetNoActivate(this);
         InitializeComponent();
@@ -387,6 +390,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void SuspendHostInput()
     {
+        _bodyDragTimer.Stop();
+        _dragSnap.Reset();
         _bodyDragPrimary = null;
         _isDragging = false; _isDragPending = false;
         MediaControl.SetBarDragActive(false);
@@ -586,6 +591,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             PlayerMenu.IsOpen = false;
             StopOccupancyRefresh();
             _windowHandle = IntPtr.Zero;
+            DisposeDragSnapping();
             _timer.Stop();
             StopLayoutTransition();
             _spectrumSession.Stop();
@@ -603,6 +609,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
         if (_setupComplete && TaskbarHostMessagePolicy.IsEnvironmentChange(msg))
         {
+            _bodyDragTimer.Stop();
+            _dragSnap.Reset();
             MediaControl.CancelComponentPlacement();
             _bodyDragPrimary = null;
             _isDragging = false; _isDragPending = false;
@@ -2099,6 +2107,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             ? Canvas.GetTop(GetActiveControl())
             : Canvas.GetLeft(GetActiveControl())) * dpiScale);
         _dragPrimaryLimit = Math.Max(0, primaryLength - primarySize);
+        _bodyDragGeneration++;
         _isDragPending = true;
         // 普通点击保持放大；独立 Popup 的捕获和输入在拖动阈值前仍留在 Popup 子树。
         if (!MediaControl.CaptureArtworkPointer(e.OriginalSource as DependencyObject))
@@ -2113,7 +2122,12 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         if (!_isDragging && !_isDragPending)
             return;
 
-        if (e.LeftButton != MouseButtonState.Pressed || SettingsManager.Current.TaskbarBarPositionLocked)
+        if (!CanSaveComponentPlacement || TaskbarPresentation.TaskbarBarPositionLocked)
+        {
+            EndTaskbarDrag(releaseCapture: false);
+            return;
+        }
+        if (e.LeftButton != MouseButtonState.Pressed)
         {
             EndTaskbarDrag();
             return;
@@ -2132,6 +2146,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             _isDragging = true;
             _bodyDragLength = (int)Math.Round((_appliedOrientation == LayoutOrientation.Vertical
                 ? MediaControl.CurrentLayout?.Canvas.Height ?? 168 : MediaControl.CurrentLayout?.Canvas.Width ?? 300) * dpiScale);
+            _dragSnap.Reset();
+            _bodyDragTimer.Start();
             MediaControl.SetBarDragActive(true);
             MediaControl.SuspendQuickLaunchPresentation();
             _externalFullPanelHandle?.Dismiss(immediate: true);
@@ -2139,25 +2155,16 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             Mouse.Capture(GetActiveControl(), CaptureMode.SubTree);
         }
 
-        var targetPrimary = Math.Clamp(
-            _dragStartBarPrimary + cursorPrimary - _dragStartCursorPrimary,
-            0,
-            _dragPrimaryLimit);
-
-        // Keep the chosen anchor while dragging: forcing Start would also flip automatic right-side presentation.
-        // The placement and drag offset use the same physical-pixel anchor, including the full taskbar center.
         var dragDpiScale = _taskBarService.GetTaskbarDpiScale(_lastTaskbarHandle);
         if (dragDpiScale <= 0 ||
             !_taskBarService.TryGetTaskbarRect(_lastTaskbarHandle, out var dragTaskbarRect))
         {
+            EndTaskbarDrag(releaseCapture: false);
             return;
         }
-
-        var dragIsVertical = _appliedOrientation == LayoutOrientation.Vertical;
-        var dragCanvas = MediaControl.CurrentLayout?.Canvas;
-        var dragPrimarySize = (int)Math.Round(
-            (dragIsVertical ? dragCanvas?.Height ?? 168 : dragCanvas?.Width ?? 300) * dragDpiScale);
-        _bodyDragPrimary = targetPrimary;
+        if (!ResolveBodyDrag(cursorPrimary, dragTaskbarRect, dragDpiScale))
+        { EndTaskbarDrag(releaseCapture: false); return; }
+        ShowTaskbarSnap(dragTaskbarRect, dragDpiScale, _bodyDragLength, null);
 
         var windowHandle = new WindowInteropHelper(this).Handle;
         if (_lastTaskbarHandle != IntPtr.Zero && windowHandle != IntPtr.Zero)
@@ -2181,9 +2188,11 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         // another mouse event, killing hover outright. Legitimate captures have ended by button-up, so this is a pure repair
         // layer that never steals a control's own capture (those hang on children; IsMouseCaptured holds only for MediaControl).
         // 放大 Popup 显式转发抬起；全局抬起钩子继续兜底处理未送达的释放。
-        MediaControl.ReleaseArtworkPointerCapture();
-        if (MediaControl.IsMouseCaptured)
-            MediaControl.ReleaseMouseCapture();
+        if (!_isDragging)
+        {
+            MediaControl.ReleaseArtworkPointerCapture();
+            if (MediaControl.IsMouseCaptured) MediaControl.ReleaseMouseCapture();
+        }
 
         if (_isTaskManagerClickPending)
         {
@@ -2366,11 +2375,15 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     {
         if (_isClosing)
             return;
+        var componentGeneration = MediaControl.ComponentGestureGeneration;
+        var bodyGeneration = _bodyDragGeneration;
         Dispatcher.BeginInvoke(() =>
         {
-            if (Mouse.LeftButton != MouseButtonState.Released) return;
-            MediaControl.CompleteComponentPlacement();
-            if (_isDragPending && !_isDragging) EndTaskbarDrag();
+            if (_isClosing || Mouse.LeftButton != MouseButtonState.Released) return;
+            if (componentGeneration == MediaControl.ComponentGestureGeneration)
+                MediaControl.CompleteComponentPlacement(new Point(e.ScreenX, e.ScreenY));
+            if (bodyGeneration == _bodyDragGeneration && (_isDragging || _isDragPending))
+                EndTaskbarDrag(releasedScreen: new Point(e.ScreenX, e.ScreenY));
             HealStaleMediaControlCapture();
         }, DispatcherPriority.Background);
     }
@@ -2441,17 +2454,28 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     /// Re-syncs the in-place zoom's hover after a left release: the control decides from the real pointer position (see ResyncArtworkHoverFromPointer).</summary>
     private void ResyncArtworkHoverAfterRelease() => MediaControl.ResyncArtworkHoverFromPointer();
 
-    private void EndTaskbarDrag(bool releaseCapture = true)
+    private void EndTaskbarDrag(bool releaseCapture = true, Point? releasedScreen = null)
     {
         var commit = _isDragging && releaseCapture && Mouse.LeftButton == MouseButtonState.Released &&
-            _bodyDragPrimary.HasValue && CanSaveComponentPlacement;
+            _bodyDragPrimary.HasValue && CanSaveComponentPlacement && !TaskbarPresentation.TaskbarBarPositionLocked;
+        // 最后一帧移动可能未投递；在清理吸附锁定前使用真实松手坐标重算。
+        if (commit)
+        {
+            if (releasedScreen is null && GetCursorPos(out var released)) releasedScreen = new Point(released.X, released.Y);
+            commit = releasedScreen is { } point && _taskBarService.TryGetTaskbarRect(_lastTaskbarHandle, out var finalTaskbar) &&
+                ResolveBodyDrag((int)Math.Round(IsVerticalPresentation ? point.Y : point.X), finalTaskbar,
+                    _taskBarService.GetTaskbarDpiScale(_lastTaskbarHandle));
+        }
+        _bodyDragGeneration++;
         var requested = _bodyDragPrimary;
+        _bodyDragTimer.Stop();
+        _dragSnap.Reset();
         MediaControl.SetBarDragActive(false);
         _isDragging = false;
         _isDragPending = false;
         _bodyDragPrimary = null;
         _isTaskManagerClickPending = false;
-        if (releaseCapture)
+        if (releaseCapture || !commit)
         {
             MediaControl.ReleaseArtworkPointerCapture();
             if (MediaControl.IsMouseCaptured)
@@ -2540,6 +2564,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     protected override void OnClosed(EventArgs e)
     {
         _isClosing = true;
+        DisposeDragSnapping();
         DisposeExternalFullPanelHandle();
         PlayerMenu.ExitRequested -= PlayerMenu_ExitRequested;
         StopOccupancyRefresh();

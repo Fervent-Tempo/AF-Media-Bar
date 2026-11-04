@@ -117,8 +117,10 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null,
         QuickLaunchService? quickLaunch = null,
         QuickLaunchIconService? quickLaunchIcons = null,
-        Func<DetachedComponentVisual, ComponentFloatingWindow>? componentWindowFactory = null)
+        Func<DetachedComponentVisual, ComponentFloatingWindow>? componentWindowFactory = null,
+        Func<DragSnapGuideWindow>? dragSnapGuideFactory = null)
     {
+        _dragSnap = new(dragSnapGuideFactory);
         _quickLaunch = quickLaunch;
         TargetMonitorDeviceId = targetMonitorDeviceId;
         _mediaControl.SetComponentScope(BarConfigurationTarget.FloatingBar, targetMonitorDeviceId);
@@ -248,7 +250,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _compactFlyout.VolumeValueRequested += MediaControl_VolumeValueRequested;
         PreviewMouseLeftButtonDown += StartDrag;
         PreviewMouseMove += (_, _) => ObserveDrag();
-        LostMouseCapture += (_, _) => { if (_dragging && Mouse.Captured != this) EndDrag(); };
+        LostMouseCapture += (_, _) => { if (_dragging && Mouse.Captured != this) CancelBodyDrag(); };
         _mediaControl.ArtworkPointerPressed += StartDrag;
         _mediaControl.ArtworkPointerMoved += ArtworkPointerMoved;
         _mediaControl.ArtworkPointerReleased += PointerReleased;
@@ -550,6 +552,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
     {
         base.OnDpiChanged(oldDpi, newDpi);
+        if (_dragging || _dragPending) CancelBodyDrag();
+        _mediaControl.CancelComponentPlacement();
         _nativeBoundsPx = null;
         _edgeClipBoundsPx = null;
         if (!_isClosing) Dispatcher.BeginInvoke(() => { if (!_isClosing) ApplyBounds(refreshLayout: true); }, DispatcherPriority.Loaded);
@@ -574,6 +578,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         var bounds = GetPhysicalBounds();
         _dragCenter = new Point(bounds.Left + bounds.Width / 2, bounds.Top + bounds.Height / 2);
         _bodyDragDockEdge = _dockEdge;
+        _bodyDragGeneration++;
         _dragPending = true;
         _dragTimer.Start();
     }
@@ -589,6 +594,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance * Dpi) return;
         if (!_dragging)
         {
+            _dragSnap.Reset();
             StopEdgeCollapse();
             _dockEdge = FloatingBarDockEdge.None;
             _dragging = true;
@@ -599,36 +605,54 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             PlacementTransitionStarted?.Invoke(this, EventArgs.Empty);
             Mouse.Capture(this, CaptureMode.SubTree);
         }
-        ApplyDragPosition(cursor.X, cursor.Y);
+        if (!ApplyDragPosition(cursor.X, cursor.Y)) CancelBodyDrag();
     }
 
-    private void ApplyDragPosition(int x, int y)
+    private bool ApplyDragPosition(int x, int y)
     {
-        _centerPx = _dragCenter + new Vector(x - _dragStart.X, y - _dragStart.Y);
+        var center = _dragCenter + new Vector(x - _dragStart.X, y - _dragStart.Y);
+        var width = Math.Ceiling((IsVerticalPresentation ? _cross : _primary) * Dpi);
+        var height = Math.Ceiling((IsVerticalPresentation ? _primary : _cross) * Dpi);
+        var raw = new Rect(center.X - width / 2, center.Y - height / 2, width, height);
+        if (!_dragSnap.TryResolve(raw, FloatingSnapContext, false, out var snapped)) return false;
+        _centerPx = new Point(snapped.Left + snapped.Width / 2, snapped.Top + snapped.Height / 2);
         ApplyBounds();
+        _dragSnap.Show();
+        return true;
     }
 
     private void LeftReleased(object? sender, NativeMouseButtonEventArgs args)
     {
+        var componentGeneration = _mediaControl.ComponentGestureGeneration;
+        var bodyGeneration = _bodyDragGeneration;
         if (!_isClosing) Dispatcher.BeginInvoke(() =>
         {
-            if (Mouse.LeftButton != MouseButtonState.Released) return;
-            _mediaControl.CompleteComponentPlacement(); EndDrag();
+            if (_isClosing || Mouse.LeftButton != MouseButtonState.Released) return;
+            if (componentGeneration == _mediaControl.ComponentGestureGeneration)
+                _mediaControl.CompleteComponentPlacement(new Point(args.ScreenX, args.ScreenY));
+            if (bodyGeneration == _bodyDragGeneration) EndDrag(new Point(args.ScreenX, args.ScreenY));
         });
     }
 
-    private void EndDrag()
+    private void EndDrag(Point? releasedScreen = null)
     {
+        _bodyDragGeneration++;
         _mediaControl.SetBarDragActive(false);
         _dragTimer.Stop();
         _dragPending = false;
         if (!_dragging) return;
-        var commit = !_bodyDragCancelled && !_isClosing && !_suspended && Mouse.LeftButton == MouseButtonState.Released;
-        if (commit && GetCursorPos(out var cursor)) ApplyDragPosition(cursor.X, cursor.Y);
+        var commit = !_bodyDragCancelled && IsOperational && !PresentationSettings.TaskbarBarPositionLocked && Mouse.LeftButton == MouseButtonState.Released;
+        if (commit)
+        {
+            if (releasedScreen is null && GetCursorPos(out var cursor)) releasedScreen = new Point(cursor.X, cursor.Y);
+            commit = releasedScreen is { } point && ApplyDragPosition((int)Math.Round(point.X), (int)Math.Round(point.Y));
+        }
+        var snappedEdge = SnappedDockEdge(_dragSnap.Target);
+        _dragSnap.Reset();
         if (!commit) _centerPx = _dragCenter;
         _dragging = false;
         _dockEdge = !commit ? _bodyDragDockEdge : SettingsManager.Current.FloatingBar.EdgeCollapseEnabled
-            ? FloatingBarEdgeCollapsePolicy.DetectEdge(_normalBoundsDip, WorkAreaDip, IsVerticalPresentation) : FloatingBarDockEdge.None;
+            ? snappedEdge != FloatingBarDockEdge.None ? snappedEdge : FloatingBarEdgeCollapsePolicy.DetectEdge(_normalBoundsDip, WorkAreaDip, IsVerticalPresentation) : FloatingBarDockEdge.None;
         if (!_isClosing && !_suspended) ApplyBounds();
         _mediaControl.ApplyPlacementMotionSuspension(false);
         if (Mouse.Captured == this) Mouse.Capture(null);
@@ -801,6 +825,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         if (_isClosing) return;
         Suspend();
         _isClosing = true;
+        _dragSnap.Dispose();
         DisposeFloatingComponents();
         _edgeHoverTimer.Tick -= ObserveEdgePointer;
         _edgeMotionTimer.Tick -= AdvanceEdgeMotion;
