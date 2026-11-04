@@ -3904,4 +3904,6 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
   <data name="Notification.Preview.Send" xml:space="preserve"><value>Send a notification</value></data>
   <data name="Notification.Preview.Send.Hint" xml:space="preserve"><value>Show a real notification using the preview content and current settings, without changing automatic notifications.</value></data>
   <data name="Notification.Preview.Unavailable" xml:space="preserve"><value>No notification target is currently available.</value></data>
+  <data name="Start.Faq.Smtc" xml:space="preserve"><value>Playback controls do not work, or artwork is missing?</value></data>
+  <data name="Start.Faq.Smtc.Body" xml:space="preserve"><value>Try enabling SMTC, system media control support, or system playback controls in the player settings, then start playback again. The option name varies by player.</value></data>
 </root>

@@ -3904,4 +3904,6 @@
   <data name="Notification.Preview.Send" xml:space="preserve"><value>傳送一次通知</value></data>
   <data name="Notification.Preview.Send.Hint" xml:space="preserve"><value>使用目前預覽內容與設定傳送真實通知，不變更自動通知開關。</value></data>
   <data name="Notification.Preview.Unavailable" xml:space="preserve"><value>目前沒有可用的通知目標，無法傳送通知。</value></data>
+  <data name="Start.Faq.Smtc" xml:space="preserve"><value>無法控制播放或不顯示封面？</value></data>
+  <data name="Start.Faq.Smtc.Body" xml:space="preserve"><value>請嘗試在播放器設定中開啟「SMTC」「支援系統媒體控制」或「支援系統播放控制項」等選項，再重新播放歌曲。不同播放器的選項名稱可能不同。</value></data>
 </root>

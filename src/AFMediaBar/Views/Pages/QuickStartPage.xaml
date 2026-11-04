@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:components="clr-namespace:AFMediaBar.Components"
+    xmlns:pages="clr-namespace:AFMediaBar.Views.Pages"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Loaded="OnPageLoaded"
     Unloaded="OnPageUnloaded"
@@ -342,9 +343,11 @@
                         <components:SettingsNavigationButton Margin="0,0,6,0" Content="{DynamicResource Loc.Home.Player.OpenSource}"
                                                              Destination="MediaAndNotifications" GroupId="Common.MediaSource"
                                                              Style="{StaticResource HomeActionLink}" />
-                        <Border x:Name="PlayerActionDivider" Width="1" Height="16" Margin="4,0" VerticalAlignment="Center"
+                        <Border x:Name="PlayerActionDivider" Width="1" Height="16" Margin="4,0" VerticalAlignment="Center" Visibility="Collapsed"
                                 Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
                         <ui:Button x:Name="SupportTrigger" Style="{StaticResource HomeTextButton}"
+                                   IsEnabled="{x:Static pages:PlayerSupportDialog.IsAvailableForRelease}"
+                                   Visibility="{Binding Source={x:Static pages:PlayerSupportDialog.IsAvailableForRelease}, Converter={StaticResource HomeVisibility}}"
                                    Click="OnPlayerSupportClick" ToolTip="{DynamicResource Loc.Home.AllPlayers}"
                                    AutomationProperties.Name="{DynamicResource Loc.Home.AllPlayers}">
                             <StackPanel Orientation="Horizontal">
@@ -835,6 +838,13 @@
                                                                      Content="{DynamicResource Loc.Home.Customization.OpenFloating}"
                                                                      Style="{StaticResource HomeConfigureButton}" />
                             </StackPanel>
+                        </ui:CardExpander>
+                        <ui:CardExpander Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon QuestionCircle24}">
+                            <ui:CardExpander.Header>
+                                <TextBlock FontSize="15" FontWeight="{DynamicResource AppTextStrongFontWeight}"
+                                           TextWrapping="Wrap" Text="{DynamicResource Loc.Start.Faq.Smtc}" />
+                            </ui:CardExpander.Header>
+                            <TextBlock Style="{StaticResource HomeBody}" Text="{DynamicResource Loc.Start.Faq.Smtc.Body}" />
                         </ui:CardExpander>
                         <ui:CardExpander Style="{StaticResource HomeExpander}" Icon="{ui:SymbolIcon QuestionCircle24}">
                             <ui:CardExpander.Header>

@@ -13,6 +13,9 @@ namespace AFMediaBar.Views.Pages;
 /// <summary>播放器支持弹窗：说明、筛选、接入方式列表与无结果提示。</summary>
 public partial class PlayerSupportDialog : UserControl
 {
+    /// <summary>支持资料尚未完成实测，当前版本不开放列表入口或弹窗。</summary>
+    public static bool IsAvailableForRelease => false;
+
     // 窗口级对话框宿主只在设置窗口存活期间有效，因此弱引用宿主并跟随窗口生命周期取消。
     private static WeakReference<ContentDialogHost>? _host;
     private static CancellationToken _lifetime;
@@ -44,7 +47,7 @@ public partial class PlayerSupportDialog : UserControl
     /// <summary>在设置窗口打开弹窗；没有宿主或已取消时直接返回。</summary>
     internal static async Task ShowAsync(QuickStartViewModel model, CancellationToken cancellationToken = default)
     {
-        if (_lifetime.IsCancellationRequested || cancellationToken.IsCancellationRequested || _host is null || !_host.TryGetTarget(out var host) || host is null) return;
+        if (!IsAvailableForRelease || _lifetime.IsCancellationRequested || cancellationToken.IsCancellationRequested || _host is null || !_host.TryGetTarget(out var host) || host is null) return;
         using var request = CancellationTokenSource.CreateLinkedTokenSource(_lifetime, cancellationToken);
         var service = new ContentDialogService();
         service.SetDialogHost(host);

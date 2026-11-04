@@ -119,7 +119,7 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
         Grid.SetColumnSpan(PlayerActions, narrow ? 2 : 1);
         PlayerActions.HorizontalAlignment = narrow ? HorizontalAlignment.Stretch : HorizontalAlignment.Right;
         PlayerActions.Margin = narrow ? new Thickness(0, 10, 0, 0) : new Thickness(0);
-        PlayerActionDivider.Visibility = narrow ? Visibility.Collapsed : Visibility.Visible;
+        PlayerActionDivider.Visibility = narrow || !PlayerSupportDialog.IsAvailableForRelease ? Visibility.Collapsed : Visibility.Visible;
         QuickLinks.Columns = width >= 900d ? 3 : width >= 560d ? 2 : 1;
         var tutorialColumns = width >= 900d ? 2 : 1;
         TutorialsGrid.Columns = tutorialColumns;

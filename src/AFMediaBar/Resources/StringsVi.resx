@@ -3941,4 +3941,6 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Notification.Preview.Send" xml:space="preserve"><value>Gửi một thông báo</value></data>
   <data name="Notification.Preview.Send.Hint" xml:space="preserve"><value>Hiện thông báo thật với nội dung xem trước và cài đặt hiện tại, không đổi tùy chọn thông báo tự động.</value></data>
   <data name="Notification.Preview.Unavailable" xml:space="preserve"><value>Hiện không có đích hiển thị thông báo khả dụng.</value></data>
+  <data name="Start.Faq.Smtc" xml:space="preserve"><value>Không điều khiển được phát nhạc hoặc không hiện ảnh bìa?</value></data>
+  <data name="Start.Faq.Smtc.Body" xml:space="preserve"><value>Hãy thử bật SMTC, hỗ trợ điều khiển phương tiện hệ thống hoặc điều khiển phát nhạc hệ thống trong cài đặt trình phát, rồi phát lại bài hát. Tên tùy chọn có thể khác nhau giữa các trình phát.</value></data>
 </root>
