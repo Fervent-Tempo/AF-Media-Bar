@@ -29,6 +29,10 @@ public sealed class MediaSourceRegistry
     public bool ProvidesLyrics(string sourceId) =>
         _providers.Any(provider => provider.ProvidesLyrics && provider.CanHandle(sourceId));
 
+    /// <summary>该应用是否有专门适配的通道（进程内存读取一类），用于区分“适配失效”和“本来就不上报”。</summary>
+    public bool IsAdapted(string? sourceId) =>
+        sourceId is not null && _providers.Any(provider => provider.CanHandle(sourceId));
+
     /// <summary>使用同一身份规则判断现有允许列表。</summary>
     public bool IsAllowed(string? sourceId, SmtcSourceFilterSettings settings) =>
         MediaSourceFilterPolicy.IsAllowed(sourceId, settings, NormalizeSourceId);

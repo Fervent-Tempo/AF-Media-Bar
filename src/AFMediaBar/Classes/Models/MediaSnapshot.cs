@@ -56,6 +56,12 @@ public sealed record MediaSnapshot(
     public bool IsSearchingLyrics { get; init; }
 
     /// <summary>
+    /// 来源是否有专门适配的通道（目前是网易云与酷狗的进程内存读取）。整份快照没有播放进度时，
+    /// 界面据此区分「专属通道失效、可以提示升级客户端」和「该播放器本来就不上报进度」。
+    /// </summary>
+    public bool IsAdaptedSource { get; init; }
+
+    /// <summary>
     /// 断开状态的快照：表示没有可用的媒体会话。
     /// Disconnected snapshot: indicates no available media session.
     ///

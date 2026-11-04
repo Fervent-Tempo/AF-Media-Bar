@@ -1414,6 +1414,12 @@
   <data name="Lyrics.Searching" xml:space="preserve">
     <value>Searching for lyrics</value>
   </data>
+  <data name="Panel.MediaBar.ProgressUnavailable.Adapted" xml:space="preserve">
+    <value>This player version does not report playback progress</value>
+  </data>
+  <data name="Panel.MediaBar.ProgressUnavailable.Other" xml:space="preserve">
+    <value>This player does not report playback progress</value>
+  </data>
   <data name="Lyrics.Row.ChineseConversion.Title" xml:space="preserve">
     <value>Chinese conversion</value>
   </data>

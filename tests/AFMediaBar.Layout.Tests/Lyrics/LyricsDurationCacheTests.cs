@@ -80,6 +80,20 @@ public sealed class LyricsDurationCacheTests
         Assert.AreEqual(5, provider.Requests.Count);
     }
 
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void ExecutableSuffixReusesCompletedAndPendingFallbackRequests(bool pending)
+    {
+        var provider = new Provider { Pending = pending };
+        using var builder = new MediaSnapshotBuilder(new LyricsService(provider));
+        builder.GetLyrics("session", "cloudmusic.exe", Request(342.4));
+        builder.RequestOnlineLyrics("session", "cloudmusic", "When It Snows", "Sarah Kang & Sam Ock", 352.4);
+        builder.GetLyrics("session", "cloudmusic", Request(362.4));
+        Assert.AreEqual(1, provider.Requests.Count, "来源后缀不同不能取消在途请求或重复取词。");
+        Assert.AreEqual("cloudmusic.exe", provider.Requests[0].PlaybackSourceId, "归一化只用于缓存键，取词保留原始来源。");
+    }
+
     private sealed class Provider : ILyricsProvider
     {
         public string SourceName => "QQMusic";
