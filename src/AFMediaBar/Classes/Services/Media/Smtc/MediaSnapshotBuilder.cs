@@ -39,6 +39,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
     private readonly AppLogService? _log;
     private readonly RepeatedFailureReporter _readFailures = new();
     private readonly LyricsService _lyricsService;
+    private readonly MediaSourceRegistry? _sources;
     private readonly LruCache<(string SessionId, LyricsRequest Request), LyricsResult?> _lyricsCache;
     private readonly LyricsRetryTracker<(string SessionId, LyricsRequest Request)> _lyricsRetries = new(LyricsCacheCapacity);
     private readonly Dictionary<(string SessionId, LyricsRequest Request), CancellationTokenSource> _pendingLyrics = [];
@@ -98,9 +99,11 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
     {
     }
 
-    internal MediaSnapshotBuilder(LyricsService lyricsService, TimeProvider timeProvider, AppLogService? log = null)
+    internal MediaSnapshotBuilder(LyricsService lyricsService, TimeProvider timeProvider, AppLogService? log = null,
+        MediaSourceRegistry? sources = null)
     {
         _lyricsService = lyricsService;
+        _sources = sources;
         _log = log;
         _lyricsCache = new(LyricsCacheCapacity,
             result => LyricsCacheBudgetPolicy.EstimateBytes(result?.Document),
@@ -286,7 +289,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         {
             return cached;
         }
-        if (IsProvidedBySourceProvider(sourceId) ||
+        if (_sources?.ProvidesLyrics(sourceId) == true ||
             string.IsNullOrWhiteSpace(request.Title))
         {
             return null;
@@ -310,15 +313,6 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
             return _pendingLyrics.ContainsKey(key);
         }
     }
-
-    /// <summary>
-    /// 该来源是否由来源提供器负责供词 —— 这类来源在这里不取词，因为提供器给的是逐字歌词与精确进度。
-    /// Whether this source is served by a source provider: such a source is not fetched here, because the provider supplies word-level
-    /// lyrics together with an exact position.
-    /// </summary>
-    private static bool IsProvidedBySourceProvider(string sourceId) =>
-        sourceId.Contains("cloudmusic", StringComparison.OrdinalIgnoreCase) ||
-        sourceId.Contains("netease", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// 为"来源提供器读不出媒体"的会话发起一次在线取词兜底，结果同样进本类的歌词缓存，

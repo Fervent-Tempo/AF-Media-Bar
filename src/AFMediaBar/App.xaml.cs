@@ -145,12 +145,14 @@ namespace AFMediaBar
                 services.AddSingleton<MediaSourceRegistry>();
                 services.AddSingleton<MediaSessionCatalog>();
                 services.AddSingleton<MediaSessionSelectionService>();
-                services.AddSingleton<MediaSnapshotBuilder>();
+                services.AddSingleton(sp => new MediaSnapshotBuilder(sp.GetRequiredService<LyricsService>(),
+                    TimeProvider.System, sp.GetRequiredService<AppLogService>(), sp.GetRequiredService<MediaSourceRegistry>()));
 
                 // 来源提供器可以有多个：各自按 CanHandle 认领 SMTC 来源，令牌互不重叠。
                 // There can be several source providers: each claims its SMTC sources by CanHandle, and the tokens never overlap.
                 services.AddSingleton<NetEaseMediaProvider>();
-                services.AddSingleton<KuGouMediaProvider>();
+                services.AddSingleton(sp => new KuGouMediaProvider(sp.GetRequiredService<LyricsService>(),
+                    Current.Dispatcher, sp.GetRequiredService<AppLogService>()));
                 services.AddSingleton<IMediaSourceProvider>(sp => sp.GetRequiredService<NetEaseMediaProvider>());
                 services.AddSingleton<IMediaSourceProvider>(sp => sp.GetRequiredService<KuGouMediaProvider>());
 

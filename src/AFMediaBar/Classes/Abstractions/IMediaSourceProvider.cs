@@ -18,6 +18,9 @@ public interface IMediaSourceProvider : IDisposable
     /// </summary>
     bool CanHandle(string sourceId);
 
+    /// <summary>由本提供器取词，SMTC 通道仅在提供器不可用时兜底，避免重复请求。</summary>
+    bool ProvidesLyrics => false;
+
     /// <summary>
     /// 更新当前 SMTC 会话快照。
     /// Updates the current SMTC session snapshot.

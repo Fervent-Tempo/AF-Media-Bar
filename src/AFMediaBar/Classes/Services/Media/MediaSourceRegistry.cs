@@ -8,12 +8,14 @@ namespace AFMediaBar.Classes.Services;
 /// <summary>通用来源目录，供协调者、过滤和设置页共享同一套来源身份。 / Shares source identity and arbitration across coordination, filtering, and settings.</summary>
 public sealed class MediaSourceRegistry
 {
+    private readonly IMediaSourceProvider[] _providers;
     private readonly IIndependentMediaSourceProvider[] _sources;
 
     /// <summary>从现有 Provider 注册中发现独立来源能力，不需要另一份注册列表。</summary>
     public MediaSourceRegistry(IEnumerable<IMediaSourceProvider> providers)
     {
-        _sources = providers.OfType<IIndependentMediaSourceProvider>().ToArray();
+        _providers = providers.ToArray();
+        _sources = _providers.OfType<IIndependentMediaSourceProvider>().ToArray();
         if (_sources.Select(p => p.SourcePolicy.SourceId).Distinct(StringComparer.OrdinalIgnoreCase).Count() != _sources.Length ||
             _sources.Select(p => p.SourcePolicy.SelectionKey).Distinct(StringComparer.Ordinal).Count() != _sources.Length)
             throw new ArgumentException("Independent media sources must have unique identities and selection keys.", nameof(providers));
@@ -22,6 +24,10 @@ public sealed class MediaSourceRegistry
     /// <summary>未知应用保留原 ID；已注册来源的别名统一为规范 ID。</summary>
     public string NormalizeSourceId(string sourceId) =>
         _sources.FirstOrDefault(p => p.SourcePolicy.Matches(sourceId))?.SourcePolicy.SourceId ?? sourceId;
+
+    /// <summary>使用提供器声明的能力确定取词所有者，不在 SMTC 构建器维护播放器名单。</summary>
+    public bool ProvidesLyrics(string sourceId) =>
+        _providers.Any(provider => provider.ProvidesLyrics && provider.CanHandle(sourceId));
 
     /// <summary>使用同一身份规则判断现有允许列表。</summary>
     public bool IsAllowed(string? sourceId, SmtcSourceFilterSettings settings) =>

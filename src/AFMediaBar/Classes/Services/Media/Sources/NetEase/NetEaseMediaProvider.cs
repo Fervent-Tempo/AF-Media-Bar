@@ -22,6 +22,8 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
     /// <summary>独立来源身份与仲裁规则，不持有读取器资源。</summary>
     public IMediaSourcePolicy SourcePolicy => _sourcePolicy;
 
+    public bool ProvidesLyrics => true;
+
     private const string MemoryPlayerSourceId = NetEaseSourcePolicy.SourceId;
     private static readonly TimeSpan _pollInterval = TimeSpan.FromMilliseconds(100);
 
