@@ -762,7 +762,7 @@
                         <ContentControl x:Name="PageStatus" Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource AfSettingsChipAccentStyle}" Content="{TemplateBinding StatusText}"/>
                         <ContentPresenter Grid.Column="2" Content="{TemplateBinding HeaderActions}" Margin="12,0,0,0" VerticalAlignment="Center" x:Name="HeaderActions"/>
                     </Grid>
-                    <ScrollViewer x:Name="GroupTabsHost" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <ScrollViewer x:Name="GroupTabsHost" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" PanningMode="HorizontalOnly">
                         <Grid>
                             <ItemsControl x:Name="PART_Tabs" Focusable="False" ItemsSource="{Binding Groups, RelativeSource={RelativeSource TemplatedParent}}">
                                 <ItemsControl.ItemsPanel>
@@ -1161,7 +1161,7 @@
                             <ColumnDefinition x:Name="Gap" Width="32"/>
                             <ColumnDefinition Width="{TemplateBinding PreviewColumn}"/>
                         </Grid.ColumnDefinitions>
-                        <ScrollViewer x:Name="PART_ScrollViewer" Grid.RowSpan="2" VerticalScrollBarVisibility="Auto" Background="Transparent" HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" Padding="0,0,4,24" Content="{TemplateBinding Content}" HorizontalContentAlignment="Stretch"/>
+                        <ScrollViewer x:Name="PART_ScrollViewer" Grid.RowSpan="2" VerticalScrollBarVisibility="Auto" Background="Transparent" HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" Padding="0,0,4,24" PanningMode="VerticalOnly" Content="{TemplateBinding Content}" HorizontalContentAlignment="Stretch"/>
                         <ui:CardExpander x:Name="PreviewHost" Grid.Column="2" Grid.RowSpan="2" VerticalAlignment="Top" Background="{DynamicResource AfSettingsPreviewSurfaceBrush}" BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1" IsExpanded="{Binding PreviewExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
                             <ui:CardExpander.Header>
                                 <TextBlock Text="{DynamicResource Loc.Settings.Preview.Title}" FontSize="14"/>

@@ -104,7 +104,8 @@
             Grid.Row="1"
             Margin="{StaticResource AfSettingsScrollMargin}"
             HorizontalScrollBarVisibility="Disabled"
-            VerticalScrollBarVisibility="Auto">
+            VerticalScrollBarVisibility="Auto"
+            PanningMode="VerticalOnly">
             <StackPanel
                 x:Name="PageRoot"
                 MaxWidth="{StaticResource AfSettingsContentMaxWidth}"
