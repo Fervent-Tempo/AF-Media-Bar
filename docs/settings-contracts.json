@@ -1,6 +1,6 @@
 {
   "formatVersion": 2,
-  "latestRelease": "v1.6.0",
+  "latestRelease": "v1.7.0",
   "settingsSchemaVersion": 2,
   "settings": {
     "experiments": {
@@ -30,7 +30,7 @@
       "orientation": "v1.5.0",
       "layer": "v1.5.0",
       "edgeCollapseEnabled": "v1.6.0",
-      "overlayTaskbar": "unreleased",
+      "overlayTaskbar": "v1.7.0",
       "monitorDeviceIds": "v1.5.0",
       "positions": {
         "$items": {
@@ -109,7 +109,7 @@
     "lyricsFixedWidthEnabled": "v1.3.0",
     "lyricsFuriganaFilterEnabled": "v1.6.0",
     "lyricsInfoLineFilterEnabled": "v1.2.0",
-    "lyricsInstrumentalTitleOnlyEnabled": "unreleased",
+    "lyricsInstrumentalTitleOnlyEnabled": "v1.7.0",
     "lyricsLineGapPercent": "v1.3.0",
     "lyricsLongLineScrollEnabled": "v1.6.0",
     "lyricsSecondaryLine": {
@@ -123,21 +123,21 @@
       "attemptMode": "v1.5.0",
       "resultMode": "v1.5.0",
       "prioritySourceIds": "v1.5.0",
-      "localEnabled": "unreleased",
-      "localFallbackOnly": "unreleased",
-      "localFolders": "unreleased"
+      "localEnabled": "v1.7.0",
+      "localFallbackOnly": "v1.7.0",
+      "localFolders": "v1.7.0"
     },
     "lyricsSyllableHighlightEnabled": "v1.2.0",
     "lyricsTextAlignment": "v1.2.0",
     "lyricsUnsungOpacityPercent": "v1.2.0",
     "performanceComponent": {
       "visuals": {
-        "$release": "unreleased",
-        "systemMemory": "unreleased",
-        "systemCpu": "unreleased",
-        "systemGpu": "unreleased",
-        "processMemory": "unreleased",
-        "systemNetwork": "unreleased"
+        "$release": "v1.7.0",
+        "systemMemory": "v1.7.0",
+        "systemCpu": "v1.7.0",
+        "systemGpu": "v1.7.0",
+        "processMemory": "v1.7.0",
+        "systemNetwork": "v1.7.0"
       },
       "$release": "v1.2.0",
       "displayMode": "v1.4.0",
@@ -156,7 +156,7 @@
       "$release": "v1.2.0",
       "interactionMode": "v1.6.0",
       "showApplicationIconOnHover": "v1.6.0",
-      "showTooltips": "unreleased",
+      "showTooltips": "v1.7.0",
       "selectedEntryId": "v1.6.0",
       "entries": {
         "$release": "v1.2.0",
@@ -201,17 +201,17 @@
       "contentLayout": "v1.2.0",
       "density": "v1.2.0",
       "fixedLengthDip": "v1.2.0",
-      "fullPanelEntryHoverDelayMilliseconds": "unreleased",
+      "fullPanelEntryHoverDelayMilliseconds": "v1.7.0",
       "fullLayerEnabled": "v1.2.0",
       "fullPanel": {
-        "scalePercent": "unreleased",
+        "scalePercent": "v1.7.0",
         "performanceVisuals": {
-          "$release": "unreleased",
-          "systemMemory": "unreleased",
-          "systemCpu": "unreleased",
-          "systemGpu": "unreleased",
-          "processMemory": "unreleased",
-          "systemNetwork": "unreleased"
+          "$release": "v1.7.0",
+          "systemMemory": "v1.7.0",
+          "systemCpu": "v1.7.0",
+          "systemGpu": "v1.7.0",
+          "processMemory": "v1.7.0",
+          "systemNetwork": "v1.7.0"
         },
         "$release": "v1.2.0",
         "audioControlsVisible": "v1.2.0",
@@ -221,9 +221,9 @@
       },
       "fullPanelEntryVisible": "v1.2.0",
       "fullPanelEntryTrigger": "v1.6.0",
-      "hoverAlignment": "unreleased",
+      "hoverAlignment": "v1.7.0",
       "hoverButtonSpacingDip": "v1.3.0",
-      "hoverTextBlurRadius": "unreleased",
+      "hoverTextBlurRadius": "v1.7.0",
       "hoverControls": {
         "$release": "v1.2.0",
         "audioControlVisible": "v1.2.0",
@@ -242,31 +242,31 @@
       "performanceVisible": "v1.2.0",
       "restComponentOrder": "v1.2.1",
       "restProgressVisible": "v1.2.0",
-      "smallArtwork": "unreleased",
+      "smallArtwork": "v1.7.0",
       "spectrumVisible": "v1.2.0",
       "volumeVisible": "v1.2.1",
       "inputDeviceVisible": "v1.5.0",
       "componentLayouts": {
-        "$release": "unreleased",
+        "$release": "v1.7.0",
         "resident": {
-          "$release": "unreleased",
+          "$release": "v1.7.0",
           "$items": {
-            "component": "unreleased",
-            "isVisible": "unreleased"
+            "component": "v1.7.0",
+            "isVisible": "v1.7.0"
           }
         },
         "idle": {
-          "$release": "unreleased",
+          "$release": "v1.7.0",
           "$items": {
-            "component": "unreleased",
-            "isVisible": "unreleased"
+            "component": "v1.7.0",
+            "isVisible": "v1.7.0"
           }
         },
         "hover": {
-          "$release": "unreleased",
+          "$release": "v1.7.0",
           "$items": {
-            "component": "unreleased",
-            "isVisible": "unreleased"
+            "component": "v1.7.0",
+            "isVisible": "v1.7.0"
           }
         }
       }
@@ -280,12 +280,12 @@
     "taskbarTargetMonitorDeviceId": "v1.2.0",
     "taskbarTargetMonitorDeviceIds": "v1.2.1",
     "trackChangeNotification": {
-      "horizontalOffsetDip": "unreleased",
-      "verticalOffsetDip": "unreleased",
-      "titleFontSize": "unreleased",
-      "artistFontSize": "unreleased",
-      "titleColor": "unreleased",
-      "artistColor": "unreleased",
+      "horizontalOffsetDip": "v1.7.0",
+      "verticalOffsetDip": "v1.7.0",
+      "titleFontSize": "v1.7.0",
+      "artistFontSize": "v1.7.0",
+      "titleColor": "v1.7.0",
+      "artistColor": "v1.7.0",
       "$release": "v1.2.0",
       "durationMilliseconds": "v1.2.0",
       "enabled": "v1.2.0",
@@ -592,7 +592,7 @@
         },
         "None": {
           "value": 3,
-          "release": "unreleased"
+          "release": "v1.7.0"
         }
       }
     },
@@ -1237,39 +1237,39 @@
         },
         "SystemMemory": {
           "value": 8,
-          "release": "unreleased"
+          "release": "v1.7.0"
         },
         "SystemCpu": {
           "value": 9,
-          "release": "unreleased"
+          "release": "v1.7.0"
         },
         "SystemGpu": {
           "value": 10,
-          "release": "unreleased"
+          "release": "v1.7.0"
         },
         "ProcessMemory": {
           "value": 11,
-          "release": "unreleased"
+          "release": "v1.7.0"
         },
         "SystemNetwork": {
           "value": 12,
-          "release": "unreleased"
+          "release": "v1.7.0"
         },
         "DragHandle": {
           "value": 13,
-          "release": "unreleased"
+          "release": "v1.7.0"
         },
         "PreviousTrack": {
           "value": 14,
-          "release": "unreleased"
+          "release": "v1.7.0"
         },
         "PlayPause": {
           "value": 15,
-          "release": "unreleased"
+          "release": "v1.7.0"
         },
         "NextTrack": {
           "value": 16,
-          "release": "unreleased"
+          "release": "v1.7.0"
         }
       }
     },
@@ -1468,23 +1468,23 @@
       "members": {
         "Numeric": {
           "value": 0,
-          "release": "unreleased"
+          "release": "v1.7.0"
         },
         "Bar": {
           "value": 1,
-          "release": "unreleased"
+          "release": "v1.7.0"
         },
         "Ring": {
           "value": 2,
-          "release": "unreleased"
+          "release": "v1.7.0"
         },
         "Line": {
           "value": 3,
-          "release": "unreleased"
+          "release": "v1.7.0"
         },
         "Area": {
           "value": 4,
-          "release": "unreleased"
+          "release": "v1.7.0"
         }
       }
     }
