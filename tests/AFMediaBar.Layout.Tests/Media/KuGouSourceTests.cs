@@ -15,6 +15,27 @@ namespace AFMediaBar.Layout.Tests;
 [DoNotParallelize]
 public sealed class KuGouSourceTests
 {
+    [DataTestMethod]
+    [DataRow("TSAR、SaMZIng、PonyCat", "QUAKE", true)]
+    [DataRow(" tsar , SaMZIng , PonyCat ", "QUAKE", true)]
+    [DataRow("TSAR", "QUAKE", true)]
+    [DataRow("PonyCat", "QUAKE", false)]
+    [DataRow("TSAR、Other", "QUAKE", false)]
+    [DataRow("TSAR、SaMZIng、PonyCat", "Other track", false)]
+    public void CoverMatchingNormalizesArtistSeparatorsWithoutAcceptingAnotherTrack(string smtcArtist, string title, bool sameTrack)
+    {
+        var artwork = new System.Windows.Media.DrawingImage();
+        artwork.Freeze();
+        var memory = MediaSnapshot.Disconnected with
+        {
+            IsConnected = true, SourceId = "kugou", Title = "QUAKE", Artist = "TSAR,SaMZIng,PonyCat"
+        };
+        var session = memory with { SourceId = "KuGou.exe", Title = title, Artist = smtcArtist, Artwork = artwork };
+        var merged = new KuGouSourcePolicy().Merge(memory, session);
+        if (sameTrack) Assert.AreSame(artwork, merged.Artwork);
+        else Assert.IsNull(merged.Artwork, "不同曲目或仅匹配客串歌手时不能继承封面。");
+    }
+
     [TestMethod]
     public void RegistryKeepsIndependentIdentityAndOnlyInheritsMatchingSessionData()
     {

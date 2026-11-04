@@ -33,9 +33,7 @@ public sealed class KuGouSourcePolicy : IMediaSourcePolicy
             return baseline.IsConnected ? baseline with { SourceId = SourceId } : MediaSnapshot.Disconnected;
         var sameTrack = baseline.IsConnected && !string.IsNullOrWhiteSpace(memory.Title) &&
             string.Equals(memory.Title.Trim(), baseline.Title.Trim(), StringComparison.OrdinalIgnoreCase) &&
-            !string.IsNullOrWhiteSpace(memory.Artist) && !string.IsNullOrWhiteSpace(baseline.Artist) &&
-            (string.Equals(memory.Artist.Trim(), baseline.Artist.Trim(), StringComparison.OrdinalIgnoreCase) ||
-             string.Equals(memory.Artist.Split(',')[0].Trim(), baseline.Artist.Trim(), StringComparison.OrdinalIgnoreCase));
+            ArtistsDescribeTheSameTrack(memory.Artist, baseline.Artist);
         return memory with
         {
             SourceId = SourceId,
@@ -48,5 +46,15 @@ public sealed class KuGouSourcePolicy : IMediaSourcePolicy
             CanChangeRepeat = baseline.CanChangeRepeat,
             RepeatMode = baseline.RepeatMode
         };
+    }
+
+    private static bool ArtistsDescribeTheSameTrack(string memoryArtist, string smtcArtist)
+    {
+        var artists = memoryArtist.Split([',', '、'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var reported = smtcArtist.Split([',', '、'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (artists.Length == 0 || reported.Length == 0) return false;
+        // 实时标题使用逗号，SMTC 使用顿号；仍要求完整名单一致，或 SMTC 只报告第一位歌手。
+        return artists.SequenceEqual(reported, StringComparer.OrdinalIgnoreCase) ||
+            (reported.Length == 1 && string.Equals(artists[0], reported[0], StringComparison.OrdinalIgnoreCase));
     }
 }
