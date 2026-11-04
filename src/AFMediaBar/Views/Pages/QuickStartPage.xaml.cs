@@ -106,8 +106,8 @@ public partial class QuickStartPage : INavigableView<QuickStartViewModel>
             Grid.SetColumn(HeroCopy, 0); Grid.SetColumnSpan(HeroCopy, 1); Grid.SetRow(HeroCopy, 0);
             Grid.SetColumn(HeroVisual, 2); Grid.SetColumnSpan(HeroVisual, 1); Grid.SetRow(HeroVisual, 0);
             HeroVisual.Margin = new Thickness(0);
-            // 默认（1320 窗，内容宽约 1024）350，宽窗（1560 窗，内容宽约 1264）380，让图片显示更大。
-            HeroVisual.Height = width >= 1100d ? 380d : 350d;
+            // 默认（1320 窗，内容宽约 1024）400，宽窗（1560 窗，内容宽约 1264）430，比原版略大以便看清宣传图。
+            HeroVisual.Height = width >= 1100d ? 430d : 400d;
             HeroTitle.FontSize = wide ? 26d : 24d;
             HeroTitle.LineHeight = wide ? 34d : 30d;
             HeroTitle.MaxHeight = wide ? 102d : 90d;
