@@ -12,8 +12,9 @@ Redesign the Settings home and category navigation, unify three-state component 
 
 ### Added
 
+- Add independent media reading and lyric integration for Kugou through the existing source catalogue and dual-channel arbitration; improve artist and artwork matching.
 - Quick Start detects local records for ten taskbar customization tools using current-session processes and machine/current-user uninstall registrations. It provides an untested-compatibility notice, a shortcut to floating-mode settings and a feedback link. Detection does not confirm a conflict or upload results; the compatible TranslucentTB is excluded.
-- Quick Start combines public updates, feature slides, tutorials, common settings and player-support information. An independent catalogue manages slides, media sources show local application icons, and available local content remains usable when remote requests fail.
+- Quick Start combines public updates, feature slides, tutorials, common settings and detected media status. An independent catalogue manages slides, media sources show local application icons, and available local content remains usable when remote requests fail.
 - Settings gains six navigation areas, category overviews, clickable header paths and previews of actual styles, with separate pages for resident content, quick controls and individual widgets.
 - Resident, no-media and hover states save component visibility and order independently. Previous, play/pause and next controls can remain visible and be ordered separately. Components can be reordered in the bar; moving the whole bar uses a dedicated handle.
 - Performance metrics combine numbers, rings and trend charts with per-metric styles and ordering, including upload and download rates. The full panel supports 75%–200% overall scaling and independent metric styles.
@@ -28,10 +29,10 @@ Redesign the Settings home and category navigation, unify three-state component 
 
 ### Changed
 
-- Keep two home slides for version 1.7.0 and the new Settings pages, show the bundled README hero artwork at full width, retain slide interactions, and prevent old-version or development entries from overriding them. Add a FAQ heading and place the third-party customization notice first. Show customization detection only when a listed tool is found.
+- Keep two home slides for version 1.7.0 and the new Settings pages, adapt the bundled README hero artwork to the default window size, retain slide interactions, and prevent old-version or development entries from overriding them. Add a FAQ heading, keep the third-party customization notice first, and explain enabling SMTC/system media controls when playback control or artwork is unavailable. Keep the unverified full player-support directory and its entry unavailable. Show customization detection only when a listed tool is found.
 - Expand the available-source list by default and move Quick Launch add actions to the music-note and Quick Launch page. Use switches for audio-device enablement and preview options, expand personal defaults initially, and remove full-panel preset actions.
 - Use 14 spectrum bars, enable every hover control and select large buttons for new configurations and built-in resets. Preserve saved explicit choices and personal-default snapshots.
-- Load Settings pages on demand and reduce repeated material, layout and preview creation. Unify related navigation, ordering feedback, groups and tutorial cards; expanding one tutorial no longer stretches adjacent cards.
+- Load Settings pages on demand and reduce repeated material, layout and preview creation. Unify related navigation, ordering feedback, groups and tutorial cards; expanding one tutorial no longer stretches adjacent cards. Enable touch scrolling in content and related lists.
 - Unify metric widths, markers and narrow-bar layouts, keep side-by-side settings consistent with rendering, avoid enlarged artwork, and retain trends through brief hiding.
 - Show audio windows before loading their content asynchronously and reject stale results. Spectrum device lists include only allowed, online output devices.
 - Rotate logs by size and retain failure records. Developer tools add bounded continuous performance recording, resource-reclamation and process-identity diagnostics, with cooldown after GPU identity access failures.
@@ -41,6 +42,7 @@ Redesign the Settings home and category navigation, unify three-state component 
 
 ### Fixed and improved
 
+- Explain unavailable playback progress and hide lyrics that cannot be positioned. Unify adapted-source identification so the same track does not trigger another lyric request when a source identifier gains or loses its .exe suffix.
 - Fix full-panel whitespace after scaling down, edge placement and first-show jumps. Use stable anchors so lyric, artwork and layout changes do not unnecessarily move the entry.
 - Dismiss inactive hover-opened panels on outside clicks while preserving menus owned by the panel or its Popups. Fix progress-track click handling and seek intent.
 - Fix vertical small-artwork dimensions, leftover space after hiding artwork, horizontal hover-control bounds and leading spacing during font-size changes. Performance components remain clickable while position is locked.
