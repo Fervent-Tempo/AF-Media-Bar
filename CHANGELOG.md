@@ -6,7 +6,7 @@
 
 格式遵循 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)，项目使用 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)。
 
-## [1.7.0] - 待定
+## [1.7.0] - 2026-11-04
 
 重做设置首页与分类导航，统一三状态组件配置、性能图表和完整面板，新增本地歌词来源，改善音频、媒体恢复与窗口交互。
 

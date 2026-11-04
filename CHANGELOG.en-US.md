@@ -6,7 +6,7 @@ All notable changes to AF Media Bar are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.7.0] - TBD
+## [1.7.0] - 2026-11-04
 
 Redesign the Settings home and category navigation, unify three-state component layouts, performance charts and the full panel, add local lyrics, and improve audio, media recovery and window interactions.
 
