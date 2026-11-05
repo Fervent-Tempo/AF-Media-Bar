@@ -83,6 +83,7 @@
   <ItemGroup>
     <None Remove="Assets\icon_dark.ico" />
     <None Remove="Assets\icon_white.ico" />
+    <None Remove="Assets\Tray\*.ico" />
     <!--
       赞助收款码按**通配**打包，而不是逐个文件名列出：这两张图由用户后续放入，文件名也由他自己决定
       （候选名见 CreditLinks）。逐个列出时，放进去的图不会被编进程序集，界面上的表现就是"图不显示"且没有任何错误
@@ -109,6 +110,7 @@
     -->
     <Resource Include="Assets\icon_dark.ico" />
     <Resource Include="Assets\icon_white.ico" />
+    <Resource Include="Assets\Tray\*.ico" />
     <Resource Include="Assets\Sponsor\*.png" />
     <Resource Include="Assets\Sponsor\*.jpg" />
     <Resource Include="Assets\Sponsor\*.jpeg" />
