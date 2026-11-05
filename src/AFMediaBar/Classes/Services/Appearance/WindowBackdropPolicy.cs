@@ -51,11 +51,13 @@ public static class WindowBackdropPolicy
     /// <summary>
     /// Accent 模糊路径的底色：材质浓度按比例映射成 alpha，颜色跟随主题明暗。
     ///
-    /// 这条路径由窗口自己绘制，因此浓度就是它的不透明度；Windows 的系统材质（云母/亚克力/Mica Alt）由 DWM 绘制，浓度对它们无效。
+    /// 这条路径由窗口自己绘制，因此浓度就是它的不透明度；Windows 的系统材质由 DWM 绘制，原生 tint 对它无效。系统材质窗口
+    /// 由 `ApplicationAppearanceResources` 发布的同一浓度中性遮罩统一着色，所以用户看到的浓度效果仍然一致。
     /// The tint of the Accent blur path: the material concentration maps onto alpha, and the colour follows the theme brightness.
     ///
-    /// This path is painted by the window itself, so the concentration is literally its opacity; the Windows system materials
-    /// (Mica, Acrylic, Mica Alt) are painted by DWM and are unaffected by it.
+    /// This path is painted by the window itself, so the concentration is literally its opacity; the Windows system materials are
+    /// painted by DWM and their native tint is unaffected. System-material windows are coloured by the neutral overlay published
+    /// from the same concentration in `ApplicationAppearanceResources`, so the user-visible concentration stays consistent.
     /// </summary>
     /// <param name="dark">是否深色主题，决定底色是深灰还是浅白。/ Whether the theme is dark, which picks a dark or a light base colour.</param>
     /// <param name="opacityPercent">材质浓度（0–100）。/ Material concentration (0-100).</param>

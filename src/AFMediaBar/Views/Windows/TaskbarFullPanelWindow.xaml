@@ -41,7 +41,7 @@
                 <Grid x:Name="MediaInfoSection" Margin="0,0,0,12">
                     <Grid.ColumnDefinitions><ColumnDefinition x:Name="ArtworkColumn" Width="76"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                     <Border x:Name="ArtworkBorder" Width="76" Height="76" CornerRadius="12" ClipToBounds="True"
-                            Background="{DynamicResource ControlFillColorSecondaryBrush}" Cursor="Hand" Tag="MediaAction" MouseLeftButtonUp="ArtworkBorder_MouseLeftButtonUp">
+                            Background="{DynamicResource AfMaterialCardBrush}" Cursor="Hand" Tag="MediaAction" MouseLeftButtonUp="ArtworkBorder_MouseLeftButtonUp">
                         <Grid><ui:SymbolIcon x:Name="ArtworkPlaceholder" Symbol="MusicNote220" FontSize="30"/>
                             <Image x:Name="ArtworkImage" Stretch="Uniform"/></Grid>
                     </Border>

@@ -162,31 +162,33 @@ public readonly record struct AppearanceSettings(
     public const int FontWeightStep = 100;
 
     /// <summary>
-    /// 材质底色浓度的下限。低于它时系统材质几乎完全透明，浅色壁纸上的深色主题文字会失去可读性；
+    /// 材质遮罩浓度的下限。低于它时系统材质几乎完全透明，浅色壁纸上的深色主题文字会失去可读性；
     /// 与上限一起构成滑杆区间，取值区间只有这一处权威。
-    /// Lower bound of the material tint concentration. Below it the system material is almost fully transparent and dark-theme
+    /// Lower bound of the material mask concentration. Below it the system material is almost fully transparent and dark-theme
     /// text on a bright wallpaper loses legibility; together with the upper bound this is the only authority for the slider range.
     /// </summary>
     public const int MinimumBackdropTintOpacityPercent = 30;
 
-    /// <summary>材质底色浓度的上限（100% 即不透明底色）。 / Upper bound of the material tint concentration (100% is an opaque surface).</summary>
+    /// <summary>材质遮罩浓度的上限（100% 即不透明遮罩）。 / Upper bound of the material mask concentration (100% is an opaque mask).</summary>
     public const int MaximumBackdropTintOpacityPercent = 100;
 
-    /// <summary>材质底色浓度的滑杆步进。 / Slider step of the material tint concentration.</summary>
+    /// <summary>材质遮罩浓度的滑杆步进。 / Slider step of the material mask concentration.</summary>
     public const int BackdropTintOpacityStep = 5;
 
     /// <summary>
-    /// 材质底色浓度的默认值（60%）。
+    /// 材质遮罩浓度的默认值（60%）。
     ///
     /// 这一档来自实测：Windows 的 Accent 模糊路径在 80% 底色下，窗口内的亮度标准差只有 2.1（背后壁纸是 42.5），
     /// 模糊几乎看不出来、观感与纯色无异；60% 时标准差升到 3.9 且窗口内能看出背后壁纸的明暗结构，同时深色主题的
-    /// 文字仍然落在足够暗的底色上。想回到旧观感的用户把滑杆推到 80% 即可。
+    /// 文字仍然落在足够暗的底色上。想回到旧观感的用户把滑杆推到 80% 即可。系统材质窗口和内容卡片共用同一浓度，
+    /// 因此这一档同时决定它们的遮罩 alpha。
     /// Default concentration (60%).
     ///
     /// The value comes from measurement: with an 80% tint the accent blur path leaves a luminance deviation of only 2.1 inside the
     /// window (the wallpaper behind it measures 42.5), so the blur is imperceptible and reads as a solid surface; at 60% the
     /// deviation rises to 3.9 and the wallpaper's light/dark structure becomes visible, while dark-theme text still sits on a
-    /// dark enough base. Anyone who wants the old look can push the slider back to 80%.
+    /// dark enough base. Anyone who wants the old look can push the slider back to 80%. System-material windows and content cards
+    /// share the same concentration, so it also decides their mask alpha.
     /// </summary>
     public const int DefaultBackdropTintOpacityPercent = 60;
 

@@ -67,7 +67,7 @@
                             Padding="16,12" Margin="0,0,0,4"
                             Background="{DynamicResource AfSettingsCardBrush}"
                             BorderBrush="{DynamicResource AfSettingsBorderBrush}" BorderThickness="1"
-                            IsExpanded="False">
+                            IsExpanded="True">
                             <ui:CardExpander.Header>
                                 <StackPanel Orientation="Horizontal">
                                     <ui:SymbolIcon Symbol="WindowConsole20" FontSize="20" Margin="0,0,14,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />

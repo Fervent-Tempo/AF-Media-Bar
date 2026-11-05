@@ -329,10 +329,12 @@ public sealed class WindowAppearanceService : IDisposable
             // window instead of a window that is not there.
             if (applied)
             {
-                // 普通亚克力窗口以中性表面控制背景色干扰；非激活通知和菜单回退继续使用既有浓度。
-                if (mode == ApplicationBackdropMode.Acrylic && !useNonActivating &&
-                    window.TryFindResource("AfWindowAcrylicOverlayBrush") is Brush)
-                    window.SetResourceReference(Control.BackgroundProperty, "AfWindowAcrylicOverlayBrush");
+                // 系统材质之上统一叠同一层中性遮罩；非激活的 Accent 路径已由原生 tint 承担遮罩，避免双重叠加。
+                // System materials share one neutral overlay; the non-activating Accent path already carries its tint, so it is
+                // not stacked twice.
+                if (!useNonActivating && UsesSystemBackdrop(mode) &&
+                    window.TryFindResource("AfWindowMaterialOverlayBrush") is Brush)
+                    window.SetResourceReference(Control.BackgroundProperty, "AfWindowMaterialOverlayBrush");
                 _nativeBackdropAdapter.SetNonClientColors(source.Handle, transparent: true);
                 _nativeBackdropAdapter.SetThemeAttributes(source.Handle, dark);
                 _appliedBackdrops[window] = state;
@@ -537,5 +539,12 @@ public sealed class WindowAppearanceService : IDisposable
         brush.Freeze();
         return brush;
     }
+
+    private static bool UsesSystemBackdrop(ApplicationBackdropMode mode) => mode switch
+    {
+        ApplicationBackdropMode.Mica or ApplicationBackdropMode.MicaAlt => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000),
+        ApplicationBackdropMode.Acrylic => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621),
+        _ => false
+    };
 
 }

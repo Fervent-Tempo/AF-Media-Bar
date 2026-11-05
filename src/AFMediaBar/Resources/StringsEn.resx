@@ -263,7 +263,7 @@
     <value>Solid</value>
   </data>
   <data name="Appearance.BackdropTint.Hint" xml:space="preserve">
-    <value>Affects app-drawn backgrounds such as Windows 10 windows, context-menu submenus, and track notifications. Windows 11 system materials are unaffected.</value>
+    <value>Adjusts the background mask over every material surface (30%–100%). Higher values are more opaque and affect Settings, the full panel, audio menus, context menus, and track notifications.</value>
   </data>
   <data name="Appearance.CjkFont.FollowSystem" xml:space="preserve">
     <value>Follow the system</value>
@@ -329,7 +329,7 @@
     <value>Accent color</value>
   </data>
   <data name="Appearance.Row.Backdrop.Description" xml:space="preserve">
-    <value>Choose the background material for windows such as Settings, the tray menu, and context menus. Non-activating track notifications use the app-painted blur fallback.</value>
+    <value>Choose the background material for windows such as Settings, the full panel, audio menus, and context menus. The material concentration controls the mask on every surface.</value>
   </data>
   <data name="Appearance.Row.Backdrop.Title" xml:space="preserve">
     <value>Window backdrop material</value>
@@ -389,7 +389,7 @@
     <value>Frost strength</value>
   </data>
   <data name="Appearance.Row.BackdropTint.Description" xml:space="preserve">
-    <value>Adjust the background tint of app-drawn surfaces such as Windows 10 windows, context-menu submenus, and track notifications (30%–100%). System-rendered materials on Windows 11 are unaffected.</value>
+    <value>Adjust the background mask concentration for every material window and notification (30%–100%). Higher values are more opaque.</value>
   </data>
   <data name="Appearance.Row.BackdropTint.Title" xml:space="preserve">
     <value>Material concentration</value>
@@ -2314,7 +2314,7 @@
     <value>Change the fonts and text weight shared by the interface, media bar, and notifications.</value>
   </data>
   <data name="Settings.Advanced.Backdrop.Title" xml:space="preserve">
-    <value>Material details</value>
+    <value>Material concentration and mask</value>
   </data>
   <data name="Settings.Advanced.Backdrop.Description" xml:space="preserve">
     <value>Adjust the tint of app-rendered backgrounds.</value>

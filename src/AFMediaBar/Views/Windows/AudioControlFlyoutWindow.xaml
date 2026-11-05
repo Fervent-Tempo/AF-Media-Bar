@@ -271,7 +271,7 @@
                         <Grid DataContext="{Binding SelectedAudioApplication}" Height="132">
                             <Grid.RowDefinitions><RowDefinition Height="44" /><RowDefinition Height="88" /></Grid.RowDefinitions>
                             <ContentControl Content="{Binding}" ContentTemplate="{StaticResource AudioApplicationCardTemplate}" HorizontalContentAlignment="Stretch" />
-                            <Border Grid.Row="1" CornerRadius="6" Padding="8" Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                            <Border Grid.Row="1" CornerRadius="6" Padding="8" Background="{DynamicResource AfMaterialCardBrush}"
                                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
                                 <Grid>
                                     <Grid.RowDefinitions><RowDefinition Height="32" /><RowDefinition Height="6" /><RowDefinition Height="32" /></Grid.RowDefinitions>
@@ -289,7 +289,7 @@
                                         SelectedItem="{Binding SelectedInputDevice, Mode=TwoWay}" Style="{StaticResource {x:Type ComboBox}}" MaxDropDownHeight="220"
                                         ToolTip="{Binding InputDeviceToolTip}" ToolTipService.ShowOnDisabled="True" />
                                     <TextBlock Grid.RowSpan="3" Grid.ColumnSpan="3" Text="{Binding StatusText}" TextWrapping="Wrap"
-                                               Background="{DynamicResource ControlFillColorSecondaryBrush}" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                               Background="{DynamicResource AfMaterialCardBrush}" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                         <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers>
                                             <DataTrigger Binding="{Binding IsRouteSupported}" Value="False"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
                                         </Style.Triggers></Style></TextBlock.Style>

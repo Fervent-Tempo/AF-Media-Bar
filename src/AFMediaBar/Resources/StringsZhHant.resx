@@ -263,7 +263,7 @@
     <value>純色</value>
   </data>
   <data name="Appearance.BackdropTint.Hint" xml:space="preserve">
-    <value>僅影響程式繪製的背景，如 Windows 10 視窗、右鍵選單子項和曲目通知；Windows 11 的系統材質不受影響。</value>
+    <value>調整所有視窗材質上的背景遮罩濃度（30%–100%）；數值越高越不透明，會影響設定頁、完整面板、音訊選單、右鍵選單和曲目通知。</value>
   </data>
   <data name="Appearance.CjkFont.FollowSystem" xml:space="preserve">
     <value>跟隨系統</value>
@@ -329,7 +329,7 @@
     <value>強調色</value>
   </data>
   <data name="Appearance.Row.Backdrop.Description" xml:space="preserve">
-    <value>選擇設定視窗、托盤和右鍵選單等視窗表面的背景材質；不搶焦點的曲目通知使用程式繪製的模糊回退。</value>
+    <value>選擇設定視窗、完整面板、音訊選單和右鍵選單等視窗表面的背景材質；材質濃度統一控制所有表面的背景遮罩。</value>
   </data>
   <data name="Appearance.Row.Backdrop.Title" xml:space="preserve">
     <value>視窗背景材質</value>
@@ -389,7 +389,7 @@
     <value>霧面程度</value>
   </data>
   <data name="Appearance.Row.BackdropTint.Description" xml:space="preserve">
-    <value>調整程式繪製背景的濃度（30%–100%），如 Windows 10 視窗、右鍵選單子項和曲目通知；Windows 11 系統繪製的材質不受影響。</value>
+    <value>調整所有材質視窗和通知的背景遮罩濃度（30%–100%）；數值越高越不透明。</value>
   </data>
   <data name="Appearance.Row.BackdropTint.Title" xml:space="preserve">
     <value>材質濃度</value>
@@ -2314,7 +2314,7 @@
     <value>調整介面、媒體列和通知共用的字型與文字粗細。</value>
   </data>
   <data name="Settings.Advanced.Backdrop.Title" xml:space="preserve">
-    <value>材質細節</value>
+    <value>材質濃度與遮罩</value>
   </data>
   <data name="Settings.Advanced.Backdrop.Description" xml:space="preserve">
     <value>調整自繪背景的顏色濃度。</value>
