@@ -7,6 +7,12 @@ using AFMediaBar.Classes.Abstractions;
 
 namespace AFMediaBar.Classes.Services;
 
+/// <summary>区分 Shell 的键盘激活和鼠标激活，避免消费无关的鼠标按压。</summary>
+public sealed class TrayActivationEventArgs(bool isKeyboard) : EventArgs
+{
+    public bool IsKeyboard { get; } = isKeyboard;
+}
+
 /// <summary>
 /// 管理 AF Media Bar 的 Shell 通知区域图标及 Explorer 重启恢复。
 /// Manages the AF Media Bar Shell notification icon and Explorer restart recovery.
@@ -269,7 +275,7 @@ public sealed class ShellTrayIconService : ISystemNotificationService, IDisposab
         }
         else if (notification is NativeMethods.NIN_SELECT or NativeMethods.NIN_KEYSELECT)
         {
-            LeftClicked?.Invoke(this, EventArgs.Empty);
+            LeftClicked?.Invoke(this, new TrayActivationEventArgs(notification == NativeMethods.NIN_KEYSELECT));
             handled = true;
         }
         else if (notification == NativeMethods.WM_CONTEXTMENU)

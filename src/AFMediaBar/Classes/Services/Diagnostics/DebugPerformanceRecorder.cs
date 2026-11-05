@@ -240,7 +240,7 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
                     var resources = processes.Sample(reset);
                     // 资源是在后台读取的；新进程不能承接早于自身启动时刻的 GPU 负载。
                     sampler.SetDiagnosticProcessIds(resources.Select(item => item.Pid).ToHashSet());
-                    var hook = sample.Mouse;
+                    var input = sample.Mouse;
                     var uiPendingMs = sample.UiPendingMs;
                     var uiMaximumMs = sample.UiMaximumMs;
                     var engines = GpuProcessEngineUsage.SummarizeOwned(sample.Gpu, resources, sample.Time, Environment.ProcessId);
@@ -250,14 +250,14 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
                         baselineReset = reset, gcPauseDeltaMs = sample.ResetBaseline ? (double?)null : sample.GcPauseTotalMs - previousGcPause,
                         sample.ManagedBytes, sample.Gen0, sample.Gen1, sample.Gen2,
                         ui = new { pendingMs = uiPendingMs, maximumMs = uiMaximumMs },
-                        mouse = new { hook.Installed, hook.PendingMs, hook.HeartbeatMaxMs, hook.CallbackMaxMs, hook.ForwardMaxMs },
+                        mouse = new { backend = "RawInput", input.Registered, input.PendingMs, input.HeartbeatMaxMs, input.PacketMaxMs },
                         debuggerAttached = Debugger.IsAttached, run.DroppedSamples, run.DroppedEvents,
                         sampleAgeMs = Stopwatch.GetElapsedTime(sample.Timestamp).TotalMilliseconds
                     }, resources, sample.GlobalGpuEngine, engines, gpuIdentities.DescribeTopGpu(sample.Gpu, sample.Time), sample.Time, sample.Timestamp);
                     if (!sample.ResetBaseline && interval > Math.Max(2000, sample.ExpectedIntervalMs * 2)) Mark("sample-gap", sample.Time, sample.Timestamp, new { actualIntervalMs = interval, sample.ExpectedIntervalMs });
                     if (Math.Max(uiPendingMs, uiMaximumMs) > 500) Mark("ui-delay", sample.Time, sample.Timestamp, new { uiPendingMs, uiMaximumMs });
-                    if (Math.Max(hook.PendingMs, hook.HeartbeatMaxMs) > 500) Mark("hook-thread-delay", sample.Time, sample.Timestamp, new { hook.PendingMs, hook.HeartbeatMaxMs });
-                    if (hook.CallbackMaxMs > 50) Mark("hook-callback-delay", sample.Time, sample.Timestamp, new { hook.CallbackMaxMs, hook.ForwardMaxMs });
+                    if (Math.Max(input.PendingMs, input.HeartbeatMaxMs) > 500) Mark("input-thread-delay", sample.Time, sample.Timestamp, new { input.PendingMs, input.HeartbeatMaxMs });
+                    if (input.PacketMaxMs > 50) Mark("input-packet-delay", sample.Time, sample.Timestamp, new { input.PacketMaxMs });
                     gpuHighCount = sample.Metrics.SystemGpuPercent >= 90 ? gpuHighCount + 1 : 0;
                     if (gpuHighCount == 3) Mark("gpu-high", sample.Time, sample.Timestamp, new { sample.Metrics.SystemGpuPercent });
                     previousSample = sample.Timestamp;
@@ -345,7 +345,7 @@ public sealed class DebugPerformanceRecorder(SystemMetricsMonitorService metrics
     private sealed record RawSample(DateTimeOffset Time, long Timestamp, SystemMetricsSnapshot Metrics,
         GpuProcessEngineUsage[] Gpu, GpuEngineTotal? GlobalGpuEngine, double ExpectedIntervalMs, double GcPauseTotalMs, long ManagedBytes,
         int Gen0, int Gen1, int Gen2, double UiPendingMs, double UiMaximumMs,
-        (bool Installed, double PendingMs, double HeartbeatMaxMs, double CallbackMaxMs, double ForwardMaxMs) Mouse, bool ResetBaseline);
+        (bool Registered, double PendingMs, double HeartbeatMaxMs, double PacketMaxMs) Mouse, bool ResetBaseline);
 
     private sealed class Run
     {

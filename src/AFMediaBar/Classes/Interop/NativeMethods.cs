@@ -59,7 +59,6 @@ public static partial class NativeMethods
     /// <summary>气泡通知被点击。/ The balloon notification was clicked.</summary>
     public const int NIN_BALLOONUSERCLICK = 0x0405;
     public const int NIN_POPUPOPEN = 0x0406;
-    public const int WH_MOUSE_LL = 14;
     public const int VK_SHIFT = 0x10;
     internal const uint ErrorSuccess = 0;
     internal const uint PdhMoreData = 0x800007D2;
@@ -174,8 +173,6 @@ public static partial class NativeMethods
     public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
     /// <summary>监视器枚举回调。/ Monitor-enumeration callback.</summary>
     public delegate bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
-    /// <summary>低级鼠标钩子回调。/ Low-level mouse-hook callback.</summary>
-    public delegate IntPtr LowLevelMouseProc(int code, IntPtr wParam, IntPtr lParam);
     /// <summary>WinEvent 回调。/ WinEvent callback.</summary>
     public delegate void WinEventProc(
         IntPtr hook,
@@ -185,17 +182,6 @@ public static partial class NativeMethods
         int childId,
         uint eventThread,
         uint eventTime);
-
-    /// <summary>低级鼠标钩子数据。/ Low-level mouse hook data.</summary>
-    [StructLayout(LayoutKind.Sequential)]
-    public struct MSLLHOOKSTRUCT
-    {
-        public POINT Point;
-        public uint MouseData;
-        public uint Flags;
-        public uint Time;
-        public UIntPtr ExtraInfo;
-    }
 
     /// <summary>线程消息循环中的原生消息。/ Native message used by a thread message loop.</summary>
     [StructLayout(LayoutKind.Sequential)]
@@ -431,16 +417,6 @@ public static partial class NativeMethods
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool DestroyIcon(IntPtr icon);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern IntPtr SetWindowsHookEx(int hookId, LowLevelMouseProc callback, IntPtr module, uint threadId);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static extern bool UnhookWindowsHookEx(IntPtr hook);
-
-    [DllImport("user32.dll")]
-    public static extern IntPtr CallNextHookEx(IntPtr hook, int code, IntPtr wParam, IntPtr lParam);
 
     /// <summary>读取按键当前物理状态。/ Reads the current physical state of a key.</summary>
     [DllImport("user32.dll")]
