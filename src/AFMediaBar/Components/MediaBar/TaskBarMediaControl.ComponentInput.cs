@@ -2,7 +2,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -18,12 +17,17 @@ namespace AFMediaBar.Components;
 public partial class TaskBarMediaControl
 {
     private Border? _barMoveHandle;
-    // 控件拥有浮层与离开计时器；显示期间订阅布局和宿主位移，关闭时解除订阅。
+    // 控件拥有浮层、取色会话与离开计时器；注入的共享采样器只借用。
+    // 显示期间订阅布局和宿主位移，关闭时解除订阅并取消采样。
     private Popup? _barMovePopup;
     private DispatcherTimer? _barMoveTimer;
     private Window? _barMoveOwner;
     private Point? _barMoveScreenOrigin;
     private Size _barMoveTargetSize;
+    private AdaptiveForegroundSamplingSession? _barMoveContrastSampling;
+    private readonly ColorTransitionBrush _barMoveForeground = new();
+    private PlayerForegroundDecision? _barMoveForegroundDecision;
+    private long _barMoveNextContrastTick;
     private long? _barMoveOutsideSince;
     private bool _barMovePressed;
     private bool _barMoveDisposed;
@@ -97,9 +101,7 @@ public partial class TaskBarMediaControl
                 IsHitTestVisible = false
             }
         };
-        // 与标题共享同一支前景画刷，包含自动背景判断、强制深浅色和高对比度。
-        ((TextBlock)_barMoveHandle.Child).SetBinding(TextBlock.ForegroundProperty,
-            new Binding(nameof(TextBlock.Foreground)) { Source = SongTitle, Mode = BindingMode.OneWay });
+        ApplyBarMoveContrast(null);
         _barMoveHandle.MouseEnter += (_, _) => RefreshBarMoveHandle();
         _barMoveHandle.PreviewMouseLeftButtonDown += (_, args) =>
         {
@@ -155,6 +157,8 @@ public partial class TaskBarMediaControl
         SettingsManager.SettingsChanged -= ComponentSettingsChanged;
         ComponentReorderCommand = null;
         ResetBarMoveHandle();
+        _barMoveContrastSampling?.Dispose();
+        _barMoveContrastSampling = null;
         if (_barMoveTimer is not null) _barMoveTimer.Tick -= BarMoveTimer_Tick;
         if (_barMovePopup is not null) _barMovePopup.Child = null;
         BarDragHandlePressed = null;
@@ -262,6 +266,7 @@ public partial class TaskBarMediaControl
         _barMoveHandle.Cursor = locked ? Cursors.No : Cursors.SizeAll;
         _barMoveHandle.ToolTip = Translations.Get(locked ? "ComponentLayout.Locked" : "ComponentLayout.Move");
         System.Windows.Automation.AutomationProperties.SetName(_barMoveHandle, _barMoveHandle.ToolTip.ToString());
+        RefreshBarMoveContrast();
     }
     private void ResetBarMoveHandle()
     {
@@ -272,6 +277,9 @@ public partial class TaskBarMediaControl
         LayoutUpdated -= BarMovePlacementChanged;
         if (_barMoveOwner is not null) _barMoveOwner.LocationChanged -= BarMovePlacementChanged;
         _barMoveOwner = null;
+        _barMoveContrastSampling?.Invalidate(clearDecision: false);
+        _barMoveNextContrastTick = 0;
+        _barMoveForeground.Finish();
         _barMoveTimer?.Stop();
         if (_barMovePopup is not null) _barMovePopup.IsOpen = false;
         _barHandleOpacityTarget = 0;
@@ -323,8 +331,58 @@ public partial class TaskBarMediaControl
         if (_barMoveScreenOrigin == origin && _barMoveTargetSize == targetSize) return;
         _barMoveScreenOrigin = origin;
         _barMoveTargetSize = targetSize;
+        _barMoveContrastSampling?.Invalidate(clearDecision: false);
+        _barMoveNextContrastTick = 0;
         // 与主体的布局或 HWND 位移同步，不等待另一个计时器帧。
         RefreshBarMovePopupPosition();
+        RefreshBarMoveContrast();
+    }
+
+    internal void BindBarMoveContrastSampler(ScreenBackgroundSampler sampler)
+    {
+        if (_barMoveDisposed) return;
+        _barMoveContrastSampling?.Dispose();
+        _barMoveContrastSampling = new AdaptiveForegroundSamplingSession(sampler, Dispatcher,
+            GetBarMoveContrastRegions, ApplyBarMoveContrast);
+        _barMoveNextContrastTick = 0;
+        RefreshBarMoveContrast();
+    }
+
+    private IReadOnlyList<Int32Rect> GetBarMoveContrastRegions()
+    {
+        if (_barMoveDisposed || _barMovePopup is not { IsOpen: true } || _barMoveHandle is null ||
+            !TryGetPhysicalBounds(_barMoveHandle, out var bounds)) return [];
+        var dpi = VisualTreeHelper.GetDpi(_barMoveHandle);
+        var scale = _isVertical ? dpi.DpiScaleX : dpi.DpiScaleY;
+        // 只取浮层外的两条留白，避开点阵和整块悬停/按下底色。
+        var padding = Math.Max(1, (int)Math.Ceiling(2 * scale)) * 2;
+        var area = new Int32Rect(bounds.X - padding, bounds.Y - padding,
+            bounds.Width + padding * 2, bounds.Height + padding * 2);
+        return ForegroundSampleRegionPolicy.Create(bounds, area, _isVertical, scale);
+    }
+
+    private void RefreshBarMoveContrast()
+    {
+        if (_barMoveDisposed || _barMovePopup is not { IsOpen: true } ||
+            Environment.TickCount64 < _barMoveNextContrastTick) return;
+        if (SystemParameters.HighContrast)
+        {
+            _barMoveContrastSampling?.Invalidate(clearDecision: true);
+            ApplyBarMoveContrast(null);
+        }
+        else _barMoveContrastSampling?.RequestRefresh();
+        _barMoveNextContrastTick = Environment.TickCount64 + 250;
+    }
+
+    private void ApplyBarMoveContrast(PlayerForegroundDecision? decision)
+    {
+        if (_barMoveDisposed || _barMoveHandle?.Child is not TextBlock glyph) return;
+        var animate = _barMoveForegroundDecision is not null && decision is not null && _barMovePopup is { IsOpen: true };
+        if (decision is not null) _barMoveForegroundDecision = decision;
+        var foreground = SystemParameters.HighContrast ? SystemColors.WindowTextBrush
+            : _barMoveForegroundDecision is { } value ? value.UsesLightText ? Brushes.White : DarkPlayerForeground
+            : SongTitle.Foreground;
+        glyph.Foreground = _barMoveForeground.Apply(foreground, ColorTransitionBrush.ResolveDuration(animate));
     }
 
     private IReadOnlyList<ComponentLayoutEntry> PreviewRestEntries() =>

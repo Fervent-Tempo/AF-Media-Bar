@@ -181,6 +181,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         InitializeExternalFullPanelHandle(externalFullPanelHandleFactory);
         DataContext = ViewModel;
         MediaControl.BindBatterySource(batterySource);
+        MediaControl.BindBarMoveContrastSampler(screenBackgroundSampler);
         ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
         appearanceService.Attach(PlayerMenu, this);
         PlayerMenu.OpenSettingsRequested += PlayerMenu_OpenSettingsRequested;

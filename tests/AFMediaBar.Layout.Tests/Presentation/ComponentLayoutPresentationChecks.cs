@@ -1,8 +1,10 @@
 // 隔离 WPF 中核对真实位置、独立按钮、采样需求与固定手柄，不替代真实宿主鼠标验收。
 using System.Reflection;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
@@ -85,13 +87,32 @@ internal static class ComponentLayoutPresentationChecks
             // 独立 Popup 的残留会截住桌面输入，使用真实 HWND 验证挂起和隐藏立即关闭。
             var canvas = new Canvas();
             canvas.Children.Add(control);
+            using var sampler = new ScreenBackgroundSampler();
+            control.BindBarMoveContrastSampler(sampler);
+            var background = new Window
+            {
+                Style = null,
+                Width = 800,
+                Height = 250,
+                Left = SystemParameters.WorkArea.Left,
+                Top = SystemParameters.WorkArea.Top,
+                Background = Brushes.Black,
+                ShowInTaskbar = false,
+                ShowActivated = false,
+                WindowStyle = WindowStyle.None,
+                Topmost = true
+            };
             var host = new Window
             {
+                Style = null,
                 Content = canvas,
                 Width = 500,
                 Height = 80,
-                Left = SystemParameters.WorkArea.Left + 40,
-                Top = SystemParameters.WorkArea.Top + 40,
+                Left = SystemParameters.WorkArea.Left + 100,
+                Top = SystemParameters.WorkArea.Top + 80,
+                AllowsTransparency = true,
+                Background = Brushes.Transparent,
+                Topmost = true,
                 ShowInTaskbar = false,
                 ShowActivated = false,
                 WindowStyle = WindowStyle.None
@@ -102,6 +123,7 @@ internal static class ComponentLayoutPresentationChecks
                 control.ApplyPrimaryLength(300);
                 control.Width = 300;
                 control.Height = 44;
+                background.Show();
                 host.Show();
                 host.UpdateLayout();
                 control.SetBarDragActive(true);
@@ -120,6 +142,36 @@ internal static class ComponentLayoutPresentationChecks
                     Assert.AreEqual(relative.X, actual.X, 1.01, "任务栏式 Canvas 位移不能等待计时器再更新手柄。");
                     Assert.AreEqual(relative.Y, actual.Y, 1.01);
                 }
+                if (!SystemParameters.HighContrast)
+                {
+                    // 无媒体且只留音符时也必须按手柄自己的背景换色，不能依赖媒体文字采样。
+                    settings.TaskbarExperience = settings.TaskbarExperience with
+                    { ComponentLayouts = settings.TaskbarExperience.ComponentLayouts! with { Idle = [new(TaskbarRestComponent.Artwork, true)] } };
+                    control.UpdateSongInfo(MediaSnapshot.Disconnected);
+                    control.ApplyPrimaryLength(44);
+                    control.Width = 44;
+                    ((TextBlock)control.FindName("SongTitle")).Foreground = Brushes.Black;
+                    host.UpdateLayout();
+                    timer.Start();
+                    var glyph = (TextBlock)((Border)popup.Child).Child;
+                    void WaitForColor(Color expected)
+                    {
+                        var clock = Stopwatch.StartNew();
+                        while (clock.Elapsed < TimeSpan.FromSeconds(5))
+                        {
+                            if (glyph.Foreground is SolidColorBrush brush && brush.Color == expected) return;
+                            SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(50));
+                        }
+                        Assert.Fail($"手柄未跟随背景切换为 {expected}；实际为 {glyph.Foreground}。");
+                    }
+                    WaitForColor(Colors.White);
+                    background.Background = Brushes.White;
+                    WaitForColor(Color.FromRgb(0x1C, 0x1C, 0x1C));
+                    Assert.AreSame(Brushes.Black, ((TextBlock)control.FindName("SongTitle")).Foreground,
+                        "手柄应独立换色，不能反向修改媒体文字。");
+                    settings.TaskbarExperience = settings.TaskbarExperience with
+                    { ComponentLayouts = settings.TaskbarExperience.ComponentLayouts! with { Idle = [] } };
+                }
                 control.ApplyHostVisibilitySuspension(true);
                 Assert.IsFalse(popup.IsOpen, "宿主挂起不能留下可命中的浮层。");
                 Assert.IsFalse(timer.IsEnabled);
@@ -130,7 +182,7 @@ internal static class ComponentLayoutPresentationChecks
                 Assert.IsFalse(popup.IsOpen, "宿主隐藏必须立即关闭手柄。");
                 Assert.IsFalse(timer.IsEnabled);
             }
-            finally { host.Close(); host.Content = null; canvas.Children.Clear(); }
+            finally { host.Close(); background.Close(); host.Content = null; canvas.Children.Clear(); }
             control.UpdateSongInfo(MediaSnapshot.Disconnected);
             control.ApplyTaskbarExperienceSettings();
             Assert.IsTrue(control.IsRestLayerEmpty, "全关闭的无媒体布局必须隐藏媒体栏。");
