@@ -318,9 +318,13 @@ public sealed class WindowAppearanceService : IDisposable
             window.Background = Brushes.Transparent;
             source.CompositionTarget.BackgroundColor = Colors.Transparent;
             var useNonActivating = _nonActivatingTransientWindows.Contains(window) || (isMenuWindow && !window.IsActive);
+            // 普通窗口的遮罩统一由 WPF overlay 承担；旧 Accent 路径只保留透明 tint 的真实模糊，避免与 overlay 双重着色。
+            // Normal windows get their mask from the shared WPF overlay; the legacy Accent path keeps only the transparent-tint
+            // blur so the overlay cannot tint the surface twice.
+            var nativeTint = useNonActivating || UsesSystemBackdrop(mode) ? tint : 0x00FFFFFF;
             var applied = useNonActivating
                 ? _nativeBackdropAdapter.ApplyNonActivatingBackdrop(source.Handle, mode, tint)
-                : _nativeBackdropAdapter.ApplyBackdrop(source.Handle, mode, tint);
+                : _nativeBackdropAdapter.ApplyBackdrop(source.Handle, mode, nativeTint);
 
             // Acrylic 走的是未公开的 Accent 路径（Windows 10 上唯一的半透明途径），调用可能在个别系统上失败；
             // 那种情况下绝不能把窗口留在透明状态——退回纯色表面，用户看到的是纯色而不是"窗口不见了"。
@@ -329,11 +333,10 @@ public sealed class WindowAppearanceService : IDisposable
             // window instead of a window that is not there.
             if (applied)
             {
-                // 系统材质之上统一叠同一层中性遮罩；非激活的 Accent 路径已由原生 tint 承担遮罩，避免双重叠加。
-                // System materials share one neutral overlay; the non-activating Accent path already carries its tint, so it is
-                // not stacked twice.
-                if (!useNonActivating && UsesSystemBackdrop(mode) &&
-                    window.TryFindResource("AfWindowMaterialOverlayBrush") is Brush)
+                // 所有普通材质窗口共用同一层中性遮罩；非激活通知/子菜单保留原生 tint。
+                // Every normal material window shares the same neutral overlay; non-activating notifications/submenus keep their
+                // native tint.
+                if (!useNonActivating && window.TryFindResource("AfWindowMaterialOverlayBrush") is Brush)
                     window.SetResourceReference(Control.BackgroundProperty, "AfWindowMaterialOverlayBrush");
                 _nativeBackdropAdapter.SetNonClientColors(source.Handle, transparent: true);
                 _nativeBackdropAdapter.SetThemeAttributes(source.Handle, dark);
