@@ -263,7 +263,7 @@
     <value>Solid</value>
   </data>
   <data name="Appearance.BackdropTint.Hint" xml:space="preserve">
-    <value>Affects app-drawn backgrounds such as Windows 10 windows and track notifications. Windows 11 system materials are unaffected.</value>
+    <value>Affects app-drawn backgrounds such as Windows 10 windows, context-menu submenus, and track notifications. Windows 11 system materials are unaffected.</value>
   </data>
   <data name="Appearance.CjkFont.FollowSystem" xml:space="preserve">
     <value>Follow the system</value>
@@ -329,7 +329,7 @@
     <value>Accent color</value>
   </data>
   <data name="Appearance.Row.Backdrop.Description" xml:space="preserve">
-    <value>Choose the background material for windows such as Settings. Menus keep a solid background.</value>
+    <value>Choose the background material for windows such as Settings, the tray menu, and context menus. Non-activating track notifications use the app-painted blur fallback.</value>
   </data>
   <data name="Appearance.Row.Backdrop.Title" xml:space="preserve">
     <value>Window backdrop material</value>
@@ -389,7 +389,7 @@
     <value>Frost strength</value>
   </data>
   <data name="Appearance.Row.BackdropTint.Description" xml:space="preserve">
-    <value>Adjust the background tint of Windows 10 windows and track notifications (30%–100%). System-rendered window materials on Windows 11 are unaffected.</value>
+    <value>Adjust the background tint of app-drawn surfaces such as Windows 10 windows, context-menu submenus, and track notifications (30%–100%). System-rendered materials on Windows 11 are unaffected.</value>
   </data>
   <data name="Appearance.Row.BackdropTint.Title" xml:space="preserve">
     <value>Material concentration</value>

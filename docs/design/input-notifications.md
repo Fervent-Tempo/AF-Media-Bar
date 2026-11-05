@@ -1,4 +1,4 @@
-<!-- owner: AF Media Bar maintainers | verified_at: 791d2319 | review_by: 2027-03-05 -->
+<!-- owner: AF Media Bar maintainers | verified_at: cab45708 | review_by: 2027-03-05 -->
 
 # 输入、托盘与通知
 
@@ -14,7 +14,8 @@
 
 ## 托盘与提示
 
-- `ShellTrayIconService` 拥有图标和 Shell 通知接口；`MainWindow` 协调菜单和点击意图。托盘菜单复用紧凑浮窗，以当前托盘图标矩形为锚点，不能另建一套。
+- `ShellTrayIconService` 拥有图标和 Shell 通知接口；`MainWindow` 协调菜单和点击意图。托盘与右键菜单使用共享的顶层菜单窗口，以托盘图标、鼠标光标或媒体栏物理边界为锚点；不再为顶层菜单另建 WPF ContextMenu 路径。
+- 菜单窗口允许激活以取得系统材质；关闭后尽力恢复原前台窗口，但外部点击/失焦关闭不抢回用户刚点到的应用。菜单子项走程序绘制 Accent 模糊，保持命中安全。
 - 原生托盘图标是独立设置；开启后按当前单击动作选择 AF/音频/输入设备/音量图形，关闭时用原图标。主题变化、动作切换和设置变化都要刷新 Shell。
 - 换图必须 `NIF_ICON`；失败保留旧图标，不留空。HICON、Icon 和流按资源包所有权释放。
 - 提示只显示手势和结果，不附加第二段曲名/歌手；提示挂在各自封面/文字 ToolTip 实例，不挂根元素、不共用实例。关闭提示或选 Disabled 时不显示全局提示。

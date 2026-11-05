@@ -1,4 +1,4 @@
-<!-- owner: AF Media Bar maintainers | verified_at: 791d2319 | review_by: 2027-03-05 -->
+<!-- owner: AF Media Bar maintainers | verified_at: cab45708 | review_by: 2027-03-05 -->
 
 # 主题与外观
 
@@ -16,7 +16,8 @@
 
 - 材质能力回退链只有一处；调用方传能力，不在窗口、页面或控件里重复分支。原生版本适配留在适配器。
 - 材质应用失败必须退到不透明主题表面，不能把窗口留在透明状态；装饰属性失败不得误判整个材质失败。
-- 非激活窗口统一经 `AttachNonActivatingTransient` 接入 Accent 路径；Popup HWND 不应用 Mica/Acrylic、不制造透明命中，使用不透明 WPF 主题表面。
+- 可获取焦点的顶层菜单使用系统材质；不抢焦点的通知统一经 `AttachNonActivatingTransient` 接入 Accent 路径。
+- 菜单子项仍是 WPF Popup：不应用 DWM Mica/Acrylic，改用程序绘制 Accent 模糊，并以 alpha=1 的命中安全填充和圆角窗口区域避免透明命中；材质失败时退回不透明主题表面。非激活窗口的系统材质只是一块单色，不能把它当作可用回退。
 - 浓度缺失时用默认值（60%），不能把 `null` 当零再夹到下限。
 - 时长、曲线和降级统一由 `MotionPolicy` 决定；关闭系统动画立即落到终态，不保留不可见的连续动画。
 - 透明表面的文字清晰度不能靠 `ClearTypeHint` 声称保证；修改文本渲染、Effect 或像素取整必须验证 96 DPI 与缩放 DPI。
