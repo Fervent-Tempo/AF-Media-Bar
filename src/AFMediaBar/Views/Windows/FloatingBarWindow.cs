@@ -147,7 +147,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _centerPx = new Point(monitor.WorkArea.Left + monitor.WorkArea.Width / 2,
             monitor.WorkArea.Top + monitor.WorkArea.Height / 2);
         _mediaControl.AllowRestConnectionTransition = false;
-        _mediaControl.SuppressedClickSource = () => DateTime.UtcNow < _suppressClickUntil || _mouse.ConsumeSuppressedClick();
+        _mediaControl.SuppressedClickSource = async time =>
+            await _mouse.ConsumeSuppressedClickAsync(MouseButton.Left, time) || DateTime.UtcNow < _suppressClickUntil || !IsOperational;
         _compactFlyout = new TaskbarCompactFlyoutWindow(appearance);
         ConnectInput();
         InitializeExternalFullPanelHandle(externalFullPanelHandleFactory);
@@ -250,9 +251,11 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _mediaControl.BarDragHandleMoved += ArtworkPointerMoved;
         _mediaControl.BarDragHandleReleased += PointerReleased;
         PreviewMouseLeftButtonUp += PointerReleased;
-        PreviewMouseRightButtonUp += (_, args) =>
+        PreviewMouseRightButtonUp += async (_, args) =>
         {
-            if (!IsOperational || DateTime.UtcNow < _suppressClickUntil || _mouse.ConsumeSuppressedClick()) return;
+            args.Handled = true;
+            if (await _mouse.ConsumeSuppressedClickAsync(MouseButton.Right, args.Timestamp) ||
+                !IsOperational || DateTime.UtcNow < _suppressClickUntil) return;
             IsPerformanceMenuRequested = SettingsManager.Current.Experiments.MemoryTools && _mediaControl.IsPerformanceComponentClick(args.OriginalSource as DependencyObject);
             IsBatteryMenuRequested = _mediaControl.IsBatteryComponentClick(args.OriginalSource as DependencyObject);
             _externalFullPanelHandle?.Dismiss(immediate: true);
@@ -279,7 +282,6 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     {
         if (!IsOperational) return;
         if (args.IsLeftButtonDown) EndDrag();
-        if (args.IsRightButtonDown) _suppressClickUntil = DateTime.UtcNow.AddMilliseconds(450);
         var version = _menuEnvironmentVersion;
         try
         {

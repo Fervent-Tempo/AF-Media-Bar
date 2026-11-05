@@ -322,7 +322,6 @@ namespace AFMediaBar.Components
         private TaskbarHoverPalette _taskbarHoverPalette = TaskbarHoverPalettePolicy.Resolve(Colors.White);
         private Color? _appliedTaskbarHoverForeground;
         private IReadOnlyList<QuickLaunchEntry> _quickLaunchEntries = Array.Empty<QuickLaunchEntry>();
-        private DateTime _suppressSurfaceClickUntilUtc;
         private const double TaskbarTrailingMargin = 4;
 
         /// <summary>
@@ -386,12 +385,12 @@ namespace AFMediaBar.Components
 
         /// <summary>
         /// 宿主提供的"这次点击应当被吞掉"查询。组合滚轮（按住鼠标左键或右键再滚动）松键时会合成一次点击，
-        /// 用户按下组合键的意图只是滚轮，因此该点击必须被抑制；判定由全局鼠标钩子完成，控件只负责在点击入口询问。
+        /// 输入服务异步确认本次按压；控件只在点击入口询问，不假设全局消息先于窗口消息。
         /// Host-supplied query for "this click has to be swallowed". Releasing the button after a chord wheel synthesizes a click
-        /// while the user only meant to scroll, so it has to be suppressed; the global mouse hook makes that call and the control
+        /// while the user only meant to scroll, so it has to be suppressed; the input service makes that call and the control
         /// merely asks at its click entries.
         /// </summary>
-        public Func<bool>? SuppressedClickSource { get; set; }
+        public Func<int, Task<bool>>? SuppressedClickSource { get; set; }
         public event EventHandler? OutputDeviceMenuRequested;
         public event EventHandler? InputDeviceMenuRequested;
         public event EventHandler<PlayerSurfaceWheelEventArgs>? OutputDeviceWheelRequested;
@@ -2267,9 +2266,11 @@ namespace AFMediaBar.Components
             DesiredSizeChanged?.Invoke(this, new MediaBarSizeRequestEventArgs(request));
         }
 
-        private void SongImageBorder_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private async void SongImageBorder_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (e.ChangedButton != MouseButton.Left || ShouldSuppressSurfaceClick())
+            if (e.ChangedButton != MouseButton.Left) return;
+            e.Handled = true;
+            if (await ShouldSuppressSurfaceClickAsync(e.Timestamp))
             {
                 CancelQuickLaunchInteraction();
                 return;
@@ -2369,10 +2370,6 @@ namespace AFMediaBar.Components
                 var leftDown = Mouse.LeftButton == MouseButtonState.Pressed;
                 var rightDown = Mouse.RightButton == MouseButtonState.Pressed;
                 var shiftDown = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
-                var modifier = EffectiveInteraction.Normalize().Modifier;
-                if ((modifier == InteractionModifier.LeftMouseButton && leftDown) ||
-                    (modifier == InteractionModifier.RightMouseButton && rightDown))
-                    _suppressSurfaceClickUntilUtc = DateTime.UtcNow.AddMilliseconds(350);
                 WheelRequested?.Invoke(this, new PlayerSurfaceWheelEventArgs(e.Delta, shiftDown, leftDown, rightDown));
                 e.Handled = true;
             }
@@ -2437,9 +2434,11 @@ namespace AFMediaBar.Components
         /// The rest-layer device button was clicked: it raises the same request as the hover layer's button of the same name, so the menu has
         /// exactly one implementation, and the anchor becomes this widget itself.
         /// </summary>
-        private void TaskbarOutputDeviceSurface_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private async void TaskbarOutputDeviceSurface_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (e.ChangedButton != MouseButton.Left || ShouldSuppressSurfaceClick())
+            if (e.ChangedButton != MouseButton.Left) return;
+            e.Handled = true;
+            if (await ShouldSuppressSurfaceClickAsync(e.Timestamp))
             {
                 return;
             }
@@ -2450,9 +2449,11 @@ namespace AFMediaBar.Components
         }
 
         /// <summary>静置层音量钮被点击：与悬停层的同名按钮走同一条请求，锚点换成这个小组件自己。/ The rest-layer volume button was clicked; it raises the same request as the hover layer's button of the same name, with this widget as the anchor.</summary>
-        private void TaskbarVolumeSurface_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private async void TaskbarVolumeSurface_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (e.ChangedButton != MouseButton.Left || ShouldSuppressSurfaceClick())
+            if (e.ChangedButton != MouseButton.Left) return;
+            e.Handled = true;
+            if (await ShouldSuppressSurfaceClickAsync(e.Timestamp))
             {
                 return;
             }
@@ -2510,9 +2511,11 @@ namespace AFMediaBar.Components
             InputDeviceInfoRequested?.Invoke(this, EventArgs.Empty);
         }
 
-        private void TaskbarInputDeviceSurface_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private async void TaskbarInputDeviceSurface_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (e.ChangedButton != MouseButton.Left || ShouldSuppressSurfaceClick())
+            if (e.ChangedButton != MouseButton.Left) return;
+            e.Handled = true;
+            if (await ShouldSuppressSurfaceClickAsync(e.Timestamp))
             {
                 return;
             }
@@ -2565,10 +2568,11 @@ namespace AFMediaBar.Components
             }
         }
 
-        private void SongTitleContainer_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private async void SongTitleContainer_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (!_isConnected || e.ChangedButton != MouseButton.Left || ShouldSuppressSurfaceClick())
-                return;
+            if (!_isConnected || e.ChangedButton != MouseButton.Left) return;
+            e.Handled = true;
+            if (await ShouldSuppressSurfaceClickAsync(e.Timestamp)) return;
 
             var action = IsBarPresentation
                 ? PlayerClickBindingPolicy.Resolve(EffectiveInteraction, artwork: false)
@@ -2578,15 +2582,15 @@ namespace AFMediaBar.Components
         }
 
         /// <summary>
-        /// 本次点击是否应当被吞掉：组合滚轮结束后的合成点击，或宿主设定的一次性抑制窗口。
-        /// 查询一律执行，因为抑制标记是一次性的——不取走它，之后真正的点击会被误吞。
-        /// Whether this click has to be swallowed: the synthesized one after a chord wheel, or a one-shot window set by the host.
-        /// The query always runs, because the suppression flag is one-shot: leaving it in place would eat a later, real click.
+        /// 异步确认当前按压；宿主或媒体来源在等待期间改变时，丢弃旧点击。
         /// </summary>
-        private bool ShouldSuppressSurfaceClick()
+        private async Task<bool> ShouldSuppressSurfaceClickAsync(int timestamp)
         {
-            var chordWheelClick = SuppressedClickSource?.Invoke() ?? false;
-            return chordWheelClick || DateTime.UtcNow < _suppressSurfaceClickUntilUtc;
+            var snapshot = _snapshot;
+            var source = PresentationSource.FromVisual(this);
+            var chordWheelClick = SuppressedClickSource is { } query && await query(timestamp);
+            return chordWheelClick || !IsLoaded || !ReferenceEquals(source, PresentationSource.FromVisual(this)) ||
+                snapshot.IsConnected != _snapshot.IsConnected || snapshot.SourceId != _snapshot.SourceId;
         }
     }
 }

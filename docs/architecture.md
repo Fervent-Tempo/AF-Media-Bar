@@ -76,7 +76,7 @@ AppSettings、设置枚举/事件和 SettingsManager 门面分文件维护；设
 - 不持锁调用 Dispatcher、外部组件、Explorer/UIA 或用户回调。后台结果在排队和应用处核对取消、代际及释放状态，旧结果不能覆盖新状态。
 - 设置模型写入与后台文件保存分开：模型事件可能同步通知绑定集合，必须在 UI 线程写入。
 - 状态或资源替换前停止旧动画、计时器和请求；关键释放不依赖已经停止的 Dispatcher 续体。
-- App.OnExit 是最终退出边界。关闭菜单/Popup/窗口，取消恢复任务，再按依赖顺序停止 Hook、托盘、媒体来源与 Host；ContextMenu 不属于 Application.Windows，须显式关闭。
+- App.OnExit 是最终退出边界。关闭菜单/Popup/窗口，取消恢复任务，再按依赖顺序停止 Raw Input 监听、托盘、媒体来源与 Host；ContextMenu 不属于 Application.Windows，须显式关闭。
 - Host 停止和释放有超时兜底；需用的服务在容器释放前取得。退出交接只做有界等待，不在 UI 线程重新计算安装包哈希。
 
 具体平台时序与真实场景由受影响功能核实。文本扫描、构建和纯策略测试不能证明完整生命周期安全。

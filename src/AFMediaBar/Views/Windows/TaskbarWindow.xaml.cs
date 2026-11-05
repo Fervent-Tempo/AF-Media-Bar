@@ -89,7 +89,6 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private bool _isDragging;
     private bool _isDragPending;
     private bool _isTaskManagerClickPending;
-    private DateTime _suppressContextMenuUntilUtc;
     private DateTime _skipOccupiedAreaProbeUntilUtc;
     private bool _hasSafePlacement;
     private WindowMode? _appliedWindowMode;
@@ -192,7 +191,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         // 组合滚轮结束时的合成点击必须被吞掉：静置层点击与右键菜单都要问同一个判定，它们分别属于控件与宿主。
         // The click synthesized when a chord wheel ends has to be swallowed: the rest-layer click and the context menu both ask the
         // same authority, and they live in the control and the host respectively.
-        MediaControl.SuppressedClickSource = _mouseInputMonitor.ConsumeSuppressedClick;
+        MediaControl.SuppressedClickSource = time => _mouseInputMonitor.ConsumeSuppressedClickAsync(MouseButton.Left, time);
         _compactFlyout = new TaskbarCompactFlyoutWindow(appearanceService);
         _compactFlyout.QuickLaunchSelected += MediaControl_QuickLaunchRequested;
         _compactFlyout.OutputDeviceSelected += MediaControl_OutputDeviceSelected;
@@ -224,13 +223,13 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         // 陈旧捕获看门狗挂在 Window 而不是 MediaControl 上：MediaControl 的预览处理器收不到 Popup 树内的输入路由，
         // 而陈旧捕获恰恰会把命中重定向进主树——窗口级的预览隧道无论如何都能看到每一次移动（见 HealStaleMediaControlCapture）。
         // 但窗口隧道也不是万能的：SubTree 捕获残留期间 WPF 把命中测试沙盒进捕获子树，连窗口隧道都收不到事件——
-        // 因此再挂一条全局左键抬起的钩子事件（MouseInputMonitor_OnLeftButtonReleased），那是唯一不受 WPF 捕获
+        // 因此另订阅 Raw Input 左键抬起事件（MouseInputMonitor_OnLeftButtonReleased），不受 WPF 捕获
         // 影响的输入通道，「抬起」也是每次拖动尝试的确定性终点。
         // The stale-capture watchdog hooks the Window rather than MediaControl: the control's preview handlers never see input routed
         // inside Popup trees, while a stale capture redirects hit-testing into the main tree — the window-level tunnel observes every
         // move either way (see HealStaleMediaControlCapture). Yet the window tunnel is not omnipotent either: while a SubTree capture
         // lingers, WPF sandboxes hit-testing inside the captured subtree and even the window tunnel receives nothing — hence the extra
-        // global left-release hook (MouseInputMonitor_OnLeftButtonReleased), the one input channel immune to WPF captures, and "release"
+        // global Raw Input release (MouseInputMonitor_OnLeftButtonReleased), the input channel immune to WPF captures, and "release"
         // being the deterministic endpoint of every drag attempt.
         MediaControl.ArtworkPointerMoved += MediaControl_PreviewMouseMove;
         MediaControl.ArtworkPointerReleased += MediaControl_PreviewMouseLeftButtonUp;
@@ -1528,7 +1527,6 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             EndTaskbarDrag();
         if (e.IsRightButtonDown)
         {
-            _suppressContextMenuUntilUtc = DateTime.UtcNow.AddMilliseconds(450);
             PlayerMenu.IsOpen = false;
         }
 
@@ -2154,7 +2152,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         e.Handled = true;
     }
 
-    private void MediaControl_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    private async void MediaControl_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         if (MediaControl.HasComponentGesture) return;
         if (e.ChangedButton != MouseButton.Left)
@@ -2169,7 +2167,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         // locked inside the captured subtree — the artwork, re-parented into its Popup, sits outside it and never receives
         // another mouse event, killing hover outright. Legitimate captures have ended by button-up, so this is a pure repair
         // layer that never steals a control's own capture (those hang on children; IsMouseCaptured holds only for MediaControl).
-        // 放大 Popup 显式转发抬起；全局抬起钩子继续兜底处理未送达的释放。
+        // 放大 Popup 显式转发抬起；Raw Input 继续兜底处理未送达的释放。
         MediaControl.ReleaseArtworkPointerCapture();
         if (MediaControl.IsMouseCaptured)
             MediaControl.ReleaseMouseCapture();
@@ -2177,7 +2175,9 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         if (_isTaskManagerClickPending)
         {
             _isTaskManagerClickPending = false;
-            var suppressed = _mouseInputMonitor.ConsumeSuppressedClick();
+            e.Handled = true;
+            var suppressed = await _mouseInputMonitor.ConsumeSuppressedClickAsync(MouseButton.Left, e.Timestamp);
+            if (_isClosing) return;
             // 指针可能已经移到别的元素上，因此抬起时重新判定命中，而不是相信按下时的结论。
             // The pointer may have moved onto another element, so the hit is re-evaluated on release instead of trusting the
             // verdict from the press.
@@ -2339,7 +2339,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private void TaskbarWindow_PreviewMouseMove(object sender, MouseEventArgs e) => HealStaleMediaControlCapture();
 
     /// <summary>
-    /// 全局左键抬起（低级钩子投递）后跑一遍陈旧捕获看门狗。这是窗口隧道失灵时的第二条通道：SubTree 捕获残留期间
+    /// 全局左键抬起（Raw Input 投递）后跑一遍陈旧捕获看门狗。这是窗口隧道失灵时的第二条通道：SubTree 捕获残留期间
     /// WPF 把命中测试沙盒进捕获子树，TaskbarWindow_PreviewMouseMove 一件事件都收不到，看门狗若只靠它驱动就与
     /// 病灶同归于尽；钩子在 WPF 之外观察输入，「抬起」又是每次拖动尝试的确定性终点。检查延迟到 Background 一拍：
     /// 让 WPF 先把本次抬起路由完毕（ButtonBase 等控件的合法捕获在此刻已自行释放），修复层才不会抢走按住期间
@@ -2453,7 +2453,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     internal bool IsPerformanceMenuRequested { get; private set; }
     internal bool IsBatteryMenuRequested { get; private set; }
 
-    private void Window_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    private async void Window_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
         // 阻止 WPF 把 Popup 绑定到会随 Explorer 收起的任务栏子窗口。
         e.Handled = true;
@@ -2466,8 +2466,10 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         // 组合滚轮结束时的松键同样会合成右键菜单：判定一次取走标记，避免"按住右键滚动再松开"弹出菜单。
         // Releasing the button after a chord wheel also synthesizes the context menu, so the flag is taken once here to stop a
         // "hold the right button, scroll, release" gesture from opening the menu.
-        var chordWheelClick = _mouseInputMonitor.ConsumeSuppressedClick();
-        if (chordWheelClick || DateTime.UtcNow < _suppressContextMenuUntilUtc)
+        var environmentVersion = _menuEnvironmentVersion;
+        var chordWheelClick = e.CursorLeft >= 0 && e.CursorTop >= 0 &&
+            await _mouseInputMonitor.ConsumeSuppressedClickAsync(MouseButton.Right);
+        if (!CanPublishMenu(environmentVersion) || chordWheelClick)
         {
             e.Handled = true;
             PlayerMenu.IsOpen = false;

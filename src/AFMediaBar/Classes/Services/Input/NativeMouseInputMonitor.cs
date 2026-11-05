@@ -1,383 +1,268 @@
+// 应用拥有 Raw Input 接收与点击确认；UI 只表达输入意图，不进入系统低级 Hook 链。
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Interop;
+using Microsoft.Extensions.Hosting;
 
 namespace AFMediaBar.Classes.Services;
 
-/// <summary>托盘滚轮事件参数。/ Tray-wheel event arguments.</summary>
+/// <summary>托盘滚轮时的修饰键快照。</summary>
 public sealed record TrayWheelEventArgs(int Delta, bool IsShiftDown, bool IsLeftButtonDown, bool IsRightButtonDown);
-
-/// <summary>全局左键事件的屏幕坐标。/ Screen coordinates for a global left-button event.</summary>
+/// <summary>全局左键事件的物理屏幕坐标。</summary>
 public sealed record NativeMouseButtonEventArgs(int ScreenX, int ScreenY);
-
-// 保存按下时的 HWND 所属链，避免 UI 收到通知前下拉窗口已关闭，导致内部点击被误判。
+/// <summary>按下时的屏幕坐标与 HWND 所属链快照；链在 Raw Input 线程采集，UI 只读。</summary>
 internal sealed record NativeMousePressEventArgs(int ScreenX, int ScreenY, IReadOnlyList<nint> WindowChain, long CapturedAt);
 
-/// <summary>
-/// 通过低级鼠标钩子监听托盘滚轮和全局左键，不拦截系统输入。
-/// Watches tray-wheel and global left-button input without consuming system input.
-/// </summary>
-public sealed class NativeMouseInputMonitor : IDisposable
+/// <summary>独立 Raw Input 线程观察鼠标和 Shift，异步确认组合滚轮后的松键点击。</summary>
+public sealed class NativeMouseInputMonitor : IHostedService, IDisposable
 {
-    private const int WmMiddleButtonDown = 0x0207;
-    private const int WmExtraButtonDown = 0x020B;
+    // 左/右/中/侧键按下的 RAWMOUSE 标志，与旧钩子的 WM_*BUTTONDOWN 集合一致。
+    private const ushort PressMask = 0x0001 | 0x0004 | 0x0010 | 0x0040 | 0x0100;
     private readonly ShellTrayIconService _trayIcon;
-    private readonly NativeMethods.LowLevelMouseProc _callback;
-    private readonly Dispatcher _dispatcher;
     private readonly AppLogService? _log;
-    private readonly RepeatedFailureReporter _callbackFailures = new();
-    private int _failureReportQueued;
-    private readonly object _lifecycleGate = new();
-    private readonly ManualResetEventSlim _messageLoopReady = new(false);
-    private Thread? _hookThread;
-    private uint _hookThreadId;
-    private IntPtr _hook;
+    private readonly PowerStateMonitor? _power;
+    private readonly Dispatcher _dispatcher;
+    private readonly RawMouseInputSource _source;
+    private readonly RepeatedFailureReporter _failures = new();
+    private readonly object _gate = new();
+    private readonly MousePressTracker _rawLeft = new();
+    private readonly MousePressTracker _rawRight = new();
+    private readonly MousePressTracker _localLeft = new();
+    private readonly MousePressTracker _localRight = new();
+    private readonly Dictionary<IntPtr, int> _devices = [];
+    private readonly Queue<Notification> _wheels = new();
+    private readonly Queue<Notification> _buttons = new();
+    private bool _posted;
+    private bool _leftDown;
+    private bool _rightDown;
+    private int _initialMouseButtons;
     private volatile bool _disposed;
-    private bool _isLeftButtonDown;
-    private bool _isRightButtonDown;
-    // 这三个字段由钩子线程写、由 UI 线程读：钩子回调一定先于目标窗口的鼠标消息执行，因此 UI 线程读到的状态
-    // 属于"这次按压"的结果，不依赖 Dispatcher 投递顺序。
-    // These three fields are written on the hook thread and read on the UI thread: a hook callback always runs before the target
-    // window's mouse message, so what the UI thread reads describes the very press it is handling and does not depend on the
-    // order dispatcher posts are delivered in.
-    private bool _chordWheelDuringPress;
-    private long _suppressNextClickUntilTicks;
-#if DEBUG
-    private const uint DiagnosticHeartbeatMessage = NativeMethods.WM_APP + 72;
-    private DiagnosticState? _diagnosticState;
+    private int _generation;
+    private uint _minimumInputTime = unchecked((uint)Environment.TickCount);
+    private InputManager? _inputManager;
 
-    internal void SetDiagnosticEnabled(bool enabled)
+    /// <summary>组合根组装唯一监听器，Host 负责启动和停止。</summary>
+    public NativeMouseInputMonitor(ShellTrayIconService trayIcon, AppLogService? log = null, PowerStateMonitor? power = null)
+        : this(trayIcon, Application.Current.Dispatcher, log, power) { }
+
+    internal NativeMouseInputMonitor(ShellTrayIconService trayIcon, Dispatcher dispatcher, AppLogService? log = null, PowerStateMonitor? power = null)
     {
-        // 回调只写捕获的这一代；交换引用后，旧回调无需锁也不会污染新记录。
-        Interlocked.Exchange(ref _diagnosticState, enabled ? new DiagnosticState() : null);
-    }
-
-    internal void RequestDiagnosticHeartbeat()
-    {
-        var state = Volatile.Read(ref _diagnosticState);
-        if (state is null || _disposed || _hookThreadId == 0 || _hook == IntPtr.Zero) return;
-        var now = Stopwatch.GetTimestamp();
-        if (Interlocked.CompareExchange(ref state.Pending, now, 0) != 0) return;
-        if (!NativeMethods.PostThreadMessage(_hookThreadId, DiagnosticHeartbeatMessage, new UIntPtr(unchecked((ulong)now)), IntPtr.Zero))
-            Interlocked.CompareExchange(ref state.Pending, 0, now);
-    }
-
-    internal (bool Installed, double PendingMs, double HeartbeatMaxMs, double CallbackMaxMs, double ForwardMaxMs) ReadDiagnosticState()
-    {
-        var state = Volatile.Read(ref _diagnosticState);
-        if (state is null) return (_hook != IntPtr.Zero && !_disposed, 0, 0, 0, 0);
-        var pending = Interlocked.Read(ref state.Pending);
-        return (_hook != IntPtr.Zero && !_disposed, pending == 0 ? 0 : Stopwatch.GetElapsedTime(pending).TotalMilliseconds,
-            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref state.HeartbeatMax, 0)).TotalMilliseconds,
-            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref state.CallbackMax, 0)).TotalMilliseconds,
-            Stopwatch.GetElapsedTime(0, Interlocked.Exchange(ref state.ForwardMax, 0)).TotalMilliseconds);
-    }
-
-    private static void UpdateDiagnosticMaximum(ref long target, long value)
-    {
-        var previous = Interlocked.Read(ref target);
-        while (value > previous)
-        {
-            var observed = Interlocked.CompareExchange(ref target, value, previous);
-            if (observed == previous) break;
-            previous = observed;
-        }
-    }
-
-    private sealed class DiagnosticState
-    {
-        internal long Pending;
-        internal long HeartbeatMax;
-        internal long CallbackMax;
-        internal long ForwardMax;
-    }
-#endif
-
-    /// <summary>
-    /// 组合滚轮在本次按压中是否已经用过；用于判断"松开后合成的那次点击"是否需要抑制。
-    /// Whether a chord wheel was consumed during the current press, used to decide whether the click synthesized on release has to
-    /// be swallowed.
-    /// </summary>
-    private const int SuppressedClickWindowMilliseconds = 750;
-
-    /// <summary>创建全局鼠标监听器。/ Creates the global mouse monitor.</summary>
-    public NativeMouseInputMonitor(ShellTrayIconService trayIcon, AppLogService? log = null)
-    {
-        _trayIcon = trayIcon;
-        _callback = OnMouseEvent;
-        _dispatcher = Application.Current.Dispatcher;
-        _log = log;
+        _trayIcon = trayIcon; _log = log; _power = power;
+        _dispatcher = dispatcher;
+        _source = new(OnRawMouse, OnDeviceRemoved, ReportFailure);
     }
 
     public event EventHandler<TrayWheelEventArgs>? WheelChanged;
     public event EventHandler<NativeMouseButtonEventArgs>? LeftButtonPressed;
-    internal event EventHandler<NativeMousePressEventArgs>? ButtonPressed;
-
-    /// <summary>
-    /// 全局左键抬起（钩子线程观察到后投递到 UI 线程）。陈旧鼠标捕获存续期间 WPF 会把命中测试整体锁进捕获子树，
-    /// 主窗口的预览隧道一件事件都收不到——宿主的修复层挂在这条钩子事件上才能在「抬起」这个确定性终点仍然运行。
-    /// Global left-button release (observed on the hook thread, posted to the UI thread). While a stale mouse capture lasts, WPF
-    /// locks hit-testing inside the captured subtree and the main window's preview tunnel receives nothing at all — the host's
-    /// repair layer hooks this hook-fed event so it still runs at the deterministic endpoint of a release.
-    /// </summary>
     public event EventHandler<NativeMouseButtonEventArgs>? LeftButtonReleased;
+    internal event EventHandler<NativeMousePressEventArgs>? ButtonPressed;
+    public bool IsLeftButtonDown => KeyDown(1);
+    public bool IsRightButtonDown => KeyDown(2);
+    public bool IsShiftDown => KeyDown(NativeMethods.VK_SHIFT);
+    internal bool IsRawInputRegistered => _source.Registered;
+    private static bool KeyDown(int key) => (NativeMethods.GetAsyncKeyState(key) & 0x8000) != 0;
 
-    /// <summary>鼠标左键当前是否按住（钩子线程维护的物理状态）。 / Whether the left button is currently held, as tracked by the hook thread.</summary>
-    public bool IsLeftButtonDown => _isLeftButtonDown;
-
-    /// <summary>鼠标右键当前是否按住。 / Whether the right button is currently held.</summary>
-    public bool IsRightButtonDown => _isRightButtonDown;
-
-    /// <summary>读取物理屏幕坐标，供独立输入窗口检查跨 HWND 的指针衔接。</summary>
     public bool TryGetPointerPosition(out Point position)
     {
-        if (NativeMethods.GetCursorPos(out var point))
-        {
-            position = new Point(point.X, point.Y);
-            return true;
-        }
+        if (NativeMethods.GetCursorPos(out var point)) { position = new(point.X, point.Y); return true; }
         position = default;
         return false;
     }
 
-    /// <summary>
-    /// Shift 当前是否按住。组合键可能是 Shift，而托盘图标与任务栏窗口都不接收键盘事件，因此这里直接读物理键状态。
-    /// Whether Shift is currently held. The chord key can be Shift, and neither the tray icon nor the taskbar window receives key
-    /// events, so the physical key state is read directly.
-    /// </summary>
-    public bool IsShiftDown => (NativeMethods.GetAsyncKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0;
+    public bool IsPointerOverTray() => _trayIcon.TryGetBounds(out var bounds) &&
+        NativeMethods.GetCursorPos(out var point) && bounds.Contains(point.X, point.Y);
 
-    /// <summary>
-    /// 指针当前是否停在托盘图标上。悬停状态只能由这里判断：托盘图标是 Shell 图标，
-    /// 它的悬停提示不会在指针离开时通知我们，Win32 调用也留在本服务里。
-    /// Whether the pointer currently sits on the tray icon. Only this service can judge that: the icon belongs to the Shell, its
-    /// hover bubble never tells us when the pointer left, and Win32 calls stay inside this service.
-    /// </summary>
-    public bool IsPointerOverTray() =>
-        _trayIcon.TryGetBounds(out var bounds) &&
-        NativeMethods.GetCursorPos(out var point) &&
-        bounds.Contains(point.X, point.Y);
-
-    /// <summary>
-    /// 取走"这一次点击应当被抑制"的标记。组合滚轮（按住鼠标左键或右键再滚动）结束时的松键会合成一次点击或右键菜单，
-    /// 用户按下组合键的意图只是滚轮，因此该点击必须被吞掉。标记由钩子线程在松键时写入，UI 线程在处理该点击时取走，
-    /// 并带一个有界时限：松键后没有落在我们表面上的点击时，标记会自行过期，不会误吞之后真正的点击。
-    /// Takes the "this click must be swallowed" flag. Releasing the button after a chord wheel (a wheel scrolled while a mouse
-    /// button was held) synthesizes a click or a context menu, while the user only meant to scroll, so that click has to be
-    /// swallowed. The hook thread sets the flag on release and the UI thread takes it while handling that click; it also carries a
-    /// bounded deadline, so a release that produced no click on our surfaces expires instead of eating a later, real one.
-    /// </summary>
-    public bool ConsumeSuppressedClick()
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
-        var deadline = Interlocked.Read(ref _suppressNextClickUntilTicks);
-        if (deadline == 0)
-            return false;
-
-        Interlocked.Exchange(ref _suppressNextClickUntilTicks, 0);
-        return Environment.TickCount64 <= deadline;
-    }
-
-    /// <summary>安装低级鼠标钩子。/ Installs the low-level mouse hook.</summary>
-    public void Start()
-    {
-        lock (_lifecycleGate)
+        if (_disposed) return;
+        await _dispatcher.InvokeAsync(() =>
         {
-            if (_disposed || _hookThread is not null)
-            {
-                return;
-            }
-
-            // A WH_MOUSE_LL callback is dispatched to the thread that installed it. Installing
-            // on the WPF thread makes all system mouse input wait while startup is mounting the
-            // taskbar window and initializing media services, which causes the visible freeze.
-            _hookThread = new Thread(RunHookMessageLoop)
-            {
-                IsBackground = true,
-                Name = "AFMediaBar.MouseHook"
-            };
-            _hookThread.Start();
-        }
-    }
-
-    private void RunHookMessageLoop()
-    {
+            if (_disposed || _inputManager is not null) return;
+            _inputManager = InputManager.Current;
+            _inputManager.PreProcessInput += OnLocalInput;
+            if (_power is not null) _power.StateChanged += OnPowerChanged;
+        }, DispatcherPriority.Send, cancellationToken);
         try
         {
-            _hookThreadId = NativeMethods.GetCurrentThreadId();
-            // PostThreadMessage requires the destination thread to have created its queue.
-            NativeMethods.PeekMessage(out _, IntPtr.Zero, 0, 0, NativeMethods.PM_NOREMOVE);
-            if (_disposed)
+            await _source.Start().WaitAsync(TimeSpan.FromSeconds(3), cancellationToken);
+            var initialButtons = (IsLeftButtonDown ? 1 : 0) | (IsRightButtonDown ? 2 : 0);
+            lock (_gate)
             {
-                _messageLoopReady.Set();
-                return;
-            }
-
-            _hook = NativeMethods.SetWindowsHookEx(
-                NativeMethods.WH_MOUSE_LL,
-                _callback,
-                NativeMethods.GetModuleHandle(null),
-                0);
-            _messageLoopReady.Set();
-            if (_hook == IntPtr.Zero)
-            {
-                Debug.WriteLine($"[NativeMouseInputMonitor] Hook failed: {Marshal.GetLastWin32Error()}");
-                return;
-            }
-
-            while (NativeMethods.GetMessage(out var message, IntPtr.Zero, 0, 0) > 0)
-            {
-#if DEBUG
-                if (message.Message == DiagnosticHeartbeatMessage)
+                if (_devices.Count == 0)
                 {
-                    var sent = unchecked((long)message.WParam.ToUInt64());
-                    var state = Volatile.Read(ref _diagnosticState);
-                    if (state is not null && Interlocked.CompareExchange(ref state.Pending, 0, sent) == sent)
-                        UpdateDiagnosticMaximum(ref state.HeartbeatMax, Stopwatch.GetTimestamp() - sent);
-                    continue;
+                    var now = unchecked((uint)Environment.TickCount);
+                    _initialMouseButtons = initialButtons;
+                    _leftDown = (_initialMouseButtons & 1) != 0; _rightDown = (_initialMouseButtons & 2) != 0;
+                    _rawLeft.SetDown(_leftDown, now); _rawRight.SetDown(_rightDown, now);
                 }
-#endif
-                NativeMethods.TranslateMessage(ref message);
-                NativeMethods.DispatchMessage(ref message);
             }
+            if (_source.Registered) _log?.Info("Input", "Raw Input 监听已启动（仅鼠标），未安装低级鼠标 Hook。");
         }
-        finally
-        {
-            var hook = Interlocked.Exchange(ref _hook, IntPtr.Zero);
-            if (hook != IntPtr.Zero)
-            {
-                NativeMethods.UnhookWindowsHookEx(hook);
-            }
-
-            _hookThreadId = 0;
-        }
-    }
-
-    private IntPtr OnMouseEvent(int code, IntPtr wParam, IntPtr lParam)
-    {
-#if DEBUG
-        var diagnostic = Volatile.Read(ref _diagnosticState);
-        var diagnosticStart = diagnostic is not null ? Stopwatch.GetTimestamp() : 0;
-#endif
-        try
-        {
-            if (code >= 0)
-            {
-                var data = Marshal.PtrToStructure<NativeMethods.MSLLHOOKSTRUCT>(lParam);
-                var message = wParam.ToInt32();
-                if (message == NativeMethods.WM_LBUTTONDOWN)
-                {
-                    _isLeftButtonDown = true;
-                    Post(() => LeftButtonPressed?.Invoke(
-                        this,
-                        new NativeMouseButtonEventArgs(data.Point.X, data.Point.Y)));
-                }
-                else if (message == NativeMethods.WM_LBUTTONUP)
-                {
-                    _isLeftButtonDown = false;
-                    MarkChordWheelClickSuppression();
-                    Post(() => LeftButtonReleased?.Invoke(
-                        this,
-                        new NativeMouseButtonEventArgs(data.Point.X, data.Point.Y)));
-                }
-                else if (message == NativeMethods.WM_RBUTTONDOWN)
-                {
-                    _isRightButtonDown = true;
-                }
-                else if (message == NativeMethods.WM_RBUTTONUP)
-                {
-                    _isRightButtonDown = false;
-                    MarkChordWheelClickSuppression();
-                }
-                else if (message == NativeMethods.WM_MOUSEWHEEL)
-                {
-                    // 组合滚轮在本次按压里出现过就记账，等松键时把合成的那次点击抑制掉；这里只记录状态，不拦截输入。
-                    // Note a chord wheel inside this press so the synthesized click can be swallowed on release; this only records
-                    // state and never consumes system input.
-                    if (_isLeftButtonDown || _isRightButtonDown)
-                        _chordWheelDuringPress = true;
-
-                    var delta = unchecked((short)(data.MouseData >> 16));
-                    var screenX = data.Point.X;
-                    var screenY = data.Point.Y;
-                    var isShiftDown = (NativeMethods.GetAsyncKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0;
-                    var isLeftButtonDown = _isLeftButtonDown;
-                    var isRightButtonDown = _isRightButtonDown;
-                    Post(() =>
-                    {
-                        if (_trayIcon.TryGetBounds(out var bounds) && bounds.Contains(screenX, screenY))
-                        {
-                            WheelChanged?.Invoke(this, new TrayWheelEventArgs(
-                                delta,
-                                isShiftDown,
-                                isLeftButtonDown,
-                                isRightButtonDown));
-                        }
-                    });
-                }
-                if (message is NativeMethods.WM_LBUTTONDOWN or NativeMethods.WM_RBUTTONDOWN or WmMiddleButtonDown or WmExtraButtonDown)
-                    PublishButtonPress(data.Point.X, data.Point.Y);
-            }
-        }
+        catch (OperationCanceledException) { _source.Dispose(); throw; }
         catch (Exception exception)
         {
-            // 异常格式化与日志也不能占用输入链；最多保留一项后台报告，不逐次积压任务。
-            if (Interlocked.CompareExchange(ref _failureReportQueued, 1, 0) == 0 &&
-                !ThreadPool.UnsafeQueueUserWorkItem(static state =>
+            _source.Dispose();
+            _log?.Error("Input", "Raw Input 注册失败，托盘滚轮与全局点击判定将不可用。", exception);
+        }
+    }
+
+    /// <summary>先排空已排队的 Raw Input，再按本次按压确认；不阻塞 UI 或系统输入。</summary>
+    public async Task<bool> ConsumeSuppressedClickAsync(MouseButton button = MouseButton.Left, int? timestamp = null)
+    {
+        if (_disposed) return true;
+        var generation = Volatile.Read(ref _generation);
+        var clickTime = unchecked((uint)(timestamp ?? NativeMethods.GetMessageTime()));
+        uint? floor;
+        lock (_gate)
+        {
+            if (unchecked((int)(clickTime - _minimumInputTime)) < 0) return true;
+            floor = timestamp.HasValue ? Local(button).StartedBefore(clickTime) : null;
+        }
+        if (_source.Registered)
+        {
+            try
+            {
+                // 同步失败按“未抑制”处理：Raw Input 线程异常不应吞掉真实点击。
+                if (!await _source.SynchronizeAsync().WaitAsync(TimeSpan.FromMilliseconds(250)))
                 {
-                    try
-                    {
-                        if (!state.Monitor._disposed)
-                            state.Monitor._callbackFailures.Report(state.Monitor._log, "Input", "mouse-hook",
-                                "全局鼠标监听回调失败", state.Exception);
-                    }
-                    catch { /* 故障报告不能引发新的后台未处理异常。 */ }
-                    finally { Interlocked.Exchange(ref state.Monitor._failureReportQueued, 0); }
-                }, (Monitor: this, Exception: exception), preferLocal: false))
-                Interlocked.Exchange(ref _failureReportQueued, 0);
+                    ReportFailure(new TimeoutException("Raw Input 同步失败，未确认本次点击是否应被抑制。"));
+                    return false;
+                }
+            }
+            catch (TimeoutException exception) { ReportFailure(exception); return false; }
         }
-        finally
+        if (_disposed || generation != Volatile.Read(ref _generation)) return true;
+        lock (_gate)
         {
-            // 钩子只观察托盘图标命中，任何路径都必须继续传递输入。
-            // The hook only observes tray hits; every path must forward the input.
+            // 两份账本都消费，不能因短路留下另一份标记，误吞下一次真实点击。
+            var raw = Raw(button).Consume(clickTime, floor);
+            var local = Local(button).Consume(clickTime);
+            return raw | local;
         }
-
-#if DEBUG
-        var forwardStart = diagnosticStart != 0 ? Stopwatch.GetTimestamp() : 0;
-        if (diagnostic is not null) UpdateDiagnosticMaximum(ref diagnostic.CallbackMax, forwardStart - diagnosticStart);
-#endif
-        var result = NativeMethods.CallNextHookEx(_hook, code, wParam, lParam);
-#if DEBUG
-        if (diagnostic is not null) UpdateDiagnosticMaximum(ref diagnostic.ForwardMax, Stopwatch.GetTimestamp() - forwardStart);
-#endif
-        return result;
     }
 
-    /// <summary>
-    /// 松键时结算"这次按压里是否用过组合滚轮"。用过就给出一个有界的抑制窗口，供紧接着的合成点击或右键菜单取走。
-    /// Settles whether a chord wheel happened inside the press that just ended. If it did, a bounded suppression window is opened
-    /// for the synthesized click or context menu that follows.
-    /// </summary>
-    private void MarkChordWheelClickSuppression()
-    {
-        if (!_chordWheelDuringPress)
-            return;
+    private MousePressTracker Raw(MouseButton button) => button == MouseButton.Right ? _rawRight : _rawLeft;
+    private MousePressTracker Local(MouseButton button) => button == MouseButton.Right ? _localRight : _localLeft;
 
-        _chordWheelDuringPress = false;
-        Interlocked.Exchange(
-            ref _suppressNextClickUntilTicks,
-            Environment.TickCount64 + SuppressedClickWindowMilliseconds);
+    private void OnLocalInput(object sender, PreProcessInputEventArgs args)
+    {
+        if (_disposed) return;
+        var input = args.StagingItem.Input;
+        lock (_gate)
+        {
+            if (unchecked((int)(unchecked((uint)input.Timestamp) - _minimumInputTime)) < 0) return;
+            if (input is MouseButtonEventArgs button && button.ChangedButton is MouseButton.Left or MouseButton.Right)
+            {
+                if (input.RoutedEvent == Mouse.PreviewMouseDownEvent) Local(button.ChangedButton).SetDown(true, unchecked((uint)button.Timestamp));
+                if (input.RoutedEvent == Mouse.PreviewMouseUpEvent) Local(button.ChangedButton).SetDown(false, unchecked((uint)button.Timestamp));
+            }
+            else if (input is MouseWheelEventArgs wheel && input.RoutedEvent == Mouse.PreviewMouseWheelEvent)
+            { _localLeft.Wheel(unchecked((uint)wheel.Timestamp)); _localRight.Wheel(unchecked((uint)wheel.Timestamp)); }
+        }
     }
 
-    private void Post(Action callback)
+    private void OnRawMouse(RawMousePacket packet)
     {
-        if (_disposed || _dispatcher.HasShutdownStarted)
+        if (_disposed) return;
+        bool pressed;
+        bool released;
+        bool press = false;
+        TrayWheelEventArgs? wheel = null;
+        int generation;
+        lock (_gate)
         {
-            return;
+            if (unchecked((int)(packet.Time - _minimumInputTime)) < 0) return;
+            generation = _generation;
+            press = (packet.Buttons & PressMask) != 0;
+            if (!_devices.ContainsKey(packet.Device) && _devices.Count >= 64)
+            {
+                var idle = _devices.Where(item => item.Value == 0).Take(1).ToArray();
+                if (idle.Length == 0) return;
+                _devices.Remove(idle[0].Key);
+            }
+            var buttons = _devices.GetValueOrDefault(packet.Device);
+            if ((packet.Buttons & 3) != 0) _initialMouseButtons &= ~1;
+            if ((packet.Buttons & 12) != 0) _initialMouseButtons &= ~2;
+            if ((packet.Buttons & 1) != 0) buttons |= 1;
+            if ((packet.Buttons & 2) != 0) buttons &= ~1;
+            if ((packet.Buttons & 4) != 0) buttons |= 2;
+            if ((packet.Buttons & 8) != 0) buttons &= ~2;
+            _devices[packet.Device] = buttons;
+            var left = (_initialMouseButtons & 1) != 0 || _devices.Values.Any(value => (value & 1) != 0);
+            var right = (_initialMouseButtons & 2) != 0 || _devices.Values.Any(value => (value & 2) != 0);
+            pressed = left && !_leftDown; released = !left && _leftDown;
+            if (left != _leftDown) _rawLeft.SetDown(left, packet.Time);
+            if (right != _rightDown) _rawRight.SetDown(right, packet.Time);
+            _leftDown = left; _rightDown = right;
+            if ((packet.Buttons & 0x400) != 0)
+            {
+                _rawLeft.Wheel(packet.Time); _rawRight.Wheel(packet.Time);
+                wheel = new(packet.Wheel, IsShiftDown, left, right);
+            }
         }
+        if (pressed) Enqueue(new(1, packet.X, packet.Y, packet.Time, generation, null));
+        if (released) Enqueue(new(2, packet.X, packet.Y, packet.Time, generation, null));
+        if (wheel is not null) Enqueue(new(3, packet.X, packet.Y, packet.Time, generation, wheel));
+        if (press) PublishButtonPress(packet.X, packet.Y);
+    }
 
-        _dispatcher.BeginInvoke(callback, DispatcherPriority.Input);
+    private void OnDeviceRemoved(IntPtr device)
+    {
+        lock (_gate)
+        {
+            _devices.Remove(device);
+            _leftDown = (_initialMouseButtons & 1) != 0 || _devices.Values.Any(value => (value & 1) != 0);
+            _rightDown = (_initialMouseButtons & 2) != 0 || _devices.Values.Any(value => (value & 2) != 0);
+            if (!_leftDown) _rawLeft.Clear();
+            if (!_rightDown) _rawRight.Clear();
+        }
+    }
+
+    private void Enqueue(Notification value)
+    {
+        var post = false;
+        lock (_gate)
+        {
+            if (_disposed || value.Generation != _generation || unchecked((int)(value.Time - _minimumInputTime)) < 0) return;
+            if (value.Kind is 1 or 2) { if (_buttons.Count == 16) _buttons.Dequeue(); _buttons.Enqueue(value); }
+            else { if (_wheels.Count == 64) _wheels.Dequeue(); _wheels.Enqueue(value); }
+            if (!_posted) { _posted = true; post = true; }
+        }
+        if (!post || _dispatcher.HasShutdownStarted) return;
+        try { _dispatcher.BeginInvoke(DrainNotifications, DispatcherPriority.Input); }
+        catch (InvalidOperationException) { /* Dispatcher 关闭后不再发布。 */ }
+    }
+
+    private void DrainNotifications()
+    {
+        Notification[] buttons;
+        Notification[] wheels;
+        lock (_gate)
+        {
+            buttons = _buttons.ToArray(); wheels = _wheels.ToArray();
+            _buttons.Clear(); _wheels.Clear(); _posted = false;
+        }
+        if (_disposed) return;
+        var now = unchecked((uint)Environment.TickCount);
+        foreach (var button in buttons)
+        {
+            if (_disposed) return;
+            if (button.Generation != _generation) continue;
+            // 按压与释放可能连续到达；放宽窗口，避免 UI 忙时丢掉拖动修复依赖的释放。
+            if (button.Kind == 1 && unchecked(now - button.Time) <= 1000)
+                LeftButtonPressed?.Invoke(this, new(button.X, button.Y));
+            else if (button.Kind == 2 && !IsLeftButtonDown)
+                LeftButtonReleased?.Invoke(this, new(button.X, button.Y));
+        }
+        foreach (var wheel in wheels)
+        {
+            if (_disposed) return;
+            if (wheel.Generation == _generation && unchecked(now - wheel.Time) <= 250 && _trayIcon.TryGetBounds(out var bounds) && bounds.Contains(wheel.X, wheel.Y) &&
+                NativeMethods.GetCursorPos(out var current) && bounds.Contains(current.X, current.Y))
+                WheelChanged?.Invoke(this, wheel.Wheel!);
+        }
     }
 
     internal void PublishButtonPress(int screenX, int screenY)
@@ -385,7 +270,7 @@ public sealed class NativeMouseInputMonitor : IDisposable
         var handlers = ButtonPressed;
         if (_disposed || handlers is null) return;
         var capturedAt = Stopwatch.GetTimestamp();
-        // 钩子线程只快照 USER32 的窗口身份，再交给 UI；不等待目标窗口或执行关闭逻辑。
+        // Raw Input 线程只快照 USER32 的窗口身份，再交给 UI；不等待目标窗口或执行关闭逻辑。
         var hit = NativeMethods.WindowFromPoint(new NativeMethods.POINT { X = screenX, Y = screenY });
         var root = NativeMethods.GetAncestor(hit, NativeMethods.GA_ROOT);
         var chain = new List<nint>();
@@ -393,46 +278,83 @@ public sealed class NativeMouseInputMonitor : IDisposable
         for (var current = root; current != nint.Zero && chain.Count < 32; current = NativeMethods.GetWindow(current, Owner))
             chain.Add(current);
         var args = new NativeMousePressEventArgs(screenX, screenY, chain.ToArray(), capturedAt);
-        Post(() =>
+        if (_dispatcher.HasShutdownStarted) return;
+        try
         {
-            if (!_disposed) handlers(this, args);
-        });
+            _dispatcher.BeginInvoke(() =>
+            {
+                if (!_disposed) handlers(this, args);
+            }, DispatcherPriority.Input);
+        }
+        catch (InvalidOperationException)
+        {
+            // Dispatcher 关闭后不再发布。
+        }
     }
 
-    /// <summary>移除鼠标钩子并清理事件。/ Removes the mouse hook and clears events.</summary>
+    private void OnPowerChanged(object? sender, EventArgs args)
+    {
+        var buttons = (IsLeftButtonDown ? 1 : 0) | (IsRightButtonDown ? 2 : 0);
+        lock (_gate)
+        {
+            Interlocked.Increment(ref _generation);
+            _minimumInputTime = unchecked((uint)Environment.TickCount);
+            _devices.Clear(); _rawLeft.Clear(); _rawRight.Clear(); _localLeft.Clear(); _localRight.Clear();
+            _initialMouseButtons = buttons;
+            _leftDown = (_initialMouseButtons & 1) != 0; _rightDown = (_initialMouseButtons & 2) != 0;
+            _rawLeft.SetDown(_leftDown, _minimumInputTime); _rawRight.SetDown(_rightDown, _minimumInputTime);
+            _wheels.Clear(); _buttons.Clear();
+        }
+    }
+
+    private void ReportFailure(Exception exception)
+    {
+        try { _failures.Report(_log, "Input", "raw-input", "Raw Input 监听或点击确认失败", exception); }
+        catch { /* 诊断失败不能逃出原生窗口回调。 */ }
+    }
+
+#if DEBUG
+    private bool _diagnosticsEnabled;
+    internal void SetDiagnosticEnabled(bool enabled) => _diagnosticsEnabled = enabled;
+    internal void RequestDiagnosticHeartbeat() { if (_diagnosticsEnabled) _source.RequestHeartbeat(); }
+    internal (bool Registered, double PendingMs, double HeartbeatMaxMs, double PacketMaxMs) ReadDiagnosticState() => _source.ReadDiagnostics();
+#endif
+
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        Dispose();
+        await _source.Completion.WaitAsync(TimeSpan.FromSeconds(2), cancellationToken);
+        if (!_dispatcher.HasShutdownStarted)
+            await _dispatcher.InvokeAsync(DetachLocalInput, DispatcherPriority.Send, cancellationToken);
+        if (_source.ShutdownFailure is { } failure) throw new InvalidOperationException("Raw Input 注册未能正常注销。", failure);
+    }
+
+    private void DetachLocalInput()
+    {
+        if (_inputManager is null) return;
+        _inputManager.PreProcessInput -= OnLocalInput;
+        _inputManager = null;
+    }
+
     public void Dispose()
     {
-        Thread? hookThread;
-        lock (_lifecycleGate)
+        lock (_gate)
         {
-            if (_disposed)
-            {
-                return;
-            }
-
+            if (_disposed) return;
             _disposed = true;
-            hookThread = _hookThread;
+            Interlocked.Increment(ref _generation);
+            _buttons.Clear(); _wheels.Clear();
         }
-
-        if (hookThread is not null)
+        _source.Dispose();
+        if (_power is not null) _power.StateChanged -= OnPowerChanged;
+        if (_dispatcher.CheckAccess()) DetachLocalInput();
+        else if (!_dispatcher.HasShutdownStarted)
         {
-            _messageLoopReady.Wait(TimeSpan.FromSeconds(1));
-            var threadId = _hookThreadId;
-            if (threadId != 0)
-            {
-                NativeMethods.PostThreadMessage(
-                    threadId,
-                    NativeMethods.WM_QUIT,
-                    UIntPtr.Zero,
-                    IntPtr.Zero);
-            }
-
-            hookThread.Join(TimeSpan.FromSeconds(1));
+            try { _dispatcher.BeginInvoke(DetachLocalInput, DispatcherPriority.Send); }
+            catch (InvalidOperationException) { /* Dispatcher 与停止请求并发关闭。 */ }
         }
-
-        WheelChanged = null;
-        LeftButtonPressed = null;
-        ButtonPressed = null;
-        LeftButtonReleased = null;
+        WheelChanged = null; LeftButtonPressed = null; LeftButtonReleased = null; ButtonPressed = null;
     }
+
+    private sealed record Notification(int Kind, int X, int Y, uint Time, int Generation, TrayWheelEventArgs? Wheel);
 }

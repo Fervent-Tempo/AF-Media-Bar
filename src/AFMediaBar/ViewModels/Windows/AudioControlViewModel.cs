@@ -52,8 +52,6 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
     private int _tooltipRefreshVersion;
     private string? _tooltipSourceId;
     private string? _tooltipSourceName;
-    private DateTime _suppressTrayLeftClickUntilUtc;
-    private DateTime _suppressTrayContextMenuUntilUtc;
     private readonly DispatcherTimer _trayTooltipTimer;
     private WheelGestureSlot? _appliedTrayWheelSlot;
     private bool _trayWheelResultShown;
@@ -174,7 +172,6 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         // 指针停在图标上时定期读取系统音频状态；Shell 不会主动通知我们普通音量混音器的更改。
         _trayTooltipTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(750) };
         _trayTooltipTimer.Tick += (_, _) => AdvanceTrayTooltipPoll();
-        _mouseInputMonitor.Start();
         QueueTrayTooltipRefresh();
     }
 
@@ -379,11 +376,6 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         if (chordHeld && !TrayChordWheelEnabled)
             return;
 
-        if (TrayChordWheelEnabled && interaction.Modifier == InteractionModifier.LeftMouseButton && e.IsLeftButtonDown)
-            _suppressTrayLeftClickUntilUtc = DateTime.UtcNow.AddMilliseconds(450);
-        if (TrayChordWheelEnabled && interaction.Modifier == InteractionModifier.RightMouseButton && e.IsRightButtonDown)
-            _suppressTrayContextMenuUntilUtc = DateTime.UtcNow.AddMilliseconds(450);
-
         switch (GlobalWheelGesturePolicy.ResolveTray(
                     interaction,
                     e.IsShiftDown,
@@ -539,17 +531,16 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         if (!_disposed) _ = RefreshAsync();
     }
 
-    private void OnTrayLeftClicked(object? sender, EventArgs e)
+    private async void OnTrayLeftClicked(object? sender, EventArgs e)
     {
-        // 组合滚轮（按住鼠标键再滚动）结束时的松键会合成一次单击：用户只打算滚动，因此这次单击必须被吞掉。
-        // 判定来自全局鼠标钩子，且标记是一次性的，所以无论结果如何都要取走。
-        // Releasing the button after a chord wheel (scrolling while a mouse button is held) synthesizes a click, and the user only
-        // meant to scroll, so it has to be swallowed. The hook makes that call and the flag is one-shot, so it is taken either way.
-        var chordWheelClick = TrayChordWheelEnabled && _mouseInputMonitor.ConsumeSuppressedClick();
-        if (chordWheelClick || DateTime.UtcNow < _suppressTrayLeftClickUntilUtc)
+        var action = EffectiveInteraction.TrayClickAction;
+        // 键盘激活不消费鼠标按压；鼠标点击先异步确认，不依赖 Raw Input 比 Shell 通知先到。
+        var chordWheelClick = e is not TrayActivationEventArgs { IsKeyboard: true } && TrayChordWheelEnabled &&
+            await _mouseInputMonitor.ConsumeSuppressedClickAsync();
+        if (_disposed || chordWheelClick)
             return;
 
-        switch (EffectiveInteraction.TrayClickAction)
+        switch (action)
         {
             case TrayClickAction.OpenSettings:
                 SettingsOpenRequested?.Invoke(this, EventArgs.Empty);
@@ -571,12 +562,12 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
                 break;
         }
     }
-    private void OnTrayContextMenuRequested(object? sender, EventArgs e)
+    private async void OnTrayContextMenuRequested(object? sender, EventArgs e)
     {
         // 右键菜单同样可能是组合滚轮松键的合成结果，因此与左键点击走同一个抑制判定。
         // The context menu can equally be synthesized by releasing after a chord wheel, so it shares the left click's rule.
-        var chordWheelClick = TrayChordWheelEnabled && _mouseInputMonitor.ConsumeSuppressedClick();
-        if (!chordWheelClick && DateTime.UtcNow >= _suppressTrayContextMenuUntilUtc)
+        var chordWheelClick = TrayChordWheelEnabled && await _mouseInputMonitor.ConsumeSuppressedClickAsync(MouseButton.Right);
+        if (!_disposed && !chordWheelClick)
             TrayContextMenuRequested?.Invoke(GetTrayBounds());
     }
 
@@ -764,7 +755,6 @@ public partial class AudioControlViewModel : ObservableObject, IDisposable
         AudioApplications.CollectionChanged -= OnAudioApplicationsChanged;
         CloseApplicationDetail();
         foreach (var row in AudioApplications) row.Dispose();
-        _mouseInputMonitor.Dispose();
         _deviceApplyVersion++;
         _pendingTrayDeviceSteps = 0;
         _pendingTrayVolumeSteps = 0;

@@ -391,13 +391,14 @@ public sealed class ExternalFullPanelHandleWindow : Window, IDisposable
         if (!_disposed && _canResumeDismissal && _request is not null && _pointerTimer.IsEnabled) ResumePresentation();
     }
 
-    private void Surface_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    private async void Surface_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
         var pressed = _isPressed;
         _isPressed = false;
-        var suppressed = _input.ConsumeSuppressedClick();
-        if (_trigger == FullPanelHandleTrigger.Click && pressed && IsMouseOver && !suppressed) RequestOpen();
+        var request = _request;
+        var suppressed = await _input.ConsumeSuppressedClickAsync(MouseButton.Left, e.Timestamp);
+        if (!_disposed && ReferenceEquals(request, _request) && _trigger == FullPanelHandleTrigger.Click && pressed && IsMouseOver && !suppressed) RequestOpen();
     }
 
     private void Surface_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
