@@ -304,11 +304,8 @@
                     </WrapPanel>
                 </StackPanel>
             </components:SettingsGroup>
-            <components:SettingsGroup GroupId="Common.Group.LyricsSources" Header="{DynamicResource Loc.Common.Group.LyricsSources}" Icon="{ui:SymbolIcon CloudArrowDown24}">
+            <components:SettingsGroup GroupId="Lyrics.Row.Local.Title" Header="{DynamicResource Loc.Lyrics.Row.Local.Title}" Icon="{ui:SymbolIcon Folder24}">
                 <StackPanel>
-                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Description}" Icon="{ui:SymbolIcon Video24}" Title="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Title}" KeepControlInline="True">
-                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.AllowBrowserAndVideoLyrics, Mode=TwoWay}"/>
-                    </components:SettingsRow>
                     <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.Local.Description}" Hint="{DynamicResource Loc.Lyrics.Row.Local.Formats.Hint}" Icon="{ui:SymbolIcon Folder24}" Title="{DynamicResource Loc.Lyrics.Row.Local.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.LocalLyricsEnabled, Mode=TwoWay}"/>
                     </components:SettingsRow>
@@ -316,15 +313,21 @@
                         <components:SettingsRow
                             Description="{DynamicResource Loc.Lyrics.Row.Local.Fallback.Description}"
                             Icon="{ui:SymbolIcon ArrowSwap24}"
-                            Style="{StaticResource AfSettingsListItemStyle}"
                             Title="{DynamicResource Loc.Lyrics.Row.Local.Fallback.Title}">
                             <ui:ToggleSwitch IsChecked="{Binding ViewModel.LocalLyricsFallbackOnly, Mode=TwoWay}"/>
+                        </components:SettingsRow>
+                        <components:SettingsRow Title="{DynamicResource Loc.Lyrics.Row.Local.Folder}" Icon="{ui:SymbolIcon Folder24}">
+                            <ui:Button
+                                Appearance="Primary"
+                                Click="AddLocalLyricsFolder_Click"
+                                Content="{DynamicResource Loc.Lyrics.Row.Local.Add}"
+                                Icon="{ui:SymbolIcon FolderAdd24}"
+                                Style="{StaticResource AfSettingsButtonStyle}" />
                         </components:SettingsRow>
                         <ItemsControl ItemsSource="{Binding ViewModel.LocalLyricsFolders}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <components:SettingsRow
-                                        Style="{StaticResource AfSettingsListItemStyle}"
                                         Description="{Binding}"
                                         Icon="{ui:SymbolIcon Folder24}"
                                         Title="{DynamicResource Loc.Lyrics.Row.Local.Folder}">
@@ -338,13 +341,14 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <ui:Button
-                            Margin="0,4,0,0"
-                            Click="AddLocalLyricsFolder_Click"
-                            Content="{DynamicResource Loc.Lyrics.Row.Local.Add}"
-                            Icon="{ui:SymbolIcon FolderAdd24}"
-                            Style="{StaticResource AfSettingsButtonStyle}" />
                     </StackPanel>
+                </StackPanel>
+            </components:SettingsGroup>
+            <components:SettingsGroup GroupId="Common.Group.LyricsSources" Header="{DynamicResource Loc.Common.Group.LyricsSources}" Icon="{ui:SymbolIcon CloudArrowDown24}">
+                <StackPanel>
+                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Description}" Icon="{ui:SymbolIcon Video24}" Title="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Title}" KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.AllowBrowserAndVideoLyrics, Mode=TwoWay}"/>
+                    </components:SettingsRow>
                     <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Description}" Icon="{ui:SymbolIcon TextFont24}" Title="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Title}">
                         <ui:Button Click="ManageArtistSeparators_Click" Icon="{ui:SymbolIcon Edit24}" Content="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Manage}" Style="{StaticResource AfSettingsButtonStyle}"/>
                     </components:SettingsRow>
