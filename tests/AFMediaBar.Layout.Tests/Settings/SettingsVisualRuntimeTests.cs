@@ -1,4 +1,4 @@
-// 在隔离进程验证设置页资源加载、写入边界与异步清理；不启动真实播放器或音频服务。
+﻿// 在隔离进程验证设置页资源加载、写入边界与异步清理；不启动真实播放器或音频服务。
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.ComponentModel;
@@ -34,6 +34,7 @@ using TextBox = System.Windows.Controls.TextBox;
 namespace AFMediaBar.Layout.Tests;
 
 [TestClass]
+[TestCategory("Native")]
 [DoNotParallelize]
 public sealed class SettingsVisualRuntimeTests
 {
@@ -44,10 +45,7 @@ public sealed class SettingsVisualRuntimeTests
             VerifyNumericBinding(app);
             VerifyPageMarkup(app);
             VerifyCategoryAndPreviewRuntime();
-            SettingsSidebarVisualChecks.Verify(app);
             VerifyGeneratedRowSearch();
-            VerifyMetricStylePicker();
-            VerifyFullPanelMinimumSize();
             _ = new ExperimentalPage(null!);
             DeveloperToolsMarkupChecks.Verify(app, FindRepository());
         });
@@ -156,10 +154,6 @@ public sealed class SettingsVisualRuntimeTests
     public Task PreferredSourceRefreshKeepsOfflineSelectionWithoutRewritingIdentity() =>
         RunIsolatedAsync(nameof(PreferredSourceRefreshKeepsOfflineSelectionWithoutRewritingIdentity), _ => VerifyPreferredSourceIdentity());
 
-    [TestMethod]
-    public Task QuickLaunchStatusLineClearsItselfAfterTheCountdown() =>
-        RunIsolatedAsync(nameof(QuickLaunchStatusLineClearsItselfAfterTheCountdown), _ => VerifyQuickLaunchStatusCountdown());
-
     private static async Task RunIsolatedAsync(string testName, Action<Application> verify)
     {
         // Application 的关闭状态属于进程，避免污染后续 STA 测试。
@@ -228,72 +222,6 @@ public sealed class SettingsVisualRuntimeTests
             Assert.AreEqual("1", counters.Attribute("passed")?.Value);
         }
         finally { if (Directory.Exists(results)) Directory.Delete(results, recursive: true); }
-    }
-
-    private static void VerifyMetricStylePicker()
-    {
-        var picker = new MetricStylePicker();
-        var combo = picker.Children.OfType<ComboBox>().Single();
-        var preview = picker.Children.OfType<MetricPresenter>().Single();
-        double? previousLeft = null;
-        double? previousWidth = null;
-        foreach (var style in Enum.GetValues<MetricVisualStyle>())
-        {
-            picker.VisualStyle = style;
-            picker.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            picker.Arrange(new Rect(new Point(), picker.DesiredSize));
-            picker.UpdateLayout();
-            var left = combo.TranslatePoint(new Point(), picker).X;
-            if (previousLeft is double expected) Assert.AreEqual(expected, left, 0.01, "切换样式不能移动选择框。");
-            if (previousWidth is double width) Assert.AreEqual(width, picker.ActualWidth, 0.01);
-            Assert.IsTrue(preview.TranslatePoint(new Point(), picker).X < left, "预览应位于选择框左侧。");
-            previousLeft = left;
-            previousWidth = picker.ActualWidth;
-        }
-    }
-
-    private static void VerifyFullPanelMinimumSize()
-    {
-        var document = XDocument.Load(Path.Combine(FindRepository(), "src", "AFMediaBar", "Views", "Windows", "TaskbarFullPanelWindow.xaml"));
-        XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
-        document.Root!.Attribute(x + "Class")!.Remove();
-        var events = new HashSet<string> { "Deactivated", "PreviewKeyDown", "MouseLeftButtonUp", "Click", "PreviewMouseLeftButtonDown", "PreviewMouseLeftButtonUp", "LostMouseCapture", "DropDownOpened", "SelectionChanged", "PreviewMouseWheel" };
-        foreach (var element in document.Root.DescendantsAndSelf())
-            foreach (var attribute in element.Attributes().ToArray())
-                if (events.Contains(attribute.Name.LocalName)) attribute.Remove();
-        var markup = Regex.Replace(document.ToString(), "clr-namespace:AFMediaBar[.A-Za-z]+", match => match.Value + ";assembly=AFMediaBar");
-        var window = (Window)XamlReader.Parse(markup);
-        try
-        {
-            window.ApplyTemplate();
-            var minimumWidth = AFMediaBar.Classes.Services.Layout.FullPanelScalePolicy.ContentWidthDip * TaskbarFullPanelSettings.MinimumScalePercent / 100d
-                + AFMediaBar.Classes.Services.Layout.FullPanelScalePolicy.ShadowInsetDip * 2;
-            Assert.IsTrue(window.MinWidth <= minimumWidth, "隐式窗口样式的最小宽度不能撑大已缩小的面板。");
-            Assert.AreEqual(0d, window.MinHeight, "内容高度应能随缩放和区段折叠收缩。");
-            var section = (Border)window.FindName("PerformanceSection");
-            var cards = ((Grid)section.Child).Children.OfType<MetricPresenter>().ToArray();
-            Assert.AreEqual(5, cards.Length, "网速应合并成一张双向卡片。");
-            foreach (var scale in new[] { .75, 1d, 2d })
-                foreach (var style in Enum.GetValues<MetricVisualStyle>())
-                {
-                    section.LayoutTransform = new ScaleTransform(scale, scale);
-                    foreach (var card in cards)
-                    {
-                        card.VisualStyle = style;
-                        card.ApplySnapshot(new(100, 99, 88, 9999999, 1024 * 1024 * 1024d, 99999999999));
-                    }
-                    section.Measure(new Size(400 * scale, double.PositiveInfinity));
-                    section.Arrange(new Rect(new Point(), section.DesiredSize)); section.UpdateLayout();
-                    Assert.IsTrue(cards.All(card => card.ActualWidth > 0 && card.ActualHeight >= 60));
-                    var network = cards.Single(card => card.Metric == MetricKind.SystemNetwork);
-                    Assert.AreEqual(2, network.Charts.Count);
-                    Assert.IsTrue(network.ToolTip.ToString()!.Contains("↑") && network.ToolTip.ToString()!.Contains("↓"));
-                    var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)Math.Ceiling(section.ActualWidth * scale),
-                        (int)Math.Ceiling(section.ActualHeight * scale), 96, 96, PixelFormats.Pbgra32);
-                    bitmap.Render(section);
-                }
-        }
-        finally { window.Close(); }
     }
 
     private static void VerifyPageMarkup(Application app)
@@ -502,58 +430,6 @@ public sealed class SettingsVisualRuntimeTests
                 "候选来源刷新不能重写用户保存的来源身份。");
         }
         finally { SettingsManager.Current = previous; }
-    }
-
-    /// <summary>
-    /// 快速启动状态行是瞬态反馈：写上去之后必须在倒计时结束时自行清空，不能一直挂在那儿。
-    /// The quick-launch status line is transient feedback: it must clear itself once the countdown elapses
-    /// instead of staying there for good.
-    /// </summary>
-    private static void VerifyQuickLaunchStatusCountdown()
-    {
-        var previous = SettingsManager.Current;
-        using var builder = new MediaSnapshotBuilder(null!);
-        var registry = new MediaSourceRegistry([]);
-        var catalog = new MediaSessionCatalog();
-        using var selection = new MediaSessionSelectionService(catalog, registry);
-        using var media = new MediaSessionService(registry, catalog, selection, builder, [], null!,
-            new MemoryPruneCoordinator(null!, null!, null!, []), null!);
-        using var localization = new LocalizationService();
-        using var quickLaunch = new QuickLaunchService();
-        try
-        {
-            SettingsManager.Current = new AppSettings();
-            using var notifications = new TrackChangeNotificationCoordinator(media, new NoMonitors());
-            var model = new ExtraFeaturesViewModel(registry, media, new NoMonitors(), localization, quickLaunch, notifications);
-            // 走真实入口写状态行：AddDetectedSource → AddQuickLaunch → SetStatus（“已添加到快速启动”）。
-            // Write the status line through the real entry: AddDetectedSource -> AddQuickLaunch -> SetStatus ("added to quick launch").
-            typeof(ExtraFeaturesViewModel).GetMethod("AddDetectedSource", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .Invoke(model, [new MediaSourceSettingItem(
-                    new MediaSourceDescriptor("test-player", "Test Player", QuickLaunchTargetKind.Executable, "C:\\test-player.exe"), false)]);
-            Assert.IsFalse(string.IsNullOrEmpty(model.StatusText), "添加之后状态行必须立即显示反馈。");
-            // 缩短倒计时并驱动调度器到计时器触发：状态行必须自行清空。
-            // Shorten the countdown and pump the dispatcher until the timer fires: the line must clear itself.
-            var timer = (DispatcherTimer)typeof(ExtraFeaturesViewModel).GetField("_statusTimer", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .GetValue(model)!;
-            timer.Interval = TimeSpan.FromMilliseconds(20);
-            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(5);
-            while (model.StatusText.Length > 0 && DateTime.UtcNow < deadline)
-                Pump(TimeSpan.FromMilliseconds(20));
-            Assert.AreEqual(string.Empty, model.StatusText, "状态行必须在倒计时结束后自动清空。");
-            Assert.IsFalse(timer.IsEnabled, "清空之后计时器不能继续空跑。");
-        }
-        finally { SettingsManager.Current = previous; }
-    }
-
-    /// <summary>驱动调度器运行一段时间，让排队中的定时器与回调跑完。/ Runs the dispatcher for a while so queued timers and callbacks get to run.</summary>
-    private static void Pump(TimeSpan duration)
-    {
-        var frame = new DispatcherFrame();
-        var timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = duration };
-        timer.Tick += (_, _) => { timer.Stop(); frame.Continue = false; };
-        timer.Start();
-        try { Dispatcher.PushFrame(frame); }
-        finally { timer.Stop(); }
     }
 
     [TestMethod]

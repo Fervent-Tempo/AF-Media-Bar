@@ -1,4 +1,4 @@
-// 在独立进程中验证音频浮窗的 HWND 创建、重复显示和退出边界；测试拥有窗口与 Dispatcher。
+﻿// 在独立进程中验证音频浮窗的 HWND 创建、重复显示和退出边界；测试拥有窗口与 Dispatcher。
 // 使用忙碌的空 ViewModel 跳过真实音频读取，不启动托盘、播放器或全局 Hook。
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -24,6 +24,7 @@ namespace AFMediaBar.Layout.Tests;
 
 /// <summary>托盘音频浮窗显示重入与永久关闭的回归验证。</summary>
 [TestClass]
+[TestCategory("Native")]
 [DoNotParallelize]
 public sealed class AudioFlyoutLifecycleTests
 {

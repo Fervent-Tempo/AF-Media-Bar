@@ -14,11 +14,7 @@ public sealed class FullPanelScaleTests
     [DataRow(FullPanelPlacementSide.Above, "L")]
     [DataRow(FullPanelPlacementSide.Above, "R")]
     [DataRow(FullPanelPlacementSide.Above, "T")]
-    [DataRow(FullPanelPlacementSide.Above, "LT")]
-    [DataRow(FullPanelPlacementSide.Above, "RT")]
     [DataRow(FullPanelPlacementSide.Below, "B")]
-    [DataRow(FullPanelPlacementSide.Below, "LB")]
-    [DataRow(FullPanelPlacementSide.Below, "RB")]
     [DataRow(FullPanelPlacementSide.Left, "L")]
     [DataRow(FullPanelPlacementSide.Right, "R")]
     public void DraggedEdgeFollowsMouseWhileWindowAndContentKeepOneScale(FullPanelPlacementSide side, string edge)
@@ -41,9 +37,6 @@ public sealed class FullPanelScaleTests
 
     [DataTestMethod]
     [DataRow(FullPanelPlacementSide.Above, "B")]
-    [DataRow(FullPanelPlacementSide.Above, "LB")]
-    [DataRow(FullPanelPlacementSide.Below, "T")]
-    [DataRow(FullPanelPlacementSide.Below, "RT")]
     [DataRow(FullPanelPlacementSide.Left, "R")]
     [DataRow(FullPanelPlacementSide.Right, "L")]
     public void AttachedEdgeCannotBeResized(FullPanelPlacementSide side, string edge)

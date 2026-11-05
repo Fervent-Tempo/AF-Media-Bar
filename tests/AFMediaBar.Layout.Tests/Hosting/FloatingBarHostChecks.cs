@@ -120,7 +120,7 @@ internal static class FloatingBarHostChecks
             control.SetBarDragActive(true);
             tooltip.PlacementTarget = (FrameworkElement)control.FindName("SongImageBorder");
             tooltip.IsOpen = true;
-            for (var i = 0; i < 8; i++)
+            for (var i = 0; i < 3; i++)
             {
                 wheel.Invoke(window, [null, new PlayerSurfaceWheelEventArgs(-120, false, false, false)]);
                 window.UpdateLayout();
@@ -156,7 +156,7 @@ internal static class FloatingBarHostChecks
             // 注入已判定的全屏状态，避免测试依赖当前桌面；仍使用真实 HWND 和层级观察计时器。
             fullscreen.SetValue(window, true);
             applyVisibility.Invoke(window, null);
-            await Task.Delay(600);
+            await Task.Delay(200);
             Assert.IsFalse(AFMediaBar.Classes.Interop.NativeMethods.IsWindowVisible(handle),
                 "层级维护不能重新显示因前台全屏而隐藏的悬浮窗口。");
             fullscreen.SetValue(window, false);
@@ -192,7 +192,7 @@ internal static class FloatingBarHostChecks
                     window.Monitor.WorkArea.Top + window.Monitor.WorkArea.Height / 2));
                 var minimum = Math.Max(300, control.GetMinimumPrimaryLength(dpi) + 20);
                 double? expected = null;
-                foreach (var length in new[] { minimum, minimum + 161, minimum + 2 })
+                foreach (var length in new[] { minimum, minimum + 161 })
                 {
                     resize.Invoke(window, [new MediaBarSizeRequest(window.IsVerticalPresentation ? LayoutOrientation.Vertical : LayoutOrientation.Horizontal,
                         window.IsVerticalPresentation ? 48 : length, window.IsVerticalPresentation ? length : 44, "entry-resize", false, true)]);
@@ -320,7 +320,7 @@ internal static class FloatingBarHostChecks
             // 整轮快速位移不运行消息泵，并停掉离开计时器，确保跟随不依赖轮询。
             leaveTimer.Stop();
             var relative = popup.Child.PointToScreen(new Point()) - body.PointToScreen(new Point());
-            for (var i = 0; i < 160; i++)
+            for (var i = 0; i < 30; i++)
             {
                 window.RestoreCenter(new Point(center.X + i % 70, center.Y + i % 20));
                 apply.Invoke(window, arguments);

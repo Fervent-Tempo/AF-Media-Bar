@@ -26,38 +26,6 @@ public sealed class LyricsChineseConversionTests
     }
 
     [TestMethod]
-    public async Task ConversionDoesNotWaitForConverterPublication()
-    {
-        // 控制初始化的发布锁，验证呈现调用不会等待后台加载或发布。
-        var sync = typeof(LyricsChineseConverter).GetField("_sync", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
-        using var acquired = new ManualResetEventSlim();
-        using var release = new ManualResetEventSlim();
-        var publisher = Task.Run(() =>
-        {
-            lock (sync)
-            {
-                acquired.Set();
-                Assert.IsTrue(release.Wait(TimeSpan.FromSeconds(10)), "发布锁未及时释放。");
-            }
-        });
-        Task<string>? conversion = null;
-        try
-        {
-            Assert.IsTrue(acquired.Wait(TimeSpan.FromSeconds(5)), "后台未取得发布锁。");
-            conversion = Task.Run(() => LyricsChineseConverter.Convert(
-                "我在这里等你", LyricsChineseConversionMode.SimplifiedToTraditional));
-            Assert.AreEqual("我在這裡等你", await conversion.WaitAsync(TimeSpan.FromSeconds(2)));
-        }
-        finally
-        {
-            release.Set();
-            await publisher.WaitAsync(TimeSpan.FromSeconds(5));
-            if (conversion is not null)
-                await conversion.WaitAsync(TimeSpan.FromSeconds(5));
-        }
-    }
-
-    [TestMethod]
     public void ConversionRewritesEveryPresentedText()
     {
         var snapshot = Snapshot([

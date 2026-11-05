@@ -1,4 +1,4 @@
-// 使用测试自有 HWND 验证 UIA 不将媒体栏自身当作任务栏占用；窗口和探测器由测试释放。
+﻿// 使用测试自有 HWND 验证 UIA 不将媒体栏自身当作任务栏占用；窗口和探测器由测试释放。
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -10,6 +10,7 @@ using static AFMediaBar.Classes.Interop.NativeMethods;
 namespace AFMediaBar.Layout.Tests;
 
 [TestClass]
+[TestCategory("Native")]
 [DoNotParallelize]
 public sealed class TaskbarProbeSelfExclusionTests
 {

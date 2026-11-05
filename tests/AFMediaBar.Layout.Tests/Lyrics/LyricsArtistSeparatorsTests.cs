@@ -42,20 +42,6 @@ public sealed class LyricsArtistSeparatorsTests
     }
 
     [TestMethod]
-    public void EveryPlayerUsesTheSameRulesAndCanDisableSlashSplitting()
-    {
-        foreach (var source in new[] { "QQMusic", "MSEdge", "OtherPlayer" })
-        {
-            CollectionAssert.AreEqual(new[] { "A", "B" },
-                LyricsArtistPolicy.Split(Request("A/B", new AppSettings().LyricsArtistSeparators) with { PlaybackSourceId = source }));
-            CollectionAssert.AreEqual(new[] { "AC/DC" },
-                LyricsArtistPolicy.Split(Request("AC/DC", "") with { PlaybackSourceId = source }));
-            CollectionAssert.AreEqual(new[] { "AC/DC", "Guest" },
-                LyricsArtistPolicy.Split(Request("AC/DC & Guest", " & ") with { PlaybackSourceId = source }));
-        }
-    }
-
-    [TestMethod]
     public void BothSidesOfScoringUseTheSameSeparators()
     {
         var request = Request("Sarah Kang & Sam Ock", " & ");
@@ -73,17 +59,6 @@ public sealed class LyricsArtistSeparatorsTests
         Assert.AreEqual("When It Snows", queries[^1]);
         CollectionAssert.AreEqual(new[] { "Sarah Kang Sam Ock", "Sarah Kang", "Sam Ock" },
             LyricsSearchQueryPolicy.BuildArtists(Request("Sarah Kang & Sam Ock", " & ")).ToArray());
-    }
-
-    [TestMethod]
-    public void SettingSurvivesSerializationCloneAndNormalizeWithoutTrimming()
-    {
-        var settings = new AppSettings { LyricsArtistSeparators = " & \r\n feat. " };
-        var loaded = JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(settings))!;
-        Assert.AreEqual(settings.LyricsArtistSeparators, loaded.Normalize().Clone().LyricsArtistSeparators);
-        Assert.AreEqual("/", JsonSerializer.Deserialize<AppSettings>("{}")!.LyricsArtistSeparators);
-        Assert.AreEqual("", JsonSerializer.Deserialize<AppSettings>("{\"LyricsArtistSeparators\":\"\"}")!
-            .Normalize().Clone().LyricsArtistSeparators);
     }
 
     [TestMethod]

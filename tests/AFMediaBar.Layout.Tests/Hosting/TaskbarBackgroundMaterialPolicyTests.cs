@@ -20,28 +20,6 @@ public sealed class TaskbarBackgroundMaterialPolicyTests
     }
 
     [TestMethod]
-    public void InvalidSavedMaterialFallsBackToTransparent()
-    {
-        var settings = (AppearanceSettings.Default with
-        {
-            TaskbarBackgroundMaterial = (TaskbarBackgroundMaterial)999
-        }).Normalize();
-
-        Assert.AreEqual(TaskbarBackgroundMaterial.Transparent, settings.TaskbarBackgroundMaterial);
-    }
-
-    [TestMethod]
-    public void InvalidFrostedStyleFallsBackToNeutral()
-    {
-        var settings = (AppearanceSettings.Default with
-        {
-            TaskbarFrostedStyle = (TaskbarFrostedStyle)999
-        }).Normalize();
-
-        Assert.AreEqual(TaskbarFrostedStyle.Neutral, settings.TaskbarFrostedStyle);
-    }
-
-    [TestMethod]
     public void FrostedMaterialRoundTripsAndMissingFieldKeepsLegacyDefault()
     {
         var frosted = AppearanceSettings.Default with

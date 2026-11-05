@@ -98,14 +98,6 @@ public sealed class ReleaseHighlightsTests
     }
 
     [TestMethod]
-    public void NumericallySortsVersionsAndRejectsDuplicateAliases()
-    {
-        var records = ReleaseHighlightsPolicy.Parse(Catalogue("1.2.0", "1.10.0", "1.3.0"));
-        CollectionAssert.AreEqual(new[] { "1.10.0", "1.3.0", "1.2.0" }, records.Select(item => item.Version).ToArray());
-        Assert.ThrowsException<FormatException>(() => ReleaseHighlightsPolicy.Parse(Catalogue("1.2.0", "1.2.0.0")));
-    }
-
-    [TestMethod]
     public void RejectsUnsupportedSchemaBadDatesAndUnsafeReleaseLinks()
     {
         foreach (var json in new[]

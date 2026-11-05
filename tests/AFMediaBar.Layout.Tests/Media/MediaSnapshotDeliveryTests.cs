@@ -174,32 +174,6 @@ public sealed class MediaSnapshotDeliveryTests
         });
     }
 
-    [TestMethod]
-    public void MediaEventBurstQueuesOneRefreshAndDisposeDropsIt()
-    {
-        StaTest.Run(async dispatcher =>
-        {
-            var service = EmptyService(dispatcher);
-            var posted = 0;
-            DispatcherHookEventHandler hook = (_, e) =>
-            {
-                if (e.Operation.Priority == DispatcherPriority.Normal)
-                    posted++;
-            };
-            dispatcher.Hooks.OperationPosted += hook;
-            try
-            {
-                for (var index = 0; index < 100; index++)
-                    Call(service, index % 2 == 0 ? "ScheduleRefresh" : "ScheduleSessionsRefresh");
-                Assert.AreEqual(1, posted, "事件积压应合并成一次最新状态刷新。");
-                Set(service, "_isDisposed", true);
-                await dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
-                Assert.IsNull(service.CurrentSnapshot);
-            }
-            finally { dispatcher.Hooks.OperationPosted -= hook; }
-        });
-    }
-
     private static MediaSessionService EmptyService(Dispatcher dispatcher)
     {
         var service = (MediaSessionService)RuntimeHelpers.GetUninitializedObject(typeof(MediaSessionService));

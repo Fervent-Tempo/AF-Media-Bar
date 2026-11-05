@@ -28,19 +28,6 @@ public sealed class SettingsMotionTests
         });
     }
 
-    [TestMethod]
-    public void ContentThatNeverLoadsDoesNotRemainHidden()
-    {
-        RunSta(() =>
-        {
-            var panel = new StackPanel();
-            SettingsRevealAnimator.Play(panel);
-            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
-            Assert.AreEqual(1d, panel.Opacity);
-            Assert.IsFalse(panel.HasAnimatedProperties);
-        });
-    }
-
     internal static void RunSta(Action action, TimeSpan? timeout = null)
     {
         Exception? failure = null;

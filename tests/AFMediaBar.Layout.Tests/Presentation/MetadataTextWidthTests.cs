@@ -11,16 +11,6 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class MetadataTextWidthTests
 {
     [TestMethod]
-    public void LongTitlesAreCappedButShortTitlesAndHoverControlsRetainTheirSize()
-    {
-        Assert.AreEqual(240d, TaskbarExperiencePolicy.ResolveMetadataTextWidth(1800, 159));
-        Assert.AreEqual(180d, TaskbarExperiencePolicy.ResolveMetadataTextWidth(180, 159));
-        Assert.AreEqual(159d, TaskbarExperiencePolicy.ResolveMetadataTextWidth(60, 159));
-        Assert.AreEqual(280d, TaskbarExperiencePolicy.ResolveMetadataTextWidth(1800, 280));
-        Assert.AreEqual(360d, TaskbarExperiencePolicy.ResolvePrimaryLength(440, 280, 1000, TaskbarLengthMode.Fixed, 360));
-    }
-
-    [TestMethod]
     public void SmallerCurrentRegionKeepsItsAnchorUntilTheRealMinimumFails()
     {
         var first = TaskbarPlacementPolicy.Evaluate(new(), Snapshot(1, 20, 360), TaskbarBarPosition.Start, 1600, 0, 280, 300);

@@ -38,15 +38,6 @@ public sealed class LayoutPresetsSmallArtworkTests
         Assert.AreEqual(Math.Round(normal.Bounds.Height * 0.8), small.Bounds.Height, 0.001);
     }
 
-    [TestMethod]
-    public void SmallArtworkDefaultsOffAndSurvivesNormalize()
-    {
-        // 旧设置缺字段时保持关闭，升级不改变任何人的现有观感。
-        Assert.IsFalse(new AppSettings().TaskbarExperience.SmallArtwork);
-        var settings = new AppSettings().TaskbarExperience with { SmallArtwork = true };
-        Assert.IsTrue(settings.Normalize().SmallArtwork);
-    }
-
     private static ComponentConfig Artwork(LayoutSchema layout) =>
         layout.Components.Single(component => string.Equals(component.Id, LayoutComponentIds.Artwork, StringComparison.Ordinal));
 

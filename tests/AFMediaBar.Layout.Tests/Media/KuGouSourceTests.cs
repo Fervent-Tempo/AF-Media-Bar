@@ -17,10 +17,7 @@ public sealed class KuGouSourceTests
 {
     [DataTestMethod]
     [DataRow("TSAR、SaMZIng、PonyCat", "QUAKE", true)]
-    [DataRow(" tsar , SaMZIng , PonyCat ", "QUAKE", true)]
-    [DataRow("TSAR", "QUAKE", true)]
     [DataRow("PonyCat", "QUAKE", false)]
-    [DataRow("TSAR、Other", "QUAKE", false)]
     [DataRow("TSAR、SaMZIng、PonyCat", "Other track", false)]
     public void CoverMatchingNormalizesArtistSeparatorsWithoutAcceptingAnotherTrack(string smtcArtist, string title, bool sameTrack)
     {

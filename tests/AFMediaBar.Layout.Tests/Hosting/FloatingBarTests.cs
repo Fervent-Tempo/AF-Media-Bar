@@ -15,6 +15,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace AFMediaBar.Layout.Tests;
 
 [TestClass]
+[TestCategory("Native")]
 [DoNotParallelize]
 public sealed class FloatingBarTests
 {

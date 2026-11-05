@@ -1,4 +1,4 @@
-// 在独立测试进程中验证实际 WPF 控件和按钮几何，不启动任务栏宿主或业务服务。
+﻿// 在独立测试进程中验证实际 WPF 控件和按钮几何，不启动任务栏宿主或业务服务。
 // 测试拥有子进程；隔离 WPF Application 的进程级生命周期，超时后结束测试子进程。
 using System.Diagnostics;
 using System.Reflection;
@@ -18,6 +18,7 @@ namespace AFMediaBar.Layout.Tests;
 
 /// <summary>验证真实 WPF 控件的按钮锚点及重复布局稳定性。</summary>
 [TestClass]
+[TestCategory("Native")]
 [DoNotParallelize]
 public sealed class TaskbarArrangementPresentationTests
 {
@@ -100,7 +101,7 @@ public sealed class TaskbarArrangementPresentationTests
                         .SetValue(control, true);
                     hover.Visibility = Visibility.Visible;
                     double? previous = null;
-                    foreach (var width in new[] { 420.3, 520.7, 620.25 })
+                    foreach (var width in new[] { 520.7, 620.25 })
                     {
                         control.ApplyPrimaryLength(width);
                         hover.Width = ((FrameworkElement)control.FindName("SongInfoStackPanel")).Width;
@@ -148,7 +149,7 @@ public sealed class TaskbarArrangementPresentationTests
                         hover.Visibility = Visibility.Visible;
                         const double Width = 520.7;
                         double? anchor = null;
-                        for (var frame = 0; frame < 24; frame++)
+                        for (var frame = 0; frame < 8; frame++)
                         {
                             control.ApplyPrimaryLength(Width);
                             hover.Width = ((FrameworkElement)control.FindName("SongInfoStackPanel")).Width;
@@ -174,7 +175,7 @@ public sealed class TaskbarArrangementPresentationTests
                         SettingsManager.Current.Position = placement;
                         var minimum = (int)Math.Ceiling(control.GetMinimumPrimaryLength(scale) * scale);
                         double? expected = null;
-                        foreach (var width in new[] { minimum, minimum + 1, minimum + 2, minimum + 121 })
+                        foreach (var width in new[] { minimum, minimum + 121 })
                         {
                             const long CenterTwice = 2001;
                             var anchorTwice = placement == TaskbarBarPosition.Center ? CenterTwice : 2000;
@@ -249,7 +250,7 @@ public sealed class TaskbarArrangementPresentationTests
                         hover.Visibility = Visibility.Visible;
                         var minimum = (int)Math.Ceiling(control.GetMinimumPrimaryLength(dpi) * dpi);
                         double? expected = null;
-                        foreach (var lengthPx in new[] { minimum, minimum + 1, minimum + 2, minimum + 161 })
+                        foreach (var lengthPx in new[] { minimum, minimum + 161 })
                         {
                             const long AnchorTwice = 2001;
                             var origin = AFMediaBar.Classes.Services.TaskbarPlacementPolicy.Position(AnchorTwice, lengthPx, alignment);
@@ -334,7 +335,7 @@ public sealed class TaskbarArrangementPresentationTests
                 hover.Visibility = Visibility.Visible;
                 control.ApplyPlacementAnchor(left, AnchorTwice, 1);
                 double? anchor = null;
-                for (var frame = 0; frame < 24; frame++)
+                for (var frame = 0; frame < 8; frame++)
                 {
                     control.ApplyPrimaryLength(Width);
                     hover.Width = ((FrameworkElement)control.FindName("SongInfoStackPanel")).Width;

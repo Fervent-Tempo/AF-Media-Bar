@@ -1,4 +1,4 @@
-// 使用独立 WPF 测试进程验证媒体断开与重连，不启动播放器、音频服务或任务栏宿主。
+﻿// 使用独立 WPF 测试进程验证媒体断开与重连，不启动播放器、音频服务或任务栏宿主。
 // 测试拥有临时窗口和 Application；关闭窗口时释放控件计时器，结束后恢复设置。
 using System.Diagnostics;
 using System.Windows;
@@ -14,6 +14,7 @@ namespace AFMediaBar.Layout.Tests;
 
 /// <summary>防止新增静置组件在媒体断开或重连时造成异常和视觉状态残留。</summary>
 [TestClass]
+[TestCategory("Native")]
 [DoNotParallelize]
 public sealed class RestConnectionTransitionTests
 {

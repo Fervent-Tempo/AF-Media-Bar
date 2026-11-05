@@ -1,4 +1,4 @@
-// 通过独立 WPF 窗口验证菜单不依附可隐藏的入口；不连接 Explorer、播放器或音频服务。
+﻿// 通过独立 WPF 窗口验证菜单不依附可隐藏的入口；不连接 Explorer、播放器或音频服务。
 // 测试拥有窗口和 Application，退出时关闭 Popup 并结束 Dispatcher。
 using System.Diagnostics;
 using System.Reflection;
@@ -18,6 +18,7 @@ namespace AFMediaBar.Layout.Tests;
 
 /// <summary>独立菜单窗口在入口隐藏后的交互与释放回归。</summary>
 [TestClass]
+[TestCategory("Native")]
 [DoNotParallelize]
 public sealed class MenuLifetimeTests
 {

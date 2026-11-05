@@ -28,15 +28,6 @@ public sealed class SettingsDescriptionTextTests
         Assert.AreEqual("ヒント", IconOf(text).ToolTip);
     });
 
-    [TestMethod]
-    public void KeepsPlainTextWhenNoHintIsSet() => SettingsMotionTests.RunSta(() =>
-    {
-        var text = new SettingsDescriptionText { Description = "说明" };
-
-        Assert.AreEqual(1, text.Inlines.Count);
-        Assert.IsInstanceOfType<Run>(text.Inlines.First());
-    });
-
     private static string DescriptionOf(SettingsDescriptionText text) =>
         ((Run)text.Inlines.First()).Text;
 

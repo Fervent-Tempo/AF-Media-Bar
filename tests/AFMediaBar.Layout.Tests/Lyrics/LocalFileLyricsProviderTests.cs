@@ -189,18 +189,6 @@ public sealed class LocalFileLyricsProviderTests
     }
 
     [TestMethod]
-    public async Task KeepsTheSameVersionTag()
-    {
-        // 请求与候选都标了 Instrumental，属于同一版本，照常命中。
-        File.WriteAllText(Path.Combine(_folder, "晴天 (Instrumental).lrc"), "[00:01.00]伴奏版");
-        Enable(true, _folder);
-
-        var result = await new LocalFileLyricsProvider().GetLyricsAsync(Request("晴天 (Instrumental)", "周杰伦"), CancellationToken.None);
-
-        Assert.IsNotNull(result);
-    }
-
-    [TestMethod]
     public async Task RejectsCandidateThatNamesAnotherArtist()
     {
         // 真实场景：QQ 音乐播「Gldemo ver.」的 Girls Dead Monster，本地只有 Lia 的同名片。

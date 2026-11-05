@@ -1,4 +1,4 @@
-// 在独立 WPF 进程中验证真实设备列表的输入路由，不发送全局输入或切换系统设备。
+﻿// 在独立 WPF 进程中验证真实设备列表的输入路由，不发送全局输入或切换系统设备。
 using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
@@ -15,6 +15,7 @@ namespace AFMediaBar.Layout.Tests;
 
 /// <summary>列表更新不写设备，设备模式任意区域的滚轮只表达一次意图。</summary>
 [TestClass]
+[TestCategory("Native")]
 [DoNotParallelize]
 public sealed class AudioDeviceMenuInputTests
 {

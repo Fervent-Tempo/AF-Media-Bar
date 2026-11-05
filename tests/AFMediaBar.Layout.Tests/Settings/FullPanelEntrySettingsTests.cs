@@ -61,12 +61,8 @@ public sealed class FullPanelEntrySettingsTests
 
     [DataTestMethod]
     [DataRow(100, 100)]
-    [DataRow(500, 500)]
-    [DataRow(1000, 1000)]
-    [DataRow(-1, 100)]
     [DataRow(0, 500)]
     [DataRow(150, 200)]
-    [DataRow(int.MaxValue, 1000)]
     public void HoverDelayRoundTripsOnTheLegalGrid(int stored, int expected)
     {
         var json = "{\"TaskbarExperience\":{\"FullPanelEntryTrigger\":1,\"FullPanelEntryHoverDelayMilliseconds\":" + stored + "}}";

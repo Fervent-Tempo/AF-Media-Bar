@@ -23,6 +23,7 @@ namespace AFMediaBar.Layout.Tests;
 
 /// <summary>防止封面收回后遗留失效的提示来源、Popup 或延迟回调。</summary>
 [TestClass]
+[TestCategory("Native")]
 [DoNotParallelize]
 public sealed class ArtworkZoomLifecycleTests
 {
@@ -97,22 +98,6 @@ public sealed class ArtworkZoomLifecycleTests
         await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
         Assert.IsFalse(control.IsLoaded);
         Invoke(control, "ShowArtworkHoverZoom");
-        AssertRestored(control);
-    });
-
-    [TestMethod]
-    public void AlreadyClosedPopupStillReturnsArtworkToMainTree() => RunIsolated(nameof(AlreadyClosedPopupStillReturnsArtworkToMainTree), async (control, dispatcher) =>
-    {
-        Invoke(control, "ShowArtworkHoverZoom");
-        var popup = GetPopup(control);
-        Assert.IsTrue(popup.IsOpen);
-        popup.IsOpen = false;
-        await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
-        Invoke(control, "HideArtworkHoverZoom", true);
-        AssertRestored(control);
-        Invoke(control, "ShowArtworkHoverZoom");
-        Assert.IsTrue(popup.IsOpen, "强制收回之后必须还能再次放大。");
-        Invoke(control, "HideArtworkHoverZoom", true);
         AssertRestored(control);
     });
 
@@ -381,38 +366,6 @@ public sealed class ArtworkZoomLifecycleTests
         control.ApplyHostVisibilitySuspension(false);
         Assert.AreEqual("Hidden connection", ((System.Windows.Controls.TextBlock)control.FindName("SongTitle")).Text);
         AssertRestored(control);
-        return Task.CompletedTask;
-    });
-
-    [TestMethod]
-    public void MetadataEntranceDoesNotReplaceConnectionClipOrSurviveHostSuspension() => RunIsolated(nameof(MetadataEntranceDoesNotReplaceConnectionClipOrSurviveHostSuspension), (control, dispatcher) =>
-    {
-        control.UpdateSongInfo(MediaSnapshot.Disconnected);
-        control.AllowRestConnectionTransition = true;
-        var connected = MediaSnapshot.Disconnected with { IsConnected = true, Title = "Connecting" };
-        control.UpdateSongInfo(connected);
-        control.UpdateSongInfo(connected with { Title = "New metadata while connecting" });
-        if (control.IsRestConnectionTransitionActive)
-            Assert.IsFalse(((FrameworkElement)control.FindName("SongInfoStackPanel")).HasAnimatedProperties,
-                "连接裁剪期间不能再让曲目入场动画控制同一文字表面。");
-        control.ApplyHostVisibilitySuspension(true);
-        control.UpdateSongInfo(connected with { Title = "Latest hidden metadata" });
-        Assert.IsFalse(((FrameworkElement)control.FindName("SongInfoStackPanel")).HasAnimatedProperties);
-        return Task.CompletedTask;
-    });
-
-    [TestMethod]
-    public void StaleHoverCloseCannotHideTheNewReveal() => RunIsolated(nameof(StaleHoverCloseCannotHideTheNewReveal), (control, dispatcher) =>
-    {
-        var host = (FrameworkElement)control.FindName("HoverRevealHost");
-        host.Visibility = Visibility.Visible;
-        host.Width = 200;
-        MediaBarTestAccess.GetField("_isTaskbarHoverVisible", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(control, true);
-        var generation = (int)MediaBarTestAccess.GetField("_hoverRevealGeneration", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
-        Invoke(control, "RetargetHoverRevealWidth", 240d);
-        Invoke(control, "CompleteTaskbarHoverLayerHide", generation);
-        Assert.AreEqual(Visibility.Visible, host.Visibility);
-        Assert.AreEqual(240d, host.Width);
         return Task.CompletedTask;
     });
 

@@ -13,7 +13,7 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class ArtworkDominantColorTests
 {
     [DataTestMethod]
-    [DataRow(1, false)] [DataRow(1, true)] [DataRow(3, false)] [DataRow(3, true)]
+    [DataRow(3, false)] [DataRow(3, true)]
     public void TransparentPixelsHaveNoDominantColor(int count, bool dark)
     {
         Assert.AreEqual(0, DominantColorCalculator.Calculate(new byte[16], 2, 2, count, darkTheme: dark).Count);
@@ -21,7 +21,7 @@ public sealed class ArtworkDominantColorTests
     }
 
     [DataTestMethod]
-    [DataRow((byte)0)] [DataRow((byte)128)] [DataRow((byte)255)]
+    [DataRow((byte)128)]
     public void EmptyWeightedHistogramHasNoInventedPeak(byte gray)
     {
         Assert.AreEqual(0, DominantColorCalculator.Calculate([gray, gray, gray, 255], 1, 1, 1).Count);

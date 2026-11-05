@@ -1,4 +1,4 @@
-// 使用隐藏的原生父子窗口复现任务栏采样后移动的竞态；测试拥有并释放 HWND，不操作 Explorer。
+﻿// 使用隐藏的原生父子窗口复现任务栏采样后移动的竞态；测试拥有并释放 HWND，不操作 Explorer。
 using AFMediaBar.Classes.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Windows.Interop;
@@ -8,6 +8,7 @@ namespace AFMediaBar.Layout.Tests;
 
 /// <summary>验证父窗口移动不会改变媒体宿主在客户区中的锚点。</summary>
 [TestClass]
+[TestCategory("Native")]
 public sealed class TaskbarDockPositionTests
 {
     [TestMethod]

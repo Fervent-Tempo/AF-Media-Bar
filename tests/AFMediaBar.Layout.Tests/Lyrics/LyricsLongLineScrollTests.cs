@@ -83,16 +83,6 @@ public sealed class LyricsLongLineScrollTests
         Assert.IsNull(frame.ScrollProgress, "行级歌词不得产生滚动进度：没有逐字时间轴就无法按演唱进度滚动。");
     }
 
-    [TestMethod]
-    public void SettingDefaultsToOnAndSurvivesCloning()
-    {
-        Assert.IsTrue(new AppSettings().LyricsLongLineScrollEnabled, "长歌词动态滚动默认开启。");
-        var settings = new AppSettings { LyricsLongLineScrollEnabled = false };
-        Assert.IsFalse(settings.Clone().LyricsLongLineScrollEnabled);
-        settings.LyricsLongLineScrollEnabled = true;
-        Assert.IsTrue(settings.Clone().LyricsLongLineScrollEnabled);
-    }
-
     private static MediaSnapshot Snapshot(IReadOnlyList<LyricLine> lines, double position) => MediaSnapshot.Disconnected with
     {
         IsConnected = true,

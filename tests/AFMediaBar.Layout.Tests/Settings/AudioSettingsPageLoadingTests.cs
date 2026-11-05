@@ -1,4 +1,4 @@
-// 在独立 WPF 进程中实际加载设置页，防止只读计数等绑定导致页面初始化失败。
+﻿// 在独立 WPF 进程中实际加载设置页，防止只读计数等绑定导致页面初始化失败。
 using System.Diagnostics;
 using System.Windows;
 using AFMediaBar.Classes.Models;
@@ -16,6 +16,7 @@ namespace AFMediaBar.Layout.Tests;
 
 /// <summary>设备分组设置页的真实 XAML 加载回归。</summary>
 [TestClass]
+[TestCategory("Native")]
 [DoNotParallelize]
 public sealed class AudioSettingsPageLoadingTests
 {

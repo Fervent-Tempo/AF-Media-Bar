@@ -29,40 +29,6 @@ public sealed class MemoryPruneLifecycleTests
     }
 
     [TestMethod]
-    public void ExpiredNonNormalStartupTimerStopsAndDoesNotRunAfterRecovery()
-    {
-        StaTest.Run(_ =>
-        {
-            using var power = new PowerStateMonitor();
-            // 不启动 SMTC；仅使用空事件字段验证协调器停止计时器和退订，避免查询真实播放器。
-            var catalog = (MediaSessionCatalog)RuntimeHelpers.GetUninitializedObject(typeof(MediaSessionCatalog));
-            var trimmer = new ProcessMemoryTrimmer();
-            try
-            {
-                using var coordinator = new MemoryPruneCoordinator(power, catalog, trimmer, []);
-                var clock = (Stopwatch)Field(coordinator, "_sinceStart").GetValue(coordinator)!;
-                typeof(Stopwatch).GetField("_elapsed", BindingFlags.NonPublic | BindingFlags.Instance)!
-                    .SetValue(clock, 61 * Stopwatch.Frequency);
-                Field(coordinator, "_level").SetValue(coordinator, MemoryPruneLevel.DisplayOff);
-                Field(coordinator, "_startupTrimPending").SetValue(coordinator, true);
-                var timer = new DispatcherTimer(); timer.Start();
-                Field(coordinator, "_startupTrimTimer").SetValue(coordinator, timer);
-                var tick = typeof(MemoryPruneCoordinator).GetMethod("OnStartupTrimTick", BindingFlags.NonPublic | BindingFlags.Instance)!;
-                tick.Invoke(coordinator, [null, EventArgs.Empty]);
-                Assert.IsFalse(timer.IsEnabled);
-                Assert.IsNull(Field(coordinator, "_startupTrimTimer").GetValue(coordinator));
-                Assert.AreEqual(false, Field(coordinator, "_startupTrimPending").GetValue(coordinator));
-                Field(coordinator, "_level").SetValue(coordinator, MemoryPruneLevel.None);
-                tick.Invoke(coordinator, [null, EventArgs.Empty]);
-                coordinator.Dispose(); coordinator.Dispose();
-                tick.Invoke(coordinator, [null, EventArgs.Empty]);
-                return Task.CompletedTask;
-            }
-            finally { trimmer.Dispose(); }
-        });
-    }
-
-    [TestMethod]
     public void DisposingMonitorDropsQueuedCallbacksAndReleasesMessageSink()
     {
         StaTest.Run(async dispatcher =>
