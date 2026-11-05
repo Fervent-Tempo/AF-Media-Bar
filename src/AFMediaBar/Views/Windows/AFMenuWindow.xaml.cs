@@ -48,6 +48,7 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
     private readonly DispatcherTimer _submenuHoverTimer;
     private WpfMenuItem? _pendingHoverItem;
     private int _focusClearVersion;
+    private bool _keyboardOpenedForPresentation;
     private FrameworkElement? _menuContent;
     private Point? _anchor;
     private nint _previousForeground;
@@ -131,6 +132,7 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
         if (_isDisposed || version != _presentationVersion || !IsVisible)
             return;
 
+        _keyboardOpenedForPresentation = keyboardOpened;
         if (ShowActivated)
             Activate();
 
@@ -285,9 +287,21 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
             MenuRoot.Effect = null;
     }
 
-    private void Window_OnDeactivated(object? sender, EventArgs e)
+    private void Window_OnActivated(object? sender, EventArgs e)
     {
-        if (_isDisposed || _isHiding || !IsVisible || _windowPresentation.IsPreparing)
+        if (_isDisposed || _isHiding || !IsVisible || _keyboardOpenedForPresentation)
+            return;
+
+        var version = ++_focusClearVersion;
+        _ = Dispatcher.BeginInvoke(() =>
+        {
+            if (version == _focusClearVersion)
+                ClearMenuFocus();
+        }, DispatcherPriority.Input);
+    }
+
+    private void Window_OnDeactivated(object? sender, EventArgs e)
+    {        if (_isDisposed || _isHiding || !IsVisible || _windowPresentation.IsPreparing)
             return;
 
         // 子菜单 Popup 不激活窗口，失焦只可能来自同进程切换或用户点到其它窗口。

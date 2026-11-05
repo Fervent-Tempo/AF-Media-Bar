@@ -18,6 +18,7 @@
         FontWeight="{DynamicResource AppTextFontWeight}"
         Foreground="{DynamicResource TextFillColorPrimaryBrush}"
         Deactivated="Window_OnDeactivated"
+        Activated="Window_OnActivated"
         PreviewKeyDown="Window_OnPreviewKeyDown">
     <Border x:Name="MenuRoot"
             Margin="4"
