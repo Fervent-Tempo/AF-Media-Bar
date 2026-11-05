@@ -72,4 +72,39 @@ public static class WindowBackdropPolicy
         var rgb = dark ? 0x00202020 : 0x00F9F9F9;
         return (alpha << 24) | rgb;
     }
+
+    /// <summary>
+    /// 非激活表面（通知、菜单子项）的近似材质底色。
+    ///
+    /// 这三种系统材质无法在非激活窗口上由 DWM 绘制，只能用 Acrylic 模糊近似。为保留可辨识的材质差异：
+    /// Acrylic 保持基准浓度和较中性的底色；Mica 提高不透明度并轻微提亮/压暗，接近壁纸着色的平面观感；
+    /// MicaAlt 再提高不透明度并加深深色/压低浅色底色，接近更重的 Alt 色调。三者都受用户浓度约束，
+    /// 100% 时都落到不透明底色，30% 时仍按同一顺序递减。
+    /// Approximate material tints for non-activating surfaces (notifications and menu submenus).
+    ///
+    /// DWM cannot paint these three system materials on a non-activating window, so Acrylic blur is the only available path.
+    /// To keep the modes recognisable: Acrylic keeps the base concentration and a neutral tint; Mica raises the opacity and
+    /// shifts the colour slightly to read like a flatter wallpaper tint; MicaAlt raises it further and deepens darks / lowers
+    /// lights for the heavier Alt tone. All three remain bounded by the user concentration: 100% is always opaque, and at 30%
+    /// they still differ in the same order.
+    /// </summary>
+    public static int ResolveNonActivatingTint(ApplicationBackdropMode mode, bool dark, int opacityPercent)
+    {
+        var baseTint = ResolveLegacyTint(dark, opacityPercent);
+        var baseAlpha = (baseTint >> 24) & 0xFF;
+        var extraAlpha = mode switch
+        {
+            ApplicationBackdropMode.Mica => 40,
+            ApplicationBackdropMode.MicaAlt => 70,
+            _ => 0
+        };
+        var alpha = Math.Min(255, baseAlpha + extraAlpha);
+        var rgb = mode switch
+        {
+            ApplicationBackdropMode.Mica => dark ? 0x00181818 : 0x00F3F3F3,
+            ApplicationBackdropMode.MicaAlt => dark ? 0x00101010 : 0x00ECECEC,
+            _ => baseTint & 0x00FFFFFF
+        };
+        return (alpha << 24) | rgb;
+    }
 }

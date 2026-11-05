@@ -308,7 +308,7 @@ public sealed class WindowAppearanceService : IDisposable
         if (!MotionPolicy.ResolveCurrent().UseDecorativeEffects)
             mode = ApplicationBackdropMode.FluentSolid;
         var dark = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
-        var tint = WindowBackdropPolicy.ResolveLegacyTint(dark, appearance.ResolveBackdropTintOpacityPercent());
+        var tint = WindowBackdropPolicy.ResolveNonActivatingTint(mode, dark, appearance.ResolveBackdropTintOpacityPercent());
         var isMenuWindow = _menuWindows.Contains(window);
         var state = new BackdropState(source.Handle, mode, dark, tint);
         if (_appliedBackdrops.TryGetValue(window, out var previous) && previous == state) return;
@@ -411,7 +411,7 @@ public sealed class WindowAppearanceService : IDisposable
             return;
         }
 
-        var tint = WindowBackdropPolicy.ResolveLegacyTint(dark, appearance.ResolveBackdropTintOpacityPercent());
+        var tint = WindowBackdropPolicy.ResolveNonActivatingTint(mode, dark, appearance.ResolveBackdropTintOpacityPercent());
         // alpha=1 覆盖整个菜单表面：Submenu 是分层 Popup，alpha=0 的空白区会让点击穿透到后面的窗口。
         // alpha=1 covers the whole menu surface: a submenu is a layered popup, and alpha=0 blank areas would pass clicks through.
         surface.SetValue(backgroundProperty, MenuHitTestBrush);
