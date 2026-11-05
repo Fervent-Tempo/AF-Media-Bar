@@ -115,12 +115,51 @@ public sealed class MenuWindowTests
                 await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 header.IsSubmenuOpen = true;
                 await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                Assert.IsTrue(window.IsVisible, "Opening a submenu must keep the top-level menu visible.");
+                Assert.IsTrue(header.IsSubmenuOpen, "The submenu must stay open.");
+                Assert.IsTrue(child.IsVisible, "The submenu item must be visible.");
 
                 child.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent, child));
                 var reason = await dismissed.Task.WaitAsync(TimeSpan.FromSeconds(3));
                 Assert.AreEqual(MenuDismissReason.ItemInvoked, reason);
                 await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 Assert.IsFalse(window.IsVisible);
+            }
+            finally { window?.Dispose(); app.Shutdown(); }
+        });
+    }
+
+    [TestMethod]
+    public void SubmenuHeaderClickOpensSubmenu()
+    {
+        if (RunIsolated(nameof(SubmenuHeaderClickOpensSubmenu))) return;
+        StaTest.Run(async dispatcher =>
+        {
+            var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+            using var icons = new AppIconService();
+            var adapter = CreateAdapter();
+            using var appearance = new WindowAppearanceService(adapter, icons);
+            AFMenuWindow? window = null;
+            try
+            {
+                LoadResources(app);
+                var panel = new StackPanel();
+                var header = new WpfMenuItem { Header = "Parent" };
+                var child = new WpfMenuItem { Header = "Child" };
+                header.Items.Add(child);
+                panel.Children.Add(header);
+                window = CreateWindow(appearance);
+                window.ShowMenu(panel, new Point(20, 20));
+                await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+
+                header.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left)
+                {
+                    RoutedEvent = Mouse.PreviewMouseUpEvent
+                });
+                await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                Assert.IsTrue(window.IsVisible, "Clicking a submenu header must keep the top-level menu visible.");
+                Assert.IsTrue(header.IsSubmenuOpen, "Clicking a submenu header must open its submenu.");
+                Assert.IsTrue(child.IsVisible, "The submenu item must be visible after the header click.");
             }
             finally { window?.Dispose(); app.Shutdown(); }
         });

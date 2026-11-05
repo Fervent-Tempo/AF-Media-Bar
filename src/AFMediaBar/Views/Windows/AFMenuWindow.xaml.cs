@@ -42,6 +42,7 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
     private readonly List<WpfMenuItem> _wiredItems = [];
     private readonly RoutedEventHandler _menuItemClickHandler;
     private readonly KeyEventHandler _menuItemKeyHandler;
+    private readonly MouseButtonEventHandler _menuItemMouseUpHandler;
     private FrameworkElement? _menuContent;
     private Point? _anchor;
     private nint _previousForeground;
@@ -63,6 +64,7 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
         _windowPresentation = new(this);
         _menuItemClickHandler = OnMenuItemClick;
         _menuItemKeyHandler = OnMenuItemPreviewKeyDown;
+        _menuItemMouseUpHandler = OnMenuItemPreviewMouseLeftButtonUp;
         ApplyMotionEffects();
         appearanceService.AttachMenuWindow(this);
     }
@@ -339,6 +341,37 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
         Dismiss(MenuDismissReason.ItemInvoked);
     }
 
+    private void OnMenuItemPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_isDisposed || _isHiding || !IsVisible || e.ChangedButton != MouseButton.Left)
+            return;
+
+        // StackPanel 中的 MenuItem 没有 MenuBase 父级；其内部点击不会替我们打开子菜单。
+        // 在预览阶段拦截带子项的菜单头，避免内部点击把刚打开的子菜单再次切换掉。
+        // A MenuItem inside a StackPanel has no MenuBase parent, so its internal click does not open the submenu for us.
+        // Intercept headers during preview so the internal click cannot toggle it again.
+        var item = FindMenuItem(e.OriginalSource as DependencyObject);
+        if (item is null || !item.HasItems)
+            return;
+
+        item.IsSubmenuOpen = true;
+        e.Handled = true;
+    }
+
+    private static WpfMenuItem? FindMenuItem(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (source is WpfMenuItem item)
+                return item;
+            source = source is Visual
+                ? VisualTreeHelper.GetParent(source)
+                : LogicalTreeHelper.GetParent(source);
+        }
+
+        return null;
+    }
+
     private void ActivateItem(WpfMenuItem item)
     {
         if (item.HasItems)
@@ -434,6 +467,7 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
             _wiredItems.Add(item);
         }
         content.AddHandler(WpfMenuItem.ClickEvent, _menuItemClickHandler, handledEventsToo: true);
+        content.AddHandler(Mouse.PreviewMouseUpEvent, _menuItemMouseUpHandler, handledEventsToo: true);
     }
 
     private void UnwireMenuContent()
@@ -442,6 +476,7 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
             item.PreviewKeyDown -= _menuItemKeyHandler;
         _wiredItems.Clear();
         _menuContent?.RemoveHandler(WpfMenuItem.ClickEvent, _menuItemClickHandler);
+        _menuContent?.RemoveHandler(Mouse.PreviewMouseUpEvent, _menuItemMouseUpHandler);
     }
 
     private static IEnumerable<WpfMenuItem> EnumerateMenuItems(FrameworkElement content)
