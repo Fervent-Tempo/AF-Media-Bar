@@ -18,10 +18,12 @@ namespace AFMediaBar.Components;
 public partial class TaskBarMediaControl
 {
     private Border? _barMoveHandle;
-    // 控件拥有浮层与跟随计时器；隐藏、卸载和最终释放时关闭，不扩大宿主命中区。
+    // 控件拥有浮层与离开计时器；显示期间订阅布局和宿主位移，关闭时解除订阅。
     private Popup? _barMovePopup;
     private DispatcherTimer? _barMoveTimer;
+    private Window? _barMoveOwner;
     private Point? _barMoveScreenOrigin;
+    private Size _barMoveTargetSize;
     private long? _barMoveOutsideSince;
     private bool _barMovePressed;
     private bool _barMoveDisposed;
@@ -203,7 +205,6 @@ public partial class TaskBarMediaControl
     public void SetBarDragActive(bool active)
     {
         _barDragActive = active;
-        if (_barMoveTimer is not null) _barMoveTimer.Interval = TimeSpan.FromMilliseconds(active ? 16 : 50);
         RefreshBarMoveHandle();
     }
     private void RefreshBarMoveHandle()
@@ -228,6 +229,10 @@ public partial class TaskBarMediaControl
         if (!_barMovePopup.IsOpen)
         {
             _barMoveScreenOrigin = MainBorder.PointToScreen(new Point());
+            _barMoveTargetSize = MainBorder.RenderSize;
+            _barMoveOwner = Window.GetWindow(this);
+            if (_barMoveOwner is not null) _barMoveOwner.LocationChanged += BarMovePlacementChanged;
+            LayoutUpdated += BarMovePlacementChanged;
             _barMovePopup.IsOpen = true;
             _barMoveTimer?.Start();
         }
@@ -264,6 +269,9 @@ public partial class TaskBarMediaControl
         _barMovePressed = false;
         _barMoveOutsideSince = null;
         _barMoveScreenOrigin = null;
+        LayoutUpdated -= BarMovePlacementChanged;
+        if (_barMoveOwner is not null) _barMoveOwner.LocationChanged -= BarMovePlacementChanged;
+        _barMoveOwner = null;
         _barMoveTimer?.Stop();
         if (_barMovePopup is not null) _barMovePopup.IsOpen = false;
         _barHandleOpacityTarget = 0;
@@ -305,16 +313,18 @@ public partial class TaskBarMediaControl
         _barMovePopup.HorizontalOffset = _barMovePopup.HorizontalOffset == 0 ? 0.01 : 0;
     }
 
-    private void BarMoveTimer_Tick(object? sender, EventArgs args)
+    private void BarMoveTimer_Tick(object? sender, EventArgs args) => RefreshBarMoveHandle();
+
+    private void BarMovePlacementChanged(object? sender, EventArgs args)
     {
-        RefreshBarMoveHandle();
         if (_barMovePopup is not { IsOpen: true }) return;
         var origin = MainBorder.PointToScreen(new Point());
-        if (_barMoveScreenOrigin != origin)
-        {
-            _barMoveScreenOrigin = origin;
-            RefreshBarMovePopupPosition();
-        }
+        var targetSize = MainBorder.RenderSize;
+        if (_barMoveScreenOrigin == origin && _barMoveTargetSize == targetSize) return;
+        _barMoveScreenOrigin = origin;
+        _barMoveTargetSize = targetSize;
+        // 与主体的布局或 HWND 位移同步，不等待另一个计时器帧。
+        RefreshBarMovePopupPosition();
     }
 
     private IReadOnlyList<ComponentLayoutEntry> PreviewRestEntries() =>

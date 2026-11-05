@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
@@ -10,6 +12,7 @@ using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Audio;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Components;
 using AFMediaBar.Views.Windows;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -31,19 +34,24 @@ internal static class FloatingBarHostChecks
         using var mouse = new NativeMouseInputMonitor(null!);
         using var log = new AppLogService(Path.Combine(Path.GetTempPath(), "AFMB-floating-check"));
         FloatingBarWindow? window = null;
+        QuickLaunchService? quickLaunch = null;
         try
         {
             SettingsManager.Current = new AppSettings
             {
                 Experiments = new() { FloatingBar = true },
-                TaskbarExperience = TaskbarExperienceSettings.Default with { SpectrumVisible = false, PerformanceVisible = false }
+                TaskbarExperience = TaskbarExperienceSettings.Default with { SpectrumVisible = false, PerformanceVisible = false },
+                QuickLaunch = new([new("a", "First", QuickLaunchTargetKind.Executable, "never-launch-a.exe"),
+                    new("b", "Second", QuickLaunchTargetKind.Executable, "never-launch-b.exe")])
+                { InteractionMode = QuickLaunchInteractionMode.SelectThenLaunch }
             };
             // 使用实际工作区与 DPI，避免 WPF 按桌面缩放提交尺寸后覆盖虚构的 96 DPI 边界。
             var display = new DisplayMonitorService().GetMonitors().First(m => m.IsPrimary) with { DeviceId = "test" };
             var limits = new FloatingBarLengthConstraints();
+            quickLaunch = new QuickLaunchService();
             // 未触发的命令与业务服务不构造；若布局错误地要求采样，本回归会失败。
             window = new FloatingBarWindow(battery, "test", display, null!, null!, audio, null!, null!, null!, mouse,
-                prune, zOrder, appearance, new ScreenBackgroundSampler(), log, limits)
+                prune, zOrder, appearance, new ScreenBackgroundSampler(), log, limits, quickLaunch: quickLaunch)
             { Title = "AFMB floating verification" };
             window.ApplySnapshot(MediaSnapshot.Disconnected with
             {
@@ -58,6 +66,7 @@ internal static class FloatingBarHostChecks
             Assert.AreEqual(display.DpiX, AFMediaBar.Classes.Interop.NativeMethods.GetDpiForWindow(new WindowInteropHelper(window).Handle),
                 "注入的显示器快照必须与真实 HWND 的 DPI 一致。");
             VerifyPureMoves(window);
+            await VerifyQuickLaunchHandleAsync(window);
             VerifyStableEntry(window);
             await VerifyContentResizePreservesPanelAsync(window);
             Assert.IsTrue(limits.Range.HasAvailableRange);
@@ -88,7 +97,48 @@ internal static class FloatingBarHostChecks
             window.Dispose();
             Assert.IsFalse(limits.Range.HasAvailableRange);
         }
-        finally { window?.Dispose(); SettingsManager.Current = previous; }
+        finally { window?.Dispose(); quickLaunch?.Dispose(); SettingsManager.Current = previous; }
+    }
+
+    private static async Task VerifyQuickLaunchHandleAsync(FloatingBarWindow window)
+    {
+        const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        var control = ((System.Windows.Controls.Grid)window.Content).Children.OfType<AFMediaBar.Components.TaskBarMediaControl>().Single();
+        var snapshot = (MediaSnapshot)typeof(FloatingBarWindow).GetField("_lastSnapshot", Flags)!.GetValue(window)!;
+        var popup = (Popup)MediaBarTestAccess.GetField("_barMovePopup", Flags)!.GetValue(control)!;
+        var tooltip = (System.Windows.Controls.ToolTip)MediaBarTestAccess.GetField("_quickLaunchTooltip", Flags)!.GetValue(control)!;
+        var wheel = typeof(FloatingBarWindow).GetMethod("MediaControl_QuickLaunchWheelRequested", Flags)!;
+        var body = (FrameworkElement)control.FindName("MainBorder");
+        try
+        {
+            window.ApplySnapshot(MediaSnapshot.Disconnected);
+            var sizeTimer = (DispatcherTimer)typeof(FloatingBarWindow).GetField("_sizeTimer", Flags)!.GetValue(window)!;
+            var deadline = Stopwatch.StartNew();
+            while (sizeTimer.IsEnabled && deadline.Elapsed < TimeSpan.FromSeconds(3)) await Task.Delay(20);
+            Assert.IsFalse(sizeTimer.IsEnabled);
+            window.UpdateLayout();
+            control.SetBarDragActive(true);
+            tooltip.PlacementTarget = (FrameworkElement)control.FindName("SongImageBorder");
+            tooltip.IsOpen = true;
+            for (var i = 0; i < 8; i++)
+            {
+                wheel.Invoke(window, [null, new PlayerSurfaceWheelEventArgs(-120, false, false, false)]);
+                window.UpdateLayout();
+                Assert.IsTrue(popup.IsOpen);
+                var bodyLeft = body.PointToScreen(new Point()).X;
+                var handleLeft = popup.Child.PointToScreen(new Point()).X;
+                var dpi = System.Windows.Media.VisualTreeHelper.GetDpi(control).DpiScaleX;
+                var gap = Math.Min(Math.Abs(handleLeft - bodyLeft - body.ActualWidth * dpi),
+                    Math.Abs(handleLeft + popup.Child.RenderSize.Width * dpi - bodyLeft));
+                Assert.IsTrue(gap <= 1.01, $"快速启动滚轮切换后，手柄必须紧贴媒体栏；当前间隔 {gap:F2}px。");
+            }
+        }
+        finally
+        {
+            tooltip.IsOpen = false;
+            control.SetBarDragActive(false);
+            window.ApplySnapshot(snapshot);
+        }
     }
 
     private static async Task VerifyFullscreenVisibilityAsync(FloatingBarWindow window, nint handle)
@@ -237,6 +287,11 @@ internal static class FloatingBarHostChecks
 
     private static void VerifyPureMoves(FloatingBarWindow window)
     {
+        const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        var control = ((System.Windows.Controls.Grid)window.Content).Children.OfType<AFMediaBar.Components.TaskBarMediaControl>().Single();
+        var popup = (Popup)MediaBarTestAccess.GetField("_barMovePopup", Flags)!.GetValue(control)!;
+        var leaveTimer = (DispatcherTimer)MediaBarTestAccess.GetField("_barMoveTimer", Flags)!.GetValue(control)!;
+        var body = (FrameworkElement)control.FindName("MainBorder");
         var apply = typeof(FloatingBarWindow).GetMethod("ApplyBounds", BindingFlags.Instance | BindingFlags.NonPublic)!;
         var arguments = apply.GetParameters().Length == 0 ? null : new object[] { false };
         var dragging = typeof(FloatingBarWindow).GetField("_dragging", BindingFlags.Instance | BindingFlags.NonPublic)!;
@@ -258,13 +313,21 @@ internal static class FloatingBarHostChecks
         void SettingsChanged(object? sender, SettingsChangedEventArgs args) => settingsWrites++;
         source.AddHook(Observe);
         SettingsManager.SettingsChanged += SettingsChanged;
-        dragging.SetValue(window, true);
         try
         {
+            typeof(FloatingBarWindow).GetMethod("BeginDrag", Flags)!.Invoke(window, null);
+            Assert.IsTrue(popup.IsOpen, "启动拖动的交互清理不能让手柄消失。");
+            // 整轮快速位移不运行消息泵，并停掉离开计时器，确保跟随不依赖轮询。
+            leaveTimer.Stop();
+            var relative = popup.Child.PointToScreen(new Point()) - body.PointToScreen(new Point());
             for (var i = 0; i < 160; i++)
             {
                 window.RestoreCenter(new Point(center.X + i % 70, center.Y + i % 20));
                 apply.Invoke(window, arguments);
+                Assert.IsTrue(popup.IsOpen, "拖动每一帧都必须保留手柄。");
+                var actual = popup.Child.PointToScreen(new Point()) - body.PointToScreen(new Point());
+                Assert.AreEqual(relative.X, actual.X, 1.01, "手柄必须与原生窗口同步横移。");
+                Assert.AreEqual(relative.Y, actual.Y, 1.01, "手柄必须与原生窗口同步纵移。");
             }
             var count = moveMessages;
             apply.Invoke(window, arguments);
@@ -277,6 +340,9 @@ internal static class FloatingBarHostChecks
             source.RemoveHook(Observe);
             SettingsManager.SettingsChanged -= SettingsChanged;
             dragging.SetValue(window, false);
+            control.SetBarDragActive(false);
+            control.ApplyPlacementMotionSuspension(false);
+            if (Mouse.Captured == window) Mouse.Capture(null);
             window.RestoreCenter(center);
             apply.Invoke(window, arguments);
         }

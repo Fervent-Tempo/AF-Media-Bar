@@ -578,19 +578,22 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         var delta = new Vector(cursor.X - _dragStart.X, cursor.Y - _dragStart.Y);
         if (!_dragging && Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance * Dpi &&
             Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance * Dpi) return;
-        if (!_dragging)
-        {
-            StopEdgeCollapse();
-            _dockEdge = FloatingBarDockEdge.None;
-            _dragging = true;
-            _mediaControl.SetBarDragActive(true);
-            _mediaControl.SuspendQuickLaunchPresentation();
-            _mediaControl.ApplyPlacementMotionSuspension(true);
-            ClearInteraction();
-            PlacementTransitionStarted?.Invoke(this, EventArgs.Empty);
-            Mouse.Capture(this, CaptureMode.SubTree);
-        }
+        if (!_dragging) BeginDrag();
         ApplyDragPosition(cursor.X, cursor.Y);
+    }
+
+    private void BeginDrag()
+    {
+        StopEdgeCollapse();
+        _dockEdge = FloatingBarDockEdge.None;
+        _dragging = true;
+        _mediaControl.SuspendQuickLaunchPresentation();
+        _mediaControl.ApplyPlacementMotionSuspension(true);
+        ClearInteraction();
+        PlacementTransitionStarted?.Invoke(this, EventArgs.Empty);
+        Mouse.Capture(this, CaptureMode.SubTree);
+        // 交互清理会短暂挂起控件并关闭浮层，完成清理后再保持拖动手柄。
+        _mediaControl.SetBarDragActive(true);
     }
 
     private void ApplyDragPosition(int x, int y)

@@ -83,13 +83,15 @@ internal static class ComponentLayoutPresentationChecks
                         Assert.AreNotSame(previousButton, control.FindName("TaskbarPreviousButton"));
                     }
             // 独立 Popup 的残留会截住桌面输入，使用真实 HWND 验证挂起和隐藏立即关闭。
+            var canvas = new Canvas();
+            canvas.Children.Add(control);
             var host = new Window
             {
-                Content = control,
-                Width = 300,
-                Height = 44,
-                Left = -32000,
-                Top = -32000,
+                Content = canvas,
+                Width = 500,
+                Height = 80,
+                Left = SystemParameters.WorkArea.Left + 40,
+                Top = SystemParameters.WorkArea.Top + 40,
                 ShowInTaskbar = false,
                 ShowActivated = false,
                 WindowStyle = WindowStyle.None
@@ -107,6 +109,17 @@ internal static class ComponentLayoutPresentationChecks
                 var timer = (System.Windows.Threading.DispatcherTimer)MediaBarTestAccess.GetField("_barMoveTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
                 Assert.IsTrue(popup.IsOpen);
                 Assert.IsTrue(timer.IsEnabled);
+                timer.Stop();
+                var body = (FrameworkElement)control.FindName("MainBorder");
+                var relative = popup.Child.PointToScreen(new Point()) - body.PointToScreen(new Point());
+                foreach (var position in new[] { 80d, 5d, 120d, 0d })
+                {
+                    Canvas.SetLeft(control, position);
+                    host.UpdateLayout();
+                    var actual = popup.Child.PointToScreen(new Point()) - body.PointToScreen(new Point());
+                    Assert.AreEqual(relative.X, actual.X, 1.01, "任务栏式 Canvas 位移不能等待计时器再更新手柄。");
+                    Assert.AreEqual(relative.Y, actual.Y, 1.01);
+                }
                 control.ApplyHostVisibilitySuspension(true);
                 Assert.IsFalse(popup.IsOpen, "宿主挂起不能留下可命中的浮层。");
                 Assert.IsFalse(timer.IsEnabled);
@@ -117,7 +130,7 @@ internal static class ComponentLayoutPresentationChecks
                 Assert.IsFalse(popup.IsOpen, "宿主隐藏必须立即关闭手柄。");
                 Assert.IsFalse(timer.IsEnabled);
             }
-            finally { host.Close(); host.Content = null; }
+            finally { host.Close(); host.Content = null; canvas.Children.Clear(); }
             control.UpdateSongInfo(MediaSnapshot.Disconnected);
             control.ApplyTaskbarExperienceSettings();
             Assert.IsTrue(control.IsRestLayerEmpty, "全关闭的无媒体布局必须隐藏媒体栏。");
