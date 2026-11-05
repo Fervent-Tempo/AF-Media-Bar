@@ -47,6 +47,7 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
     private readonly MouseEventHandler _menuItemMouseLeaveHandler;
     private readonly DispatcherTimer _submenuHoverTimer;
     private WpfMenuItem? _pendingHoverItem;
+    private int _focusClearVersion;
     private FrameworkElement? _menuContent;
     private Point? _anchor;
     private nint _previousForeground;
@@ -147,7 +148,24 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
 
         // 鼠标入口不把焦点给第一项，避免出现与系统菜单不同的高亮；键盘入口直接落到第一项。
         if (keyboardOpened)
+        {
             _ = Dispatcher.BeginInvoke(FocusFirstItem, DispatcherPriority.Input);
+        }
+        else
+        {
+            ClearMenuFocus();
+            var focusVersion = ++_focusClearVersion;
+            _ = Dispatcher.BeginInvoke(() =>
+            {
+                if (focusVersion == _focusClearVersion)
+                    ClearMenuFocus();
+            }, DispatcherPriority.Loaded);
+            _ = Dispatcher.BeginInvoke(() =>
+            {
+                if (focusVersion == _focusClearVersion)
+                    ClearMenuFocus();
+            }, DispatcherPriority.ApplicationIdle);
+        }
     }
 
     private async Task<bool> TryShowAsync(Point anchor)
@@ -285,6 +303,7 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
         if (_isHiding)
             return;
 
+        _focusClearVersion++;
         if (e.Key == Key.Escape)
         {
             Dismiss(MenuDismissReason.Escape);
@@ -309,6 +328,7 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
         if (!ReferenceEquals(e.OriginalSource, item))
             return;
 
+        _focusClearVersion++;
         switch (e.Key)
         {
             case Key.Escape:
@@ -493,6 +513,20 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
     {
         parent = item.Parent as WpfMenuItem ?? LogicalTreeHelper.GetParent(item) as WpfMenuItem;
         return parent is not null;
+    }
+
+    private void ClearMenuFocus()
+    {
+        if (_isDisposed || !IsVisible || _isHiding)
+            return;
+
+        // WPF 在窗口激活后可能把焦点交给第一个可聚焦菜单项；Wpf.Ui 的 IsHighlighted 会因此画出类似悬停的底色。
+        // 鼠标打开时清掉键盘焦点，只是把窗口保留在前台；方向键/Enter 仍由窗口处理器落到第一项。
+        // WPF may give keyboard focus to the first focusable item when the window activates; Wpf.Ui's IsHighlighted then paints a
+        // hover-like surface. Mouse-open clears keyboard focus, keeping only the active window; arrow/Enter still focuses the first
+        // item through the window handler.
+        Keyboard.ClearFocus();
+        FocusManager.SetFocusedElement(this, null);
     }
 
     private void FocusFirstItem()
