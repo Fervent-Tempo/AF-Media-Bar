@@ -260,12 +260,13 @@ public sealed class SettingsPersistenceService : IDisposable
 
     private void SaveCore(AppSettings settings)
     {
+        string? temporary = null;
         try
         {
             Directory.CreateDirectory(_directoryPath);
-            var temp = Path.Combine(_directoryPath, $"settings.{Guid.NewGuid():N}.tmp");
+            temporary = Path.Combine(_directoryPath, $"settings.{Guid.NewGuid():N}.tmp");
             var envelope = new SettingsEnvelope(CurrentSchemaVersion, settings.Normalize());
-            using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+            using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
             {
                 JsonSerializer.Serialize(stream, envelope, _jsonOptions);
                 stream.Flush(true);
@@ -273,12 +274,20 @@ public sealed class SettingsPersistenceService : IDisposable
 
             if (File.Exists(_settingsPath))
                 File.Copy(_settingsPath, _backupPath, true);
-            File.Move(temp, _settingsPath, true);
+            File.Move(temporary, _settingsPath, true);
         }
         catch (Exception exception)
         {
             AppLogService.Current?.Error("Settings", "保存设置失败，内存中的设置保留", exception);
             Debug.WriteLine($"[Settings] Save failed; keeping in-memory settings: {exception}");
+        }
+        finally
+        {
+            if (temporary is not null)
+            {
+                try { if (File.Exists(temporary)) File.Delete(temporary); }
+                catch (Exception exception) { Debug.WriteLine($"[Settings] Could not remove temporary settings file: {exception.Message}"); }
+            }
         }
     }
 
