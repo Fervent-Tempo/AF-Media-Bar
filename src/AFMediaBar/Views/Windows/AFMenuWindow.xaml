@@ -14,6 +14,9 @@
         ExtendsContentIntoTitleBar="True"
         Background="Transparent"
         ShowActivated="True"
+        FontFamily="{DynamicResource AppTextFontFamily}"
+        FontWeight="{DynamicResource AppTextFontWeight}"
+        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
         Deactivated="Window_OnDeactivated"
         PreviewKeyDown="Window_OnPreviewKeyDown">
     <Border x:Name="MenuRoot"
