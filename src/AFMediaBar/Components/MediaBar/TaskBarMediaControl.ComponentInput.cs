@@ -82,7 +82,7 @@ public partial class TaskBarMediaControl
         var handleStyle = new Style(typeof(Border));
         handleStyle.Setters.Add(new Setter(Border.BackgroundProperty, new SolidColorBrush(Color.FromArgb(1, 0, 0, 0))));
         var hover = new Trigger { Property = IsMouseOverProperty, Value = true };
-        hover.Setters.Add(new Setter(Border.BackgroundProperty, new DynamicResourceExtension("TaskbarHoverButtonOverBrush")));
+        hover.Setters.Add(new Setter(Border.BackgroundProperty, new DynamicResourceExtension("BarMoveHandleHoverBrush")));
         handleStyle.Triggers.Add(hover);
         _barMoveHandle = new Border
         {
@@ -227,9 +227,6 @@ public partial class TaskBarMediaControl
         if (pointerActive) _barMoveOutsideSince = null;
         else _barMoveOutsideSince ??= Environment.TickCount64;
         if (!canShow || _barMovePopup is null || !pointerActive && !_barMovePopup.IsOpen) return;
-        // 浮层不在主视觉树中，显式同步主题画刷；前景仍绑定媒体文字。
-        foreach (var key in new[] { "TaskbarHoverButtonOverBrush", "TaskbarHoverButtonPressedBrush" })
-            if (!ReferenceEquals(_barMoveHandle.Resources[key], Resources[key])) _barMoveHandle.Resources[key] = Resources[key];
         if (!_barMovePopup.IsOpen)
         {
             _barMoveScreenOrigin = MainBorder.PointToScreen(new Point());
@@ -261,7 +258,7 @@ public partial class TaskBarMediaControl
                 }, HandoffBehavior.SnapshotAndReplace);
         }
         var locked = PresentationSettings.TaskbarBarPositionLocked;
-        if (_barDragActive) _barMoveHandle.SetResourceReference(Border.BackgroundProperty, "TaskbarHoverButtonPressedBrush");
+        if (_barDragActive) _barMoveHandle.SetResourceReference(Border.BackgroundProperty, "BarMoveHandlePressedBrush");
         else _barMoveHandle.ClearValue(Border.BackgroundProperty);
         _barMoveHandle.Cursor = locked ? Cursors.No : Cursors.SizeAll;
         _barMoveHandle.ToolTip = Translations.Get(locked ? "ComponentLayout.Locked" : "ComponentLayout.Move");
@@ -376,13 +373,15 @@ public partial class TaskBarMediaControl
 
     private void ApplyBarMoveContrast(PlayerForegroundDecision? decision)
     {
-        if (_barMoveDisposed || _barMoveHandle?.Child is not TextBlock glyph) return;
+        if (_barMoveDisposed || _barMoveHandle is not { Child: TextBlock glyph } handle) return;
         var animate = _barMoveForegroundDecision is not null && decision is not null && _barMovePopup is { IsOpen: true };
         if (decision is not null) _barMoveForegroundDecision = decision;
-        var foreground = SystemParameters.HighContrast ? SystemColors.WindowTextBrush
-            : _barMoveForegroundDecision is { } value ? value.UsesLightText ? Brushes.White : DarkPlayerForeground
-            : SongTitle.Foreground;
+        var foreground = HandleIndicatorAppearance.Resolve(_barMoveForegroundDecision);
         glyph.Foreground = _barMoveForeground.Apply(foreground, ColorTransitionBrush.ResolveDuration(animate));
+        // 点阵和交互底色都使用栏外背景的决定，不借用媒体栏材质或文字的配色。
+        var palette = TaskbarHoverPalettePolicy.Resolve(((SolidColorBrush)foreground).Color);
+        handle.Resources["BarMoveHandleHoverBrush"] = new SolidColorBrush(palette.ButtonHover);
+        handle.Resources["BarMoveHandlePressedBrush"] = new SolidColorBrush(palette.ButtonPressed);
     }
 
     private IReadOnlyList<ComponentLayoutEntry> PreviewRestEntries() =>
