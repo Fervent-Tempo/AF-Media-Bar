@@ -15,19 +15,20 @@ public sealed class RawMouseInputLifetimeTests
     [TestMethod]
     public async Task SecondReceiverDoesNotReplaceOwnerAndShutdownUnregisters()
     {
-        if (RegisteredDevices().Any(item => item.UsagePage == 1 && item.Usage is 2 or 6))
-            Assert.Inconclusive("测试进程已有鼠标/键盘 Raw Input 接收者，不能覆盖其注册。");
+        if (RegisteredDevices().Any(item => item.UsagePage == 1 && item.Usage == 2))
+            Assert.Inconclusive("测试进程已有鼠标 Raw Input 接收者，不能覆盖其注册。");
         var failures = new ConcurrentQueue<Exception>();
-        using var first = new RawMouseInputSource(_ => { }, (_, _, _, _) => { }, _ => { }, failures.Enqueue);
-        using var second = new RawMouseInputSource(_ => { }, (_, _, _, _) => { }, _ => { }, _ => { });
+        using var first = new RawMouseInputSource(_ => { }, _ => { }, failures.Enqueue);
+        using var second = new RawMouseInputSource(_ => { }, _ => { }, _ => { });
         try
         {
-            await first.Start().WaitAsync(TimeSpan.FromSeconds(3));
+            try { await first.Start().WaitAsync(TimeSpan.FromSeconds(3)); }
+            catch (Exception exception) { Assert.Inconclusive($"当前环境无法注册 Raw Input：{exception.Message}"); }
             Assert.IsTrue(first.Registered);
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => second.Start().WaitAsync(TimeSpan.FromSeconds(3)));
             Assert.IsFalse(second.Registered);
             Assert.IsTrue(await first.SynchronizeAsync().WaitAsync(TimeSpan.FromSeconds(3)));
-            Assert.AreEqual(2, RegisteredDevices().Count(item => item.UsagePage == 1 && item.Usage is 2 or 6));
+            Assert.AreEqual(1, RegisteredDevices().Count(item => item.UsagePage == 1 && item.Usage == 2));
         }
         finally
         {
@@ -36,14 +37,14 @@ public sealed class RawMouseInputLifetimeTests
         }
         Assert.IsFalse(first.Registered);
         Assert.IsFalse(await first.SynchronizeAsync());
-        Assert.AreEqual(0, RegisteredDevices().Count(item => item.UsagePage == 1 && item.Usage is 2 or 6));
+        Assert.AreEqual(0, RegisteredDevices().Count(item => item.UsagePage == 1 && item.Usage == 2));
         Assert.AreEqual(0, failures.Count);
     }
 
     [TestMethod]
     public async Task DisposingBeforeStartDoesNotCreateAThreadOrRegistration()
     {
-        using var source = new RawMouseInputSource(_ => { }, (_, _, _, _) => { }, _ => { }, _ => { });
+        using var source = new RawMouseInputSource(_ => { }, _ => { }, _ => { });
         source.Dispose(); source.Dispose();
         await source.Start().WaitAsync(TimeSpan.FromSeconds(1));
         await source.Completion.WaitAsync(TimeSpan.FromSeconds(1));

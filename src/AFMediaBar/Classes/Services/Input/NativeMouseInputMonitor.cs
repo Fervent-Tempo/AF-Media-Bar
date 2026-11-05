@@ -32,15 +32,11 @@ public sealed class NativeMouseInputMonitor : IHostedService, IDisposable
     private readonly MousePressTracker _localLeft = new();
     private readonly MousePressTracker _localRight = new();
     private readonly Dictionary<IntPtr, int> _devices = [];
-    private readonly HashSet<(IntPtr Device, bool Right)> _shiftKeys = [];
     private readonly Queue<Notification> _wheels = new();
-    private Notification? _pressed;
-    private Notification? _released;
+    private readonly Queue<Notification> _buttons = new();
     private bool _posted;
     private bool _leftDown;
     private bool _rightDown;
-    private bool _initialLeftShift;
-    private bool _initialRightShift;
     private int _initialMouseButtons;
     private volatile bool _disposed;
     private int _generation;
@@ -55,7 +51,7 @@ public sealed class NativeMouseInputMonitor : IHostedService, IDisposable
     {
         _trayIcon = trayIcon; _log = log; _power = power;
         _dispatcher = dispatcher;
-        _source = new(OnRawMouse, OnShift, OnDeviceRemoved, ReportFailure);
+        _source = new(OnRawMouse, OnDeviceRemoved, ReportFailure);
     }
 
     public event EventHandler<TrayWheelEventArgs>? WheelChanged;
@@ -86,7 +82,6 @@ public sealed class NativeMouseInputMonitor : IHostedService, IDisposable
             if (_disposed || _inputManager is not null) return;
             _inputManager = InputManager.Current;
             _inputManager.PreProcessInput += OnLocalInput;
-            _initialLeftShift = KeyDown(0xa0); _initialRightShift = KeyDown(0xa1);
             if (_power is not null) _power.StateChanged += OnPowerChanged;
         }, DispatcherPriority.Send, cancellationToken);
         try
@@ -103,10 +98,14 @@ public sealed class NativeMouseInputMonitor : IHostedService, IDisposable
                     _rawLeft.SetDown(_leftDown, now); _rawRight.SetDown(_rightDown, now);
                 }
             }
-            if (_source.Registered) _log?.Info("Input", "Raw Input 监听已启动（鼠标和 Shift），未安装低级鼠标 Hook。");
+            if (_source.Registered) _log?.Info("Input", "Raw Input 监听已启动（仅鼠标），未安装低级鼠标 Hook。");
         }
         catch (OperationCanceledException) { _source.Dispose(); throw; }
-        catch (Exception exception) { _source.Dispose(); ReportFailure(exception); }
+        catch (Exception exception)
+        {
+            _source.Dispose();
+            _log?.Error("Input", "Raw Input 注册失败，托盘滚轮与全局点击判定将不可用。", exception);
+        }
     }
 
     /// <summary>先排空已排队的 Raw Input，再按本次按压确认；不阻塞 UI 或系统输入。</summary>
@@ -123,8 +122,16 @@ public sealed class NativeMouseInputMonitor : IHostedService, IDisposable
         }
         if (_source.Registered)
         {
-            try { if (!await _source.SynchronizeAsync().WaitAsync(TimeSpan.FromMilliseconds(250))) return true; }
-            catch (TimeoutException exception) { ReportFailure(exception); return true; }
+            try
+            {
+                // 同步失败按“未抑制”处理：Raw Input 线程异常不应吞掉真实点击。
+                if (!await _source.SynchronizeAsync().WaitAsync(TimeSpan.FromMilliseconds(250)))
+                {
+                    ReportFailure(new TimeoutException("Raw Input 同步失败，未确认本次点击是否应被抑制。"));
+                    return false;
+                }
+            }
+            catch (TimeoutException exception) { ReportFailure(exception); return false; }
         }
         if (_disposed || generation != Volatile.Read(ref _generation)) return true;
         lock (_gate)
@@ -192,7 +199,7 @@ public sealed class NativeMouseInputMonitor : IHostedService, IDisposable
             if ((packet.Buttons & 0x400) != 0)
             {
                 _rawLeft.Wheel(packet.Time); _rawRight.Wheel(packet.Time);
-                wheel = new(packet.Wheel, _initialLeftShift || _initialRightShift || _shiftKeys.Count > 0, left, right);
+                wheel = new(packet.Wheel, IsShiftDown, left, right);
             }
         }
         if (pressed) Enqueue(new(1, packet.X, packet.Y, packet.Time, generation, null));
@@ -201,22 +208,11 @@ public sealed class NativeMouseInputMonitor : IHostedService, IDisposable
         if (press) PublishButtonPress(packet.X, packet.Y);
     }
 
-    private void OnShift(IntPtr device, bool right, bool down, uint time)
-    {
-        lock (_gate)
-        {
-            if (_disposed || unchecked((int)(time - _minimumInputTime)) < 0) return;
-            if (right) _initialRightShift = false; else _initialLeftShift = false;
-            if (down) { if (_shiftKeys.Count < 128) _shiftKeys.Add((device, right)); }
-            else _shiftKeys.Remove((device, right));
-        }
-    }
-
     private void OnDeviceRemoved(IntPtr device)
     {
         lock (_gate)
         {
-            _devices.Remove(device); _shiftKeys.RemoveWhere(key => key.Device == device);
+            _devices.Remove(device);
             _leftDown = (_initialMouseButtons & 1) != 0 || _devices.Values.Any(value => (value & 1) != 0);
             _rightDown = (_initialMouseButtons & 2) != 0 || _devices.Values.Any(value => (value & 2) != 0);
             if (!_leftDown) _rawLeft.Clear();
@@ -230,8 +226,7 @@ public sealed class NativeMouseInputMonitor : IHostedService, IDisposable
         lock (_gate)
         {
             if (_disposed || value.Generation != _generation || unchecked((int)(value.Time - _minimumInputTime)) < 0) return;
-            if (value.Kind == 1) _pressed = value;
-            else if (value.Kind == 2) _released = value;
+            if (value.Kind is 1 or 2) { if (_buttons.Count == 16) _buttons.Dequeue(); _buttons.Enqueue(value); }
             else { if (_wheels.Count == 64) _wheels.Dequeue(); _wheels.Enqueue(value); }
             if (!_posted) { _posted = true; post = true; }
         }
@@ -242,20 +237,25 @@ public sealed class NativeMouseInputMonitor : IHostedService, IDisposable
 
     private void DrainNotifications()
     {
-        Notification? pressed;
-        Notification? released;
+        Notification[] buttons;
         Notification[] wheels;
         lock (_gate)
         {
-            pressed = _pressed; released = _released; wheels = _wheels.ToArray();
-            _pressed = null; _released = null; _wheels.Clear(); _posted = false;
+            buttons = _buttons.ToArray(); wheels = _wheels.ToArray();
+            _buttons.Clear(); _wheels.Clear(); _posted = false;
         }
         if (_disposed) return;
         var now = unchecked((uint)Environment.TickCount);
-        if (pressed is { } down && down.Generation == _generation && unchecked(now - down.Time) <= 250)
-            LeftButtonPressed?.Invoke(this, new(down.X, down.Y));
-        if (!_disposed && released is { } up && up.Generation == _generation && !IsLeftButtonDown)
-            LeftButtonReleased?.Invoke(this, new(up.X, up.Y));
+        foreach (var button in buttons)
+        {
+            if (_disposed) return;
+            if (button.Generation != _generation) continue;
+            // 按压与释放可能连续到达；放宽窗口，避免 UI 忙时丢掉拖动修复依赖的释放。
+            if (button.Kind == 1 && unchecked(now - button.Time) <= 1000)
+                LeftButtonPressed?.Invoke(this, new(button.X, button.Y));
+            else if (button.Kind == 2 && !IsLeftButtonDown)
+                LeftButtonReleased?.Invoke(this, new(button.X, button.Y));
+        }
         foreach (var wheel in wheels)
         {
             if (_disposed) return;
@@ -294,19 +294,16 @@ public sealed class NativeMouseInputMonitor : IHostedService, IDisposable
 
     private void OnPowerChanged(object? sender, EventArgs args)
     {
-        var leftShift = KeyDown(0xa0);
-        var rightShift = KeyDown(0xa1);
         var buttons = (IsLeftButtonDown ? 1 : 0) | (IsRightButtonDown ? 2 : 0);
         lock (_gate)
         {
             Interlocked.Increment(ref _generation);
             _minimumInputTime = unchecked((uint)Environment.TickCount);
-            _devices.Clear(); _shiftKeys.Clear(); _rawLeft.Clear(); _rawRight.Clear(); _localLeft.Clear(); _localRight.Clear();
-            _initialLeftShift = leftShift; _initialRightShift = rightShift;
+            _devices.Clear(); _rawLeft.Clear(); _rawRight.Clear(); _localLeft.Clear(); _localRight.Clear();
             _initialMouseButtons = buttons;
             _leftDown = (_initialMouseButtons & 1) != 0; _rightDown = (_initialMouseButtons & 2) != 0;
             _rawLeft.SetDown(_leftDown, _minimumInputTime); _rawRight.SetDown(_rightDown, _minimumInputTime);
-            _wheels.Clear(); _pressed = null; _released = null;
+            _wheels.Clear(); _buttons.Clear();
         }
     }
 
@@ -346,7 +343,7 @@ public sealed class NativeMouseInputMonitor : IHostedService, IDisposable
             if (_disposed) return;
             _disposed = true;
             Interlocked.Increment(ref _generation);
-            _pressed = null; _released = null; _wheels.Clear();
+            _buttons.Clear(); _wheels.Clear();
         }
         _source.Dispose();
         if (_power is not null) _power.StateChanged -= OnPowerChanged;

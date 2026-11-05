@@ -14,7 +14,6 @@ internal sealed class RawMouseInputSource : IDisposable
     private const uint SynchronizeMessage = NativeMethods.WM_APP + 71;
     private const uint HeartbeatMessage = NativeMethods.WM_APP + 72;
     private readonly Action<RawMousePacket> _mouse;
-    private readonly Action<IntPtr, bool, bool, uint> _shift;
     private readonly Action<IntPtr> _removed;
     private readonly Action<Exception> _failure;
     private readonly object _gate = new();
@@ -32,9 +31,8 @@ internal sealed class RawMouseInputSource : IDisposable
     private long _packetMaximum;
     private Exception? _shutdownFailure;
 
-    internal RawMouseInputSource(Action<RawMousePacket> mouse, Action<IntPtr, bool, bool, uint> shift,
-        Action<IntPtr> removed, Action<Exception> failure)
-    { _mouse = mouse; _shift = shift; _removed = removed; _failure = failure; }
+    internal RawMouseInputSource(Action<RawMousePacket> mouse, Action<IntPtr> removed, Action<Exception> failure)
+    { _mouse = mouse; _removed = removed; _failure = failure; }
 
     internal bool Registered => _registered && !_disposed;
     internal Task Completion => _stopped.Task;
@@ -79,7 +77,7 @@ internal sealed class RawMouseInputSource : IDisposable
             if (_disposed) return;
             EnsureRegistrationAvailable();
             var devices = Devices(_window, 0x2100);
-            if (!NativeMethods.RegisterRawInputDevices(devices, 2, (uint)Marshal.SizeOf<NativeMethods.RAWINPUTDEVICE>()))
+            if (!NativeMethods.RegisterRawInputDevices(devices, 1, (uint)Marshal.SizeOf<NativeMethods.RAWINPUTDEVICE>()))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             _registered = true;
             try
@@ -152,14 +150,6 @@ internal sealed class RawMouseInputSource : IDisposable
                     unchecked((uint)NativeMethods.GetMessageTime()), unchecked((short)position), unchecked((short)(position >> 16))));
             }
         }
-        else if (header.Type == 1 && size >= headerSize + 16)
-        {
-            var key = unchecked((ushort)Marshal.ReadInt16(_buffer, offset + 6));
-            // 只读 Shift 的按下/抬起，不保存或转发其他键的信息。
-            if (key is 0x10 or 0xa0 or 0xa1)
-                _shift(header.Device, Marshal.ReadInt16(_buffer, offset) == 0x36 || key == 0xa1,
-                    (Marshal.ReadInt16(_buffer, offset + 2) & 1) == 0, unchecked((uint)NativeMethods.GetMessageTime()));
-        }
         Maximum(ref _packetMaximum, Stopwatch.GetTimestamp() - began);
     }
 
@@ -177,7 +167,7 @@ internal sealed class RawMouseInputSource : IDisposable
     }
 
     private static NativeMethods.RAWINPUTDEVICE[] Devices(IntPtr target, uint flags) =>
-        [new() { UsagePage = 1, Usage = 2, Flags = flags, Target = target }, new() { UsagePage = 1, Usage = 6, Flags = flags, Target = target }];
+        [new() { UsagePage = 1, Usage = 2, Flags = flags, Target = target }];
 
     private static NativeMethods.RAWINPUTDEVICE[] Registrations()
     {
@@ -193,8 +183,8 @@ internal sealed class RawMouseInputSource : IDisposable
 
     private static void EnsureRegistrationAvailable()
     {
-        if (Registrations().Any(item => item.UsagePage == 1 && item.Usage is 2 or 6))
-            throw new InvalidOperationException("当前进程已有鼠标或键盘 Raw Input 接收者，未覆盖现有注册。");
+        if (Registrations().Any(item => item.UsagePage == 1 && item.Usage == 2))
+            throw new InvalidOperationException("当前进程已有鼠标 Raw Input 接收者，未覆盖现有注册。");
     }
 
     private void Unregister()
@@ -203,7 +193,7 @@ internal sealed class RawMouseInputSource : IDisposable
         try
         {
             // 其他组件若替换了接收窗口，不注销其注册。
-            var owned = Registrations().Where(item => item.Target == _window && item.UsagePage == 1 && item.Usage is 2 or 6)
+            var owned = Registrations().Where(item => item.Target == _window && item.UsagePage == 1 && item.Usage == 2)
                 .Select(item => new NativeMethods.RAWINPUTDEVICE { UsagePage = item.UsagePage, Usage = item.Usage, Flags = 1 }).ToArray();
             if (owned.Length != 0 && !NativeMethods.RegisterRawInputDevices(owned, (uint)owned.Length, (uint)Marshal.SizeOf<NativeMethods.RAWINPUTDEVICE>()))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
