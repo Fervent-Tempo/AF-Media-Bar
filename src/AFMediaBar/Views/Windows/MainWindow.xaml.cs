@@ -45,6 +45,7 @@ namespace AFMediaBar.Views.Windows
         private AudioControlFlyoutWindow? _audioControlFlyout;
         private int _audioControlFlyoutRequestVersion;
         private readonly AppLogService _logService;
+        private readonly NativeMouseInputMonitor _mouseInputMonitor;
         private readonly WindowAppearanceService _appearanceService;
         private readonly ScreenBackgroundSampler _screenBackgroundSampler;
         private readonly TaskbarOccupiedAreaService _occupiedAreaService;
@@ -113,6 +114,7 @@ namespace AFMediaBar.Views.Windows
             AudioControlViewModel audioControlViewModel,
             Func<AudioControlFlyoutWindow> audioControlFlyoutFactory,
             AppLogService logService,
+            NativeMouseInputMonitor mouseInputMonitor,
             WindowAppearanceService appearanceService,
             ScreenBackgroundSampler screenBackgroundSampler,
             TaskbarOccupiedAreaService occupiedAreaService,
@@ -171,6 +173,7 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel = audioControlViewModel;
             _audioControlFlyoutFactory = audioControlFlyoutFactory;
             _logService = logService;
+            _mouseInputMonitor = mouseInputMonitor;
             _appearanceService = appearanceService;
             _screenBackgroundSampler = screenBackgroundSampler;
             _occupiedAreaService = occupiedAreaService;
@@ -214,6 +217,7 @@ namespace AFMediaBar.Views.Windows
             _batteryMenuWindow = new AFMenuWindow(_appearanceService);
 
             Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
+            _mouseInputMonitor.LeftButtonPressed += MouseInputMonitor_OnLeftButtonPressed;
             _trayMenu.OpenSettingsRequested += ViewModel_OpenSettingsRequested;
             _trayMenu.ExitRequested += TrayMenu_ExitRequested;
             _trayMenu.OpenUpdateSettingsRequested += ViewModel_OpenUpdateSettingsRequested;
@@ -338,6 +342,7 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel.InputDeviceMenuRequested -= AudioControl_OnInputDeviceMenuRequested;
             _audioControlViewModel.CurrentAppVolumeMenuRequested -= AudioControl_OnCurrentAppVolumeMenuRequested;
             _audioControlViewModel.SettingsOpenRequested -= ViewModel_OpenSettingsRequested;
+            _mouseInputMonitor.LeftButtonPressed -= MouseInputMonitor_OnLeftButtonPressed;
             _trayMenu.OpenSettingsRequested -= ViewModel_OpenSettingsRequested;
             _trayMenu.ExitRequested -= TrayMenu_ExitRequested;
             _trayMenu.OpenUpdateSettingsRequested -= ViewModel_OpenUpdateSettingsRequested;
@@ -1019,6 +1024,26 @@ namespace AFMediaBar.Views.Windows
                 Translations.Get(result == QuickLaunchResult.InvalidTarget
                     ? "Shell.QuickLaunch.Status.InvalidTarget"
                     : "Shell.QuickLaunch.Status.Failed"), ShellNotificationTarget.None, "QuickLaunch.Failed");
+        }
+
+        private void MouseInputMonitor_OnLeftButtonPressed(object? sender, NativeMouseButtonEventArgs e)
+        {
+            // 激活失败时窗口不会收到 Deactivated；左键按下后统一检查并关闭仍未激活的菜单。
+            // A window that failed to activate never receives Deactivated; after a left press, close menus that are still inactive.
+            _ = Dispatcher.BeginInvoke(() =>
+            {
+                if (_isClosing)
+                    return;
+                DismissInactiveMenu(_trayMenuWindow);
+                DismissInactiveMenu(_memoryMenuWindow);
+                DismissInactiveMenu(_batteryMenuWindow);
+            }, DispatcherPriority.Background);
+        }
+
+        private static void DismissInactiveMenu(AFMenuWindow menu)
+        {
+            if (menu.IsVisible && !menu.IsActive)
+                menu.DismissImmediately();
         }
     }
 }

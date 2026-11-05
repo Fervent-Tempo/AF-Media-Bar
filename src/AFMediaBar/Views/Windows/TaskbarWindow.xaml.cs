@@ -240,6 +240,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         MediaControl.BarDragHandleReleased += MediaControl_PreviewMouseLeftButtonUp;
         PreviewMouseMove += TaskbarWindow_PreviewMouseMove;
         _mouseInputMonitor.LeftButtonReleased += MouseInputMonitor_OnLeftButtonReleased;
+        _mouseInputMonitor.LeftButtonPressed += MouseInputMonitor_OnLeftButtonPressed;
 
         _taskBarService = taskBarService;
         _occupiedAreaService = occupiedAreaService;
@@ -2354,6 +2355,17 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     /// one Background tick: WPF finishes routing the release first (legitimate control captures like ButtonBase's release
     /// themselves by then), so the repair layer never steals a capture that is still legally held.
     /// </summary>
+    private void MouseInputMonitor_OnLeftButtonPressed(object? sender, NativeMouseButtonEventArgs e)
+    {
+        if (!_playerMenuWindow.IsVisible || _playerMenuWindow.IsActive)
+            return;
+        _ = Dispatcher.BeginInvoke(() =>
+        {
+            if (!_isClosing && _playerMenuWindow.IsVisible && !_playerMenuWindow.IsActive)
+                _playerMenuWindow.DismissImmediately();
+        }, DispatcherPriority.Background);
+    }
+
     private void MouseInputMonitor_OnLeftButtonReleased(object? sender, NativeMouseButtonEventArgs e)
     {
         if (_isClosing)
@@ -2572,6 +2584,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _playerMenu.ReloadTaskbarHostRequested -= PlayerMenu_ReloadTaskbarHostRequested;
         _playerMenu.QuickLaunchRequested -= PlayerMenu_QuickLaunchRequested;
         _mouseInputMonitor.LeftButtonReleased -= MouseInputMonitor_OnLeftButtonReleased;
+        _mouseInputMonitor.LeftButtonPressed -= MouseInputMonitor_OnLeftButtonPressed;
         MediaControl.OutputDeviceInfoRequested -= MediaControl_OutputDeviceInfoRequested;
         MediaControl.VolumeInfoRequested -= MediaControl_VolumeInfoRequested;
         _compactFlyout.Dispose();
