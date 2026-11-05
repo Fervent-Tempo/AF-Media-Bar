@@ -1,4 +1,5 @@
 using System.Windows.Media;
+using AFMediaBar.Classes.Settings;
 using Wpf.Ui.Appearance;
 
 namespace AFMediaBar.Classes.Services;
@@ -64,11 +65,15 @@ public static class AppIconPolicy
     /// <param name="systemTheme">Windows 的系统模式（任务栏）。/ The Windows system mode (taskbar).</param>
     /// <param name="applicationTheme">本程序生效的应用主题，仅在系统模式读不到时使用。/ The application theme in effect, used only when the system mode is unreadable.</param>
     /// <param name="systemWindowColor">系统窗口底色。/ The system window colour.</param>
+    /// <param name="interaction">托盘风格与单击动作；默认保持原图标。</param>
     /// <returns>图形资源的 pack URI。/ The pack URI of the artwork.</returns>
     public static string ResolveTrayArtworkUri(
         WindowsThemeDetector.ThemeMode systemTheme,
         ApplicationTheme applicationTheme,
-        Color systemWindowColor) => ResolveArtworkUri(
+        Color systemWindowColor,
+        GlobalInteractionSettings interaction = default)
+    {
+        var artwork = ResolveArtworkUri(
             systemTheme switch
             {
                 WindowsThemeDetector.ThemeMode.Dark => ApplicationTheme.Dark,
@@ -76,4 +81,9 @@ public static class AppIconPolicy
                 _ => applicationTheme
             },
             systemWindowColor);
+        if (!interaction.UseNativeTrayIcon) return artwork;
+        var name = interaction.TrayClickAction == TrayClickAction.OpenAudioControl ? "audio-output-native" : "af-native";
+        var color = artwork == LightArtworkUri ? "white" : "dark";
+        return $"pack://application:,,,/Assets/Tray/{name}_{color}.ico";
+    }
 }

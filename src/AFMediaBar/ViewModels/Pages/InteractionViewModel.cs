@@ -74,6 +74,12 @@ public partial class InteractionViewModel : ObservableObject, IDisposable
         set => Update(Current with { TrayClickAction = value });
     }
 
+    public bool UseNativeTrayIcon
+    {
+        get => Current.UseNativeTrayIcon;
+        set => Update(Current with { UseNativeTrayIcon = value });
+    }
+
     public TrayWheelBehavior TrayPrimaryWheelAction
     {
         get => Current.TrayPrimaryWheelAction;
@@ -123,7 +129,7 @@ public partial class InteractionViewModel : ObservableObject, IDisposable
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
         if (_disposed || !_configuration.IsActive) return;
-        if (e.PropertyName is nameof(AppSettings.Experiments) or nameof(AppSettings.FloatingBar) ||
+        if (e.PropertyName is nameof(AppSettings.Experiments) or nameof(AppSettings.FloatingBar) or nameof(AppSettings.Interaction) ||
             e.ResetScope is SettingsResetScope.Interaction or SettingsResetScope.All)
             RaiseAll();
     }
@@ -139,6 +145,7 @@ public partial class InteractionViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ChordWheelAction));
         OnPropertyChanged(nameof(ShowWheelTooltips));
         OnPropertyChanged(nameof(TrayClickAction));
+        OnPropertyChanged(nameof(UseNativeTrayIcon));
         OnPropertyChanged(nameof(TrayPrimaryWheelAction));
         OnPropertyChanged(nameof(TrayChordWheelAction));
     }

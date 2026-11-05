@@ -86,6 +86,7 @@
       "modifier": "v1.2.0",
       "primaryWheelAction": "v1.2.0",
       "showWheelTooltips": "v1.3.0",
+      "useNativeTrayIcon": "unreleased",
       "textClickAction": "v1.2.0",
       "trayChordWheelAction": "v1.2.0",
       "trayClickAction": "v1.2.0",

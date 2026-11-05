@@ -3906,4 +3906,10 @@
   <data name="Notification.Preview.Unavailable" xml:space="preserve"><value>目前沒有可用的通知目標，無法傳送通知。</value></data>
   <data name="Start.Faq.Smtc" xml:space="preserve"><value>無法控制播放或不顯示封面？</value></data>
   <data name="Start.Faq.Smtc.Body" xml:space="preserve"><value>請嘗試在播放器設定中開啟「SMTC」「支援系統媒體控制」或「支援系統播放控制項」等選項，再重新播放歌曲。不同播放器的選項名稱可能不同。</value></data>
+  <data name="Interaction.Row.NativeTrayIcon.Title" xml:space="preserve">
+    <value>啟用原生風格系統匣圖示</value>
+  </data>
+  <data name="Interaction.Row.NativeTrayIcon.Description" xml:space="preserve">
+    <value>將點擊圖示設為開啟音訊控制選單時，會自動使用音訊輸出圖示。</value>
+  </data>
 </root>

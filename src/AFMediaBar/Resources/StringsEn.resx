@@ -3906,4 +3906,10 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
   <data name="Notification.Preview.Unavailable" xml:space="preserve"><value>No notification target is currently available.</value></data>
   <data name="Start.Faq.Smtc" xml:space="preserve"><value>Playback controls do not work, or artwork is missing?</value></data>
   <data name="Start.Faq.Smtc.Body" xml:space="preserve"><value>Try enabling SMTC, system media control support, or system playback controls in the player settings, then start playback again. The option name varies by player.</value></data>
+  <data name="Interaction.Row.NativeTrayIcon.Title" xml:space="preserve">
+    <value>Use native-style tray icons</value>
+  </data>
+  <data name="Interaction.Row.NativeTrayIcon.Description" xml:space="preserve">
+    <value>When a tray click opens the audio control menu, the audio output icon is used automatically.</value>
+  </data>
 </root>

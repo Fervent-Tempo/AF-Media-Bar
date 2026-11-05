@@ -69,6 +69,8 @@ public readonly record struct GlobalInteractionSettings(
 {
     /// <summary>是否显示媒体栏与托盘的滚轮操作提示；托盘音频状态和滚动结果仍可见。/ Whether to show wheel action hints on the bar and tray; tray audio status and wheel results remain visible.</summary>
     public bool ShowWheelTooltips { get; init; } = true;
+    /// <summary>使用单色原生风格托盘图标；旧配置缺字段时保持原图标。</summary>
+    public bool UseNativeTrayIcon { get; init; }
     public AudioDeviceSwitchTarget OutputDeviceClickTarget { get; init; }
     public AudioDeviceSwitchTarget OutputDeviceWheelTarget { get; init; }
     public AudioDeviceSwitchTarget InputDeviceClickTarget { get; init; }

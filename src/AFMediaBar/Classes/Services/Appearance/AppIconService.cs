@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using AFMediaBar.Classes.Settings;
 using Microsoft.Win32;
 using Wpf.Ui.Appearance;
 using DrawingIcon = System.Drawing.Icon;
@@ -28,7 +29,7 @@ public sealed class AppIconService : IDisposable
     private string? _publishedTrayArtwork;
     private bool _disposed;
 
-    /// <summary>创建图标服务并订阅主题变化与系统偏好变化。/ Creates the icon service and subscribes to theme and system preference changes.</summary>
+    /// <summary>创建图标服务并订阅主题、系统偏好和托盘设置变化。</summary>
     public AppIconService()
     {
         ApplicationThemeManager.Changed += OnApplicationThemeChanged;
@@ -39,6 +40,7 @@ public sealed class AppIconService : IDisposable
         // theme does not, and WPF-UI only raises Changed for an **application-theme** change, so changing only the taskbar mode
         // never reaches the handler above.
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
+        SettingsManager.SettingsChanged += OnSettingsChanged;
     }
 
     /// <summary>主题变化、图标应当换一套时触发。/ Raised when the theme changed and the artwork should be swapped.</summary>
@@ -121,7 +123,8 @@ public sealed class AppIconService : IDisposable
         return AppIconPolicy.ResolveTrayArtworkUri(
             systemTheme,
             ApplicationThemeManager.GetAppTheme(),
-            SystemColors.WindowColor);
+            SystemColors.WindowColor,
+            SettingsManager.Current.Interaction);
     }
 
     /// <summary>把一个窗口的图标换成当前主题对应的那一套。/ Swaps one window's icon to the one for the current theme.</summary>
@@ -159,6 +162,14 @@ public sealed class AppIconService : IDisposable
     /// artwork is decided differently from the windows', so only a change of the system mode (taskbar) needs a swap.
     /// </summary>
     private void OnUserPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e)
+        => PublishTrayArtworkChange();
+
+    private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
+    {
+        if (e.PropertyName is null or nameof(AppSettings.Interaction)) PublishTrayArtworkChange();
+    }
+
+    private void PublishTrayArtworkChange()
     {
         if (_disposed)
         {
@@ -186,6 +197,7 @@ public sealed class AppIconService : IDisposable
         _disposed = true;
         ApplicationThemeManager.Changed -= OnApplicationThemeChanged;
         SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
+        SettingsManager.SettingsChanged -= OnSettingsChanged;
     }
 
     /// <summary>

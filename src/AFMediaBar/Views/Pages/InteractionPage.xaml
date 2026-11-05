@@ -79,6 +79,9 @@
             <components:SettingsGroup GroupId="Common.TrayIcon" Header="{DynamicResource Loc.Common.TrayIcon}" Icon="{ui:SymbolIcon Apps24}">
                 <StackPanel>
                     <components:SettingsDiagram Margin="0,0,0,12" Kind="TrayOverflow"/>
+                    <components:SettingsRow Title="{DynamicResource Loc.Interaction.Row.NativeTrayIcon.Title}" Description="{DynamicResource Loc.Interaction.Row.NativeTrayIcon.Description}" Icon="{ui:SymbolIcon Apps24}" KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.UseNativeTrayIcon, Mode=TwoWay}"/>
+                    </components:SettingsRow>
                     <components:SettingsRow Description="{DynamicResource Loc.Interaction.Row.TrayClick.Description}" Icon="{ui:SymbolIcon CursorClick24}" Title="{DynamicResource Loc.Interaction.Row.TrayClick.Title}">
                         <ComboBox Style="{StaticResource AfSettingsActionSelectStyle}" SelectedValue="{Binding ViewModel.TrayClickAction, Mode=TwoWay}" SelectedValuePath="Tag">
                             <ComboBoxItem Content="{DynamicResource Loc.Interaction.TrayAction.OpenAudioControl}" Tag="{x:Static settings:TrayClickAction.OpenAudioControl}"/>
