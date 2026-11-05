@@ -82,7 +82,14 @@ public static class AppIconPolicy
             },
             systemWindowColor);
         if (!interaction.UseNativeTrayIcon) return artwork;
-        var name = interaction.TrayClickAction == TrayClickAction.OpenAudioControl ? "audio-output-native" : "af-native";
+        var name = interaction.TrayClickAction switch
+        {
+            TrayClickAction.OpenAudioControl => "audio-output-native",
+            TrayClickAction.OpenOutputDeviceMenu => "output-device-native",
+            TrayClickAction.OpenInputDeviceMenu => "input-device-native",
+            TrayClickAction.OpenCurrentAppVolumeMenu => "volume-native",
+            _ => "af-native"
+        };
         var color = artwork == LightArtworkUri ? "white" : "dark";
         return $"pack://application:,,,/Assets/Tray/{name}_{color}.ico";
     }

@@ -3910,6 +3910,6 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
     <value>Use native-style tray icons</value>
   </data>
   <data name="Interaction.Row.NativeTrayIcon.Description" xml:space="preserve">
-    <value>When a tray click opens the audio control menu, the audio output icon is used automatically.</value>
+    <value>Automatically use the matching icon for audio controls, output devices, input devices, or current app volume based on the click action.</value>
   </data>
 </root>

@@ -3910,6 +3910,6 @@
     <value>啟用原生風格系統匣圖示</value>
   </data>
   <data name="Interaction.Row.NativeTrayIcon.Description" xml:space="preserve">
-    <value>將點擊圖示設為開啟音訊控制選單時，會自動使用音訊輸出圖示。</value>
+    <value>依單擊動作，自動使用音訊控制、輸出裝置、輸入裝置或目前應用程式音量的對應圖示。</value>
   </data>
 </root>

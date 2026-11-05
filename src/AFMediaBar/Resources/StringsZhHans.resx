@@ -3910,6 +3910,6 @@
     <value>启用原生风格托盘图标</value>
   </data>
   <data name="Interaction.Row.NativeTrayIcon.Description" xml:space="preserve">
-    <value>开启点击图标打开音频控制菜单时会自动使用音频输出图标。</value>
+    <value>根据单击动作，自动使用音频控制、输出设备、输入设备或当前应用音量的对应图标。</value>
   </data>
 </root>

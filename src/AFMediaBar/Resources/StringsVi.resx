@@ -3947,6 +3947,6 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
     <value>Bật biểu tượng khay kiểu gốc</value>
   </data>
   <data name="Interaction.Row.NativeTrayIcon.Description" xml:space="preserve">
-    <value>Khi thao tác nhấp biểu tượng khay mở menu điều khiển âm thanh, biểu tượng đầu ra âm thanh sẽ được sử dụng tự động.</value>
+    <value>Tự động dùng biểu tượng tương ứng cho điều khiển âm thanh, thiết bị đầu ra, thiết bị đầu vào hoặc âm lượng ứng dụng hiện tại theo thao tác nhấp.</value>
   </data>
 </root>

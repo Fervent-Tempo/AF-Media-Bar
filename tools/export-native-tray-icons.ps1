@@ -1,4 +1,4 @@
-# 将托盘矢量源导出为深浅色多尺寸 ICO；只处理本项目使用的 path、circle 和 rect。
+# 从快捷控制字形生成对应矢量源，再导出深浅色多尺寸 ICO；支持 path、circle 和 rect。
 # 从 PowerShell 7 的 STA 进程运行：pwsh -NoProfile -STA -File tools/export-native-tray-icons.ps1。
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName PresentationCore, WindowsBase
@@ -8,18 +8,60 @@ $sizes = @(16, 20, 24, 32, 40, 48, 64)
 
 function Number([string]$value) { [double]::Parse($value, $culture) }
 
+# 字形与字体名称均读取程序的权威定义，避免托盘和快捷控制各维护一份。
+$projectDirectory = Split-Path $assetDirectory -Parent | Split-Path -Parent
+$glyphSource = Get-Content -LiteralPath (Join-Path $projectDirectory 'Components/Common/MediaControlGlyphs.cs') -Raw
+[xml]$appMarkup = Get-Content -LiteralPath (Join-Path $projectDirectory 'App.xaml') -Raw
+$fontNode = $appMarkup.GetElementsByTagName('FontFamily') | Where-Object {
+    $_.GetAttribute('Key', 'http://schemas.microsoft.com/winfx/2006/xaml') -eq 'AppIconFontFamily'
+} | Select-Object -First 1
+if ($null -eq $fontNode) { throw '找不到 AppIconFontFamily。' }
+$glyphs = [ordered]@{
+    'output-device-native' = 'OutputDevice'
+    'input-device-native' = 'InputDevice'
+    'volume-native' = 'Volume'
+}
+foreach ($entry in $glyphs.GetEnumerator()) {
+    $match = [regex]::Match($glyphSource, 'public const string ' + $entry.Value + '\s*=\s*"\\u([0-9a-fA-F]{4})"')
+    if (!$match.Success) { throw "找不到快捷控制字形：$($entry.Value)" }
+    $text = [Windows.Media.FormattedText]::new([char]::ConvertFromUtf32([Convert]::ToInt32($match.Groups[1].Value, 16)),
+        $culture, [Windows.FlowDirection]::LeftToRight, [Windows.Media.Typeface]::new($fontNode.InnerText),
+        20, [Windows.Media.Brushes]::Black, 1.0)
+    $geometry = $text.BuildGeometry([Windows.Point]::new(0, 0))
+    $bounds = $geometry.Bounds
+    $scale = 16.0 / [Math]::Max($bounds.Width, $bounds.Height)
+    $transform = [Windows.Media.TransformGroup]::new()
+    $transform.Children.Add([Windows.Media.ScaleTransform]::new($scale, $scale))
+    $transform.Children.Add([Windows.Media.TranslateTransform]::new(
+        (20 - $bounds.Width * $scale) / 2 - $bounds.X * $scale,
+        (20 - $bounds.Height * $scale) / 2 - $bounds.Y * $scale))
+    $geometry.Transform = $transform
+    $path = $geometry.GetFlattenedPathGeometry(0.01, [Windows.Media.ToleranceType]::Absolute)
+    $data = $path.ToString($culture) -replace '^F[01]\s*', ''
+    $rule = $path.FillRule.ToString().ToLowerInvariant()
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" fill-rule="' + $rule + '"><path d="' + $data + '"/></svg>'
+    [IO.File]::WriteAllText((Join-Path $assetDirectory "$($entry.Key).svg"), $svg)
+}
+
 function Render-Frame($svg, [int]$size, $brush) {
     $visual = [Windows.Media.DrawingVisual]::new()
     $drawing = $visual.RenderOpen()
     try {
         $drawing.PushTransform([Windows.Media.ScaleTransform]::new($size / 20.0, $size / 20.0))
-        $pen = [Windows.Media.Pen]::new($brush, (Number $svg.'stroke-width'))
-        $pen.StartLineCap = [Windows.Media.PenLineCap]::Round
-        $pen.EndLineCap = [Windows.Media.PenLineCap]::Round
-        $pen.LineJoin = [Windows.Media.PenLineJoin]::Round
+        $fill = if ($svg.fill -eq 'currentColor') { $brush } else { $null }
+        $pen = $null
+        if ($svg.HasAttribute('stroke-width')) {
+            $pen = [Windows.Media.Pen]::new($brush, (Number $svg.'stroke-width'))
+            $pen.StartLineCap = [Windows.Media.PenLineCap]::Round
+            $pen.EndLineCap = [Windows.Media.PenLineCap]::Round
+            $pen.LineJoin = [Windows.Media.PenLineJoin]::Round
+        }
         foreach ($element in $svg.ChildNodes) {
             switch ($element.LocalName) {
-                'path' { $drawing.DrawGeometry($null, $pen, [Windows.Media.Geometry]::Parse($element.d)) }
+                'path' {
+                    $prefix = if ($svg.'fill-rule' -eq 'nonzero') { 'F1 ' } else { 'F0 ' }
+                    $drawing.DrawGeometry($fill, $pen, [Windows.Media.Geometry]::Parse($prefix + $element.d))
+                }
                 'circle' {
                     $drawing.DrawEllipse($null, $pen, [Windows.Point]::new((Number $element.cx), (Number $element.cy)),
                         (Number $element.r), (Number $element.r))
@@ -44,7 +86,7 @@ function Render-Frame($svg, [int]$size, $brush) {
     finally { $stream.Dispose() }
 }
 
-foreach ($name in @('af-native', 'audio-output-native')) {
+foreach ($name in @('af-native', 'audio-output-native') + @($glyphs.Keys)) {
     [xml]$document = Get-Content -LiteralPath (Join-Path $assetDirectory "$name.svg") -Raw
     foreach ($color in @('dark', 'white')) {
         $brush = if ($color -eq 'white') { [Windows.Media.Brushes]::White }
