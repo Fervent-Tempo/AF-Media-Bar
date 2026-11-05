@@ -9,6 +9,19 @@ namespace AFMediaBar.Layout.Tests;
 [TestClass]
 public sealed class LyricsWrapperFallbackTests
 {
+    [TestMethod]
+    public void KrcPayloadKeepsSyllableLinesAndTiming()
+    {
+        // 真实 KRC 行格式：[行起,行时长]<字起,字时长,保留值>文本；不连接酷狗。
+        const string payload = "[0,1000]<0,500,0>Hello<500,500,0> world\n[1000,1000]<0,1000,0>Next";
+        Assert.AreEqual(LyricsRawTypes.Krc, LyricsFormatDetector.Detect(payload));
+        var document = LyricsTextParser.Parse(payload, filterInfoLines: false);
+        Assert.AreEqual(2, document.Lines.Count);
+        Assert.AreEqual("Hello world", document.Lines[0].Text);
+        Assert.AreEqual(0d, document.Lines[0].Start, 0.001);
+        Assert.AreEqual(1d, document.Lines[0].End, 0.001);
+    }
+
     [DataTestMethod]
     [DataRow("[00:01.00]Hello", LyricsRawTypes.Lrc)]
     [DataRow("[1000,1000](1000,500,0)Hello", LyricsRawTypes.Yrc)]
