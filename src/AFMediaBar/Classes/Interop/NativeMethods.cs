@@ -529,6 +529,9 @@ public static partial class NativeMethods
     [LibraryImport("gdi32.dll")]
     public static partial IntPtr CreateRectRgn(int left, int top, int right, int bottom);
 
+    [LibraryImport("gdi32.dll")]
+    public static partial IntPtr CreateRoundRectRgn(int left, int top, int right, int bottom, int width, int height);
+
     /// <summary>读取设备上下文中指定像素的 COLORREF 值。/ Reads the COLORREF value of a pixel in a device context.</summary>
     [LibraryImport("gdi32.dll")]
     public static partial uint GetPixel(IntPtr hdc, int x, int y);

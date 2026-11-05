@@ -6,14 +6,15 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using AFMediaBar.ViewModels.Components;
+using WpfMenuItem = Wpf.Ui.Controls.MenuItem;
 
 namespace AFMediaBar.Components
 {
     /// <summary>
-    /// 托盘右键菜单：媒体会话、任务栏宿主、更新、设置与退出入口。
-    /// Tray context menu with media sessions, taskbar host, update, settings, and exit entries.
+    /// 托盘/任务栏右键菜单内容：媒体会话、任务栏宿主、更新、设置与退出入口。
+    /// Tray/taskbar context-menu content with media sessions, taskbar host, update, settings, and exit entries.
     /// </summary>
-    public partial class AFContextMenu : ContextMenu
+    public partial class AFContextMenu : StackPanel
     {
         public static readonly DependencyProperty ViewModelProperty = DependencyProperty.Register(
             nameof(ViewModel), typeof(AFContextMenuViewModel), typeof(AFContextMenu));
@@ -56,7 +57,7 @@ namespace AFMediaBar.Components
             SessionsMenuItem.Items.Clear();
             foreach (var option in options)
             {
-                SessionsMenuItem.Items.Add(new System.Windows.Controls.MenuItem
+                SessionsMenuItem.Items.Add(new WpfMenuItem
                 {
                     Header = option.DisplayName,
                     IsCheckable = true,
@@ -72,7 +73,7 @@ namespace AFMediaBar.Components
             QuickLaunchMenuItem.Items.Clear();
             if (entries.Count == 0)
             {
-                QuickLaunchMenuItem.Items.Add(new System.Windows.Controls.MenuItem
+                QuickLaunchMenuItem.Items.Add(new WpfMenuItem
                 {
                     Header = Translations.Get("Panel.QuickLaunch.Empty"),
                     IsEnabled = false
@@ -82,7 +83,7 @@ namespace AFMediaBar.Components
 
             foreach (var entry in entries)
             {
-                var item = new System.Windows.Controls.MenuItem { Header = entry.DisplayName };
+                var item = new WpfMenuItem { Header = entry.DisplayName };
                 item.Click += (_, _) => QuickLaunchRequested?.Invoke(entry);
                 QuickLaunchMenuItem.Items.Add(item);
             }

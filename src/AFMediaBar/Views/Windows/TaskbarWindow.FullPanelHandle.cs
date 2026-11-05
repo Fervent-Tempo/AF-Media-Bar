@@ -26,7 +26,7 @@ public partial class TaskbarWindow
     private bool CanKeepExternalFullPanelHandle() => !_isClosing && !_isEnvironmentSuspended && !IsBackgroundPruned &&
         _lastSnapshot.IsConnected &&
         (IsVisible || IsTaskbarPresentationSuspended) &&
-        !_isDragging && !_isFullPanelOpen && !PlayerMenu.IsOpen && !_compactFlyout.IsVisible &&
+        !_isDragging && !_isFullPanelOpen && !_playerMenuWindow.IsMenuOpen && !_compactFlyout.IsVisible &&
         SettingsManager.Current.TaskbarBarEnabled && SettingsManager.Current.TaskbarExperience.FullPanelEntryVisible;
 
     private void ExternalHandle_MediaMouseEnter(object sender, MouseEventArgs e)

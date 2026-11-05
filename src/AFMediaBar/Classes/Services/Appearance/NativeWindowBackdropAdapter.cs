@@ -12,6 +12,7 @@ public sealed class NativeWindowBackdropAdapter
 {
     private readonly Func<nint, int, int, bool>? _attributeOverride;
     private readonly Func<nint, bool, bool>? _frameOverride;
+    private readonly Func<nint, int, int, bool>? _accentOverride;
     private readonly int _windowsBuild = Environment.OSVersion.Version.Build;
     private const int DwmUseImmersiveDarkMode = 20;
     private const int DwmUseImmersiveDarkModeLegacy = 19;
@@ -45,12 +46,17 @@ public sealed class NativeWindowBackdropAdapter
     {
     }
 
-    // 在回归测试中注入原生失败结果，覆盖新旧 DWM 路径而不依赖机器实际材质能力。
-    internal NativeWindowBackdropAdapter(int windowsBuild, Func<nint, int, int, bool> attribute, Func<nint, bool, bool> frame)
+    // 在回归测试中注入原生失败结果，覆盖新旧 DWM 路径与非激活 Accent 状态而不依赖机器实际材质能力。
+    internal NativeWindowBackdropAdapter(
+        int windowsBuild,
+        Func<nint, int, int, bool> attribute,
+        Func<nint, bool, bool> frame,
+        Func<nint, int, int, bool>? accent = null)
     {
         _windowsBuild = windowsBuild;
         _attributeOverride = attribute;
         _frameOverride = frame;
+        _accentOverride = accent;
     }
 
     /// <summary>
@@ -108,16 +114,17 @@ public sealed class NativeWindowBackdropAdapter
     }
 
     /// <summary>
-    /// 为不获取焦点的短暂窗口应用材质。
+    /// 为不获取焦点的窗口或 Popup 应用材质。
     ///
     /// Windows 11 的三种系统材质（云母、亚克力、云母 Alt）由 DWM 采样桌面壁纸绘制，而 DWM 只为**前台**窗口绘制它们：
     /// 实测（26200）同一个非激活窗口上三种材质都是单色填充——窗口内亮度标准差 0.0，把同一个窗口激活后同一位置变成 262 种颜色、
     /// 标准差 14.4，并跟随背后壁纸的明暗。请求云母也一样退化成单色，因此"非激活窗口不要用系统材质"不是亚克力的特例，
     /// 而是所有系统材质的共同前提。
     ///
-    /// 所以永不激活的窗口统一走 Accent 模糊路径：这条路径由窗口自己绘制，实测在非激活状态下依然在模糊背后的内容
-    /// （窗口内亮度标准差 2.1–7.4，随浓度变化，而背后壁纸是 42.5），浓度由材质浓度设置给出。
-    /// Applies a backdrop to a non-activating transient window.
+    /// 所以永不激活的窗口和菜单子项统一走 Accent 路径：这条路径由窗口自己绘制，实测在非激活状态下依然在模糊背后的内容
+    /// （窗口内亮度标准差 2.1–7.4，随浓度变化，而背后壁纸是 42.5），浓度由材质浓度设置给出。Mica/MicaAlt 使用模糊背后，
+    /// Acrylic 使用 Acrylic 模糊；两者都不是系统材质，但材质模式与浓度都有可见效果。
+    /// Applies a backdrop to a window or Popup that never activates.
     ///
     /// Windows 11's three system materials (Mica, Acrylic, Mica Alt) are painted by DWM from the desktop wallpaper, and DWM only
     /// paints them for the **foreground** window: on one and the same non-activated window all three measured as a flat fill — a
@@ -125,10 +132,11 @@ public sealed class NativeWindowBackdropAdapter
     /// deviation of 14.4 that tracked the wallpaper behind it. Requesting Mica degrades just as much, so "no system material on a
     /// non-activating window" is a property of every system material rather than an Acrylic special case.
     ///
-    /// Windows that never activate therefore all use the Accent blur path: that path is painted by the window itself and measured
-    /// to keep blurring the content behind it while non-activated (a luminance deviation of 2.1-7.4 inside the window depending on
-    /// concentration, against 42.5 for the wallpaper behind it), with its concentration coming from the material-concentration
-    /// setting.
+    /// Non-activating windows and menu submenus therefore all use the Accent path: that path is painted by the window itself and
+    /// measured to keep blurring the content behind it while non-activated (a luminance deviation of 2.1-7.4 inside the window
+    /// depending on concentration, against 42.5 for the wallpaper behind it), with its concentration coming from the
+    /// material-concentration setting. Mica/MicaAlt use blur-behind, Acrylic uses acrylic blur; neither is a system material, but the
+    /// material mode and concentration both have a visible effect.
     /// </summary>
     /// <param name="handle">窗口句柄。/ Window handle.</param>
     /// <param name="mode">请求的有效材质；<see cref="ApplicationBackdropMode.FluentSolid"/> 由调用方处理。/ Requested effective backdrop; <see cref="ApplicationBackdropMode.FluentSolid"/> is handled by the caller.</param>
@@ -143,7 +151,10 @@ public sealed class NativeWindowBackdropAdapter
         }
 
         ResetBackdrop(handle);
-        return SetFrame(handle, extended: false) && ApplyAccentPolicy(handle, AccentState.EnableAcrylicBlurBehind, tint);
+        var state = mode == ApplicationBackdropMode.Acrylic
+            ? AccentState.EnableAcrylicBlurBehind
+            : AccentState.EnableBlurBehind;
+        return SetFrame(handle, extended: false) && ApplyAccentPolicy(handle, state, tint);
     }
 
     /// <summary>
@@ -256,8 +267,11 @@ public sealed class NativeWindowBackdropAdapter
     /// <returns>调用成功时为 true；Windows 10 上该 API 未公开，失败时调用方要退回纯色而不是留下透明窗口。
     /// True on success; the API is undocumented on Windows 10, so on failure the caller has to fall back to a solid surface instead of
     /// leaving a transparent window behind.</returns>
-    private static unsafe bool ApplyAccentPolicy(nint handle, AccentState state, int gradientColor)
+    private unsafe bool ApplyAccentPolicy(nint handle, AccentState state, int gradientColor)
     {
+        if (_accentOverride is not null)
+            return _accentOverride(handle, (int)state, gradientColor);
+
         var policy = new AccentPolicy
         {
             State = state,
@@ -292,6 +306,7 @@ public sealed class NativeWindowBackdropAdapter
     private enum AccentState
     {
         Disabled = 0,
+        EnableBlurBehind = 3,
         EnableAcrylicBlurBehind = 4
     }
 

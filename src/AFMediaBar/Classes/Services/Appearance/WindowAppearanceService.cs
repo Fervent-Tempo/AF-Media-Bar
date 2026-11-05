@@ -4,6 +4,7 @@ using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Controls.Primitives;
 using System.Windows.Threading;
+using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Settings;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
@@ -12,10 +13,9 @@ using WpfMenuItem = System.Windows.Controls.MenuItem;
 namespace AFMediaBar.Classes.Services;
 
 /// <summary>
-/// 为普通 Fluent 窗口应用所选材质；WPF 弹出菜单固定使用不透明 Fluent 纯色，
-/// 并在 DWM 生命周期变化后恢复窗口和菜单外观。
-/// Applies the selected backdrop to regular Fluent windows; WPF popup menus
-/// remain opaque Fluent-solid surfaces and are restored after DWM lifecycle changes.
+/// 为普通 Fluent 窗口应用所选材质；激活菜单使用系统材质，非激活通知和菜单子项使用程序绘制的模糊回退。
+/// Applies the selected backdrop to regular Fluent windows; activating menus use the system material, while non-activating
+/// notifications and menu submenus use the app-painted blur fallback.
 /// </summary>
 public sealed class WindowAppearanceService : IDisposable
 {
@@ -29,14 +29,16 @@ public sealed class WindowAppearanceService : IDisposable
     private readonly AppIconService _appIconService;
     private readonly HashSet<FluentWindow> _windows = [];
     private readonly HashSet<FluentWindow> _nonActivatingTransientWindows = [];
+    private readonly HashSet<FluentWindow> _menuWindows = [];
+    private readonly HashSet<FrameworkElement> _menuSubmenuRoots = [];
     private readonly Dictionary<FluentWindow, HwndSource> _windowSources = [];
     private readonly Dictionary<FluentWindow, BackdropState> _appliedBackdrops = [];
-    private readonly HashSet<ContextMenu> _menus = [];
-    private readonly Dictionary<ContextMenu, Window> _menuOwners = [];
     private readonly Dispatcher _dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
     private DispatcherOperation? _refreshOperation;
     private int _refreshGeneration;
     private bool _disposed;
+
+    private static readonly SolidColorBrush MenuHitTestBrush = CreateFrozenBrush(Color.FromArgb(1, 255, 255, 255));
 
     private readonly record struct BackdropState(nint Handle, ApplicationBackdropMode Mode, bool Dark, int Tint);
 
@@ -101,21 +103,48 @@ public sealed class WindowAppearanceService : IDisposable
     }
 
     /// <summary>
-    /// 注册一个由指定宿主窗口拥有的 ContextMenu，并管理其 Popup 外观。
-    /// Registers a ContextMenu owned by the specified window and manages its Popup appearance.
+    /// 注册一个可获取焦点的顶层菜单窗口。窗口未激活时先用程序绘制模糊，激活后切回系统材质。
+    /// Registers a focusable top-level menu window. It uses the app-painted blur while inactive and switches to the system
+    /// backdrop once activated.
     /// </summary>
-    /// <param name="menu">要注册的菜单。/ Menu to register.</param>
-    /// <param name="owner">菜单宿主窗口。/ Menu owner window.</param>
-    public void Attach(ContextMenu menu, Window owner)
+    public void AttachMenuWindow(FluentWindow window)
     {
-        if (_disposed || !_menus.Add(menu))
-        {
+        if (_disposed || !_menuWindows.Add(window))
             return;
-        }
 
-        _menuOwners[menu] = owner;
-        menu.Opened += OnMenuOpened;
-        owner.Closed += OnMenuOwnerClosed;
+        window.Activated += OnMenuWindowActivated;
+        Attach(window);
+    }
+
+    private void OnMenuWindowActivated(object? sender, EventArgs e)
+    {
+        if (_disposed || sender is not FluentWindow window || !_menuWindows.Contains(window))
+            return;
+
+        // 首次显示/定位阶段窗口未激活，记录的是 Accent 回退；激活后必须重新按系统材质计算。
+        _appliedBackdrops.Remove(window);
+        ApplyWindow(window);
+    }
+
+    /// <summary>
+    /// 把菜单内容中的子菜单接入 Popup 外观；子菜单不激活，因此只使用程序绘制模糊。
+    /// Attaches the submenus of a menu content to popup appearance; submenus do not activate, so they only use the app-painted blur.
+    /// </summary>
+    public void AttachMenuSubmenus(FrameworkElement menuRoot)
+    {
+        if (_disposed || !_menuSubmenuRoots.Add(menuRoot))
+            return;
+
+        WireSubmenuHandlers(menuRoot);
+    }
+
+    /// <summary>解除菜单内容中的子菜单外观订阅。/ Removes the submenu appearance subscriptions of a menu content.</summary>
+    public void DetachMenuSubmenus(FrameworkElement menuRoot)
+    {
+        if (!_menuSubmenuRoots.Remove(menuRoot))
+            return;
+
+        UnwireSubmenuHandlers(menuRoot);
     }
 
     private void OnWindowSourceInitialized(object? sender, EventArgs e)
@@ -171,6 +200,8 @@ public sealed class WindowAppearanceService : IDisposable
         window.Loaded -= OnWindowLoaded;
         window.IsVisibleChanged -= OnWindowIsVisibleChanged;
         window.Closed -= OnWindowClosed;
+        if (_menuWindows.Remove(window))
+            window.Activated -= OnMenuWindowActivated;
         _windows.Remove(window);
         _nonActivatingTransientWindows.Remove(window);
         _appliedBackdrops.Remove(window);
@@ -178,20 +209,7 @@ public sealed class WindowAppearanceService : IDisposable
         {
             source.RemoveHook(WindowProc);
         }
-        if (_windows.Count == 0 && _menus.Count == 0) CancelPendingRefresh();
-    }
-
-    private void OnMenuOpened(object? sender, RoutedEventArgs e)
-    {
-        if (sender is ContextMenu menu)
-        {
-            WireSubmenuHandlers(menu);
-            menu.Dispatcher.BeginInvoke(() =>
-            {
-                ApplyMenu(menu);
-                ScheduleMenuZOrderReassert(menu);
-            }, DispatcherPriority.Loaded);
-        }
+        if (_windows.Count == 0) CancelPendingRefresh();
     }
 
     private void OnSubmenuOpened(object sender, RoutedEventArgs e)
@@ -207,25 +225,6 @@ public sealed class WindowAppearanceService : IDisposable
             ApplySubmenu(item);
             ScheduleSubmenuZOrderReassert(item);
         }, DispatcherPriority.Loaded);
-    }
-
-    private void OnMenuOwnerClosed(object? sender, EventArgs e)
-    {
-        if (sender is not Window owner)
-        {
-            return;
-        }
-
-        foreach (var menu in _menuOwners.Where(pair => ReferenceEquals(pair.Value, owner)).Select(pair => pair.Key).ToArray())
-        {
-            UnwireSubmenuHandlers(menu);
-            menu.Opened -= OnMenuOpened;
-            _menuOwners.Remove(menu);
-            _menus.Remove(menu);
-        }
-
-        owner.Closed -= OnMenuOwnerClosed;
-        if (_windows.Count == 0 && _menus.Count == 0) CancelPendingRefresh();
     }
 
     private nint WindowProc(nint hwnd, int message, nint wParam, nint lParam, ref bool handled)
@@ -263,7 +262,7 @@ public sealed class WindowAppearanceService : IDisposable
             }, DispatcherPriority.Loaded);
             return;
         }
-        if (_windows.Count == 0 && _menus.Count == 0 || _refreshOperation?.Status == DispatcherOperationStatus.Pending) return;
+        if (_windows.Count == 0 || _refreshOperation?.Status == DispatcherOperationStatus.Pending) return;
         _refreshOperation = _dispatcher.BeginInvoke(() =>
         {
             _refreshOperation = null;
@@ -284,11 +283,6 @@ public sealed class WindowAppearanceService : IDisposable
         foreach (var window in _windows.ToArray())
         {
             ApplyWindow(window);
-        }
-
-        foreach (var menu in _menus.Where(menu => menu.IsOpen).ToArray())
-        {
-            ApplyMenu(menu);
         }
     }
 
@@ -315,6 +309,7 @@ public sealed class WindowAppearanceService : IDisposable
             mode = ApplicationBackdropMode.FluentSolid;
         var dark = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
         var tint = WindowBackdropPolicy.ResolveLegacyTint(dark, appearance.ResolveBackdropTintOpacityPercent());
+        var isMenuWindow = _menuWindows.Contains(window);
         var state = new BackdropState(source.Handle, mode, dark, tint);
         if (_appliedBackdrops.TryGetValue(window, out var previous) && previous == state) return;
         _appliedBackdrops.Remove(window);
@@ -322,7 +317,8 @@ public sealed class WindowAppearanceService : IDisposable
         {
             window.Background = Brushes.Transparent;
             source.CompositionTarget.BackgroundColor = Colors.Transparent;
-            var applied = _nonActivatingTransientWindows.Contains(window)
+            var useNonActivating = _nonActivatingTransientWindows.Contains(window) || (isMenuWindow && !window.IsActive);
+            var applied = useNonActivating
                 ? _nativeBackdropAdapter.ApplyNonActivatingBackdrop(source.Handle, mode, tint)
                 : _nativeBackdropAdapter.ApplyBackdrop(source.Handle, mode, tint);
 
@@ -333,8 +329,8 @@ public sealed class WindowAppearanceService : IDisposable
             // window instead of a window that is not there.
             if (applied)
             {
-                // 普通亚克力窗口以中性表面控制背景色干扰；非激活通知继续使用既有浓度。
-                if (mode == ApplicationBackdropMode.Acrylic && !_nonActivatingTransientWindows.Contains(window) &&
+                // 普通亚克力窗口以中性表面控制背景色干扰；非激活通知和菜单回退继续使用既有浓度。
+                if (mode == ApplicationBackdropMode.Acrylic && !useNonActivating &&
                     window.TryFindResource("AfWindowAcrylicOverlayBrush") is Brush)
                     window.SetResourceReference(Control.BackgroundProperty, "AfWindowAcrylicOverlayBrush");
                 _nativeBackdropAdapter.SetNonClientColors(source.Handle, transparent: true);
@@ -354,26 +350,6 @@ public sealed class WindowAppearanceService : IDisposable
         _nativeBackdropAdapter.SetThemeAttributes(source.Handle, dark);
         // 原生材质失败时保留重试机会，不把纯色回退记作成功应用。
         if (state.Mode == ApplicationBackdropMode.FluentSolid) _appliedBackdrops[window] = state;
-    }
-
-    private void ScheduleMenuZOrderReassert(ContextMenu menu)
-    {
-        var timer = new DispatcherTimer(DispatcherPriority.Input, menu.Dispatcher)
-        {
-            Interval = TimeSpan.FromMilliseconds(250)
-        };
-        EventHandler? tick = null;
-        tick = (_, _) =>
-        {
-            timer.Stop();
-            timer.Tick -= tick;
-            if (menu.IsOpen && PresentationSource.FromVisual(menu) is HwndSource source)
-            {
-                _nativeBackdropAdapter.PromotePopup(source.Handle);
-            }
-        };
-        timer.Tick += tick;
-        timer.Start();
     }
 
     private void ScheduleSubmenuZOrderReassert(WpfMenuItem item)
@@ -397,16 +373,6 @@ public sealed class WindowAppearanceService : IDisposable
         timer.Start();
     }
 
-    private void ApplyMenu(ContextMenu menu)
-    {
-        if (PresentationSource.FromVisual(menu) is not HwndSource source || source.Handle == nint.Zero)
-        {
-            return;
-        }
-
-        ApplyPopup(source, menu);
-    }
-
     private void ApplySubmenu(WpfMenuItem item)
     {
         if (item.Template.FindName("SubmenuBorder", item) is not Border border ||
@@ -424,19 +390,71 @@ public sealed class WindowAppearanceService : IDisposable
         var backgroundProperty = surface is Border
             ? Border.BackgroundProperty
             : Control.BackgroundProperty;
-
-        // Keep Popup HWNDs opaque and Fluent-solid. Applying native Mica or
-        // Acrylic here makes transparent portions of the popup miss hit
-        // testing, so clicks in blank menu areas can reach the window behind it.
         source.CompositionTarget.BackgroundColor = Colors.Transparent;
 
+        var appearance = SettingsManager.Current.Appearance.Normalize();
+        var mode = WindowBackdropPolicy.Resolve(
+            appearance.BackdropMode,
+            SystemParameters.HighContrast,
+            OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000),
+            OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621));
+        if (!MotionPolicy.ResolveCurrent().UseDecorativeEffects)
+            mode = ApplicationBackdropMode.FluentSolid;
+        if (mode == ApplicationBackdropMode.FluentSolid)
+        {
+            ApplyOpaquePopup(source, surface, backgroundProperty, dark);
+            return;
+        }
+
+        var tint = WindowBackdropPolicy.ResolveLegacyTint(dark, appearance.ResolveBackdropTintOpacityPercent());
+        // alpha=1 覆盖整个菜单表面：Submenu 是分层 Popup，alpha=0 的空白区会让点击穿透到后面的窗口。
+        // alpha=1 covers the whole menu surface: a submenu is a layered popup, and alpha=0 blank areas would pass clicks through.
+        surface.SetValue(backgroundProperty, MenuHitTestBrush);
+        var applied = _nativeBackdropAdapter.ApplyNonActivatingBackdrop(source.Handle, mode, tint);
+        if (!applied)
+        {
+            ApplyOpaquePopup(source, surface, backgroundProperty, dark);
+            return;
+        }
+
+        _nativeBackdropAdapter.SetNonClientColors(source.Handle, transparent: true);
+        _nativeBackdropAdapter.SetThemeAttributes(source.Handle, dark);
+        if (surface is Border border)
+            ApplyPopupRoundedRegion(source, border);
+        _nativeBackdropAdapter.PromotePopup(source.Handle);
+    }
+
+    private void ApplyOpaquePopup(HwndSource source, FrameworkElement surface, DependencyProperty backgroundProperty, bool dark)
+    {
         _nativeBackdropAdapter.ResetBackdrop(source.Handle);
         _nativeBackdropAdapter.SetFrame(source.Handle, extended: false);
         _nativeBackdropAdapter.SetNonClientColors(source.Handle, transparent: false);
-        surface.SetResourceReference(backgroundProperty, PopupAppearancePolicy.BackgroundResourceKey);
-
         _nativeBackdropAdapter.SetThemeAttributes(source.Handle, dark);
+        _ = NativeMethods.SetWindowRgn(source.Handle, nint.Zero, true);
+        surface.SetResourceReference(backgroundProperty, PopupAppearancePolicy.BackgroundResourceKey);
         _nativeBackdropAdapter.PromotePopup(source.Handle);
+    }
+
+    private static void ApplyPopupRoundedRegion(HwndSource source, Border border)
+    {
+        var radiusDip = Math.Max(
+            border.CornerRadius.TopLeft,
+            Math.Max(border.CornerRadius.TopRight, Math.Max(border.CornerRadius.BottomLeft, border.CornerRadius.BottomRight)));
+        if (radiusDip <= 0)
+            return;
+
+        var dpi = VisualTreeHelper.GetDpi(border);
+        var width = (int)Math.Ceiling(border.ActualWidth * dpi.DpiScaleX);
+        var height = (int)Math.Ceiling(border.ActualHeight * dpi.DpiScaleY);
+        if (width <= 0 || height <= 0)
+            return;
+
+        var radius = Math.Clamp((int)Math.Round(radiusDip * dpi.DpiScaleX), 1, Math.Min(width, height) / 2);
+        var region = NativeMethods.CreateRoundRectRgn(0, 0, width + 1, height + 1, radius * 2, radius * 2);
+        if (region == nint.Zero)
+            return;
+        if (!NativeMethods.SetWindowRgn(source.Handle, region, true))
+            NativeMethods.DeleteObject(region);
     }
 
     private static void PrepareSubmenuVisual(WpfMenuItem item)
@@ -454,9 +472,9 @@ public sealed class WindowAppearanceService : IDisposable
         }
     }
 
-    private void WireSubmenuHandlers(ItemsControl parent)
+    private void WireSubmenuHandlers(FrameworkElement parent)
     {
-        foreach (var item in parent.Items.OfType<WpfMenuItem>())
+        foreach (var item in EnumerateMenuItems(parent))
         {
             item.SubmenuOpened -= OnSubmenuOpened;
             item.SubmenuOpened += OnSubmenuOpened;
@@ -464,13 +482,24 @@ public sealed class WindowAppearanceService : IDisposable
         }
     }
 
-    private void UnwireSubmenuHandlers(ItemsControl parent)
+    private void UnwireSubmenuHandlers(FrameworkElement parent)
     {
-        foreach (var item in parent.Items.OfType<WpfMenuItem>())
+        foreach (var item in EnumerateMenuItems(parent))
         {
             item.SubmenuOpened -= OnSubmenuOpened;
             UnwireSubmenuHandlers(item);
         }
+    }
+
+    private static IEnumerable<WpfMenuItem> EnumerateMenuItems(FrameworkElement parent)
+    {
+        IEnumerable<object> children = parent switch
+        {
+            Panel panel => panel.Children.Cast<object>(),
+            ItemsControl itemsControl => itemsControl.Items.Cast<object>(),
+            _ => []
+        };
+        return children.OfType<WpfMenuItem>();
     }
 
     /// <summary>
@@ -495,16 +524,18 @@ public sealed class WindowAppearanceService : IDisposable
             OnWindowClosed(window, EventArgs.Empty);
         }
 
-        foreach (var pair in _menuOwners.ToArray())
-        {
-            UnwireSubmenuHandlers(pair.Key);
-            pair.Key.Opened -= OnMenuOpened;
-            pair.Value.Closed -= OnMenuOwnerClosed;
-        }
+        foreach (var root in _menuSubmenuRoots.ToArray())
+            UnwireSubmenuHandlers(root);
 
-        _menus.Clear();
-        _menuOwners.Clear();
+        _menuSubmenuRoots.Clear();
         _nonActivatingTransientWindows.Clear();
+    }
+
+    private static SolidColorBrush CreateFrozenBrush(Color color)
+    {
+        var brush = new SolidColorBrush(color);
+        brush.Freeze();
+        return brush;
     }
 
 }

@@ -64,10 +64,9 @@ public sealed class ApplicationAppearanceResources(ResourceDictionary resources)
             WithAlpha(dark ? Color.FromRgb(24, 24, 24) : Color.FromRgb(246, 246, 246), dark ? (byte)154 : (byte)170));
         _resources["AfSettingsSectionBrush"] = highContrast ? SystemColors.WindowBrush : CreateFrozenBrush(groupColor);
         _resources["AfSettingsHeaderBridgeBrush"] = showSettingsMaterial ? CreateSettingsHeaderBridgeBrush(groupColor) : Brushes.Transparent;
-        // Context menus always use an opaque Fluent solid surface. Native
-        // Mica/Acrylic on Popup HWNDs leaves transparent hit-test regions
-        // that can pass clicks through to the window behind the menu.
-
+        // 子菜单和纯色回退使用不透明主题表面；顶层菜单窗口使用系统材质，不在资源里固定纯色。
+        // Submenus and solid fallbacks use an opaque theme surface; top-level menu windows use the system material, so no
+        // fixed solid colour is published for them here.
         var menuColor = dark ? Color.FromRgb(44, 44, 44) : Color.FromRgb(249, 249, 249);
         var menuBrush = new SolidColorBrush(menuColor);
         menuBrush.Freeze();

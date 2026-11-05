@@ -137,7 +137,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         MediaControl.HasAutomaticallyHiddenInformation;
     /// <summary>请求稳定宿主打开右键菜单；坐标为空表示鼠标入口，否则为键盘入口的物理屏幕锚点。</summary>
     public event Action<TaskbarWindow, Point?>? PlayerMenuOpenRequested;
-    internal ContextMenu PlayerContextMenu => PlayerMenu;
+    private readonly AFMediaBar.Components.AFContextMenu _playerMenu;
+    private readonly AFMenuWindow _playerMenuWindow;
 
     /// <summary>
     /// 创建任务栏媒体宿主并连接其基础设施动作。
@@ -173,7 +174,10 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         InitializeComponent();
         ViewModel = viewModel;
         MediaControl.ComponentReorderCommand = viewModel?.CommitComponentReorderCommand;
-        PlayerMenu.ViewModel = menuViewModel;
+        _playerMenu = new AFMediaBar.Components.AFContextMenu { ViewModel = menuViewModel };
+        _playerMenuWindow = new AFMenuWindow(appearanceService);
+        PreviewMouseRightButtonUp += Window_PreviewMouseRightButtonUp;
+        PreviewKeyDown += Window_PreviewKeyDown;
         _targetMonitorDeviceId = targetMonitorDeviceId;
         _surfaceSession = surfaceSessions.Get(targetMonitorDeviceId);
         _mouseInputMonitor = mouseInputMonitor;
@@ -181,13 +185,11 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         DataContext = ViewModel;
         MediaControl.BindBatterySource(batterySource);
         MediaControl.BindBarMoveContrastSampler(screenBackgroundSampler);
-        ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
-        appearanceService.Attach(PlayerMenu, this);
-        PlayerMenu.OpenSettingsRequested += PlayerMenu_OpenSettingsRequested;
-        PlayerMenu.ExitRequested += PlayerMenu_ExitRequested;
-        PlayerMenu.OpenUpdateSettingsRequested += PlayerMenu_OpenUpdateSettingsRequested;
-        PlayerMenu.ReloadTaskbarHostRequested += PlayerMenu_ReloadTaskbarHostRequested;
-        PlayerMenu.QuickLaunchRequested += PlayerMenu_QuickLaunchRequested;
+        _playerMenu.OpenSettingsRequested += PlayerMenu_OpenSettingsRequested;
+        _playerMenu.ExitRequested += PlayerMenu_ExitRequested;
+        _playerMenu.OpenUpdateSettingsRequested += PlayerMenu_OpenUpdateSettingsRequested;
+        _playerMenu.ReloadTaskbarHostRequested += PlayerMenu_ReloadTaskbarHostRequested;
+        _playerMenu.QuickLaunchRequested += PlayerMenu_QuickLaunchRequested;
         // 组合滚轮结束时的合成点击必须被吞掉：静置层点击与右键菜单都要问同一个判定，它们分别属于控件与宿主。
         // The click synthesized when a chord wheel ends has to be swallowed: the rest-layer click and the context menu both ask the
         // same authority, and they live in the control and the host respectively.
@@ -574,7 +576,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             _menuEnvironmentVersion++;
             MediaControl.SuspendQuickLaunchPresentation();
             MediaControl.ApplyHostVisibilitySuspension(true);
-            PlayerMenu.IsOpen = false;
+            ClosePlayerMenu();
             StopOccupancyRefresh();
             _windowHandle = IntPtr.Zero;
             _timer.Stop();
@@ -1187,7 +1189,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         if (_isClosing || _isEnvironmentSuspended)
             return;
 
-        Dispatcher.Invoke(() => { PlayerMenu.ApplySessions(options); });
+        Dispatcher.Invoke(() => { _playerMenu.ApplySessions(options); });
     }
 
     /// <summary>立即应用播放器与右键菜单外观。 / Immediately applies player and context-menu appearance.</summary>
@@ -1211,15 +1213,16 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         return MediaControl.GetForegroundSampleRegions();
     }
 
-    /// <summary>在全局左键点击位于菜单外时关闭右键菜单。 / Closes the context menu after a global left click outside it.</summary>
-    public void CloseContextMenuIfOutside(int screenX, int screenY) =>
-        ContextMenuHelper.CloseIfOutside(PlayerMenu, screenX, screenY);
-
     /// <summary>关闭任务栏媒体菜单。/ Closes the taskbar media menu.</summary>
-    internal void ClosePlayerMenu()
+    internal void ClosePlayerMenu() => _playerMenuWindow.DismissImmediately();
+
+    /// <summary>在鼠标光标或键盘锚点处显示任务栏媒体菜单。/ Shows the taskbar media menu at the pointer or keyboard anchor.</summary>
+    internal void ShowPlayerMenu(Point? screenAnchor)
     {
-        PlayerMenu.IsOpen = false;
-        PlayerMenu.PlacementTarget = null;
+        if (_isClosing)
+            return;
+        _playerMenu.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);
+        _playerMenuWindow.ShowMenu(_playerMenu, screenAnchor, 280, keyboardOpened: screenAnchor is not null);
     }
 
     /// <summary>此宿主所绑定的显示器稳定标识。/ Stable monitor identifier bound to this host.</summary>
@@ -1371,7 +1374,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _pendingVolume = null;
         _foregroundSamplingSession.Invalidate(clearDecision: false);
         _pendingSizeRequest = null;
-        PlayerMenu.IsOpen = false;
+        ClosePlayerMenu();
         _compactFlyout.Dismiss();
         MediaControl.ApplyHostVisibilitySuspension(true);
         MediaControl.IsHitTestVisible = false;
@@ -1447,7 +1450,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _menuEnvironmentVersion++;
         MediaControl.SuspendQuickLaunchPresentation();
         _compactFlyout.Dismiss();
-        PlayerMenu.IsOpen = false;
+        ClosePlayerMenu();
         _audioInteractionService.CancelDeviceOwner(this);
         _quickLaunchApplyTimer?.Stop();
         _volumeApplyTimer?.Stop();
@@ -1527,7 +1530,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             EndTaskbarDrag();
         if (e.IsRightButtonDown)
         {
-            PlayerMenu.IsOpen = false;
+            ClosePlayerMenu();
         }
 
         // 滚轮提示要回答"刚才发生了什么"：动作执行完立刻把结果写给媒体栏，用户不需要去别处确认。
@@ -2300,7 +2303,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void PlayerMenu_ReloadTaskbarHostRequested(object? sender, EventArgs e)
     {
-        PlayerMenu.IsOpen = false;
+        ClosePlayerMenu();
         _hostActions.RequestTaskbarHostReload();
     }
 
@@ -2453,37 +2456,47 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     internal bool IsPerformanceMenuRequested { get; private set; }
     internal bool IsBatteryMenuRequested { get; private set; }
 
-    private async void Window_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    private async void Window_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
     {
-        // 阻止 WPF 把 Popup 绑定到会随 Explorer 收起的任务栏子窗口。
         e.Handled = true;
+        var menuSource = MediaControl.InputHitTest(Mouse.GetPosition(MediaControl)) as DependencyObject ??
+            e.OriginalSource as DependencyObject;
+        await RequestPlayerMenuAsync(menuSource, keyboardOpened: false);
+    }
+
+    private async void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Apps && !(e.Key == Key.F10 && (Keyboard.Modifiers & ModifierKeys.Shift) != 0))
+            return;
+        e.Handled = true;
+        await RequestPlayerMenuAsync(Keyboard.FocusedElement as DependencyObject, keyboardOpened: true);
+    }
+
+    private async Task RequestPlayerMenuAsync(DependencyObject? menuSource, bool keyboardOpened)
+    {
         if (!CanPublishMenu(_menuEnvironmentVersion) || IsTaskbarPresentationSuspended || _isRestoringTaskbarPresentation)
         {
-            e.Handled = true;
-            PlayerMenu.IsOpen = false;
-            return;
-        }
-        // 组合滚轮结束时的松键同样会合成右键菜单：判定一次取走标记，避免"按住右键滚动再松开"弹出菜单。
-        // Releasing the button after a chord wheel also synthesizes the context menu, so the flag is taken once here to stop a
-        // "hold the right button, scroll, release" gesture from opening the menu.
-        var environmentVersion = _menuEnvironmentVersion;
-        var chordWheelClick = e.CursorLeft >= 0 && e.CursorTop >= 0 &&
-            await _mouseInputMonitor.ConsumeSuppressedClickAsync(MouseButton.Right);
-        if (!CanPublishMenu(environmentVersion) || chordWheelClick)
-        {
-            e.Handled = true;
-            PlayerMenu.IsOpen = false;
+            ClosePlayerMenu();
             return;
         }
 
-        var menuSource = e.CursorLeft < 0 && e.CursorTop < 0 ? Keyboard.FocusedElement as DependencyObject
-            : MediaControl.InputHitTest(Mouse.GetPosition(MediaControl)) as DependencyObject ?? e.OriginalSource as DependencyObject;
+        // 组合滚轮结束时的松键同样会合成右键：判定一次取走标记，避免"按住右键滚动再松开"弹出菜单。
+        // Releasing the button after a chord wheel also synthesizes a right click, so the flag is taken once here to stop a
+        // "hold the right button, scroll, release" gesture from opening the menu.
+        var environmentVersion = _menuEnvironmentVersion;
+        var chordWheelClick = !keyboardOpened && await _mouseInputMonitor.ConsumeSuppressedClickAsync(MouseButton.Right);
+        if (!CanPublishMenu(environmentVersion) || chordWheelClick)
+        {
+            ClosePlayerMenu();
+            return;
+        }
+
         IsPerformanceMenuRequested = SettingsManager.Current.Experiments.MemoryTools && MediaControl.IsPerformanceComponentClick(menuSource);
         IsBatteryMenuRequested = MediaControl.IsBatteryComponentClick(menuSource);
-        PlayerMenu.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);
+        _playerMenu.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);
         _playerMenuOpeningAnchor = GetMediaBarScreenPhysicalBounds();
-        Point? keyboardAnchor = e.CursorLeft < 0 && e.CursorTop < 0
-            ? new Point(_playerMenuOpeningAnchor.Value.Left, _playerMenuOpeningAnchor.Value.Top) : null;
+        Point? keyboardAnchor = keyboardOpened && _playerMenuOpeningAnchor is { } bounds
+            ? new Point(bounds.Left, bounds.Top) : null;
         PlayerMenuOpenRequested?.Invoke(this, keyboardAnchor);
     }
 
@@ -2504,7 +2517,6 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     {
         _isClosing = true;
         DisposeExternalFullPanelHandle();
-        PlayerMenu.ExitRequested -= PlayerMenu_ExitRequested;
         StopOccupancyRefresh();
         _memoryPruneCoordinator.LevelChanged -= MemoryPruneCoordinator_LevelChanged;
         _timer.Stop();
@@ -2538,7 +2550,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         MediaControl.VolumeWheelRequested -= MediaControl_VolumeWheelRequested;
         MediaControl.QuickLaunchMenuRequested -= MediaControl_QuickLaunchMenuRequested;
         MediaControl.QuickLaunchWheelRequested -= MediaControl_QuickLaunchWheelRequested;
-        PlayerMenu.QuickLaunchRequested -= PlayerMenu_QuickLaunchRequested;
+        _playerMenu.QuickLaunchRequested -= PlayerMenu_QuickLaunchRequested;
         MediaControl.OpenTaskManagerRequested -= MediaControl_OpenTaskManagerRequested;
         MediaControl.InformationAutomaticallyHidden -= MediaControl_InformationAutomaticallyHidden;
         InformationAutomaticallyHidden = null;
@@ -2552,11 +2564,18 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         MediaControl.BarDragHandleMoved -= MediaControl_PreviewMouseMove;
         MediaControl.BarDragHandleReleased -= MediaControl_PreviewMouseLeftButtonUp;
         PreviewMouseMove -= TaskbarWindow_PreviewMouseMove;
+        PreviewMouseRightButtonUp -= Window_PreviewMouseRightButtonUp;
+        PreviewKeyDown -= Window_PreviewKeyDown;
+        _playerMenu.OpenSettingsRequested -= PlayerMenu_OpenSettingsRequested;
+        _playerMenu.ExitRequested -= PlayerMenu_ExitRequested;
+        _playerMenu.OpenUpdateSettingsRequested -= PlayerMenu_OpenUpdateSettingsRequested;
+        _playerMenu.ReloadTaskbarHostRequested -= PlayerMenu_ReloadTaskbarHostRequested;
+        _playerMenu.QuickLaunchRequested -= PlayerMenu_QuickLaunchRequested;
         _mouseInputMonitor.LeftButtonReleased -= MouseInputMonitor_OnLeftButtonReleased;
         MediaControl.OutputDeviceInfoRequested -= MediaControl_OutputDeviceInfoRequested;
         MediaControl.VolumeInfoRequested -= MediaControl_VolumeInfoRequested;
         _compactFlyout.Dispose();
-        ClosePlayerMenu();
+        _playerMenuWindow.Dispose();
         PlayerMenuOpenRequested = null;
         MediaControl.DisposePresentation();
         base.OnClosed(e);

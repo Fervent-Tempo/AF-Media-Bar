@@ -142,14 +142,18 @@ public partial class MainWindow
                     window.PlayerMenuOpenRequested += (host, point) =>
                     {
                         if (_isClosing || !_floatingWindows.Contains(host)) return;
-                        TrayMenu.ApplyQuickLaunchEntries(host.EffectiveSettings.QuickLaunch.Entries ?? []);
-                        var menu = host.IsPerformanceMenuRequested ? _memoryMenu : host.IsBatteryMenuRequested ? _batteryMenu : TrayMenu;
-                        var hold = host.KeepEdgeExpanded();
-                        RoutedEventHandler? closed = null;
-                        closed = (_, _) => { menu.Closed -= closed; hold.Dispose(); };
-                        menu.Closed += closed;
-                        try { ContextMenuHelper.OpenAtScreenAnchor(menu, this, point); }
-                        catch { menu.Closed -= closed; hold.Dispose(); throw; }
+                        _trayMenu.ApplyQuickLaunchEntries(host.EffectiveSettings.QuickLaunch.Entries ?? []);
+                        var isPerformance = host.IsPerformanceMenuRequested;
+                        var isBattery = host.IsBatteryMenuRequested;
+                        var windowToShow = isPerformance ? _memoryMenuWindow : isBattery ? _batteryMenuWindow : _trayMenuWindow;
+                        var content = isPerformance ? (FrameworkElement)_memoryMenu : isBattery ? _batteryMenu : _trayMenu;
+                        var alreadyOpen = windowToShow.IsMenuOpen;
+                        var hold = alreadyOpen ? null : host.KeepEdgeExpanded();
+                        EventHandler<MenuDismissedEventArgs>? closed = null;
+                        closed = (_, _) => { windowToShow.Dismissed -= closed; hold?.Dispose(); };
+                        if (!alreadyOpen) windowToShow.Dismissed += closed;
+                        try { windowToShow.ShowMenu(content, point); }
+                        catch { windowToShow.Dismissed -= closed; hold?.Dispose(); throw; }
                     };
                 }
             }

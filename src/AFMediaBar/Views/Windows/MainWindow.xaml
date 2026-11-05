@@ -4,7 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        xmlns:controls="clr-namespace:AFMediaBar.Components"
         Title="{Binding ViewModel.ApplicationTitle, Mode=OneWay}"
         Height="40" Width="310"
         WindowStyle="None" ResizeMode="NoResize"
@@ -18,7 +17,4 @@
         SnapsToDevicePixels="True"
         Visibility="Collapsed"
         mc:Ignorable="d">
-    <Window.ContextMenu>
-        <controls:AFContextMenu x:Name="TrayMenu" />
-    </Window.ContextMenu>
 </Window>

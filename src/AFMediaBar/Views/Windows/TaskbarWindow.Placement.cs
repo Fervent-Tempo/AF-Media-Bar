@@ -54,7 +54,7 @@ public partial class TaskbarWindow
         _isPlacementInteractionSuspended = true;
         MediaControl.ApplyPlacementMotionSuspension(true);
         _compactFlyout.Dismiss();
-        PlayerMenu.IsOpen = false;
+        ClosePlayerMenu();
         PlacementTransitionStarted?.Invoke(this, EventArgs.Empty);
     }
 

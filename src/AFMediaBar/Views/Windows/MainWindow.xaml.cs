@@ -45,7 +45,6 @@ namespace AFMediaBar.Views.Windows
         private AudioControlFlyoutWindow? _audioControlFlyout;
         private int _audioControlFlyoutRequestVersion;
         private readonly AppLogService _logService;
-        private readonly NativeMouseInputMonitor _mouseInputMonitor;
         private readonly WindowAppearanceService _appearanceService;
         private readonly ScreenBackgroundSampler _screenBackgroundSampler;
         private readonly TaskbarOccupiedAreaService _occupiedAreaService;
@@ -98,7 +97,11 @@ namespace AFMediaBar.Views.Windows
         /// Creates the application host window and initializes its infrastructure dependencies.
         /// </summary>
         private readonly AFMediaBar.Components.MemoryContextMenu _memoryMenu;
-        private readonly ContextMenu _batteryMenu;
+        private readonly StackPanel _batteryMenu;
+        private readonly AFMenuWindow _trayMenuWindow;
+        private readonly AFMenuWindow _memoryMenuWindow;
+        private readonly AFMenuWindow _batteryMenuWindow;
+        private AFMediaBar.Components.AFContextMenu _trayMenu = null!;
 
         private readonly QuickLaunchService _quickLaunch;
         public MainWindow(
@@ -110,7 +113,6 @@ namespace AFMediaBar.Views.Windows
             AudioControlViewModel audioControlViewModel,
             Func<AudioControlFlyoutWindow> audioControlFlyoutFactory,
             AppLogService logService,
-            NativeMouseInputMonitor mouseInputMonitor,
             WindowAppearanceService appearanceService,
             ScreenBackgroundSampler screenBackgroundSampler,
             TaskbarOccupiedAreaService occupiedAreaService,
@@ -145,8 +147,7 @@ namespace AFMediaBar.Views.Windows
             {
                 _settingsHost.RequestOpen(window => window.NavigateToGroup(SettingsPageKey.Application, "Memory.Title"));
             });
-            _batteryMenu = new ContextMenu();
-            _batteryMenu.SetResourceReference(StyleProperty, typeof(ContextMenu));
+            _batteryMenu = new StackPanel();
             var refreshBattery = new Wpf.Ui.Controls.MenuItem();
             refreshBattery.SetResourceReference(HeaderedItemsControl.HeaderProperty, "Loc.Battery.Refresh");
             refreshBattery.Click += (_, _) => batterySource.RequestRefresh();
@@ -156,8 +157,8 @@ namespace AFMediaBar.Views.Windows
             {
                 _settingsHost.RequestOpen(window => window.NavigateToGroup(SettingsPageKey.DeviceManagement, "Battery.Title"));
             };
-            _batteryMenu.Items.Add(refreshBattery); _batteryMenu.Items.Add(batterySettings);
-            Closed += (_, _) => { _memoryMenu.IsOpen = false; _batteryMenu.IsOpen = false; };
+            _batteryMenu.Children.Add(refreshBattery);
+            _batteryMenu.Children.Add(batterySettings);
             _exitService = exitService;
             _runtime = runtime;
             _taskbarFactory = taskbarFactory;
@@ -170,7 +171,6 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel = audioControlViewModel;
             _audioControlFlyoutFactory = audioControlFlyoutFactory;
             _logService = logService;
-            _mouseInputMonitor = mouseInputMonitor;
             _appearanceService = appearanceService;
             _screenBackgroundSampler = screenBackgroundSampler;
             _occupiedAreaService = occupiedAreaService;
@@ -208,17 +208,17 @@ namespace AFMediaBar.Views.Windows
             };
 
             InitializeComponent();
-            TrayMenu.ViewModel = menuViewModel;
-
+            _trayMenu = new AFMediaBar.Components.AFContextMenu { ViewModel = menuViewModel };
+            _trayMenuWindow = new AFMenuWindow(_appearanceService);
+            _memoryMenuWindow = new AFMenuWindow(_appearanceService);
+            _batteryMenuWindow = new AFMenuWindow(_appearanceService);
 
             Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
-            ContextMenuHelper.AttachOutsideClickDismissal(TrayMenu);
-            _appearanceService.Attach(TrayMenu, this);
-            TrayMenu.OpenSettingsRequested += ViewModel_OpenSettingsRequested;
-            TrayMenu.ExitRequested += TrayMenu_ExitRequested;
-            TrayMenu.OpenUpdateSettingsRequested += ViewModel_OpenUpdateSettingsRequested;
-            TrayMenu.ReloadTaskbarHostRequested += TrayMenu_ReloadTaskbarHostRequested;
-            TrayMenu.QuickLaunchRequested += TrayMenu_QuickLaunchRequested;
+            _trayMenu.OpenSettingsRequested += ViewModel_OpenSettingsRequested;
+            _trayMenu.ExitRequested += TrayMenu_ExitRequested;
+            _trayMenu.OpenUpdateSettingsRequested += ViewModel_OpenUpdateSettingsRequested;
+            _trayMenu.ReloadTaskbarHostRequested += TrayMenu_ReloadTaskbarHostRequested;
+            _trayMenu.QuickLaunchRequested += TrayMenu_QuickLaunchRequested;
 
             // 快照事件已在服务内调度到 UI 线程，这里只负责转发给任务栏窗口。
             _mediaSessionService.SnapshotChanged += MediaSessionService_OnSnapshotChanged;
@@ -244,7 +244,6 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel.InputDeviceMenuRequested += AudioControl_OnInputDeviceMenuRequested;
             _audioControlViewModel.CurrentAppVolumeMenuRequested += AudioControl_OnCurrentAppVolumeMenuRequested;
             _audioControlViewModel.SettingsOpenRequested += ViewModel_OpenSettingsRequested;
-            _mouseInputMonitor.LeftButtonPressed += MouseInputMonitor_OnLeftButtonPressed;
             _taskbarViewModel.OpenSettingsRequested += ViewModel_OpenSettingsRequested;
             _taskbarViewModel.OpenUpdateSettingsRequested += ViewModel_OpenUpdateSettingsRequested;
 
@@ -286,7 +285,9 @@ namespace AFMediaBar.Views.Windows
             _isClosing = true;
             _settingsHost.WindowClosed -= SettingsWindow_Closed;
             _settingsHost.Dispose();
-            _memoryMenu.IsOpen = false; _batteryMenu.IsOpen = false;
+            _trayMenuWindow.DismissImmediately();
+            _memoryMenuWindow.DismissImmediately();
+            _batteryMenuWindow.DismissImmediately();
             DetachTaskbarHostsForExit();
             CloseDeveloperPreviews();
             _lyricsRecoveryNotifications.CancelPendingRequests();
@@ -296,9 +297,8 @@ namespace AFMediaBar.Views.Windows
             _taskbarRecoveryCancellation = null;
             TaskbarEnvironmentRecovering = false;
 
-            // ContextMenu Popup HWNDs are not Application.Windows entries. Close every
-            // menu explicitly before the hidden host begins shutting down.
-            TrayMenu.IsOpen = false;
+            // 菜单窗口不是 Application.Windows 的关闭目标；退出前显式关闭并释放。
+            // Menu windows are not shutdown targets of Application.Windows; close and release them explicitly.
             foreach (var taskbarWindow in _taskbarWindows)
                 taskbarWindow.ClosePlayerMenu();
 
@@ -338,12 +338,14 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel.InputDeviceMenuRequested -= AudioControl_OnInputDeviceMenuRequested;
             _audioControlViewModel.CurrentAppVolumeMenuRequested -= AudioControl_OnCurrentAppVolumeMenuRequested;
             _audioControlViewModel.SettingsOpenRequested -= ViewModel_OpenSettingsRequested;
-            _mouseInputMonitor.LeftButtonPressed -= MouseInputMonitor_OnLeftButtonPressed;
-            TrayMenu.OpenSettingsRequested -= ViewModel_OpenSettingsRequested;
-            TrayMenu.ExitRequested -= TrayMenu_ExitRequested;
-            TrayMenu.OpenUpdateSettingsRequested -= ViewModel_OpenUpdateSettingsRequested;
-            TrayMenu.ReloadTaskbarHostRequested -= TrayMenu_ReloadTaskbarHostRequested;
-            TrayMenu.QuickLaunchRequested -= TrayMenu_QuickLaunchRequested;
+            _trayMenu.OpenSettingsRequested -= ViewModel_OpenSettingsRequested;
+            _trayMenu.ExitRequested -= TrayMenu_ExitRequested;
+            _trayMenu.OpenUpdateSettingsRequested -= ViewModel_OpenUpdateSettingsRequested;
+            _trayMenu.ReloadTaskbarHostRequested -= TrayMenu_ReloadTaskbarHostRequested;
+            _trayMenu.QuickLaunchRequested -= TrayMenu_QuickLaunchRequested;
+            _trayMenuWindow.Dispose();
+            _memoryMenuWindow.Dispose();
+            _batteryMenuWindow.Dispose();
             _taskbarViewModel.OpenSettingsRequested -= ViewModel_OpenSettingsRequested;
             _taskbarViewModel.OpenUpdateSettingsRequested -= ViewModel_OpenUpdateSettingsRequested;
             _updateService.UpdateStateChanged -= UpdateService_OnStateChanged;
@@ -552,7 +554,7 @@ namespace AFMediaBar.Views.Windows
 
             foreach (var taskbarWindow in _taskbarWindows)
                 taskbarWindow.ApplySessions(options);
-            TrayMenu.ApplySessions(options);
+            _trayMenu.ApplySessions(options);
         }
 
         /// <summary>
@@ -858,7 +860,12 @@ namespace AFMediaBar.Views.Windows
         private void TaskbarWindow_PlayerMenuOpenRequested(TaskbarWindow host, Point? screenAnchor)
         {
             if (_isClosing || TaskbarEnvironmentRecovering || !_taskbarWindows.Contains(host)) return;
-            ContextMenuHelper.OpenAtScreenAnchor(host.IsPerformanceMenuRequested ? _memoryMenu : host.IsBatteryMenuRequested ? _batteryMenu : host.PlayerContextMenu, this, screenAnchor);
+            if (host.IsPerformanceMenuRequested)
+                _memoryMenuWindow.ShowMenu(_memoryMenu, screenAnchor, keyboardOpened: screenAnchor is not null);
+            else if (host.IsBatteryMenuRequested)
+                _batteryMenuWindow.ShowMenu(_batteryMenu, screenAnchor, keyboardOpened: screenAnchor is not null);
+            else
+                host.ShowPlayerMenu(screenAnchor);
         }
 
         private void TaskbarWindow_OpenFullPanelRequested(object? sender, FullPanelOpenRequestEventArgs e)
@@ -979,13 +986,11 @@ namespace AFMediaBar.Views.Windows
                 return;
 
             HideAudioControlFlyout();
-            TrayMenu.ApplySessions(_mediaSessionService.CurrentSessionOptions);
-            TrayMenu.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);
-            TrayMenu.IsReloadTaskbarHostEnabled =
+            _trayMenu.ApplySessions(_mediaSessionService.CurrentSessionOptions);
+            _trayMenu.ApplyQuickLaunchEntries(SettingsManager.Current.QuickLaunch.Entries ?? []);
+            _trayMenu.IsReloadTaskbarHostEnabled =
                 SettingsManager.Current.WindowMode == WindowMode.Taskbar;
-            TrayMenu.PlacementTarget = this;
-            TrayMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
-            TrayMenu.IsOpen = true;
+            _trayMenuWindow.ShowMenu(_trayMenu, null, 280);
         }
 
         private void TrayMenu_ExitRequested(object? sender, EventArgs e) => _exitService.RequestExit();
@@ -1015,19 +1020,5 @@ namespace AFMediaBar.Views.Windows
                     ? "Shell.QuickLaunch.Status.InvalidTarget"
                     : "Shell.QuickLaunch.Status.Failed"), ShellNotificationTarget.None, "QuickLaunch.Failed");
         }
-
-        private void MouseInputMonitor_OnLeftButtonPressed(object? sender, NativeMouseButtonEventArgs e)
-        {
-            Dispatcher.BeginInvoke(() =>
-            {
-                if (_isClosing)
-                    return;
-
-                ContextMenuHelper.CloseIfOutside(TrayMenu, e.ScreenX, e.ScreenY);
-                foreach (var taskbarWindow in _taskbarWindows)
-                    taskbarWindow.CloseContextMenuIfOutside(e.ScreenX, e.ScreenY);
-            }, System.Windows.Threading.DispatcherPriority.Background);
-        }
-
     }
 }

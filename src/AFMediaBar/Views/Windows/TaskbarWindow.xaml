@@ -18,12 +18,7 @@
         TextOptions.TextFormattingMode="Display"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
-        ContextMenuOpening="Window_ContextMenuOpening"
         Visibility="Collapsed">
-    <Window.ContextMenu>
-        <controls:AFContextMenu x:Name="PlayerMenu" />
-    </Window.ContextMenu>
-
     <Canvas Name="WidgetCanvas" Background="Transparent">
         <controls:TaskBarMediaControl x:Name="MediaControl"
                                       PreviewMouseLeftButtonDown="MediaControl_PreviewMouseLeftButtonDown"
