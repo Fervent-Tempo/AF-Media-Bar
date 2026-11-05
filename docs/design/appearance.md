@@ -1,4 +1,4 @@
-<!-- owner: AF Media Bar maintainers | verified_at: 453e1e03 | review_by: 2027-03-05 -->
+<!-- owner: AF Media Bar maintainers | verified_at: 68923e74 | review_by: 2027-03-05 -->
 
 # 主题与外观
 
