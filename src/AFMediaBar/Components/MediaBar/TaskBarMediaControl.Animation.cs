@@ -217,6 +217,7 @@ public partial class TaskBarMediaControl
     {
         if (_isPlacementMotionActive == suspended) return;
         _isPlacementMotionActive = suspended;
+        RefreshBarMoveHandle();
         if (suspended)
         {
             _artworkHover.AnimateArtworkHover(false, immediate: true);

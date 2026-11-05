@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
 using AFMediaBar.Classes.Services;
@@ -48,13 +49,19 @@ internal static class ComponentLayoutPresentationChecks
                         control.Arrange(new Rect(0, 0, control.Width, control.Height)); control.UpdateLayout();
                         var handle = (Border)MediaBarTestAccess.GetField("_barMoveHandle", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
                         var artwork = (Border)control.FindName("SongImageBorder");
-                        var handlePoint = handle.TranslatePoint(new Point(), control);
-                        var coverPoint = artwork.TranslatePoint(new Point(), control);
+                        var popup = (Popup)MediaBarTestAccess.GetField("_barMovePopup", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+                        Assert.AreSame(handle, popup.Child);
+                        Assert.IsFalse(((Grid)control.FindName("InteractionSurface")).Children.Contains(handle), "手柄不得进入背景或内容布局。");
                         Assert.AreEqual(24d, vertical ? handle.Height : handle.Width, .01);
                         Assert.IsTrue(control.IsBarDragHandleHit(handle));
                         Assert.IsFalse(control.IsBarDragHandleHit(artwork));
-                        if (vertical) Assert.IsTrue(handlePoint.Y > coverPoint.Y, "竖向手柄始终在底端。");
-                        else Assert.IsTrue(arrangement == TaskbarContentArrangement.Left ? handlePoint.X > coverPoint.X : handlePoint.X < coverPoint.X);
+                        var targetSize = new Size(control.Width, control.Height);
+                        var candidates = popup.CustomPopupPlacementCallback(new Size(handle.Width, handle.Height), targetSize, new Point());
+                        if (vertical) Assert.AreEqual(targetSize.Height, candidates[0].Point.Y, "竖向手柄位于媒体栏外侧。");
+                        else Assert.AreEqual(arrangement == TaskbarContentArrangement.Left ? targetSize.Width : -handle.Width, candidates[0].Point.X);
+                        var layoutMethod = MediaBarTestAccess.GetMethod(vertical ? "ResolveVerticalLayout" : "ResolveRestLayout", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                        var layout = (TaskbarRestLayout)layoutMethod.Invoke(control, vertical ? [900d] : [settings.TaskbarExperience, 900d])!;
+                        Assert.IsNull(layout.Find(TaskbarRestComponent.DragHandle), "手柄不能压缩文字或增加内容长度。");
                         Assert.AreEqual(Visibility.Visible, ((FrameworkElement)control.FindName("TaskbarPreviousButton")).Visibility);
                         Assert.AreEqual(Visibility.Collapsed, ((FrameworkElement)control.FindName("TaskbarNextButton")).Visibility);
                         var actions = (StackPanel)control.FindName("TaskbarHoverActions");
@@ -75,6 +82,42 @@ internal static class ComponentLayoutPresentationChecks
                             : playPoint.X + play.ActualWidth <= nextPoint.X);
                         Assert.AreNotSame(previousButton, control.FindName("TaskbarPreviousButton"));
                     }
+            // 独立 Popup 的残留会截住桌面输入，使用真实 HWND 验证挂起和隐藏立即关闭。
+            var host = new Window
+            {
+                Content = control,
+                Width = 300,
+                Height = 44,
+                Left = -32000,
+                Top = -32000,
+                ShowInTaskbar = false,
+                ShowActivated = false,
+                WindowStyle = WindowStyle.None
+            };
+            try
+            {
+                control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal, 100, 100, 44);
+                control.ApplyPrimaryLength(300);
+                control.Width = 300;
+                control.Height = 44;
+                host.Show();
+                host.UpdateLayout();
+                control.SetBarDragActive(true);
+                var popup = (Popup)MediaBarTestAccess.GetField("_barMovePopup", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+                var timer = (System.Windows.Threading.DispatcherTimer)MediaBarTestAccess.GetField("_barMoveTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+                Assert.IsTrue(popup.IsOpen);
+                Assert.IsTrue(timer.IsEnabled);
+                control.ApplyHostVisibilitySuspension(true);
+                Assert.IsFalse(popup.IsOpen, "宿主挂起不能留下可命中的浮层。");
+                Assert.IsFalse(timer.IsEnabled);
+                control.ApplyHostVisibilitySuspension(false);
+                control.SetBarDragActive(true);
+                Assert.IsTrue(popup.IsOpen);
+                host.Hide();
+                Assert.IsFalse(popup.IsOpen, "宿主隐藏必须立即关闭手柄。");
+                Assert.IsFalse(timer.IsEnabled);
+            }
+            finally { host.Close(); host.Content = null; }
             control.UpdateSongInfo(MediaSnapshot.Disconnected);
             control.ApplyTaskbarExperienceSettings();
             Assert.IsTrue(control.IsRestLayerEmpty, "全关闭的无媒体布局必须隐藏媒体栏。");

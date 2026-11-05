@@ -245,6 +245,9 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _mediaControl.ArtworkPointerPressed += StartDrag;
         _mediaControl.ArtworkPointerMoved += ArtworkPointerMoved;
         _mediaControl.ArtworkPointerReleased += PointerReleased;
+        _mediaControl.BarDragHandlePressed += StartDrag;
+        _mediaControl.BarDragHandleMoved += ArtworkPointerMoved;
+        _mediaControl.BarDragHandleReleased += PointerReleased;
         PreviewMouseLeftButtonUp += PointerReleased;
         PreviewMouseRightButtonUp += (_, args) =>
         {
@@ -775,6 +778,9 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _mediaControl.ArtworkPointerPressed -= StartDrag;
         _mediaControl.ArtworkPointerMoved -= ArtworkPointerMoved;
         _mediaControl.ArtworkPointerReleased -= PointerReleased;
+        _mediaControl.BarDragHandlePressed -= StartDrag;
+        _mediaControl.BarDragHandleMoved -= ArtworkPointerMoved;
+        _mediaControl.BarDragHandleReleased -= PointerReleased;
         SettingsManager.SettingsChanged -= SettingsChanged;
         _prune.LevelChanged -= PruneChanged;
         _mouse.LeftButtonReleased -= LeftReleased;

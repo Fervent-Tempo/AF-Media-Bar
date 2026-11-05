@@ -1441,7 +1441,7 @@ namespace AFMediaBar.Components
         {
             var metrics = TaskbarDensityMetrics.From(experience.Density);
             return TaskbarRestLayoutPolicy.Arrange(
-                RestComponentsWithHandle(),
+                EffectiveRestComponents(),
                 component => ResolveRestComponentWidth(component, metrics),
                 _ => true,
                 GetTaskbarLeadingInset(),
@@ -1475,7 +1475,6 @@ namespace AFMediaBar.Components
             TaskbarRestComponent.Artwork => Math.Max(0, SongImageBorder.Width),
             TaskbarRestComponent.Spectrum => SpectrumSurfaceWidth,
             TaskbarRestComponent.Performance => _performanceWidth,
-            TaskbarRestComponent.DragHandle => ComponentLayoutPolicy.HandleLength,
             _ when ComponentLayoutPolicy.IsMetric(component) => MetricPrimarySize(component, false),
             TaskbarRestComponent.BluetoothBattery => BatterySurfaceWidth,
             TaskbarRestComponent.OutputDevice => metrics.ButtonSize + TaskbarWidgetPadding * 2,
@@ -1582,6 +1581,7 @@ namespace AFMediaBar.Components
         public void ApplyBackgroundPruneLevel(MemoryPruneLevel level)
         {
             _backgroundPruneLevel = level;
+            RefreshBarMoveHandle();
             // 显示关闭与睡眠期间指标订阅也会停；趋势历史在这里转入隐藏态，恢复时按同一保留期判定是否清空。
             UpdatePerformanceHistoryVisibility(IsPerformanceComponentVisible);
             if (level >= MemoryPruneLevel.DisplayOff)
@@ -1601,6 +1601,7 @@ namespace AFMediaBar.Components
                 return;
 
             _isHostVisibilitySuspended = suspended;
+            RefreshBarMoveHandle();
             if (suspended)
             {
                 FinishColorTransitions();
@@ -2225,7 +2226,7 @@ namespace AFMediaBar.Components
             {
                 var experience = PresentationSettings.TaskbarExperience.Normalize();
                 var progressVisible = _snapshot.Duration > 0;
-                var visibleComponents = RestComponentsWithHandle();
+                var visibleComponents = EffectiveRestComponents();
                 var metrics = TaskbarDensityMetrics.From(experience.Density);
                 var sectionGap = TaskbarExperiencePolicy.ResolveSectionGap(experience.Density, experience.ComponentSpacingDip);
                 // 悬停层下限属于媒体文字组件：它只把文字区撑到"悬停控件放得下"，不再另算一段宽度。

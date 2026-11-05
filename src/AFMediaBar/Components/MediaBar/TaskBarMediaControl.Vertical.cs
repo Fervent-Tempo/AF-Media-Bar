@@ -79,7 +79,7 @@ public partial class TaskBarMediaControl
         var experience = PresentationSettings.TaskbarExperience.Normalize();
         var metrics = TaskbarDensityMetrics.From(experience.Density);
         return TaskbarRestLayoutPolicy.Arrange(
-            RestComponentsWithHandle(),
+            EffectiveRestComponents(),
             component => VerticalComponentLength(component, metrics),
             _ => true,
             2, primaryLength, VerticalSectionGap, 2,
@@ -105,7 +105,6 @@ public partial class TaskBarMediaControl
         TaskbarRestComponent.Artwork => VerticalArtworkSize,
         TaskbarRestComponent.Spectrum => _verticalSpectrumLength,
         TaskbarRestComponent.Performance => _verticalPerformanceLength,
-        TaskbarRestComponent.DragHandle => ComponentLayoutPolicy.HandleLength,
         _ when ComponentLayoutPolicy.IsMetric(component) => MetricPrimarySize(component, true),
         TaskbarRestComponent.BluetoothBattery => BatteryVerticalLength,
         TaskbarRestComponent.PreviousTrack or TaskbarRestComponent.PlayPause or TaskbarRestComponent.NextTrack or
@@ -127,7 +126,7 @@ public partial class TaskBarMediaControl
             ? LyricsFixedWidth.Normalize(PresentationSettings.LyricsFixedWidthDip)
             : Math.Max(Measure(current, VerticalPrimaryFontSize),
                 Measure(lyricsVisible ? secondary : _isSmallTaskbar ? string.Empty : DisplayedArtist, lyricsVisible ? VerticalPrimaryFontSize : VerticalSecondaryFontSize));
-        var components = RestComponentsWithHandle();
+        var components = EffectiveRestComponents();
         var metrics = TaskbarDensityMetrics.From(experience.Density);
         double Content(double text) => TaskbarExperiencePolicy.CalculateRestWidth(
             components, 2, text, 2, VerticalSectionGap,

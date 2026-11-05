@@ -1,10 +1,13 @@
 // 组件手势只预览视图，松手时由命令提交；整栏移动仍由宿主管理。
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
@@ -15,6 +18,13 @@ namespace AFMediaBar.Components;
 public partial class TaskBarMediaControl
 {
     private Border? _barMoveHandle;
+    // 控件拥有浮层与跟随计时器；隐藏、卸载和最终释放时关闭，不扩大宿主命中区。
+    private Popup? _barMovePopup;
+    private DispatcherTimer? _barMoveTimer;
+    private Point? _barMoveScreenOrigin;
+    private long? _barMoveOutsideSince;
+    private bool _barMovePressed;
+    private bool _barMoveDisposed;
     private Border? _componentInsertionMarker;
     private bool _barDragActive;
     private double _barHandleOpacityTarget;
@@ -30,6 +40,9 @@ public partial class TaskBarMediaControl
     private IInputElement? _componentPreviousFocus;
     public ICommand? ComponentReorderCommand { get; set; }
     public bool HasComponentGesture => _componentGesture is not null;
+    public event MouseButtonEventHandler? BarDragHandlePressed;
+    internal event MouseEventHandler? BarDragHandleMoved;
+    internal event MouseButtonEventHandler? BarDragHandleReleased;
 
     private Dictionary<TaskbarRestComponent, FrameworkElement> HoverElements() => new()
     {
@@ -61,7 +74,7 @@ public partial class TaskBarMediaControl
     private void InitializeComponentLayoutInput()
     {
         var handleStyle = new Style(typeof(Border));
-        handleStyle.Setters.Add(new Setter(Border.BackgroundProperty, Brushes.Transparent));
+        handleStyle.Setters.Add(new Setter(Border.BackgroundProperty, new SolidColorBrush(Color.FromArgb(1, 0, 0, 0))));
         var hover = new Trigger { Property = IsMouseOverProperty, Value = true };
         hover.Setters.Add(new Setter(Border.BackgroundProperty, new DynamicResourceExtension("TaskbarHoverButtonOverBrush")));
         handleStyle.Triggers.Add(hover);
@@ -85,8 +98,30 @@ public partial class TaskBarMediaControl
         // 与标题共享同一支前景画刷，包含自动背景判断、强制深浅色和高对比度。
         ((TextBlock)_barMoveHandle.Child).SetBinding(TextBlock.ForegroundProperty,
             new Binding(nameof(TextBlock.Foreground)) { Source = SongTitle, Mode = BindingMode.OneWay });
-        Panel.SetZIndex(_barMoveHandle, 10);
-        InteractionSurface.Children.Add(_barMoveHandle);
+        _barMoveHandle.MouseEnter += (_, _) => RefreshBarMoveHandle();
+        _barMoveHandle.PreviewMouseLeftButtonDown += (_, args) =>
+        {
+            _barMovePressed = !PresentationSettings.TaskbarBarPositionLocked;
+            BarDragHandlePressed?.Invoke(this, args);
+        };
+        _barMoveHandle.PreviewMouseMove += (_, args) => BarDragHandleMoved?.Invoke(this, args);
+        _barMoveHandle.PreviewMouseLeftButtonUp += (_, args) =>
+        {
+            _barMovePressed = false;
+            BarDragHandleReleased?.Invoke(this, args);
+        };
+        _barMovePopup = new Popup
+        {
+            AllowsTransparency = true,
+            StaysOpen = true,
+            PlacementTarget = MainBorder,
+            Placement = PlacementMode.Custom,
+            CustomPopupPlacementCallback = PlaceBarMovePopup,
+            Child = _barMoveHandle,
+            UseLayoutRounding = true
+        };
+        _barMoveTimer = new DispatcherTimer(DispatcherPriority.Input, Dispatcher) { Interval = TimeSpan.FromMilliseconds(50) };
+        _barMoveTimer.Tick += BarMoveTimer_Tick;
         _componentInsertionMarker = new Border
         {
             Background = SystemColors.HighlightBrush,
@@ -112,10 +147,17 @@ public partial class TaskBarMediaControl
 
     private void DisposeComponentLayoutInput()
     {
+        if (_barMoveDisposed) return;
+        _barMoveDisposed = true;
         CancelComponentGesture();
         SettingsManager.SettingsChanged -= ComponentSettingsChanged;
         ComponentReorderCommand = null;
         ResetBarMoveHandle();
+        if (_barMoveTimer is not null) _barMoveTimer.Tick -= BarMoveTimer_Tick;
+        if (_barMovePopup is not null) _barMovePopup.Child = null;
+        BarDragHandlePressed = null;
+        BarDragHandleMoved = null;
+        BarDragHandleReleased = null;
     }
 
     private void ComponentSettingsChanged(object? sender, SettingsChangedEventArgs args)
@@ -158,11 +200,38 @@ public partial class TaskBarMediaControl
             if (ReferenceEquals(node, _barMoveHandle)) return true;
         return false;
     }
-    public void SetBarDragActive(bool active) { _barDragActive = active; RefreshBarMoveHandle(); }
+    public void SetBarDragActive(bool active)
+    {
+        _barDragActive = active;
+        if (_barMoveTimer is not null) _barMoveTimer.Interval = TimeSpan.FromMilliseconds(active ? 16 : 50);
+        RefreshBarMoveHandle();
+    }
     private void RefreshBarMoveHandle()
     {
         if (_barMoveHandle is null) return;
-        var targetOpacity = IsMouseOver || _barDragActive ? 1d : 0d;
+        var canShow = !_barMoveDisposed && IsLoaded && IsVisible && IsHitTestVisible && IsBarPresentation &&
+            !_isHostVisibilitySuspended && (!_isPlacementMotionActive || _barDragActive) &&
+            _backgroundPruneLevel < MemoryPruneLevel.DisplayOff && _barMoveHandle.Visibility == Visibility.Visible;
+        var pointerActive = IsMouseOver || _barMoveHandle.IsMouseOver || _barDragActive ||
+            _barMovePressed && Mouse.LeftButton == MouseButtonState.Pressed;
+        if (!canShow || !pointerActive && _barMoveOutsideSince is { } since && Environment.TickCount64 - since >= 150)
+        {
+            ResetBarMoveHandle();
+            return;
+        }
+        if (pointerActive) _barMoveOutsideSince = null;
+        else _barMoveOutsideSince ??= Environment.TickCount64;
+        if (!canShow || _barMovePopup is null || !pointerActive && !_barMovePopup.IsOpen) return;
+        // 浮层不在主视觉树中，显式同步主题画刷；前景仍绑定媒体文字。
+        foreach (var key in new[] { "TaskbarHoverButtonOverBrush", "TaskbarHoverButtonPressedBrush" })
+            if (!ReferenceEquals(_barMoveHandle.Resources[key], Resources[key])) _barMoveHandle.Resources[key] = Resources[key];
+        if (!_barMovePopup.IsOpen)
+        {
+            _barMoveScreenOrigin = MainBorder.PointToScreen(new Point());
+            _barMovePopup.IsOpen = true;
+            _barMoveTimer?.Start();
+        }
+        var targetOpacity = 1d;
         var motion = CurrentMotion;
         var immediate = !IsLoaded || !motion.UseTransitions || SystemParameters.HighContrast;
         if (immediate || _barHandleOpacityTarget != targetOpacity)
@@ -175,8 +244,11 @@ public partial class TaskBarMediaControl
             if (!immediate && Math.Abs(currentOpacity - targetOpacity) > 0.001)
                 _barMoveHandle.BeginAnimation(OpacityProperty, new DoubleAnimation
                 {
-                    From = currentOpacity, To = targetOpacity, Duration = motion.FastDuration,
-                    EasingFunction = CreateEaseOut(), FillBehavior = FillBehavior.Stop
+                    From = currentOpacity,
+                    To = targetOpacity,
+                    Duration = motion.FastDuration,
+                    EasingFunction = CreateEaseOut(),
+                    FillBehavior = FillBehavior.Stop
                 }, HandoffBehavior.SnapshotAndReplace);
         }
         var locked = PresentationSettings.TaskbarBarPositionLocked;
@@ -189,6 +261,11 @@ public partial class TaskBarMediaControl
     private void ResetBarMoveHandle()
     {
         _barDragActive = false;
+        _barMovePressed = false;
+        _barMoveOutsideSince = null;
+        _barMoveScreenOrigin = null;
+        _barMoveTimer?.Stop();
+        if (_barMovePopup is not null) _barMovePopup.IsOpen = false;
         _barHandleOpacityTarget = 0;
         if (_barMoveHandle is null) return;
         _barMoveHandle.BeginAnimation(OpacityProperty, null);
@@ -198,14 +275,46 @@ public partial class TaskBarMediaControl
     private void PlaceBarMoveHandle(TaskbarRestLayout layout, double crossSize)
     {
         if (_barMoveHandle is null) return;
-        var placement = layout.Find(TaskbarRestComponent.DragHandle);
-        _barMoveHandle.Visibility = placement is null ? Visibility.Collapsed : Visibility.Visible;
-        if (placement is not { } slot) return;
+        _barMoveHandle.Visibility = layout.IsEmpty ? Visibility.Collapsed : Visibility.Visible;
         _barMoveHandle.Width = _isVertical ? crossSize : ComponentLayoutPolicy.HandleLength;
         _barMoveHandle.Height = _isVertical ? ComponentLayoutPolicy.HandleLength : crossSize;
-        _barMoveHandle.VerticalAlignment = _isVertical ? VerticalAlignment.Top : VerticalAlignment.Center;
-        _barMoveHandle.Margin = _isVertical ? new Thickness(2, slot.Left, 0, 0) : new Thickness(slot.Left, 0, 0, 0);
+        RefreshBarMovePopupPosition();
         RefreshBarMoveHandle();
+    }
+
+    private CustomPopupPlacement[] PlaceBarMovePopup(Size popupSize, Size targetSize, Point offset)
+    {
+        if (_isVertical)
+            return [new(new Point((targetSize.Width - popupSize.Width) / 2, targetSize.Height), PopupPrimaryAxis.Horizontal),
+                new(new Point((targetSize.Width - popupSize.Width) / 2, -popupSize.Height), PopupPrimaryAxis.Horizontal),
+                new(new Point(targetSize.Width, Math.Max(0, targetSize.Height - popupSize.Height)), PopupPrimaryAxis.Vertical),
+                new(new Point(-popupSize.Width, Math.Max(0, targetSize.Height - popupSize.Height)), PopupPrimaryAxis.Vertical)];
+        var right = new CustomPopupPlacement(new Point(targetSize.Width, (targetSize.Height - popupSize.Height) / 2), PopupPrimaryAxis.Vertical);
+        var left = new CustomPopupPlacement(new Point(-popupSize.Width, (targetSize.Height - popupSize.Height) / 2), PopupPrimaryAxis.Vertical);
+        var fromRight = ResolvedTaskbarArrangement == TaskbarContentArrangement.Right;
+        var end = fromRight ? 0 : Math.Max(0, targetSize.Width - popupSize.Width);
+        return [fromRight ? left : right, fromRight ? right : left,
+            new(new Point(end, -popupSize.Height), PopupPrimaryAxis.Horizontal),
+            new(new Point(end, targetSize.Height), PopupPrimaryAxis.Horizontal)];
+    }
+
+    private void RefreshBarMovePopupPosition()
+    {
+        if (_barMovePopup is not { IsOpen: true }) return;
+        // WPF Popup 不随父窗口移动；只在位置或布局变化时触发重新定位。
+        _barMovePopup.HorizontalOffset = _barMovePopup.HorizontalOffset == 0 ? 0.01 : 0;
+    }
+
+    private void BarMoveTimer_Tick(object? sender, EventArgs args)
+    {
+        RefreshBarMoveHandle();
+        if (_barMovePopup is not { IsOpen: true }) return;
+        var origin = MainBorder.PointToScreen(new Point());
+        if (_barMoveScreenOrigin != origin)
+        {
+            _barMoveScreenOrigin = origin;
+            RefreshBarMovePopupPosition();
+        }
     }
 
     private IReadOnlyList<ComponentLayoutEntry> PreviewRestEntries() =>

@@ -233,6 +233,9 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         // being the deterministic endpoint of every drag attempt.
         MediaControl.ArtworkPointerMoved += MediaControl_PreviewMouseMove;
         MediaControl.ArtworkPointerReleased += MediaControl_PreviewMouseLeftButtonUp;
+        MediaControl.BarDragHandlePressed += MediaControl_PreviewMouseLeftButtonDown;
+        MediaControl.BarDragHandleMoved += MediaControl_PreviewMouseMove;
+        MediaControl.BarDragHandleReleased += MediaControl_PreviewMouseLeftButtonUp;
         PreviewMouseMove += TaskbarWindow_PreviewMouseMove;
         _mouseInputMonitor.LeftButtonReleased += MouseInputMonitor_OnLeftButtonReleased;
 
@@ -2542,6 +2545,9 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         MediaControl.ArtworkZoomExtensionChanged -= MediaControl_ArtworkZoomExtensionChanged;
         MediaControl.ArtworkPointerMoved -= MediaControl_PreviewMouseMove;
         MediaControl.ArtworkPointerReleased -= MediaControl_PreviewMouseLeftButtonUp;
+        MediaControl.BarDragHandlePressed -= MediaControl_PreviewMouseLeftButtonDown;
+        MediaControl.BarDragHandleMoved -= MediaControl_PreviewMouseMove;
+        MediaControl.BarDragHandleReleased -= MediaControl_PreviewMouseLeftButtonUp;
         PreviewMouseMove -= TaskbarWindow_PreviewMouseMove;
         _mouseInputMonitor.LeftButtonReleased -= MouseInputMonitor_OnLeftButtonReleased;
         MediaControl.OutputDeviceInfoRequested -= MediaControl_OutputDeviceInfoRequested;

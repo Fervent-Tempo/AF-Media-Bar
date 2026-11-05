@@ -21,11 +21,6 @@ public partial class TaskBarMediaControl
     private TaskbarRestComponent[] EffectiveRestComponents() => PreviewRestEntries()
         .Where(entry => entry.IsVisible && (entry.Component != TaskbarRestComponent.BluetoothBattery || _batteryCanShow))
         .Select(entry => entry.Component).ToArray();
-    private TaskbarRestComponent[] RestComponentsWithHandle()
-    {
-        var visible = EffectiveRestComponents();
-        return visible.Length == 0 ? [] : [.. visible, TaskbarRestComponent.DragHandle];
-    }
     private double MetricPrimarySize(TaskbarRestComponent component, bool vertical) =>
         _metricPresenters.TryGetValue(ComponentLayoutPolicy.Metric(component), out var presenter)
             ? vertical ? presenter.PreferredVerticalLength : presenter.PreferredWidth + TaskbarWidgetPadding * 2 : 80;

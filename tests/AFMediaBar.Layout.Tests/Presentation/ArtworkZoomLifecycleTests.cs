@@ -184,7 +184,9 @@ public sealed class ArtworkZoomLifecycleTests
                         $"{context}：性能组件必须以该显示模式呈现。");
                     // 静置层里除纯装饰层与承载封面/文字的主画布外，所有可见的直系表面都必须随封面推挤。
                     var following = VisiblePushFollowingElements(control);
-                    Assert.IsTrue(following.Count >= 3, $"{context}：随推挤的直系表面不能为空（至少含频谱、性能组件与拖动条手柄）。");
+                    Assert.IsTrue(following.Count >= 2, $"{context}：随推挤的直系表面至少包含频谱与性能组件。");
+                    var moveHandle = (FrameworkElement)MediaBarTestAccess.GetField("_barMoveHandle", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+                    Assert.IsFalse(following.Contains(moveHandle), $"{context}：栏外手柄不参与封面推挤。");
                     foreach (var surface in performanceSurfaces)
                         Assert.IsTrue(following.Contains(surface), $"{context}/{ElementLabel(surface)}：性能表面必须属于随推挤的直系表面。");
                     var interactionSurface = (Grid)control.FindName("InteractionSurface")!;
