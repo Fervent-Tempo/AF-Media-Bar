@@ -121,9 +121,9 @@ public sealed class NativeWindowBackdropAdapter
     /// 标准差 14.4，并跟随背后壁纸的明暗。请求云母也一样退化成单色，因此"非激活窗口不要用系统材质"不是亚克力的特例，
     /// 而是所有系统材质的共同前提。
     ///
-    /// 所以永不激活的窗口和菜单子项统一走 Accent 路径：这条路径由窗口自己绘制，实测在非激活状态下依然在模糊背后的内容
-    /// （窗口内亮度标准差 2.1–7.4，随浓度变化，而背后壁纸是 42.5），浓度由材质浓度设置给出。Mica/MicaAlt 使用模糊背后，
-    /// Acrylic 使用 Acrylic 模糊；两者都不是系统材质，但材质模式与浓度都有可见效果。
+    /// 所以永不激活的窗口和菜单子项统一走 Acrylic 模糊路径：这条路径由窗口自己绘制，实测在非激活状态下依然在模糊背后的内容
+    /// （窗口内亮度标准差 2.1–7.4，随浓度变化，而背后壁纸是 42.5）。三种模式都使用 Acrylic 模糊和同一浓度底色；
+    /// 如果改用 blur-behind 状态，底色 alpha 会失效，通知在云母模式下会变成几乎完全透明。
     /// Applies a backdrop to a window or Popup that never activates.
     ///
     /// Windows 11's three system materials (Mica, Acrylic, Mica Alt) are painted by DWM from the desktop wallpaper, and DWM only
@@ -132,11 +132,10 @@ public sealed class NativeWindowBackdropAdapter
     /// deviation of 14.4 that tracked the wallpaper behind it. Requesting Mica degrades just as much, so "no system material on a
     /// non-activating window" is a property of every system material rather than an Acrylic special case.
     ///
-    /// Non-activating windows and menu submenus therefore all use the Accent path: that path is painted by the window itself and
+    /// Non-activating windows and menu submenus therefore all use the Acrylic blur path: that path is painted by the window itself and
     /// measured to keep blurring the content behind it while non-activated (a luminance deviation of 2.1-7.4 inside the window
-    /// depending on concentration, against 42.5 for the wallpaper behind it), with its concentration coming from the
-    /// material-concentration setting. Mica/MicaAlt use blur-behind, Acrylic uses acrylic blur; neither is a system material, but the
-    /// material mode and concentration both have a visible effect.
+    /// depending on concentration, against 42.5 for the wallpaper behind it). All three modes use the same acrylic blur and tint;
+    /// the blur-behind state drops the tint alpha, which left notifications almost fully transparent in the Mica modes.
     /// </summary>
     /// <param name="handle">窗口句柄。/ Window handle.</param>
     /// <param name="mode">请求的有效材质；<see cref="ApplicationBackdropMode.FluentSolid"/> 由调用方处理。/ Requested effective backdrop; <see cref="ApplicationBackdropMode.FluentSolid"/> is handled by the caller.</param>
@@ -151,10 +150,7 @@ public sealed class NativeWindowBackdropAdapter
         }
 
         ResetBackdrop(handle);
-        var state = mode == ApplicationBackdropMode.Acrylic
-            ? AccentState.EnableAcrylicBlurBehind
-            : AccentState.EnableBlurBehind;
-        return SetFrame(handle, extended: false) && ApplyAccentPolicy(handle, state, tint);
+        return SetFrame(handle, extended: false) && ApplyAccentPolicy(handle, AccentState.EnableAcrylicBlurBehind, tint);
     }
 
     /// <summary>
@@ -306,7 +302,6 @@ public sealed class NativeWindowBackdropAdapter
     private enum AccentState
     {
         Disabled = 0,
-        EnableBlurBehind = 3,
         EnableAcrylicBlurBehind = 4
     }
 

@@ -1,5 +1,5 @@
-// 非激活材质只由适配器选择 Accent 状态；测试注入记录调用，不依赖真实桌面。
-// The adapter alone chooses the Accent state for non-activating material; tests record calls without a real desktop.
+// 非激活材质统一使用 Acrylic 模糊和浓度底色；测试注入记录调用，不依赖真实桌面。
+// Non-activating material always uses acrylic blur with the concentration tint; tests record calls without a real desktop.
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -10,7 +10,7 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class NonActivatingBackdropTests
 {
     [TestMethod]
-    public void AcrylicUsesAcrylicBlurAndMicaUsesBlurBehind()
+    public void AllMaterialModesUseOpaqueAcrylicBlurTint()
     {
         var states = new List<int>();
         var adapter = new NativeWindowBackdropAdapter(22621, (_, _, _) => true, (_, _) => true,
@@ -20,10 +20,10 @@ public sealed class NonActivatingBackdropTests
         Assert.AreEqual(4, states.Last());
 
         Assert.IsTrue(adapter.ApplyNonActivatingBackdrop(1, ApplicationBackdropMode.Mica, unchecked((int)0x99FFFFFF)));
-        Assert.AreEqual(3, states.Last());
+        Assert.AreEqual(4, states.Last());
 
         Assert.IsTrue(adapter.ApplyNonActivatingBackdrop(1, ApplicationBackdropMode.MicaAlt, unchecked((int)0x99FFFFFF)));
-        Assert.AreEqual(3, states.Last());
+        Assert.AreEqual(4, states.Last());
     }
 
     [TestMethod]
