@@ -1,4 +1,4 @@
-<!-- owner: AF Media Bar maintainers | verified_at: cab45708 | review_by: 2027-03-05 -->
+<!-- owner: AF Media Bar maintainers | verified_at: 453e1e03 | review_by: 2027-03-05 -->
 
 # 主题与外观
 
@@ -18,6 +18,7 @@
 - 材质应用失败必须退到不透明主题表面，不能把窗口留在透明状态；装饰属性失败不得误判整个材质失败。
 - 可获取焦点的顶层菜单使用系统材质；不抢焦点的通知统一经 `AttachNonActivatingTransient` 接入 Accent 路径。
 - 菜单子项仍是 WPF Popup：不应用 DWM Mica/Acrylic，改用程序绘制 Accent 模糊，并以 alpha=1 的命中安全填充和圆角窗口区域避免透明命中；材质失败时退回不透明主题表面。非激活窗口的系统材质只是一块单色，不能把它当作可用回退。
+- 系统材质窗口共用同一层中性遮罩；遮罩与内容卡片的 alpha 由材质浓度和主题统一生成，不按材质模式分叉。通知和子菜单的原生 Accent tint 使用同一浓度，因此调整浓度会同时改变设置页、完整面板、音频菜单、右键菜单和通知的观感。
 - 浓度缺失时用默认值（60%），不能把 `null` 当零再夹到下限。
 - 时长、曲线和降级统一由 `MotionPolicy` 决定；关闭系统动画立即落到终态，不保留不可见的连续动画。
 - 透明表面的文字清晰度不能靠 `ClearTypeHint` 声称保证；修改文本渲染、Effect 或像素取整必须验证 96 DPI 与缩放 DPI。
