@@ -165,6 +165,42 @@ public sealed class MenuWindowTests
         });
     }
 
+    [TestMethod]
+    public void SubmenuHeaderHoverOpensSubmenu()
+    {
+        if (RunIsolated(nameof(SubmenuHeaderHoverOpensSubmenu))) return;
+        StaTest.Run(async dispatcher =>
+        {
+            var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+            using var icons = new AppIconService();
+            var adapter = CreateAdapter();
+            using var appearance = new WindowAppearanceService(adapter, icons);
+            AFMenuWindow? window = null;
+            try
+            {
+                LoadResources(app);
+                var panel = new StackPanel();
+                var header = new WpfMenuItem { Header = "Parent" };
+                var child = new WpfMenuItem { Header = "Child" };
+                header.Items.Add(child);
+                panel.Children.Add(header);
+                window = CreateWindow(appearance);
+                window.ShowMenu(panel, new Point(20, 20));
+                await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+
+                header.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount)
+                {
+                    RoutedEvent = UIElement.MouseEnterEvent
+                });
+                await Task.Delay(350);
+                await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                Assert.IsTrue(header.IsSubmenuOpen, "Hovering a submenu header must open its submenu.");
+                Assert.IsTrue(child.IsVisible, "The submenu item must be visible after hover.");
+            }
+            finally { window?.Dispose(); app.Shutdown(); }
+        });
+    }
+
     private static NativeWindowBackdropAdapter CreateAdapter() => new(
         22621,
         (_, _, _) => true,

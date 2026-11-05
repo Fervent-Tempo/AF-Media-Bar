@@ -43,6 +43,10 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
     private readonly RoutedEventHandler _menuItemClickHandler;
     private readonly KeyEventHandler _menuItemKeyHandler;
     private readonly MouseButtonEventHandler _menuItemMouseUpHandler;
+    private readonly MouseEventHandler _menuItemMouseEnterHandler;
+    private readonly MouseEventHandler _menuItemMouseLeaveHandler;
+    private readonly DispatcherTimer _submenuHoverTimer;
+    private WpfMenuItem? _pendingHoverItem;
     private FrameworkElement? _menuContent;
     private Point? _anchor;
     private nint _previousForeground;
@@ -65,6 +69,13 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
         _menuItemClickHandler = OnMenuItemClick;
         _menuItemKeyHandler = OnMenuItemPreviewKeyDown;
         _menuItemMouseUpHandler = OnMenuItemPreviewMouseLeftButtonUp;
+        _menuItemMouseEnterHandler = OnMenuItemMouseEnter;
+        _menuItemMouseLeaveHandler = OnMenuItemMouseLeave;
+        _submenuHoverTimer = new DispatcherTimer(DispatcherPriority.Input, Dispatcher)
+        {
+            Interval = TimeSpan.FromMilliseconds(220)
+        };
+        _submenuHoverTimer.Tick += OnSubmenuHoverTimerTick;
         ApplyMotionEffects();
         appearanceService.AttachMenuWindow(this);
     }
@@ -194,6 +205,8 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
 
     private void FinishHide(MenuDismissReason reason)
     {
+        _submenuHoverTimer.Stop();
+        _pendingHoverItem = null;
         MenuRoot.BeginAnimation(UIElement.OpacityProperty, null);
         MenuScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
         MenuScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
@@ -333,12 +346,46 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
 
         if (item.HasItems)
         {
-            item.IsSubmenuOpen = true;
+            OpenSubmenu(item, focusFirst: false);
             e.Handled = true;
             return;
         }
 
         Dismiss(MenuDismissReason.ItemInvoked);
+    }
+
+    private void OnMenuItemMouseEnter(object sender, MouseEventArgs e)
+    {
+        if (_isDisposed || _isHiding || !IsVisible || sender is not WpfMenuItem { HasItems: true } item)
+            return;
+        if (item.IsSubmenuOpen)
+        {
+            _pendingHoverItem = null;
+            _submenuHoverTimer.Stop();
+            return;
+        }
+
+        _pendingHoverItem = item;
+        _submenuHoverTimer.Stop();
+        _submenuHoverTimer.Start();
+    }
+
+    private void OnMenuItemMouseLeave(object sender, MouseEventArgs e)
+    {
+        if (!ReferenceEquals(_pendingHoverItem, sender))
+            return;
+        _pendingHoverItem = null;
+        _submenuHoverTimer.Stop();
+    }
+
+    private void OnSubmenuHoverTimerTick(object? sender, EventArgs e)
+    {
+        _submenuHoverTimer.Stop();
+        var item = _pendingHoverItem;
+        _pendingHoverItem = null;
+        if (item is null || _isDisposed || _isHiding || !IsVisible)
+            return;
+        OpenSubmenu(item, focusFirst: false);
     }
 
     private void OnMenuItemPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -354,7 +401,7 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
         if (item is null || !item.HasItems)
             return;
 
-        item.IsSubmenuOpen = true;
+        OpenSubmenu(item, focusFirst: false);
         e.Handled = true;
     }
 
@@ -387,12 +434,22 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
         item.RaiseEvent(new RoutedEventArgs(WpfMenuItem.ClickEvent, item));
     }
 
-    private void OpenSubmenu(WpfMenuItem item)
+    private void OpenSubmenu(WpfMenuItem item, bool focusFirst = true)
     {
         if (!item.HasItems)
             return;
+
+        foreach (var other in _wiredItems)
+        {
+            if (!ReferenceEquals(other, item) && other.HasItems && other.IsSubmenuOpen)
+                other.IsSubmenuOpen = false;
+        }
+
+        _pendingHoverItem = null;
+        _submenuHoverTimer.Stop();
         item.IsSubmenuOpen = true;
-        _ = Dispatcher.BeginInvoke(() => FocusFirstChild(item), DispatcherPriority.Loaded);
+        if (focusFirst)
+            _ = Dispatcher.BeginInvoke(() => FocusFirstChild(item), DispatcherPriority.Loaded);
     }
 
     private void CloseSubmenuOrMoveOut(WpfMenuItem item)
@@ -464,6 +521,8 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
         foreach (var item in EnumerateMenuItems(content))
         {
             item.PreviewKeyDown += _menuItemKeyHandler;
+            item.MouseEnter += _menuItemMouseEnterHandler;
+            item.MouseLeave += _menuItemMouseLeaveHandler;
             _wiredItems.Add(item);
         }
         content.AddHandler(WpfMenuItem.ClickEvent, _menuItemClickHandler, handledEventsToo: true);
@@ -472,8 +531,14 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
 
     private void UnwireMenuContent()
     {
+        _submenuHoverTimer.Stop();
+        _pendingHoverItem = null;
         foreach (var item in _wiredItems)
+        {
             item.PreviewKeyDown -= _menuItemKeyHandler;
+            item.MouseEnter -= _menuItemMouseEnterHandler;
+            item.MouseLeave -= _menuItemMouseLeaveHandler;
+        }
         _wiredItems.Clear();
         _menuContent?.RemoveHandler(WpfMenuItem.ClickEvent, _menuItemClickHandler);
         _menuContent?.RemoveHandler(Mouse.PreviewMouseUpEvent, _menuItemMouseUpHandler);
@@ -529,6 +594,8 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
         _isDisposed = true;
         _presentationVersion++;
         _animationVersion++;
+        _submenuHoverTimer.Stop();
+        _submenuHoverTimer.Tick -= OnSubmenuHoverTimerTick;
         _windowPresentation.Dispose();
         if (_menuContent is not null)
             _appearanceService.DetachMenuSubmenus(_menuContent);
