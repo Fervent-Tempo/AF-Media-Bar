@@ -12,4 +12,10 @@
 
 待填写 / To fill in.
 
+## 文档影响 / Docs impact
+
+<!-- 是否改变 docs/design 中的约束、所有权、兼容性或真机验收边界？有则同步对应篇目和 verified_at；无则写“无”。 / Does this change a constraint, ownership, compatibility, or real-device boundary in docs/design? Update the page and verified_at, or write "none". -->
+
+无 / None.
+
 <!-- 有相关 Issue 时写 Refs #123；只有完整解决才写 Closes #123。界面改动可附截图；兼容风险或未处理范围只在相关时补充。 / Add Refs #123 for a related issue, or Closes #123 only if fully resolved. Attach a screenshot for UI changes; mention risks or out-of-scope work only when relevant. -->

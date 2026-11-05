@@ -24,6 +24,7 @@
 | 涉及内容 | 读取入口 |
 |---|---|
 | 职责、依赖或生命周期 | [架构边界](docs/architecture.md) |
+| 跨模块行为、失败模式或真机验收边界 | [设计约束](docs/design/README.md) |
 | 手写代码的注释、命名与特殊接口 | [代码风格](docs/code-style.md)；格式由 `.editorconfig` 和工具检查 |
 | 设置字段、枚举、默认语义、兼容、重置或发布 | 先读[发布登记入口](docs/settings-contracts.md)，用 `tools/settings-contracts.ps1 -Action Query` 查询目标路径、枚举和兼容例外；默认值、读取与重置核对源码并运行相关测试。登记格式可用 `-Action Verify` 检查，不作为业务验证 |
 | 媒体适配器、身份或双通道仲裁 | [媒体接入](docs/media-adapters.md) |
