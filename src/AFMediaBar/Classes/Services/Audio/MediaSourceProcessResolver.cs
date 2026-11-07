@@ -13,6 +13,7 @@ public sealed class MediaSourceProcessResolver
         (["cloudmusic", "netease", "163music"], ["cloudmusic"]),
         (["qqmusic"], ["QQMusic"]),
         (["kugou", "kgmusic"], ["KuGou", "KuGouMusic"]),
+        (["foliamajor", "top.izuna", "folia"], ["Folia"]),
         (["spotify"], ["Spotify"]),
         (["chrome"], ["chrome"]),
         (["msedge", "microsoftedge"], ["msedge"]),

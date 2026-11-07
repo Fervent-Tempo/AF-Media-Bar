@@ -43,6 +43,7 @@ public sealed class MediaSourceProcessResolverTests
     [DataRow("Chrome", "chrome")]
     [DataRow("MicrosoftEdge", "msedge")]
     [DataRow("kugou", "KuGouMusic")]
+    [DataRow("top.izuna.foliamajor", "Folia")]
     [DataRow("Microsoft.ZuneMusic!App", "Music.UI")]
     public void RegisteredAliasesRemainAvailable(string sourceId, string processName)
     {

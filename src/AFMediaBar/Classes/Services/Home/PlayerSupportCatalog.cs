@@ -44,7 +44,7 @@ public static class PlayerSupportCatalog
     {
         Profile("Service.MediaSource.NetEaseCloudMusic", "Home.Player.NetEase"),
         Profile("Service.MediaSource.Kugou", "Home.Player.KuGou"),
-        Profile("Service.MediaSource.QQMusic"), Profile("Spotify"), Profile("Windows Media Player"),
+        Profile("Service.MediaSource.QQMusic"), Profile("Spotify"), Profile("Folia"), Profile("Windows Media Player"),
         Profile("Google Chrome"), Profile("Microsoft Edge"), Profile("Firefox"), Profile("VLC"),
         Profile("PotPlayer"), Profile("mpv", null, true), Profile("foobar2000", null, true)
     };
