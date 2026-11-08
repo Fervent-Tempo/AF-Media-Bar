@@ -60,13 +60,14 @@ public static class LyricsPresentationProjector
             return LyricsPresentationFrame.Hidden;
         }
 
-        var position = TaskbarExperiencePolicy.GetPosition(snapshot, now);
-        // 播放器没有时间轴时，位置永远停在 0；多数歌词的第一句也从 0 开始，于是整首歌会卡在第一句不动。
-        // 与其把第一句当成“正在唱”，不如让栏位显示标题、歌手和“不提供播放进度”的说明。
-        if (MediaPlaybackProgressPolicy.ExplainsMissingProgress(snapshot, settings.LyricsEnabled))
+        // 播放器没有时间轴时立即隐藏歌词：换歌后时长未到的空窗与空闲未播放，都不该按位置 0 卡在第一句。
+        // 「不提供播放进度」的说明由第二行在稳定期后另行显示，不在这里等待。
+        if (MediaPlaybackProgressPolicy.ShouldHideLyrics(snapshot, settings.LyricsEnabled))
         {
             return LyricsPresentationFrame.Hidden;
         }
+
+        var position = TaskbarExperiencePolicy.GetPosition(snapshot, now);
 
         var index = LyricLineIndexPolicy.FindIndex(lines, position);
         if (index < 0)
