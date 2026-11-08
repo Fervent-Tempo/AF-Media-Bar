@@ -23,9 +23,9 @@ public static class MediaSourceNameFormatter
         ("Service.MediaSource.NetEaseCloudMusic", string.Empty, ["cloudmusic", "netease", "163music"]),
         ("Service.MediaSource.QQMusic", string.Empty, ["qqmusic"]),
         ("Service.MediaSource.Kugou", string.Empty, ["kugou", "kgmusic"]),
-        // Folia 的 SMTC 标识是打包标识 top.izuna.foliamajor；不去掉包名前缀的话会被当成未知来源显示成 top.izuna。
+        // Folia 的 SMTC 标识是打包标识 top.izuna.foliamajor；只登记已确认的完整标识，避免 top.izuna/folia 短前缀通过 Contains 误配其他来源。
         // Folia reports top.izuna.foliamajor as its SMTC identity; without this mapping the package prefix leaks into the UI as "top.izuna".
-        (null, "Folia", ["foliamajor", "top.izuna", "folia"]),
+        (null, "Folia", ["top.izuna.foliamajor", "folia.exe"]),
         (null, "Spotify", ["spotify"]),
         (null, "Google Chrome", ["chrome"]),
         (null, "Microsoft Edge", ["msedge", "microsoftedge"]),
