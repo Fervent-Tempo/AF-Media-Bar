@@ -25,6 +25,9 @@ public readonly record struct PlaybackProgressMemory(
 ///
 /// 难点在时机：换歌时歌词常常直接命中缓存，时长要等内存通道下一轮读取才回来，中间有一两百毫秒的“有歌词没进度”。
 /// 所以还要求这段状态稳定持续一段时间才下结论；播放器空着时因为没播过，会被直接排除。
+///
+/// 隐藏与提示是两个决策，不再共用一个标记：歌词隐藏只看「当前有没有可用时间轴」，立即生效
+/// （<see cref="ShouldHideLyrics"/>）；提示才要求稳定期（<see cref="ExplainsMissingProgress"/>）。
 /// </remarks>
 public static class MediaPlaybackProgressPolicy
 {
@@ -32,7 +35,20 @@ public static class MediaPlaybackProgressPolicy
     private static readonly TimeSpan MinimumHold = TimeSpan.FromMilliseconds(800);
 
     /// <summary>
-    /// 是否应当告诉用户当前播放器不提供播放进度。
+    /// 是否没有可用时间轴而应立即隐藏歌词：不等稳定期。
+    /// 换歌后时长未到的空窗与空闲未播放，都不该按位置 0 把第一句当成正在唱的那句；
+    /// 「不提供播放进度」的说明由第二行在稳定期后另行显示，见 <see cref="ExplainsMissingProgress"/>。
+    /// </summary>
+    /// <param name="snapshot">当前快照。</param>
+    /// <param name="lyricsEnabled">用户是否启用了歌词；没启用时歌词区本来就不显示。</param>
+    public static bool ShouldHideLyrics(MediaSnapshot snapshot, bool lyricsEnabled) =>
+        lyricsEnabled &&
+        snapshot.Duration <= 0 &&
+        snapshot.Position <= 0 &&
+        snapshot.Lyrics?.Document.Lines is { Count: > 0 };
+
+    /// <summary>
+    /// 是否应当告诉用户当前播放器不提供播放进度；稳定期后才有意义，之前第二行保持显示歌手。
     /// </summary>
     /// <param name="snapshot">当前快照。</param>
     /// <param name="lyricsEnabled">用户是否启用了歌词；没启用时歌词区本来就不显示，不需要解释。</param>

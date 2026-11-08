@@ -74,11 +74,35 @@ public sealed class MediaPlaybackProgressPolicyTests
     }
 
     [TestMethod]
+    public void HidesLyricsImmediatelyWithoutAnUsableTimeline()
+    {
+        Assert.IsTrue(MediaPlaybackProgressPolicy.ShouldHideLyrics(Snapshot(), lyricsEnabled: true),
+            "没有时长与位置就没有可用时间轴，换歌后的空窗也要立即隐藏，不能等稳定期。");
+        Assert.IsTrue(MediaPlaybackProgressPolicy.ShouldHideLyrics(Snapshot(playing: false), lyricsEnabled: true),
+            "空闲未播放同样没有时间轴，歌词隐藏、第二行留给歌手。");
+        Assert.IsTrue(MediaPlaybackProgressPolicy.ShouldHideLyrics(Snapshot(unavailable: true), lyricsEnabled: true),
+            "稳定期后继续保持隐藏。");
+        Assert.IsFalse(MediaPlaybackProgressPolicy.ShouldHideLyrics(Snapshot(duration: 261.3), lyricsEnabled: true),
+            "有时长说明时间轴可用。");
+        Assert.IsFalse(MediaPlaybackProgressPolicy.ShouldHideLyrics(Snapshot(position: 12.5), lyricsEnabled: true),
+            "有位置同样说明时间轴可用。");
+        Assert.IsFalse(MediaPlaybackProgressPolicy.ShouldHideLyrics(Snapshot(), lyricsEnabled: false),
+            "关掉歌词后这行本来就显示歌手，不需要隐藏判定。");
+        Assert.IsFalse(MediaPlaybackProgressPolicy.ShouldHideLyrics(Snapshot(withLyrics: false), lyricsEnabled: true),
+            "没有歌词时无需隐藏。");
+    }
+
+    [TestMethod]
     public void LyricsStayHiddenWhenThePlayerReportsNoProgress()
     {
         var settings = new AppSettings { LyricsEnabled = true };
-        var frozen = LyricsPresentationProjector.Project(Snapshot(unavailable: true), settings, DateTimeOffset.UtcNow);
-        Assert.IsFalse(frozen.IsVisible, "没有进度时不能把第一句当成正在唱的那句，否则整首歌都停在这一句。");
+        // 稳定期前后都要隐藏：0–800ms 的空窗不能按位置 0 卡在第一句，空闲未播放同理。
+        Assert.IsFalse(LyricsPresentationProjector.Project(Snapshot(unavailable: true), settings, DateTimeOffset.UtcNow).IsVisible,
+            "稳定期后没有进度时不能把第一句当成正在唱的那句，否则整首歌都停在这一句。");
+        Assert.IsFalse(LyricsPresentationProjector.Project(Snapshot(), settings, DateTimeOffset.UtcNow).IsVisible,
+            "换歌后时长未到的空窗（还不到提示稳定期）同样要隐藏歌词。");
+        Assert.IsFalse(LyricsPresentationProjector.Project(Snapshot(playing: false), settings, DateTimeOffset.UtcNow).IsVisible,
+            "空闲未播放时不显示提示，但歌词也应隐藏、把歌手留给第二行。");
 
         var normal = LyricsPresentationProjector.Project(Snapshot(duration: 261.3), settings, DateTimeOffset.UtcNow);
         Assert.IsTrue(normal.IsVisible, "有时长时第一句照常显示。");
