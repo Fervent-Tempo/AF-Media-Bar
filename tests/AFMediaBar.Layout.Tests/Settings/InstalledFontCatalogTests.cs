@@ -21,10 +21,14 @@ public sealed class InstalledFontCatalogTests
     public async Task CancelledNavigationDoesNotCancelAnotherWaiterOrSharedScan()
     {
         var field = typeof(InstalledFontCatalog).GetField("_inFlightRefresh", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var cacheField = typeof(InstalledFontCatalog).GetField("_cachedFontChoices", BindingFlags.Static | BindingFlags.NonPublic)!;
         var original = field.GetValue(null);
+        var originalCache = cacheField.GetValue(null);
         var scan = new TaskCompletionSource<(IReadOnlyList<FontFamilyChoice> Latin, IReadOnlyList<FontFamilyChoice> Cjk)>(TaskCreationOptions.RunContinuationsAsynchronously);
         using var cancellation = new CancellationTokenSource();
         field.SetValue(null, scan.Task);
+        // 进程级结果缓存会让第二次等待直接命中缓存；先隔离它，才能验证共享扫描本身。
+        cacheField.SetValue(null, null);
         try
         {
             var cancelledWait = InstalledFontCatalog.RefreshChoicesAsync(cancellation.Token);
@@ -45,6 +49,7 @@ public sealed class InstalledFontCatalogTests
         {
             scan.TrySetResult(([], []));
             field.SetValue(null, original);
+            cacheField.SetValue(null, originalCache);
         }
     }
 

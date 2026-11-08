@@ -103,6 +103,7 @@ namespace AFMediaBar.Views.Windows
         private readonly AFMenuWindow _memoryMenuWindow;
         private readonly AFMenuWindow _batteryMenuWindow;
         private AFMediaBar.Components.AFContextMenu _trayMenu = null!;
+        private bool _mediaCardOnlyApplied;
 
         private readonly QuickLaunchService _quickLaunch;
         public MainWindow(
@@ -985,7 +986,35 @@ namespace AFMediaBar.Views.Windows
         private void SettingsWindow_Closed(object? sender, EventArgs e) =>
             _memoryPruneCoordinator.RequestTrim(MemoryTrimTrigger.SettingsWindowClosed);
 
-        private void AudioControl_OnTrayContextMenuRequested(TrayIconBounds? bounds)
+        private void AudioControl_OnTrayContextMenuRequested(TrayIconBounds? bounds) => ShowSharedContextMenu();
+
+        /// <summary>
+        /// 「仅显示媒体卡片」：暂停任务栏与悬浮条宿主，停掉它们的绘制、采样和计时器，并释放各自的 WebView2；
+        /// 关闭卡片时原样恢复并重建歌词视图。不改持久化设置，不触发全量重建，也不动任务栏宿主关系。
+        /// </summary>
+        internal void SetMediaCardOnlyMode(bool active)
+        {
+            if (_isClosing || _mediaCardOnlyApplied == active)
+                return;
+            _mediaCardOnlyApplied = active;
+
+            if (active)
+                CloseFullPanelWindows();
+            foreach (var window in _taskbarWindows.ToArray())
+            {
+                // 先挂起挡住 WebView2 的 Create 分支，再释放；退出时先恢复宿主，再重建歌词视图。
+                if (active) { window.Suspend(); window.SetMediaCardOnlyMode(true); }
+                else { window.Resume(); window.SetMediaCardOnlyMode(false); }
+            }
+            foreach (var window in _floatingWindows.ToArray())
+            {
+                if (active) { window.Suspend(); window.SetMediaCardOnlyMode(true); }
+                else { window.Resume(); window.SetMediaCardOnlyMode(false); }
+            }
+        }
+
+        /// <summary>主程序共用的播放器右键菜单；媒体卡片等独立窗口也走这里，保证菜单内容一致。</summary>
+        internal void ShowSharedContextMenu()
         {
             if (_isClosing)
                 return;

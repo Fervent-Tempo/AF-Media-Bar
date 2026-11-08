@@ -10,7 +10,7 @@ public static class SettingsNavigationCatalog
     public static IReadOnlyList<SettingsSectionDefinition> Sections { get; } = Array.AsReadOnly(new[]
     {
         new SettingsSectionDefinition("start", "Settings.Section.Start", "Sparkle24", [SettingsPageKey.QuickStart]),
-        new SettingsSectionDefinition("bar", "Settings.Section.Bar", "WindowConsole20", [SettingsPageKey.ScreenAndPlacement, SettingsPageKey.Appearance, SettingsPageKey.RestState, SettingsPageKey.Components, SettingsPageKey.FullPanel]),
+        new SettingsSectionDefinition("bar", "Settings.Section.Bar", "WindowConsole20", [SettingsPageKey.ScreenAndPlacement, SettingsPageKey.MediaCard, SettingsPageKey.Appearance, SettingsPageKey.RestState, SettingsPageKey.Components, SettingsPageKey.FullPanel]),
         new SettingsSectionDefinition("content", "Settings.Section.Content", "Layer24", [SettingsPageKey.Lyrics, SettingsPageKey.Widgets, SettingsPageKey.Spectrum, SettingsPageKey.Performance, SettingsPageKey.BluetoothBattery]),
         new SettingsSectionDefinition("playback", "Settings.Section.Playback", "Headphones24", [SettingsPageKey.MediaAndNotifications, SettingsPageKey.DeviceManagement]),
         new SettingsSectionDefinition("interaction", "Settings.Section.Interaction", "HandDraw24", [SettingsPageKey.Interaction, SettingsPageKey.TrackNotifications]),

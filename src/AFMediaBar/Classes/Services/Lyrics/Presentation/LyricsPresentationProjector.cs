@@ -1,3 +1,4 @@
+using System.Net;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
@@ -131,6 +132,51 @@ public static class LyricsPresentationProjector
             snapshot.IsPlaying);
     }
 
+    /// <summary>
+    /// 为桌面媒体卡片解析当前行的罗马音与译文：两者都经过与任务栏歌词相同的括号清理与繁简转换，
+    /// 因此卡片上的副行不会和主栏的歌词处理脱节。媒体卡片同时展示两行副行，不受「二选一」副行策略约束，
+    /// 所以这里直接读行上的两个字段，而不是走 <see cref="LyricsSecondaryLinePolicy"/>。
+    /// Resolves the active line's romanization and translation for the desktop media card: both run through the same
+    /// bracket cleaning and Chinese conversion as the taskbar lyrics, so the card's secondary rows never drift from the
+    /// main bar's lyric handling. The card shows both secondary rows at once and is not bound by the one-or-the-other
+    /// secondary policy, so this reads the two fields on the line directly instead of <see cref="LyricsSecondaryLinePolicy"/>.
+    /// </summary>
+    /// <param name="line">当前行，可为 null / The active line, which may be null.</param>
+    /// <param name="settings">歌词处理设置 / Lyric-handling settings.</param>
+    public static (string Romanization, string Translation) ResolveSecondary(LyricLine? line, AppSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        if (line is null)
+        {
+            return (string.Empty, string.Empty);
+        }
+
+        var stripBracketSymbols = settings.LyricsBracketSymbolsHidden;
+        var conversion = settings.LyricsChineseConversion;
+        return (
+            Present(line.Romanization ?? string.Empty, stripBracketSymbols, conversion),
+            Present(PresentableTranslation(line.Translation), stripBracketSymbols, conversion));
+    }
+
+    /// <summary>翻译缺失时来源常写一个「//」占位，这里按空处理，避免卡片上冒出一个孤零零的斜杠。</summary>
+    private static string PresentableTranslation(string? translation) =>
+        string.IsNullOrWhiteSpace(translation) || translation.Trim() == "//"
+            ? string.Empty
+            : translation;
+
+    /// <summary>
+    /// 为桌面媒体卡片返回经过主程序同样处理（注音过滤、括号清理）的显示行，供逐字擦亮与横向滚动使用。
+    /// 媒体卡片需要和 <see cref="Project"/> 产出的 <c>Current</c> 文本对应的逐字时间轴，因此不能直接读原始行。
+    /// Returns the display line after the same main-bar processing (furigana filter and bracket cleaning), so the card's
+    /// syllable wipe and horizontal scroll use the timeline that matches the <c>Current</c> text from <see cref="Project"/>.
+    /// </summary>
+    public static LyricLine ResolveDisplayLine(LyricLine line, AppSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(line);
+        ArgumentNullException.ThrowIfNull(settings);
+        return DisplayLine(line, settings);
+    }
+
     private static string BuildTrackId(MediaSnapshot snapshot) => string.Join(
         "\u001f",
         snapshot.SourceId.Trim().ToUpperInvariant(),
@@ -144,12 +190,20 @@ public static class LyricsPresentationProjector
     }
 
     /// <summary>
-    /// 把一段歌词文本送到呈现层：先按设置清理来源附加的格式标记（行首斜杠、整行括号），再做繁简转换。
-    /// Sends one piece of lyric text to the presentation layer: cleans the source's format markers first (a leading
-    /// slash, enclosing brackets), then applies the Chinese conversion.
+    /// 把一段副行文本送到呈现层：先还原在线接口的 HTML 实体，再按设置清理来源附加的格式标记
+    /// （行首斜杠、整行括号），最后做繁简转换。主行不走这里。
+    /// Sends a secondary line to the presentation layer: decodes HTML entities first, strips source format markers,
+    /// then applies Chinese conversion. The main line never passes through here.
     /// </summary>
-    private static string Present(string text, bool stripBracketSymbols, LyricsChineseConversionMode conversion) =>
-        LyricsChineseConverter.Convert(stripBracketSymbols ? LyricsTranslationFormatFilter.Clean(text) : text, conversion);
+    private static string Present(string text, bool stripBracketSymbols, LyricsChineseConversionMode conversion)
+    {
+        // 在线接口的译文/音译常带 HTML 实体（&amp; 等）：主歌词在 QRC/LRC 解析层已解码，副行走的是另一条链，
+        // 所以在这里统一解码。放在共享的 Present 里，任务栏副行与媒体卡片副行会一起受益，
+        // 且不会触碰主行文本及其逐字时间轴（解码会改变字数，主行解码反而会让音节错位）。
+        var decoded = WebUtility.HtmlDecode(text);
+        return LyricsChineseConverter.Convert(
+            stripBracketSymbols ? LyricsTranslationFormatFilter.Clean(decoded) : decoded, conversion);
+    }
 
     private static double ResolveLineProgress(LyricLine line, double position)
     {

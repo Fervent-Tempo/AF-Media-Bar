@@ -148,6 +148,30 @@ public sealed class LyricsChineseConversionTests
         Assert.AreEqual("Never Gonna Give You Up", latinOnly.Current);
     }
 
+    [TestMethod]
+    public void HtmlEntitiesAreDecodedOnSecondaryLinesOnly()
+    {
+        var line = new LyricLine(0, 10, "主行 &amp; 保持原样")
+        {
+            Translation = "中文 &amp; 译文",
+            Romanization = "zhong wen &amp; yi wen"
+        };
+        var settings = new AppSettings { LyricsEnabled = true, TwoLineLyricsEnabled = true };
+
+        // 媒体卡片副行与主栏译文共用 Present，实体都要还原。
+        var secondary = LyricsPresentationProjector.ResolveSecondary(line, settings);
+        Assert.AreEqual("zhong wen & yi wen", secondary.Romanization);
+        Assert.AreEqual("中文 & 译文", secondary.Translation);
+
+        // 主行不解码：QRC/LRC 解析层已处理，且解码会改变字数、让逐字时间轴错位。
+        var frame = ProjectWith(
+            Snapshot([line], position: 2),
+            LyricsChineseConversionMode.None,
+            LyricsSecondaryLineMode.Translation);
+        Assert.AreEqual("主行 &amp; 保持原样", frame.Current);
+        Assert.AreEqual("中文 & 译文", frame.CurrentTranslation);
+    }
+
     private static LyricsPresentationFrame ProjectWith(
         MediaSnapshot snapshot,
         LyricsChineseConversionMode conversion,

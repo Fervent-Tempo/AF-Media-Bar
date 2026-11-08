@@ -771,6 +771,9 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _fullscreenTimer.Start();
     }
 
+    /// <summary>仅显示媒体卡片时释放本宿主的 WebView2，退出后重建。</summary>
+    internal void SetMediaCardOnlyMode(bool active) => _mediaControl.SetMediaCardOnlyMode(active);
+
     public void Dispose()
     {
         if (_isClosing) return;

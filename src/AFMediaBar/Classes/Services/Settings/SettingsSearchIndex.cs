@@ -164,6 +164,12 @@ public static class SettingsSearchIndex
             ["历史版本", "version history"]),
         // Common mode choice.
         CreateModePicker(language),
+        Create(
+            SettingsPageKey.MediaCard,
+            "Settings.MediaCard.Group",
+            "Settings.MediaCard.Group.Description",
+            language,
+            ["媒体卡片", "media card", "迷你播放器", "mini player", "置顶", "always on top", "封面", "artwork", "取色", "配色", "颜色", "colour", "深色", "浅色", "dark", "light", "罗马音", "romanization", "沉浸式", "immersive", "进度条", "progress", "波浪", "波浪线", "wave", "wavy", "性能指标", "performance", "刷新速度", "refresh rate", "CPU", "GPU", "仅显示媒体卡片", "only card", "位置记忆", "remember position", "字体", "font", "中文字体", "日文字体", "英文字体", "恢复默认字体", "restore default", "本地歌词", "local lyrics", "歌词来源", "lyrics source", "曲目信息", "track info", "留白", "empty lines", "纯音乐", "instrumental"]),
 
         // ---- 显示模式 · 任务栏 / Display modes, taskbar ----
         Create(
