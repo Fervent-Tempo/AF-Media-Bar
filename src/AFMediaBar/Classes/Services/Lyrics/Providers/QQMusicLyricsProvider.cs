@@ -46,9 +46,15 @@ public sealed class QQMusicLyricsProvider : ILyricsProvider
             return null;
         }
 
+        // QQ 的在线响应只映射了正文与译文，罗马音要单独从 GetPlayLyricInfo 补取；
+        // 失败时只是没有音译行，主歌词照常返回。
+        var romanization = await QQMusicRomanizationProvider.FetchAsync(qq.Id, request, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
         var document = LyricsTextParser.Parse(
             main,
             translation,
+            romanization,
             request: request,
             durationSeconds: request.DurationSeconds,
             filterInfoLines: request.FilterInfoLines);
