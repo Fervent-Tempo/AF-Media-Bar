@@ -1,0 +1,19 @@
+[package]
+name = "afmb-app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "AFMediaBarRs"
+path = "src/main.rs"
+
+[dependencies]
+afmb-core = { path = "../afmb-core" }
+afmb-settings = { path = "../afmb-settings" }
+afmb-l10n = { path = "../afmb-l10n" }
+afmb-platform = { path = "../afmb-platform" }
+windows = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+] }

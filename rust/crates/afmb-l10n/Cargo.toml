@@ -1,0 +1,12 @@
+[package]
+name = "afmb-l10n"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde_json = { workspace = true }
+windows = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_Globalization",
+] }
