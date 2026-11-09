@@ -92,7 +92,8 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         return new LyricsResult(LyricsSourceCatalog.LocalFile, best.Document)
         {
             MatchScore = best.Score,
-            LowConfidence = best.LowConfidence
+            LowConfidence = best.Confidence != LyricsLowConfidenceReason.None,
+            LowConfidenceReason = best.Confidence
         };
     }
 
@@ -214,14 +215,14 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         var assessment = Stronger(fromMetadata, fromFileName);
         if (assessment.Score < MinimumScore) return null;
         // 文件名与内部标签给出相反的歌手证据、或版本描述对不上时，都不能当成确定匹配。
-        var lowConfidence = IsLowConfidence(titleEvidence, artistEvidence, durationEvidence) ||
-                            HasArtistContradiction(fromMetadata.ArtistScore, fromFileName.ArtistScore) ||
-                            metadataConflict == VersionConflict.Soft || fileConflict == VersionConflict.Soft;
+        var confidence = ConfidenceOf(titleEvidence, artistEvidence, durationEvidence,
+            HasArtistContradiction(fromMetadata.ArtistScore, fromFileName.ArtistScore),
+            metadataConflict, fileConflict);
 
         var (translation, romanization) = ReadCompanions(path, baseName);
         var document = LyricsTextParser.Parse(text, translation, romanization, request,
             request.DurationSeconds ?? duration, request.FilterInfoLines);
-        return new Candidate(path, assessment.Score, lowConfidence, document);
+        return new Candidate(path, assessment.Score, confidence, document);
     }
 
     /// <summary>按扩展名取文本：QRC/KRC 先解密，字幕先归一化成 LRC，其余按编码探测。</summary>
@@ -416,6 +417,23 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         Math.Max(first, second) >= ConfidenceArtistFloor && Math.Min(first, second) < ArtistMismatchFloor;
 
     /// <summary>
+    /// 判定低置信的成因：反证优先于无佐证。两类结果在仲裁阶段待遇不同——只有「无佐证」能被分差挽留，
+    /// 「有反证」必须继续让位给在线，所以不能只用一个布尔值表示。
+    /// </summary>
+    private static LyricsLowConfidenceReason ConfidenceOf(
+        double titleScore, double? artistScore, double? durationScore,
+        bool artistContradiction, VersionConflict metadataConflict, VersionConflict fileConflict)
+    {
+        if (artistContradiction || metadataConflict == VersionConflict.Soft || fileConflict == VersionConflict.Soft)
+            return LyricsLowConfidenceReason.Contradicted;
+        // 标题本身就不够像，等于证据指向「不是这一首」，同样不该被分差捞回来。
+        if (titleScore < ConfidenceTitleFloor) return LyricsLowConfidenceReason.Contradicted;
+        return IsLowConfidence(titleScore, artistScore, durationScore)
+            ? LyricsLowConfidenceReason.TitleOnly
+            : LyricsLowConfidenceReason.None;
+    }
+
+    /// <summary>
     /// 只有标题一条线索时判为低置信度：同名翻唱、Live、同名片看起来都一样，得先让在线查一轮。
     /// 标题、歌手、时长的证据都已按两条线索合并，这里只做判定。
     /// </summary>
@@ -523,7 +541,9 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     private static bool Better(Candidate candidate, Candidate current)
     {
         // 有歌手或时长佐证的一方优先：只靠标题拿满分的同名翻唱，不该压过标题略差但歌手对得上的那份。
-        if (candidate.LowConfidence != current.LowConfidence) return !candidate.LowConfidence;
+        var candidateLowConfidence = candidate.Confidence != LyricsLowConfidenceReason.None;
+        var currentLowConfidence = current.Confidence != LyricsLowConfidenceReason.None;
+        if (candidateLowConfidence != currentLowConfidence) return !candidateLowConfidence;
         if (candidate.Score != current.Score) return candidate.Score > current.Score;
         if (candidate.Document.Lines.Count != current.Document.Lines.Count) return candidate.Document.Lines.Count > current.Document.Lines.Count;
         return string.CompareOrdinal(candidate.Path, current.Path) < 0;
@@ -597,5 +617,5 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     [GeneratedRegex(@"^\[(?<key>ti|ar|al|length):(?<value>[^\]]*)\]", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
     private static partial Regex MetadataLine();
 
-    private sealed record Candidate(string Path, int Score, bool LowConfidence, LyricDocument Document);
+    private sealed record Candidate(string Path, int Score, LyricsLowConfidenceReason Confidence, LyricDocument Document);
 }
