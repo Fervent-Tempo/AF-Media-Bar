@@ -248,6 +248,7 @@ namespace AFMediaBar.Views.Windows
             _audioControlViewModel.SettingsOpenRequested += ViewModel_OpenSettingsRequested;
             _mouseInputMonitor.LeftButtonPressed += MouseInputMonitor_OnLeftButtonPressed;
             _taskbarViewModel.OpenSettingsRequested += ViewModel_OpenSettingsRequested;
+            _taskbarViewModel.OpenPetSettingsRequested += OpenPetSettings;
             _taskbarViewModel.OpenUpdateSettingsRequested += ViewModel_OpenUpdateSettingsRequested;
 
             // 发现新版本时由宿主弹一次系统通知，点击通知把用户带到"应用与关于"。
@@ -345,6 +346,7 @@ namespace AFMediaBar.Views.Windows
             TrayMenu.ReloadTaskbarHostRequested -= TrayMenu_ReloadTaskbarHostRequested;
             TrayMenu.QuickLaunchRequested -= TrayMenu_QuickLaunchRequested;
             _taskbarViewModel.OpenSettingsRequested -= ViewModel_OpenSettingsRequested;
+            _taskbarViewModel.OpenPetSettingsRequested -= OpenPetSettings;
             _taskbarViewModel.OpenUpdateSettingsRequested -= ViewModel_OpenUpdateSettingsRequested;
             _updateService.UpdateStateChanged -= UpdateService_OnStateChanged;
             _systemNotifications.NotificationClicked -= TrayIconService_OnNotificationClicked;
@@ -877,6 +879,13 @@ namespace AFMediaBar.Views.Windows
         }
 
         private void CloseFullPanelWindows() => _fullPanels.CloseAll();
+
+        private void OpenPetSettings(object? sender, EventArgs e)
+        {
+            ViewModel_OpenSettingsRequested(sender, e);
+            _settingsWindow?.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded,
+                new Action(() => _settingsWindow?.NavigateToGroup(AFMediaBar.Classes.Services.SettingsPageKey.Widgets, "Widgets.Pet")));
+        }
 
         private void ViewModel_OpenSettingsRequested(object? sender, EventArgs e)
         {

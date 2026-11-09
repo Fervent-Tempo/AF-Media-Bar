@@ -67,11 +67,13 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
         Loaded += (_, _) =>
         {
             ViewModel.Components.PropertyChanged += PreviewSettingsChanged;
+            if (_companion is not null) _companion.ArtworkColorChanged += RefreshPetPreview;
             RefreshPetPreview();
         };
         Unloaded += (_, _) =>
         {
             ViewModel.Components.PropertyChanged -= PreviewSettingsChanged;
+            if (_companion is not null) _companion.ArtworkColorChanged -= RefreshPetPreview;
             _petDemoTimer.Stop();
             _petBubble.Close();
             _petVoice?.Stop();
@@ -100,6 +102,7 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
     private void RefreshPetPreview()
     {
         if (!_petPreviewExpanded || !IsLoaded) return;
+        PetPreview.SetAmbient(_companion?.ArtworkColor);
         PetPreview.Configure(ViewModel.Components.PetSettings with { SizeDip = 120 });
         PetPreview.SetPresentation(true, true);
     }

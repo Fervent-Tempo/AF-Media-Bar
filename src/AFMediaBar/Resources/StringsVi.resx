@@ -3386,4 +3386,19 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Widgets.Pet.Line.Idle.9" xml:space="preserve"><value>Có bài nào muốn nghe mãi không?</value></data>
   <data name="Widgets.Pet.Line.Idle.10" xml:space="preserve"><value>Mình vừa học điệu nhảy hai nhịp.</value></data>
   <data name="Widgets.Pet.Line.Idle.11" xml:space="preserve"><value>Cùng đợi một giai điệu nhé.</value></data>
+  <data name="Widgets.Pet.Petting" xml:space="preserve"><value>Tương tác vuốt ve</value></data>
+  <data name="Widgets.Pet.ArtworkColor" xml:space="preserve"><value>Màu phụ kiện theo bìa album</value></data>
+  <data name="Widgets.Pet.AudioStatus" xml:space="preserve"><value>Thông báo trạng thái âm thanh</value></data>
+  <data name="Widgets.Pet.FixColor" xml:space="preserve"><value>Giữ màu hiện tại</value></data>
+  <data name="Widgets.Pet.Status.Muted" xml:space="preserve"><value>{0} · Đã tắt tiếng</value></data>
+  <data name="Widgets.Pet.Status.Volume" xml:space="preserve"><value>{0} · Âm lượng {1}%</value></data>
+  <data name="Widgets.Pet.Status.Device" xml:space="preserve"><value>Đã chuyển đầu ra sang {0}</value></data>
+  <data name="Widgets.Pet.Menu.Play" xml:space="preserve"><value>Phát</value></data>
+  <data name="Widgets.Pet.Menu.Pause" xml:space="preserve"><value>Tạm dừng</value></data>
+  <data name="Widgets.Pet.Menu.Previous" xml:space="preserve"><value>Bài trước</value></data>
+  <data name="Widgets.Pet.Menu.Next" xml:space="preserve"><value>Bài tiếp theo</value></data>
+  <data name="Widgets.Pet.Menu.Mute" xml:space="preserve"><value>Tắt tiếng trình phát</value></data>
+  <data name="Widgets.Pet.Menu.Unmute" xml:space="preserve"><value>Bật tiếng trình phát</value></data>
+  <data name="Widgets.Pet.Menu.Dock" xml:space="preserve"><value>Về thanh tác vụ</value></data>
+  <data name="Widgets.Pet.Menu.Settings" xml:space="preserve"><value>Cài đặt thú cưng</value></data>
 </root>

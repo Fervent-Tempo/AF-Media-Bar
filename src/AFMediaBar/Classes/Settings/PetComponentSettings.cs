@@ -16,6 +16,9 @@ public sealed record PetComponentSettings
     public IReadOnlyList<FloatingBarPosition> Positions { get; init; } = [];
     public string? OutfitColorHex { get; init; }
     public string Outfit { get; init; } = "original";
+    public bool PettingEnabled { get; init; } = true;
+    public bool FollowArtworkColor { get; init; }
+    public bool AudioStatusEnabled { get; init; } = true;
     public bool VoiceEnabled { get; init; }
     public double VoiceVolume { get; init; } = 20;
     public bool NotificationsEnabled { get; init; }

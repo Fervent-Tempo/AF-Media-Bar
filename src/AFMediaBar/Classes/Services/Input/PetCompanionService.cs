@@ -1,5 +1,9 @@
 // 应用容器拥有状态协调与按需频谱采样；最后一个呈现租约释放后停止计时。
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using AFMediaBar.Classes.Utils;
+using AFMediaBar.Classes.Services.Audio;
 using System.Windows.Threading;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Settings;
@@ -11,6 +15,95 @@ namespace AFMediaBar.Classes.Services;
 public sealed class PetCompanionService : IDisposable
 {
     private readonly PetVoiceService _voice;
+    private readonly ApplicationAudioControlCoordinator? _controls;
+    private readonly AudioDeviceService? _devices;
+    private readonly ApplicationVolumeService? _volumes;
+    public MediaSnapshot Snapshot => _snapshot;
+    public async Task<ApplicationVolumeSnapshot?> ReadVolumeAsync()
+    {
+        var snapshot = _snapshot;
+        return _volumes is null ? null : await Task.Run(() => _volumes.GetCurrentMediaVolume(snapshot.SourceId, snapshot.SourceName));
+    }
+    public async Task ToggleMuteAsync()
+    {
+        var source = _snapshot.SourceId;
+        var volume = await ReadVolumeAsync();
+        if (!_disposed && source == _snapshot.SourceId && volume is not null && _controls is not null)
+            await _controls.SetMuteAsync(volume.ProcessName, !volume.IsMuted, CancellationToken.None);
+    }
+    private ImageSource? _artwork;
+    private int _artworkVersion, _deviceVersion;
+    private string? _artworkColor, _deviceName;
+    public string? ArtworkColor => _artworkColor;
+        private string _musicAnimation = "listening", _candidate = "listening";
+    private long _candidateSince, _statusAt;
+    private (string Key, string Text)? _pendingStatus;
+    public event Action? ArtworkColorChanged;
+    private readonly List<Func<string, string, bool>> _statusViews = [];
+    public IDisposable SubscribeStatus(Func<string, string, bool> show)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        _statusViews.Add(show);
+        return new StatusLease(_statusViews, show);
+    }
+    private sealed class StatusLease(List<Func<string, string, bool>> list, Func<string, string, bool> show) : IDisposable
+    { public void Dispose() => list.Remove(show); }
+    private void AudioCompleted(ApplicationAudioControlResult result)
+    {
+        if (result.Snapshot is not { } snapshot) return;
+        _dispatcher.BeginInvoke(() => { if (_controls is not null && !_controls.IsCurrent(snapshot.ProcessName, result.Version)) return; ShowStatus(snapshot.ProcessName, Translations.Format(
+            snapshot.IsMuted ? "Widgets.Pet.Status.Muted" : "Widgets.Pet.Status.Volume", snapshot.DisplayName, snapshot.VolumePercent)); });
+    }
+    private void ShowStatus(string key, string text)
+    {
+        if (_disposed || _statusViews.Count == 0 || !SettingsManager.Current.PetComponent.AudioStatusEnabled || _display.IsForegroundWindowFullscreen()) return;
+        var now = Environment.TickCount64;
+        if (now - _statusAt < 200) { _pendingStatus = (key, text); return; }
+        _pendingStatus = null;
+        foreach (var show in _statusViews.ToArray())
+            if (show(key, text)) { _statusAt = now; _reactionAnimation = "notifying"; _reactionUntil = now + 700; break; }
+    }
+    private async void DevicesChanged(object? sender, EventArgs args)
+    {
+        var version = Interlocked.Increment(ref _deviceVersion);
+        try
+        {
+            var device = (await _devices!.GetDevicesAsync(AudioDeviceDirection.Output)).FirstOrDefault(d => d.IsDefault);
+            var name = device?.DisplayName;
+            var id = device?.PolicyId;
+            _ = _dispatcher.BeginInvoke(() =>
+            {
+                if (_disposed || version != _deviceVersion) return;
+                var previous = _deviceName;
+                _deviceName = id;
+                if (previous is not null && previous != id && name is not null) ShowStatus("device", Translations.Format("Widgets.Pet.Status.Device", name));
+            });
+        }
+        catch (Exception error) { AppLogService.Current?.Warn("Pet", error.Message); }
+    }
+    private async void UpdateArtwork(ImageSource? artwork)
+    {
+        if (ReferenceEquals(_artwork, artwork)) return;
+        _artwork = artwork;
+        var version = ++_artworkVersion;
+        _artworkColor = null;
+        ArtworkColorChanged?.Invoke();
+        if (artwork is not BitmapSource bitmap || !bitmap.IsFrozen) return;
+        try
+        {
+            var color = await Task.Run(() =>
+            {
+                var scale = Math.Min(1, 64d / Math.Max(bitmap.PixelWidth, bitmap.PixelHeight));
+                var sample = new FormatConvertedBitmap(new TransformedBitmap(bitmap, new ScaleTransform(scale, scale)), PixelFormats.Bgra32, null, 0);
+                var bytes = new byte[sample.PixelWidth * sample.PixelHeight * 4];
+                sample.CopyPixels(bytes, sample.PixelWidth * 4, 0);
+                var colors = DominantColorCalculator.Calculate(bytes, sample.PixelWidth, sample.PixelHeight, 1);
+                return colors.Count == 0 ? null : ColorHex.Format(colors[0]);
+            });
+            if (!_disposed && version == _artworkVersion) { _artworkColor = color; ArtworkColorChanged?.Invoke(); }
+        }
+        catch (Exception error) { AppLogService.Current?.Warn("Pet", error.Message); }
+    }
     private readonly AudioMonitorService _audio;
     private readonly List<Func<string, Action?, bool>> _messages = [];
     private readonly IDisplayMonitorService _display;
@@ -76,12 +169,17 @@ public sealed class PetCompanionService : IDisposable
     private double _beat;
     private long _lastBeat;
 
-    public PetCompanionService(AudioMonitorService audio, IDisplayMonitorService display, PetVoiceService voice)
+    public PetCompanionService(AudioMonitorService audio, IDisplayMonitorService display, PetVoiceService voice, ApplicationAudioControlCoordinator? controls = null, AudioDeviceService? devices = null, ApplicationVolumeService? volumes = null)
     {
+        _dispatcher = Application.Current.Dispatcher;
         _voice = voice;
+        _controls = controls;
+        _volumes = volumes;
+        _devices = devices;
+        if (controls is not null) controls.Completed += AudioCompleted;
+        if (devices is not null) { devices.Changed += DevicesChanged; DevicesChanged(null, EventArgs.Empty); }
         _audio = audio;
         _display = display;
-        _dispatcher = Application.Current.Dispatcher;
         _timer = new DispatcherTimer(DispatcherPriority.Background, _dispatcher) { Interval = TimeSpan.FromMilliseconds(50) };
         _timer.Tick += OnTick;
     }
@@ -93,7 +191,10 @@ public sealed class PetCompanionService : IDisposable
         if (_snapshot.IsConnected && snapshot.IsConnected && _snapshot.Title != snapshot.Title)
             _happyUntil = Environment.TickCount64 + 1800;
         if (_snapshot.IsConnected != snapshot.IsConnected) _idleSince = Environment.TickCount64;
+        if (_snapshot.IsPlaying != snapshot.IsPlaying)
+        { _reactionAnimation = snapshot.IsPlaying ? "waking" : "drowsy"; _reactionUntil = Environment.TickCount64 + 700; }
         _snapshot = snapshot;
+        UpdateArtwork(snapshot.Artwork);
     }
 
     public IDisposable Subscribe(Action<string, double> view, Func<string, Action?, bool>? message = null)
@@ -110,7 +211,11 @@ public sealed class PetCompanionService : IDisposable
     private void Publish()
     {
         var now = Environment.TickCount64;
-        var animation = now < _reactionUntil ? _reactionAnimation : now < _happyUntil ? "happy" : _snapshot.IsPlaying ? "listening" :
+        if (_pendingStatus is { } status && now - _statusAt >= 200) { _pendingStatus = null; ShowStatus(status.Key, status.Text); }
+        var desired = _average < 0.025 ? "humming" : _average > 0.12 ? "excited" : "listening";
+        if (_candidate != desired) { _candidate = desired; _candidateSince = now; }
+        if (now - _candidateSince >= 1000) _musicAnimation = _candidate;
+        var animation = now < _reactionUntil ? _reactionAnimation : now < _happyUntil ? "happy" : _snapshot.IsPlaying ? _musicAnimation :
             !_snapshot.IsConnected && now - _idleSince > 30000 ? "drowsy" : "idle";
         foreach (var view in _views.ToArray()) view(animation, now < _reactionUntil || now < _happyUntil ? 0 : _beat);
     }
@@ -154,7 +259,7 @@ public sealed class PetCompanionService : IDisposable
             _released = true;
             owner._views.Remove(view);
             if (message is not null) owner._messages.Remove(message);
-            if (owner._views.Count == 0) { owner._generation++; owner._timer.Stop(); owner._voice.Stop(); owner._beat = owner._average = 0; }
+            if (owner._views.Count == 0) { owner._generation++; owner._timer.Stop(); owner._voice.Stop(); owner._pendingStatus = null; owner._beat = owner._average = 0; }
         }
     }
 
@@ -162,6 +267,10 @@ public sealed class PetCompanionService : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        _artworkVersion++;
+        if (_controls is not null) _controls.Completed -= AudioCompleted;
+        if (_devices is not null) _devices.Changed -= DevicesChanged;
+        _statusViews.Clear();
         _generation++;
         _timer.Stop();
         _timer.Tick -= OnTick;

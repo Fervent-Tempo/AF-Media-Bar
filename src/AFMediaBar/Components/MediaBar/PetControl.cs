@@ -20,6 +20,18 @@ public sealed class PetControl : FrameworkElement
     private readonly DispatcherTimer _blinkReset;
     private readonly TranslateTransform _gaze = new();
     private readonly ScaleTransform _eyelids = new(1, 1, 0, 32);
+    private string _outfit = "original";
+    private Brush _accent = Brushes.SteelBlue;
+    private double _turn;
+    internal void React() => Blink();
+    internal void SetContext(string animation, double beat, string outfit, string accent)
+    {
+        _outfit = outfit;
+        if (ColorHex.TryParse(accent, out var color)) _accent = new SolidColorBrush(color);
+        var animate = MotionPolicy.ResolveCurrent().Mode == MotionMode.Full;
+        _turn = animate ? animation == "happy" ? 4 : Math.Sin(Environment.TickCount64 / 450d) * (animation == "excited" ? 4 : animation == "listening" ? 2 : 0) + beat * 3 : 0;
+        InvalidateVisual();
+    }
     private Point? _screenPosition;
     private Vector? _targetGaze;
 
@@ -136,16 +148,34 @@ public sealed class PetControl : FrameworkElement
         if (size <= 0) return;
         drawing.PushTransform(new TranslateTransform((ActualWidth - size) / 2, (ActualHeight - size) / 2));
         drawing.PushTransform(new ScaleTransform(size / 64, size / 64));
+        drawing.PushTransform(new RotateTransform(_turn, 32, 34));
         var highContrast = SystemParameters.HighContrast;
         if (!highContrast) drawing.DrawGeometry(null, new Pen(Brushes.White, 2.4), _body);
         drawing.DrawGeometry(highContrast ? SystemColors.WindowBrush : _bodyBrush,
             highContrast ? new Pen(SystemColors.WindowTextBrush, 1.5) : new Pen(Brushes.DimGray, 1), _body);
+        var accent = highContrast ? SystemColors.WindowTextBrush : _accent;
+        if (_outfit == "headphones")
+        {
+            drawing.DrawGeometry(null, new Pen(accent, 3), Geometry.Parse("M12,31 C12,7 52,7 52,31"));
+            foreach (var x in new[] { 9d, 49d }) drawing.DrawRoundedRectangle(accent, new Pen(Brushes.White, 0.7), new Rect(x, 27, 6, 15), 2, 2);
+        }
+        else if (_outfit == "badge")
+        {
+            drawing.DrawRoundedRectangle(accent, new Pen(Brushes.White, 0.7), new Rect(37, 45, 12, 8), 2, 2);
+            drawing.DrawLine(new Pen(Brushes.White, 1.3), new Point(39, 51), new Point(43, 47));
+        }
+        else if (_outfit == "spectrum")
+        {
+            drawing.DrawRoundedRectangle(Brushes.DimGray, new Pen(Brushes.White, 0.7), new Rect(21, 45, 22, 9), 4, 4);
+            for (var i = 0; i < 5; i++) drawing.DrawRoundedRectangle(accent, null, new Rect(25 + i * 3, 47 + i % 2, 1.6, 5 - i % 2), 0.8, 0.8);
+        }
         var eyes = highContrast ? SystemColors.WindowTextBrush : _eyeBrush;
         drawing.PushTransform(_gaze);
         drawing.PushTransform(_eyelids);
         foreach (var centerX in new[] { 24d, 40d })
             drawing.DrawRoundedRectangle(eyes, null,
                 new Rect(centerX - 3, 25.5, 6, 13), 3, 3);
+        drawing.Pop();
         drawing.Pop();
         drawing.Pop();
         drawing.Pop();

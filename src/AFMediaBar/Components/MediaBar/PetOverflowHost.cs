@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Threading;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
 using static AFMediaBar.Classes.Interop.NativeMethods;
@@ -27,6 +28,7 @@ internal sealed class PetOverflowHost : IDisposable
     private bool _visible;
     private bool _disposed;
     private bool _positioning;
+    private bool _positionQueued;
 
     internal PetOverflowHost(FrameworkElement anchor, Window owner, PetWebEnvironment? environment, DesktopWidgetZOrderService? zOrder = null)
     {
@@ -52,6 +54,7 @@ internal sealed class PetOverflowHost : IDisposable
             if (!_dragged && Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance * _scale &&
                 Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance * _scale) return;
             _dragged = true;
+            _pet.SetInteraction("dragging", int.MaxValue);
             if (!_settings.FreePlacement) return;
             PositionAt(new Rect(initial.Location + delta, initial.Size), _screen);
         };
@@ -62,15 +65,17 @@ internal sealed class PetOverflowHost : IDisposable
             if (_dragged && _settings.FreePlacement && _lastBounds is { } saved)
                 PositionSaved?.Invoke(new FloatingBarPosition(_device, (saved.X + saved.Width / 2 - _work.Left) / _scale,
                     (saved.Y + saved.Height / 2 - _work.Top) / _scale));
+            _pet.SetInteraction(null);
             surface.ReleaseMouseCapture();
             if (clicked) Activated?.Invoke();
             args.Handled = true;
         };
         surface.LostMouseCapture += (_, _) => { _pressPoint = null; _dragged = false; };
-        surface.MouseRightButtonDown += (_, args) => { _pet.Press(); args.Handled = true; };
+        surface.MouseRightButtonDown += (_, args) => { _pet.ResetPetting(); MenuRequested?.Invoke(); args.Handled = true; };
         surface.MouseWheel += (_, args) => args.Handled = true;
         _window = new Window
         {
+            Title = "AF Media Bar · Pet",
             WindowStyle = WindowStyle.None,
             ResizeMode = ResizeMode.NoResize,
             AllowsTransparency = true,
@@ -82,7 +87,7 @@ internal sealed class PetOverflowHost : IDisposable
             MinHeight = 0,
             Width = 1,
             Height = 1,
-            Topmost = true,
+            Topmost = owner is not AFMediaBar.Views.Windows.FloatingBarWindow || owner.Topmost,
             Owner = owner,
             Content = surface,
             UseLayoutRounding = true
@@ -106,12 +111,14 @@ internal sealed class PetOverflowHost : IDisposable
     internal event Action<FloatingBarPosition>? PositionSaved;
     internal event Action? Moved;
     internal event Action? Activated;
+    internal event Action? MenuRequested;
     internal PetView View => _pet;
     internal bool IsVisible => _visible && !_disposed;
 
     internal void Show(PetComponentSettings settings, bool vertical, bool onLeft)
     {
         if (_disposed) return;
+        if (_owner is AFMediaBar.Views.Windows.FloatingBarWindow) _window.Topmost = ((AFMediaBar.Views.Windows.FloatingBarWindow)_owner).PetLayer == FloatingBarLayer.Topmost;
         _settings = settings;
         _vertical = vertical;
         _onLeft = onLeft;
@@ -126,9 +133,9 @@ internal sealed class PetOverflowHost : IDisposable
         Position();
         _pet.SetPresentation(true, true);
         _window.Opacity = 1;
-        if (_source is not null && _zOrder is not null)
-            _zRegistration ??= _zOrder.Attach(_source.Handle, FloatingBarLayer.Topmost,
-                () => !_disposed && _visible && _owner.IsVisible);
+        if (_source is not null && _zOrder is not null && _owner is not AFMediaBar.Views.Windows.FloatingBarWindow)
+            _zRegistration ??= _zOrder.Attach(_source.Handle, _owner is AFMediaBar.Views.Windows.FloatingBarWindow floating ? floating.PetLayer : FloatingBarLayer.Topmost,
+                () => !_disposed && _visible && _owner.IsVisible, restoreAboveTaskbar: true);
     }
 
     internal void Hide()
@@ -177,9 +184,10 @@ internal sealed class PetOverflowHost : IDisposable
     {
         bounds.X = Math.Clamp(bounds.X, screen.Left, Math.Max(screen.Left, screen.Right - bounds.Width));
         bounds.Y = Math.Clamp(bounds.Y, screen.Top, Math.Max(screen.Top, screen.Bottom - bounds.Height));
+        bounds = new Rect(Math.Round(bounds.X), Math.Round(bounds.Y), Math.Ceiling(bounds.Width), Math.Ceiling(bounds.Height));
         if (_lastBounds == bounds || _source is null) return;
-        if (SetWindowPos(_source.Handle, -1, (int)Math.Round(bounds.X), (int)Math.Round(bounds.Y),
-            (int)Math.Ceiling(bounds.Width), (int)Math.Ceiling(bounds.Height), SWP_NOACTIVATE)) _lastBounds = bounds;
+        if (SetWindowPos(_source.Handle, 0, (int)Math.Round(bounds.X), (int)Math.Round(bounds.Y),
+            (int)Math.Ceiling(bounds.Width), (int)Math.Ceiling(bounds.Height), SWP_NOACTIVATE | SWP_NOZORDER)) _lastBounds = bounds;
     }
 
     private void OnSourceInitialized(object? sender, EventArgs args)
@@ -195,7 +203,16 @@ internal sealed class PetOverflowHost : IDisposable
         if (message == 0x21) { handled = true; return 3; } // WM_MOUSEACTIVATE / MA_NOACTIVATE
         return 0;
     }
-    private void OnLayoutUpdated(object? sender, EventArgs args) => Position();
+    private void OnLayoutUpdated(object? sender, EventArgs args)
+    {
+        if (_disposed || !_visible || _positionQueued) return;
+        _positionQueued = true;
+        _anchor.Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(() =>
+        {
+            _positionQueued = false;
+            Position();
+        }));
+    }
     private void OnOwnerChanged(object? sender, EventArgs args) => Position();
     private void OnOwnerSizeChanged(object sender, SizeChangedEventArgs args) => Position();
     private void OnOwnerVisibilityChanged(object sender, DependencyPropertyChangedEventArgs args) { if (!_owner.IsVisible) Hide(); }

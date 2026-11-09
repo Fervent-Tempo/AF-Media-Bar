@@ -595,7 +595,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
                 await Task.Delay(delay);
             if (_isClosing || version != _volumeApplyVersion)
                 return;
-            await Task.Run(() => _audioInteractionService.SetApplicationVolume(volume.ProcessName, value));
+            await _audioInteractionService.SetApplicationVolumeAsync(volume.ProcessName, value);
         }
         catch (Exception exception)
         {

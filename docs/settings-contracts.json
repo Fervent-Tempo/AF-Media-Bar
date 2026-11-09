@@ -140,6 +140,9 @@
       "preferredSourceId": "v1.6.0"
     },
     "petComponent": {
+      "pettingEnabled": "unreleased",
+      "followArtworkColor": "unreleased",
+      "audioStatusEnabled": "unreleased",
       "$release": "unreleased",
       "fillColorHex": "unreleased",
       "outfitColorHex": "unreleased",

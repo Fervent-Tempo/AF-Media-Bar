@@ -16,6 +16,7 @@ public sealed class AudioInteractionService
 {
     private const int VolumeStepPercent = 2;
     private readonly AudioDeviceService _deviceService;
+    private readonly ApplicationAudioControlCoordinator? _controls;
     private readonly ApplicationVolumeService _volumeService;
     private readonly MediaSessionService _mediaSessionService;
     private readonly AudioMonitorService _audioMonitorService;
@@ -36,9 +37,10 @@ public sealed class AudioInteractionService
         MediaSessionService mediaSessionService,
         AudioMonitorService audioMonitorService,
         AudioDeviceSwitchCoordinator switches,
-        IForegroundAudioApplicationResolver foreground)
+        IForegroundAudioApplicationResolver foreground, ApplicationAudioControlCoordinator? controls = null)
     {
         _deviceService = deviceService;
+        _controls = controls;
         _volumeService = volumeService;
         _mediaSessionService = mediaSessionService;
         _audioMonitorService = audioMonitorService;
@@ -58,6 +60,9 @@ public sealed class AudioInteractionService
     public ApplicationVolumeSnapshot? GetCurrentMediaVolume() =>
         _volumeService.GetCurrentMediaVolume(_mediaSessionService.SelectedSourceId, _mediaSessionService.SelectedSourceName);
 
+    public Task<ApplicationAudioControlResult> SetApplicationVolumeAsync(string processName, int volumePercent, CancellationToken token = default) =>
+        _controls?.SetVolumeAsync(processName, volumePercent, true, token) ?? Task.FromResult(new ApplicationAudioControlResult(new(AudioDeviceOperationStatus.Unavailable)));
+
     public bool SetApplicationVolume(string processName, int volumePercent) =>
         _volumeService.SetApplicationVolume(processName, volumePercent);
 
@@ -75,7 +80,9 @@ public sealed class AudioInteractionService
 
             cancellationToken.ThrowIfCancellationRequested();
             var next = Math.Clamp(current.VolumePercent + signedSteps * VolumeStepPercent, 0, 100);
-            await Task.Run(() => { cancellationToken.ThrowIfCancellationRequested(); return SetApplicationVolume(current.ProcessName, next); }, cancellationToken);
+            var result = await SetApplicationVolumeAsync(current.ProcessName, next, cancellationToken);
+            if (result.Snapshot is null) return Translations.Get("Audio.Volume.Unavailable");
+            next = result.Snapshot.VolumePercent;
             return Translations.Format("Audio.Volume.Value", current.DisplayName, next);
         }
         finally

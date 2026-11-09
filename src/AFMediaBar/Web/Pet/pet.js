@@ -68,6 +68,10 @@
     const changed = selected !== next;
     if (changed) { selected = next; age = 0; scheduleNatural(); }
     const p = motion.target(selected, looping ? age : 0);
+    if (selected === "listening") { p.x = Math.sin(age * 2.3) * 1.2; p.turn = Math.sin(age * 2.3) * 4; }
+    if (selected === "humming") { p.x = 0; p.y = Math.sin(age * 1.5) * 0.35; p.turn = Math.sin(age * 1.5) * 1.5; p.effect = null; }
+    if (selected === "excited") { p.x = Math.sin(age * 3) * 1.5; p.y = -Math.abs(Math.sin(age * 3)) * 0.7; p.turn = Math.sin(age * 3) * 5; p.sx = p.sy = 1; }
+
     const animatedPose = full && (looping || state.hovered);
     document.getElementById("outfit").setAttribute("opacity", (1 - clamp(p.morph * 1.8, 0, 1)) * Math.max(0, Math.cos(values.yaw.x * Math.PI / 180)));
     const beat = full ? clamp(Number(state.beat) || 0, 0, 1) : 0;
@@ -81,9 +85,9 @@
       morph: p.morph, effect: p.effect ? (["humming", "notifying"].includes(p.effect) ? 1 : p.morph) : 0, lid: p.lid
     };
     document.getElementById("outfit-bars").setAttribute("transform", `translate(0 ${52 * (1 - (1 + beat * 0.25))}) scale(1 ${1 + beat * 0.25})`);
-    targets.y -= beat * 3.2;
-    targets.sy += beat * 0.045;
-    targets.sx -= beat * 0.025;
+    targets.y += beat * 1.2;
+    targets.sy -= beat * 0.035;
+    targets.sx += beat * 0.025;
     targets.turn += beat * 4;
     targets.yaw = looping ? motion.unwrapTurn(turn, targets.yaw, values.yaw.x, changed || !wasLooping)
       : Math.round(values.yaw.x / 360) * 360;
@@ -162,6 +166,8 @@
     body.setAttribute("fill", state.bodyColor);
     const outfit = document.getElementById("outfit");
     const accent = state.highContrast ? state.eyeColor : state.accent || state.eyeColor;
+    outfit.style.transition = state.highContrast || state.motion !== 0 ? "none" : "color 400ms, stroke 400ms";
+    outfit.style.color = accent;
     outfit.setAttribute("color", accent);
     outfit.setAttribute("stroke", accent);
     const rgb = parseInt(accent.slice(1), 16);

@@ -135,6 +135,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         AllowsTransparency = true;
         Background = Brushes.Transparent;
         ResizeMode = ResizeMode.NoResize;
+        Title = "AF Media Bar · Floating";
         ShowInTaskbar = false;
         ShowActivated = false;
         WindowHelper.SetNoActivate(this);
@@ -188,12 +189,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             var token = _requests.Token;
             try
             {
-                await Task.Run(() =>
-                {
-                    token.ThrowIfCancellationRequested();
-                    return _audioInteractionService.SetApplicationVolume(volume.ProcessName, value);
-                }, token);
-                if (!token.IsCancellationRequested && IsOperational) _currentVolume = volume with { VolumePercent = value, IsMuted = false };
+                var result = await _audioInteractionService.SetApplicationVolumeAsync(volume.ProcessName, value, token);
+                if (!token.IsCancellationRequested && IsOperational && result.Snapshot is not null) _currentVolume = result.Snapshot;
             }
             catch (OperationCanceledException) { }
             catch (Exception ex) { _log.Error("FloatingBar", "应用音量失败", ex); }
@@ -215,6 +212,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _mediaControl.TogglePlayPauseRequested += (_, _) => Execute(_commands.TogglePlayPauseCommand);
         _mediaControl.SkipPreviousRequested += (_, _) => Execute(_commands.SkipPreviousCommand);
         _mediaControl.SkipNextRequested += (_, _) => Execute(_commands.SkipNextCommand);
+        _mediaControl.PetSettingsRequested += (_, _) => _commands.RaiseOpenPetSettingsRequested();
         _mediaControl.ActivateSourceRequested += (_, _) => Execute(_commands.ActivateMediaSourceCommand);
         _mediaControl.OpenFullPanelRequested += (_, _) => RequestFullPanel();
         _mediaControl.OutputDeviceMenuRequested += MediaControl_OutputDeviceMenuRequested;
@@ -663,6 +661,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         SynchronizeResources();
         UpdateEdgeObservation();
     }
+
+    internal FloatingBarLayer PetLayer => _layer;
 
     private void RegisterZOrder()
     {

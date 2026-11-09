@@ -20,6 +20,16 @@ internal sealed class PetSpeechBubble : IDisposable
         _popup.HorizontalOffset -= 1;
     }
 
+    private string? _statusKey;
+    internal bool ShowStatus(FrameworkElement anchor, string key, string text)
+    {
+        if (_popup.IsOpen && _statusKey != key) return false;
+        if (!Show(anchor, text, true)) return false;
+        _statusKey = key;
+        _timer.Interval = TimeSpan.FromSeconds(2);
+        _timer.Stop(); _timer.Start();
+        return true;
+    }
     internal bool IsOpen => _popup.IsOpen;
     private readonly TextBlock _text = new() { TextWrapping = TextWrapping.Wrap, MaxWidth = 280, FontSize = 13, Margin = new Thickness(0, 0, 8, 0) };
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(6) };
@@ -67,6 +77,8 @@ internal sealed class PetSpeechBubble : IDisposable
             _surface.SetResourceReference(Border.BorderBrushProperty, "ControlStrokeColorDefaultBrush");
             _text.SetResourceReference(TextBlock.ForegroundProperty, "TextFillColorPrimaryBrush");
         }
+        _statusKey = null;
+        _timer.Interval = TimeSpan.FromSeconds(6);
         _popup.PlacementTarget = anchor;
         _activation = activation;
         _details.Visibility = activation is null ? Visibility.Collapsed : Visibility.Visible;
@@ -78,6 +90,6 @@ internal sealed class PetSpeechBubble : IDisposable
     }
 
     private void OnTimeout(object? sender, EventArgs args) => Close();
-    internal void Close() { _activation = null; _timer.Stop(); _popup.IsOpen = false; _popup.PlacementTarget = null; }
+    internal void Close() { _statusKey = null; _activation = null; _timer.Stop(); _popup.IsOpen = false; _popup.PlacementTarget = null; }
     public void Dispose() { Close(); _timer.Tick -= OnTimeout; }
 }

@@ -3348,4 +3348,19 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Widgets.Pet.Line.Idle.9" xml:space="preserve"><value>Got a song you could loop all day?</value></data>
   <data name="Widgets.Pet.Line.Idle.10" xml:space="preserve"><value>I learned a two-step.</value></data>
   <data name="Widgets.Pet.Line.Idle.11" xml:space="preserve"><value>Waiting for a tune with you.</value></data>
+  <data name="Widgets.Pet.Petting" xml:space="preserve"><value>Petting interaction</value></data>
+  <data name="Widgets.Pet.ArtworkColor" xml:space="preserve"><value>Match outfit to album artwork</value></data>
+  <data name="Widgets.Pet.AudioStatus" xml:space="preserve"><value>Audio status bubbles</value></data>
+  <data name="Widgets.Pet.FixColor" xml:space="preserve"><value>Keep current color</value></data>
+  <data name="Widgets.Pet.Status.Muted" xml:space="preserve"><value>{0} · Muted</value></data>
+  <data name="Widgets.Pet.Status.Volume" xml:space="preserve"><value>{0} · Volume {1}%</value></data>
+  <data name="Widgets.Pet.Status.Device" xml:space="preserve"><value>Output switched to {0}</value></data>
+  <data name="Widgets.Pet.Menu.Play" xml:space="preserve"><value>Play</value></data>
+  <data name="Widgets.Pet.Menu.Pause" xml:space="preserve"><value>Pause</value></data>
+  <data name="Widgets.Pet.Menu.Previous" xml:space="preserve"><value>Previous track</value></data>
+  <data name="Widgets.Pet.Menu.Next" xml:space="preserve"><value>Next track</value></data>
+  <data name="Widgets.Pet.Menu.Mute" xml:space="preserve"><value>Mute current player</value></data>
+  <data name="Widgets.Pet.Menu.Unmute" xml:space="preserve"><value>Unmute current player</value></data>
+  <data name="Widgets.Pet.Menu.Dock" xml:space="preserve"><value>Return to taskbar</value></data>
+  <data name="Widgets.Pet.Menu.Settings" xml:space="preserve"><value>Pet settings</value></data>
 </root>

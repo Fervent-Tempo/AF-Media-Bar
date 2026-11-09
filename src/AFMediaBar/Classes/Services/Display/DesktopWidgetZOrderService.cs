@@ -30,12 +30,12 @@ public sealed partial class DesktopWidgetZOrderService : IDisposable
         _timer.Tick += OnTick;
     }
 
-    public IDisposable Attach(nint handle, FloatingBarLayer layer, Func<bool> mayRestore)
+    public IDisposable Attach(nint handle, FloatingBarLayer layer, Func<bool> mayRestore, bool restoreAboveTaskbar = false)
     {
         _dispatcher.VerifyAccess();
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (!IsWindow(handle)) throw new InvalidOperationException("Invalid floating window handle.");
-        var entry = new Entry(handle, layer, mayRestore);
+        var entry = new Entry(handle, layer, mayRestore, restoreAboveTaskbar);
         _entries[handle] = entry;
         SetWindowLong(handle, GWL_EXSTYLE, (GetWindowLong(handle, GWL_EXSTYLE) | 0x80) & ~0x40000);
         if (_entries.Count == 1) StartObservation();
@@ -101,7 +101,7 @@ public sealed partial class DesktopWidgetZOrderService : IDisposable
             var previous = GetWindow(entry.Handle, 3);
             // Shell 重新置顶时，HWND_TOPMOST 标志和缓存矩形都可能仍然不变。
             var lostTopmost = entry.Layer == FloatingBarLayer.Topmost &&
-                ((GetWindowLong(entry.Handle, GWL_EXSTYLE) & 8) == 0 || IsTaskbarAbove(entry.Handle));
+                ((GetWindowLong(entry.Handle, GWL_EXSTYLE) & 8) == 0 || entry.RestoreAboveTaskbar && IsTaskbarAbove(entry.Handle));
             if (restore || lostTopmost || entry.LastAfter != after ||
                 (entry.Layer == FloatingBarLayer.Desktop && desktopIsAboveApplications && previous != nint.Zero && !_entries.ContainsKey(previous) && (GetWindowLong(previous, GWL_EXSTYLE) & 8) == 0))
             {
@@ -154,8 +154,9 @@ public sealed partial class DesktopWidgetZOrderService : IDisposable
         _timer.Tick -= OnTick;
     }
 
-    private sealed class Entry(nint handle, FloatingBarLayer layer, Func<bool> mayRestore)
+    private sealed class Entry(nint handle, FloatingBarLayer layer, Func<bool> mayRestore, bool restoreAboveTaskbar)
     {
+        public bool RestoreAboveTaskbar { get; } = restoreAboveTaskbar;
         public nint Handle { get; } = handle;
         public FloatingBarLayer Layer { get; } = layer;
         public Func<bool> MayRestore { get; } = mayRestore;

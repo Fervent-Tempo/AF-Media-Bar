@@ -3348,4 +3348,19 @@
   <data name="Widgets.Pet.Line.Idle.9" xml:space="preserve"><value>有首想单曲循环的吗？</value></data>
   <data name="Widgets.Pet.Line.Idle.10" xml:space="preserve"><value>我练了一支两拍的小舞。</value></data>
   <data name="Widgets.Pet.Line.Idle.11" xml:space="preserve"><value>在等歌，也在等你。</value></data>
+  <data name="Widgets.Pet.Petting" xml:space="preserve"><value>摸摸互动</value></data>
+  <data name="Widgets.Pet.ArtworkColor" xml:space="preserve"><value>装扮跟随专辑封面</value></data>
+  <data name="Widgets.Pet.AudioStatus" xml:space="preserve"><value>音频状态提醒</value></data>
+  <data name="Widgets.Pet.FixColor" xml:space="preserve"><value>固定当前颜色</value></data>
+  <data name="Widgets.Pet.Status.Muted" xml:space="preserve"><value>{0} · 已静音</value></data>
+  <data name="Widgets.Pet.Status.Volume" xml:space="preserve"><value>{0} · 音量 {1}%</value></data>
+  <data name="Widgets.Pet.Status.Device" xml:space="preserve"><value>输出已切换到 {0}</value></data>
+  <data name="Widgets.Pet.Menu.Play" xml:space="preserve"><value>播放</value></data>
+  <data name="Widgets.Pet.Menu.Pause" xml:space="preserve"><value>暂停</value></data>
+  <data name="Widgets.Pet.Menu.Previous" xml:space="preserve"><value>上一首</value></data>
+  <data name="Widgets.Pet.Menu.Next" xml:space="preserve"><value>下一首</value></data>
+  <data name="Widgets.Pet.Menu.Mute" xml:space="preserve"><value>静音当前播放器</value></data>
+  <data name="Widgets.Pet.Menu.Unmute" xml:space="preserve"><value>取消静音当前播放器</value></data>
+  <data name="Widgets.Pet.Menu.Dock" xml:space="preserve"><value>回到任务栏</value></data>
+  <data name="Widgets.Pet.Menu.Settings" xml:space="preserve"><value>小宠物设置</value></data>
 </root>

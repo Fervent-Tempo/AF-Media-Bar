@@ -21,14 +21,16 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     private readonly LocalizationService _localization;
     private readonly Dispatcher _dispatcher = DispatcherHelper.Current;
     private bool _disposed;
+    private readonly PetCompanionService? _petCompanion;
     private string _petOutfitColorHex = string.Empty;
     private string _petFillColorHex = PetComponentSettings.DefaultFillColorHex;
 
     /// <summary>创建参数编辑器，订阅设置、语言与共享音频目录的变更。</summary>
     public ComponentsSettingsViewModel(ISettingsConfiguration configuration, LocalizationService localization,
-        AFMediaBar.Classes.Services.Audio.IAudioDeviceCatalog? captureDevices = null)
+        AFMediaBar.Classes.Services.Audio.IAudioDeviceCatalog? captureDevices = null, PetCompanionService? petCompanion = null)
     {
         _configuration = configuration;
+        _petCompanion = petCompanion;
         InitializeCaptureDevices(captureDevices);
         ReorderMetricCommand = new RelayCommand<SettingsReorderRequest>(ReorderMetric);
         MoveMetricUpCommand = new RelayCommand<PerformanceMetricSettingItem>(item => MoveMetric(item, -1));
@@ -315,6 +317,19 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
         set => _configuration.SetPetComponent(_configuration.Current.PetComponent with { FollowPlayback = value });
     }
 
+    public bool PetPettingEnabled
+    { get => PetSettings.PettingEnabled; set => _configuration.SetPetComponent(PetSettings with { PettingEnabled = value }); }
+    public bool PetFollowArtworkColor
+    { get => PetSettings.FollowArtworkColor; set => _configuration.SetPetComponent(PetSettings with { FollowArtworkColor = value }); }
+    public bool PetAudioStatusEnabled
+    { get => PetSettings.AudioStatusEnabled; set => _configuration.SetPetComponent(PetSettings with { AudioStatusEnabled = value }); }
+    [RelayCommand]
+    private void FixPetOutfitColor()
+    {
+        var color = (PetSettings.FollowArtworkColor ? _petCompanion?.ArtworkColor : null) ?? PetSettings.OutfitColorHex ?? ColorHex.Format(System.Windows.SystemParameters.WindowGlassColor);
+        _configuration.SetPetComponent(PetSettings with { OutfitColorHex = color, FollowArtworkColor = false });
+        RefreshPetColor();
+    }
     public bool PetMusicMotionEnabled
     {
         get => _configuration.Current.PetComponent.MusicMotionEnabled;

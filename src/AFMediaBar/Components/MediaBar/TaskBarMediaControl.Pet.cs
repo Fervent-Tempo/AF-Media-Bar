@@ -1,5 +1,7 @@
 // 媒体栏拥有宠物输入租约和呈现状态；共享输入服务由应用容器释放。
 using System.Windows;
+using System.Windows.Controls;
+using AFMediaBar.Resources;
 using System.Windows.Input;
 using System.Windows.Media;
 using AFMediaBar.Classes.Abstractions;
@@ -11,10 +13,45 @@ namespace AFMediaBar.Components;
 public partial class TaskBarMediaControl
 {
     private readonly PetSpeechBubble _petBubble = new();
-    public bool IsPetBubbleOpen => _petBubble.IsOpen;
+    public bool IsPetBubbleOpen => _petBubble.IsOpen || _petMenu?.IsOpen == true;
+    private ContextMenu? _petMenu;
+    public event EventHandler? PetSettingsRequested;
+    private async void OpenPetMenu(FrameworkElement target)
+    {
+        if (_petMenu?.IsOpen == true || _petCompanion is null) return;
+        ActivePet.ResetPetting();
+        ActivePet.InputSuspended = true;
+        var menu = new ContextMenu { PlacementTarget = target };
+        _petMenu = menu;
+        void Add(string key, Action action, bool enabled = true)
+        {
+            var item = new MenuItem { Header = Translations.Get("Widgets.Pet.Menu." + key), IsEnabled = enabled };
+            item.Click += (_, _) => action(); menu.Items.Add(item);
+        }
+        var snapshot = _petCompanion.Snapshot;
+        Add(snapshot.IsPlaying ? "Pause" : "Play", () => TogglePlayPauseRequested?.Invoke(this, EventArgs.Empty), snapshot.CanPlayPause);
+        Add("Previous", () => SkipPreviousRequested?.Invoke(this, EventArgs.Empty), snapshot.CanSkipPrevious);
+        Add("Next", () => SkipNextRequested?.Invoke(this, EventArgs.Empty), snapshot.CanSkipNext);
+        var mute = new MenuItem { Header = Translations.Get("Widgets.Pet.Menu.Mute"), IsEnabled = false };
+        mute.Click += async (_, _) => { try { await _petCompanion.ToggleMuteAsync(); } catch (Exception error) { AFMediaBar.Classes.Services.AppLogService.Current?.Warn("Pet", error.Message); } };
+        menu.Items.Add(mute);
+        menu.Items.Add(new Separator());
+        Add("Dock", () => { var s = SettingsManager.Current.PetComponent; SettingsManager.Current.PetComponent = s with { AllowOverflow = true, FreePlacement = false }; });
+        Add("Settings", () => PetSettingsRequested?.Invoke(this, EventArgs.Empty));
+        menu.Closed += (_, _) => { ActivePet.InputSuspended = false; ActivePet.ResetPetting(); if (ReferenceEquals(_petMenu, menu)) _petMenu = null; };
+        menu.IsOpen = true;
+        try
+        {
+            var volume = await _petCompanion.ReadVolumeAsync();
+            if (!_petDisposed && menu.IsOpen && snapshot.SourceId == _petCompanion.Snapshot.SourceId && volume is not null)
+            { mute.IsEnabled = true; mute.Header = Translations.Get("Widgets.Pet.Menu." + (volume.IsMuted ? "Unmute" : "Mute")); }
+        }
+        catch (Exception error) { AFMediaBar.Classes.Services.AppLogService.Current?.Warn("Pet", error.Message); }
+    }
     private Point? _petPressPoint;
     private PetCompanionService? _petCompanion;
     private IDisposable? _petContextLease;
+    private IDisposable? _petStatusLease;
     private PetInputService? _petInput;
     private IDisposable? _petLease;
     private PetView? _petLeaseView;
@@ -64,7 +101,7 @@ public partial class TaskBarMediaControl
         TaskbarPet.Width = TaskbarPet.Height = PetInlineSize;
         var active = !_petDisposed && IsLoaded && IsVisible && IsBarPresentation &&
             TaskbarPetSurface.Visibility == Visibility.Visible && !_isHostVisibilitySuspended &&
-            !_isPlacementMotionActive && _backgroundPruneLevel < MemoryPruneLevel.DisplayOff;
+            _backgroundPruneLevel < MemoryPruneLevel.DisplayOff;
         var visible = TaskbarPetSurface.Visibility == Visibility.Visible;
         if (active && settings.AllowOverflow && Window.GetWindow(this) is { } owner)
         {
@@ -75,6 +112,7 @@ public partial class TaskBarMediaControl
                 _petOverflow = new PetOverflowHost(TaskbarPetSurface, owner, _petEnvironment, _petZOrder);
                 _petOverflow.Moved += _petBubble.Reposition;
                 _petOverflow.Activated += SpeakPet;
+                _petOverflow.MenuRequested += () => OpenPetMenu(_petOverflow.View);
                 _petOverflow.PositionSaved += SavePetPosition;
             }
             _petOverflow.Show(settings, _isVertical, _verticalTaskbarOnLeft);
@@ -87,7 +125,9 @@ public partial class TaskBarMediaControl
             TaskbarPet.SetPresentation(active, visible);
         }
         if (active && _petCompanion is not null)
-            _petContextLease ??= _petCompanion.Subscribe((animation, beat) => ActivePet.SetContext(animation, beat), (text, activation) => _petBubble.Show(ActivePet, text, false, activation));
+            _petContextLease ??= _petCompanion.Subscribe((animation, beat) => { ActivePet.SetAmbient(_petCompanion.ArtworkColor); ActivePet.SetContext(animation, beat); }, (text, activation) => _petBubble.Show(ActivePet, text, false, activation));
+        if (active && _petCompanion is not null)
+            _petStatusLease ??= _petCompanion.SubscribeStatus((key, text) => _petMenu?.IsOpen != true && _petBubble.ShowStatus(ActivePet, key, text));
         if (active && _petInput is not null)
         {
             if (!ReferenceEquals(_petLeaseView, ActivePet))
@@ -105,7 +145,10 @@ public partial class TaskBarMediaControl
 
     private void SuspendPetPresentation()
     {
+        if (_petMenu is not null) _petMenu.IsOpen = false;
         _petBubble.Close();
+        _petStatusLease?.Dispose();
+        _petStatusLease = null;
         _petContextLease?.Dispose();
         _petContextLease = null;
         _petLease?.Dispose();
@@ -146,7 +189,8 @@ public partial class TaskBarMediaControl
     }
     private void PetSurfaceMouseDown(object sender, MouseButtonEventArgs args)
     {
-        if (args.ChangedButton is MouseButton.Left or MouseButton.Right) ActivePet.Press();
+        if (args.ChangedButton == MouseButton.Right) { OpenPetMenu(TaskbarPetSurface); args.Handled = true; return; }
+        if (args.ChangedButton == MouseButton.Left) ActivePet.Press();
         if (args.ChangedButton == MouseButton.Left) _petPressPoint = args.GetPosition(this);
     }
 
@@ -175,7 +219,8 @@ public partial class TaskBarMediaControl
 
     private void PetSurfaceKeyDown(object sender, KeyEventArgs args)
     {
-        if (args.Key is Key.Enter or Key.Space) { SpeakPet(); args.Handled = true; }
+        if (args.Key == Key.Apps || (args.Key == Key.F10 && Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))) { OpenPetMenu(TaskbarPetSurface); args.Handled = true; }
+        else if (args.Key is Key.Enter or Key.Space) { SpeakPet(); args.Handled = true; }
     }
 
     public bool IsPetComponentClick(DependencyObject? source)

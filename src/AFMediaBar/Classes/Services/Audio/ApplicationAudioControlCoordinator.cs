@@ -15,6 +15,7 @@ public sealed record ApplicationAudioControlResult(AudioDeviceOperationResult Op
 /// <summary>按应用隔离、音量与静音共享的最新请求队列。</summary>
 public sealed class ApplicationAudioControlCoordinator : IDisposable
 {
+    public event Action<ApplicationAudioControlResult>? Completed;
     private readonly IApplicationAudioControl _control;
     private readonly TimeSpan _volumeDelay;
     private readonly object _gate = new();
@@ -69,7 +70,10 @@ public sealed class ApplicationAudioControlCoordinator : IDisposable
             entered = true;
             if (!Current()) return Cancelled(version);
             var result = await Task.Run(() => _control.Apply(name, percent, muted, Current), token).ConfigureAwait(false);
-            return Current() ? result with { Version = version } : Cancelled(version);
+            if (!Current()) return Cancelled(version);
+            result = result with { Version = version };
+            if (result.Operation.Status == AudioDeviceOperationStatus.Applied && result.Snapshot is not null) Completed?.Invoke(result);
+            return result;
         }
         catch (OperationCanceledException) { return Cancelled(version); }
         catch (Exception exception)

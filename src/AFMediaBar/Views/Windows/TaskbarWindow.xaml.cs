@@ -187,6 +187,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         ContextMenuHelper.AttachOutsideClickDismissal(PlayerMenu);
         appearanceService.Attach(PlayerMenu, this);
         PlayerMenu.OpenSettingsRequested += PlayerMenu_OpenSettingsRequested;
+        MediaControl.PetSettingsRequested += (_, _) => ViewModel.RaiseOpenPetSettingsRequested();
         PlayerMenu.ExitRequested += PlayerMenu_ExitRequested;
         PlayerMenu.OpenUpdateSettingsRequested += PlayerMenu_OpenUpdateSettingsRequested;
         PlayerMenu.ReloadTaskbarHostRequested += PlayerMenu_ReloadTaskbarHostRequested;
@@ -339,7 +340,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
             if (pending is not null && volume is not null && CanPublishMenu(_menuEnvironmentVersion))
             {
                 var environmentVersion = _menuEnvironmentVersion;
-                await Task.Run(() => _audioInteractionService.SetApplicationVolume(volume.ProcessName, pending.Value));
+                await _audioInteractionService.SetApplicationVolumeAsync(volume.ProcessName, pending.Value);
                 if (CanPublishMenu(environmentVersion)) _currentVolume = volume with { VolumePercent = pending.Value, IsMuted = false };
             }
         };

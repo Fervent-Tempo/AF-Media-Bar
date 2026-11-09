@@ -29,11 +29,29 @@ public sealed class PetView : Grid, IDisposable
     private PetWebState? _lastState;
     private string? _contextAnimation;
     private double _beat;
+    private string? _accent;
+    private string? _interaction;
+    private long _interactionUntil;
+    private readonly PetStrokeGesture _stroke = new();
+    internal bool InputSuspended { get; set; }
+    internal void SetAmbient(string? accent) { if (_accent == accent) return; _accent = accent; UpdateFallback(); SendState(); }
+    internal void SetInteraction(string? interaction, int duration = 1200)
+    {
+        _interaction = interaction;
+        _interactionUntil = Environment.TickCount64 + duration;
+        if (interaction is not null) _fallback.React();
+        UpdateFallback();
+        SendState();
+    }
+    internal void ResetPetting() => _stroke.Reset();
+
 
     internal void SetContext(string animation, double beat)
     {
+        if (_settings.Animation != "auto" && animation is "happy" or "notifying") SetInteraction(animation, 100);
         _contextAnimation = animation;
         _beat = beat;
+        UpdateFallback();
         SendState();
     }
 
@@ -62,6 +80,7 @@ public sealed class PetView : Grid, IDisposable
         if (_settings == normalized) return;
         _settings = normalized;
         _fallback.ApplySettings(_settings);
+        UpdateFallback();
         InvalidateMeasure();
         SendState();
     }
@@ -70,6 +89,7 @@ public sealed class PetView : Grid, IDisposable
     {
         if (_disposed) return;
         _active = active;
+        if (!active) { _interaction = null; _stroke.Reset(); }
         if (!componentVisible)
         {
             ReleaseRenderer();
@@ -89,6 +109,19 @@ public sealed class PetView : Grid, IDisposable
     internal void Present(PetInputSnapshot snapshot)
     {
         if (!_active || _disposed) return;
+        if (!InputSuspended && _settings.PettingEnabled && System.Windows.Input.Mouse.LeftButton == System.Windows.Input.MouseButtonState.Released &&
+            System.Windows.Input.Mouse.RightButton == System.Windows.Input.MouseButtonState.Released &&
+            System.Windows.Input.Mouse.MiddleButton == System.Windows.Input.MouseButtonState.Released && IsVisible && ActualWidth > 0 && PresentationSource.FromVisual(this) is not null)
+        {
+            var local = PointFromScreen(snapshot.ScreenPosition);
+            if (local.X >= 0 && local.Y >= 0 && local.X <= ActualWidth && local.Y <= ActualHeight &&
+                PetOverflowHost.ContainsVisualPoint(new Point(local.X * 64 / ActualWidth, local.Y * 64 / ActualHeight)))
+            {
+                if (_stroke.Move(local.X, ActualWidth, Environment.TickCount64)) SetInteraction("happy");
+            }
+            else _stroke.Reset();
+        }
+        else _stroke.Reset();
         _pointer = snapshot.ScreenPosition;
         if (snapshot.Blink) _blinkSequence++;
         UpdateGaze();
@@ -99,6 +132,7 @@ public sealed class PetView : Grid, IDisposable
     internal void SetHovered(bool hovered)
     {
         if (_disposed) return;
+        if (!hovered) _stroke.Reset();
         _hovered = _active && hovered;
         SendState();
     }
@@ -106,6 +140,7 @@ public sealed class PetView : Grid, IDisposable
     internal void Press()
     {
         if (!_active || _disposed) return;
+        _stroke.Reset();
         _pressSequence++;
         SendState();
     }
@@ -130,6 +165,7 @@ public sealed class PetView : Grid, IDisposable
         if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(() => OnSystemChanged(sender, args)); return; }
         if (_disposed) return;
         _fallback.ApplySettings(_settings);
+        UpdateFallback();
         SendState();
     }
 
@@ -146,14 +182,23 @@ public sealed class PetView : Grid, IDisposable
         SendState();
     }
 
+    private void UpdateFallback()
+    {
+        if (_disposed || _ready) return;
+        var accent = (_settings.FollowArtworkColor ? _accent : null) ?? _settings.OutfitColorHex ?? AFMediaBar.Classes.Utils.ColorHex.Format(SystemParameters.WindowGlassColor);
+        _fallback.SetContext(Environment.TickCount64 < _interactionUntil ? _interaction ?? "idle" : _contextAnimation ?? "idle", _beat, _settings.Outfit, accent);
+    }
+
     private void SendState()
     {
-        if (_disposed || _renderer is null) return;
+        if (_disposed) return;
+        if (_renderer is null) return;
         var colors = PetVisualDefinition.Colors(_settings);
+        var interaction = Environment.TickCount64 < _interactionUntil ? _interaction : null;
         var state = new PetWebState(_gaze.X, _gaze.Y, _hovered, _blinkSequence, _pressSequence,
             colors.Body, colors.Eyes, colors.HighContrast, _settings.IdleAnimationsEnabled,
-            MotionPolicy.ResolveCurrent().Mode, _active, _settings.Animation == "auto" && _settings.FollowPlayback ? _contextAnimation ?? "idle" : _settings.Animation, _settings.Animation == "auto" ? _beat : 0, _settings.Outfit,
-            SystemParameters.HighContrast ? colors.Eyes : _settings.OutfitColorHex ?? AFMediaBar.Classes.Utils.ColorHex.Format(SystemParameters.WindowGlassColor));
+            MotionPolicy.ResolveCurrent().Mode, _active, interaction ?? (_settings.Animation == "auto" && _settings.FollowPlayback ? _contextAnimation ?? "idle" : _settings.Animation), _settings.Animation == "auto" ? _beat : 0, _settings.Outfit,
+            SystemParameters.HighContrast ? colors.Eyes : (_settings.FollowArtworkColor ? _accent : null) ?? _settings.OutfitColorHex ?? AFMediaBar.Classes.Utils.ColorHex.Format(SystemParameters.WindowGlassColor));
         if (state == _lastState) return;
         _lastState = state;
         _renderer.Present(state);

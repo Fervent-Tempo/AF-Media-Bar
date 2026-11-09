@@ -36,6 +36,8 @@ namespace AFMediaBar.ViewModels.Windows
         /// Requests that the host window open the settings page.
         /// </summary>
         public event EventHandler? OpenSettingsRequested;
+        public event EventHandler? OpenPetSettingsRequested;
+        internal void RaiseOpenPetSettingsRequested() => OpenPetSettingsRequested?.Invoke(this, EventArgs.Empty);
 
         /// <summary>
         /// 请求宿主窗口打开设置页的「应用与关于」：更新提示被点击时跳到那一页。

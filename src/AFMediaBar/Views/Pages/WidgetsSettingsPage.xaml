@@ -183,6 +183,8 @@
                                         </StackPanel>
                                     </StackPanel>
                                 </components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.ArtworkColor}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetFollowArtworkColor, Mode=TwoWay}"/></components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.FixColor}"><ui:Button Content="{DynamicResource Loc.Widgets.Pet.FixColor}" Command="{Binding ViewModel.Components.FixPetOutfitColorCommand}" Style="{StaticResource AfSettingsButtonStyle}"/></components:SettingsRow>
                                 <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.OutfitColor}" Description="{Binding ViewModel.Components.PetOutfitColorStatus}" Icon="{ui:SymbolIcon Color24}">
                                     <StackPanel>
                                         <WrapPanel Margin="0,0,0,8">
@@ -206,6 +208,7 @@
                                 <TextBlock Text="{DynamicResource Loc.Widgets.Pet.Behavior}" Style="{StaticResource AfSettingsRowTitleStyle}"/>
                             </ui:CardExpander.Header>
                             <StackPanel>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.Petting}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetPettingEnabled, Mode=TwoWay}"/></components:SettingsRow>
                                 <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.FollowPlayback}" Description="{DynamicResource Loc.Widgets.Pet.FollowPlayback.Description}">
                                     <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetFollowPlayback, Mode=TwoWay}"/>
                                 </components:SettingsRow>
@@ -244,6 +247,7 @@
                                 <TextBlock Text="{DynamicResource Loc.Widgets.Pet.Notifications}" Style="{StaticResource AfSettingsRowTitleStyle}"/>
                             </ui:CardExpander.Header>
                             <StackPanel>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.AudioStatus}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetAudioStatusEnabled, Mode=TwoWay}"/></components:SettingsRow>
                                 <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.NotificationsEnabled}" Description="{DynamicResource Loc.Widgets.Pet.NotificationsEnabled.Description}">
                                     <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetNotificationsEnabled, Mode=TwoWay}"/>
                                 </components:SettingsRow>
