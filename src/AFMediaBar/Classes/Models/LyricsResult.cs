@@ -32,7 +32,6 @@ public enum LyricsLowConfidenceReason
     Contradicted = 2
 }
 
-
 /// <summary>
 /// 歌词结果：一个来源命中的歌词文档及其来源标识；确认无歌词时保留分数并携带空文档。
 /// Lyrics result: the lyric document one source matched, together with that source's identifier.
@@ -57,11 +56,8 @@ public sealed record LyricsResult(string Source, LyricDocument Document)
     public LyricsResultStatus Status { get; init; } = LyricsResultStatus.Available;
 
     /// <summary>
-    /// 命中的证据只有标题、没有歌手或时长佐证：同名不同版本（翻唱、Live、同名片）无从区分。
-    /// 这类结果不直接短路在线搜索，在线都没结果时仍然会被采用。
-    /// The match rests on the title alone, with no artist or duration corroboration, so a cover or a same-titled
-    /// track cannot be ruled out. Such a result does not short-circuit the online lookup but is still used when
-    /// every online source comes back empty.
+    /// 命中是否为低置信；具体成因见 <see cref="LowConfidenceReason"/>。
+    /// Whether the hit is low confidence; see <see cref="LowConfidenceReason"/> for the cause.
     /// </summary>
     public bool LowConfidence { get; init; }
 

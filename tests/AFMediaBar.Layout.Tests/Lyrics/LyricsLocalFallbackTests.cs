@@ -150,6 +150,30 @@ public sealed class LyricsLocalFallbackTests
     }
 
     [TestMethod]
+    public async Task TitleOnlyLocalHitBeatsAnOnlineMatchJustInsideTheMargin()
+    {
+        // 分差 21：刚超过 20 分线，保留本地。
+        var local = Fixed(LyricsSourceCatalog.LocalFile, "Local", LyricsLowConfidenceReason.TitleOnly, score: 100);
+        var online = Fixed(LyricsSourceCatalog.Lrclib, "Online", score: 79);
+
+        var result = await Create(local, online).GetLyricsAsync(Request, CancellationToken.None);
+
+        Assert.AreEqual("Local", result?.Source);
+    }
+
+    [TestMethod]
+    public async Task TitleOnlyLocalHitYieldsAtExactlyTwentyPoints()
+    {
+        // 分差正好 20：严格大于才翻转，因此仍用在线。
+        var local = Fixed(LyricsSourceCatalog.LocalFile, "Local", LyricsLowConfidenceReason.TitleOnly, score: 100);
+        var online = Fixed(LyricsSourceCatalog.Lrclib, "Online", score: 80);
+
+        var result = await Create(local, online).GetLyricsAsync(Request, CancellationToken.None);
+
+        Assert.AreEqual("Online", result?.Source);
+    }
+
+    [TestMethod]
     public async Task TitleOnlyLocalHitYieldsToACloseOnlineMatch()
     {
         // 100 对 90 在 20 分以内：维持现状，用在线。
