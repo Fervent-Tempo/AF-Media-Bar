@@ -119,7 +119,7 @@ public sealed class LyricsLocalFallbackTests
     public async Task TitleOnlyLocalHitLetsOnlineLookupRunFirst()
     {
         // 只靠标题命中的本地文件（同名翻唱、同名片）不能短路在线搜索。
-        var local = Fixed(LyricsSourceCatalog.LocalFile, "Local", lowConfidence: true);
+        var local = Fixed(LyricsSourceCatalog.LocalFile, "Local", LyricsLowConfidenceReason.TitleOnly);
         var online = Fixed(LyricsSourceCatalog.Lrclib, "Online");
         var result = await Create(local, online).GetLyricsAsync(Request, CancellationToken.None);
         Assert.AreEqual("Online", result?.Source);
@@ -129,11 +129,60 @@ public sealed class LyricsLocalFallbackTests
     [TestMethod]
     public async Task LowConfidenceLocalHitIsStillUsedWhenOnlineFindsNothing()
     {
-        var local = Fixed(LyricsSourceCatalog.LocalFile, "Local", lowConfidence: true);
+        var local = Fixed(LyricsSourceCatalog.LocalFile, "Local", LyricsLowConfidenceReason.TitleOnly);
         var online = Empty(LyricsSourceCatalog.Lrclib);
         var result = await Create(local, online).GetLyricsAsync(Request, CancellationToken.None);
         Assert.AreEqual("Local", result?.Source);
         Assert.AreEqual(1, local.Calls);
+    }
+
+    [TestMethod]
+    public async Task TitleOnlyLocalHitBeatsAWildlyLowerOnlineMatch()
+    {
+        // 本地标题满分、在线只有 22 分：本地文件没写歌手，但在线那条连及格线都没过，仍用本地。
+        var local = Fixed(LyricsSourceCatalog.LocalFile, "Local", LyricsLowConfidenceReason.TitleOnly, score: 100);
+        var online = Fixed(LyricsSourceCatalog.Lrclib, "Online", score: 22);
+
+        var result = await Create(local, online).GetLyricsAsync(Request, CancellationToken.None);
+
+        Assert.AreEqual("Local", result?.Source);
+        Assert.AreEqual(1, online.Calls);
+    }
+
+    [TestMethod]
+    public async Task TitleOnlyLocalHitYieldsToACloseOnlineMatch()
+    {
+        // 100 对 90 在 20 分以内：维持现状，用在线。
+        var local = Fixed(LyricsSourceCatalog.LocalFile, "Local", LyricsLowConfidenceReason.TitleOnly, score: 100);
+        var online = Fixed(LyricsSourceCatalog.Lrclib, "Online", score: 90);
+
+        var result = await Create(local, online).GetLyricsAsync(Request, CancellationToken.None);
+
+        Assert.AreEqual("Online", result?.Source);
+    }
+
+    [TestMethod]
+    public async Task TitleOnlyLocalHitYieldsToAnEqualOnlineMatch()
+    {
+        // 分差为 0 时不能翻转：本地满分不代表在线那条不可信。
+        var local = Fixed(LyricsSourceCatalog.LocalFile, "Local", LyricsLowConfidenceReason.TitleOnly, score: 100);
+        var online = Fixed(LyricsSourceCatalog.Lrclib, "Online", score: 100);
+
+        var result = await Create(local, online).GetLyricsAsync(Request, CancellationToken.None);
+
+        Assert.AreEqual("Online", result?.Source);
+    }
+
+    [TestMethod]
+    public async Task ContradictedLocalHitNeverBeatsAnOnlineMatch()
+    {
+        // 有反证（标题不够像、歌手相反、版本冲突）时，分差再大也不翻转。
+        var local = Fixed(LyricsSourceCatalog.LocalFile, "Local", LyricsLowConfidenceReason.Contradicted, score: 100);
+        var online = Fixed(LyricsSourceCatalog.Lrclib, "Online", score: 22);
+
+        var result = await Create(local, online).GetLyricsAsync(Request, CancellationToken.None);
+
+        Assert.AreEqual("Online", result?.Source);
     }
 
     [TestMethod]
@@ -176,16 +225,19 @@ public sealed class LyricsLocalFallbackTests
     private static LyricsService Create(Provider local, params Provider[] online) =>
         new(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(6), local, online);
 
-    private static Provider Fixed(string id, string source, bool lowConfidence = false) =>
-        new(id, _ => Task.FromResult<LyricsResult?>(Available(source, lowConfidence)));
+    private static Provider Fixed(string id, string source,
+        LyricsLowConfidenceReason confidence = LyricsLowConfidenceReason.None, int score = 100) =>
+        new(id, _ => Task.FromResult<LyricsResult?>(Available(source, confidence, score)));
 
     private static Provider Empty(string id) => new(id, _ => Task.FromResult<LyricsResult?>(null));
 
-    private static LyricsResult Available(string source, bool lowConfidence = false) =>
+    private static LyricsResult Available(string source,
+        LyricsLowConfidenceReason confidence = LyricsLowConfidenceReason.None, int score = 100) =>
         new(source, new LyricDocument([new LyricLine(0, 1, "Lyric")], LyricsSyncType.LineSynced, "LRC"))
         {
-            MatchScore = 100,
-            LowConfidence = lowConfidence
+            MatchScore = score,
+            LowConfidence = confidence != LyricsLowConfidenceReason.None,
+            LowConfidenceReason = confidence
         };
 
     private sealed class Provider(string id, Func<CancellationToken, Task<LyricsResult?>> retrieve) : ILyricsProvider

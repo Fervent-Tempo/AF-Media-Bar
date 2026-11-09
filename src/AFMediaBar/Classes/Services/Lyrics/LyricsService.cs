@@ -82,10 +82,25 @@ public sealed class LyricsService
         }
 
         // 在线也没给出歌词时，低置信度的本地命中仍然比没有歌词强。
-        if (!IsAvailable(result) && IsAvailable(localFirst)) return trace.Finish(localFirst);
+        // 在线给出了歌词、但分数明显不如本地时同理：只靠标题命中的本地结果，也可能比一条勉强及格的在线结果可靠。
+        if (localFirst is { } localCandidate && IsAvailable(localCandidate) &&
+            ShouldPreferLocal(localCandidate, result)) return trace.Finish(localCandidate);
 
         return trace.Finish(result);
     }
+
+    /// <summary>在线结果要低出这么多分，才认定它明显不如本地命中。/ How far the online result must fall behind before the local hit wins.</summary>
+    private const int LocalPrecedenceMargin = 20;
+
+    /// <summary>
+    /// 本地结果何时压过在线结果：只有「只靠标题命中」这一类低置信参与分差比较——它可能只是文件没写歌手，
+    /// 而在线那条可能连及格线都没过。有反证的本地命中（标题不够像、歌手相反、版本冲突）一律让位；
+    /// 在线没给出歌词时，本地依旧兜底。
+    /// </summary>
+    private static bool ShouldPreferLocal(LyricsResult local, LyricsResult? online) =>
+        online is not { } found || !IsAvailable(found) ||
+        (local.LowConfidenceReason == LyricsLowConfidenceReason.TitleOnly &&
+         local.MatchScore > found.MatchScore + LocalPrecedenceMargin);
 
     /// <summary>跑一次本地来源；未配置或没命中时返回 null。/ Runs the local source once and returns null when it is unconfigured or finds nothing.</summary>
     private async Task<LyricsResult?> TryLocalAsync(LyricsRequest request, TimeSpan budget, LyricsRequestLog trace, CancellationToken cancellationToken)
