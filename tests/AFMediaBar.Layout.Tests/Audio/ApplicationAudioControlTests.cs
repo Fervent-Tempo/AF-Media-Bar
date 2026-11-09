@@ -41,6 +41,8 @@ public sealed class ApplicationAudioControlTests
     {
         var control = new Control();
         using var coordinator = new ApplicationAudioControlCoordinator(control, TimeSpan.FromMilliseconds(100));
+        var completed = new ConcurrentQueue<ApplicationAudioControlResult>();
+        coordinator.Completed += completed.Enqueue;
         var volume = coordinator.SetVolumeAsync("A", 10, false, CancellationToken.None);
         var mute = await coordinator.SetMuteAsync("A", true, CancellationToken.None);
         Assert.AreEqual(AudioDeviceOperationStatus.Applied, mute.Operation.Status);
@@ -48,6 +50,8 @@ public sealed class ApplicationAudioControlTests
         Assert.IsTrue(mute.Snapshot.IsMuted);
         Assert.AreEqual(AudioDeviceOperationStatus.Cancelled, (await volume).Operation.Status);
         Assert.AreEqual(1, control.Writes.Count);
+        Assert.AreEqual(1, completed.Count);
+        Assert.IsTrue(completed.Single().Snapshot!.IsMuted);
         Assert.IsTrue(coordinator.IsCurrent("A", mute.Version));
     }
 
@@ -92,10 +96,13 @@ public sealed class ApplicationAudioControlTests
     public async Task PreservesPartialFailureAndActualReadback()
     {
         using var coordinator = new ApplicationAudioControlCoordinator(new PartialControl(), TimeSpan.Zero);
+        var completed = 0;
+        coordinator.Completed += _ => completed++;
         var result = await coordinator.SetMuteAsync("A", true, CancellationToken.None);
         Assert.AreEqual(AudioDeviceOperationStatus.Partial, result.Operation.Status);
         Assert.IsFalse(result.Snapshot!.IsMuted, "回读不是请求值，不能把部分成功显示为全部静音。");
         Assert.AreEqual(55, result.Snapshot.VolumePercent);
+        Assert.AreEqual(0, completed, "部分成功不能发出成功提示。");
     }
 
     private sealed class Control : IApplicationAudioControl

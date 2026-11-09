@@ -91,6 +91,11 @@ internal static class PetPresentationChecks
             }
             Assert.IsTrue((GetWindowLong(new WindowInteropHelper(overflow).Handle, GWL_EXSTYLE) & 8) != 0, "矩形不变时也必须恢复层级。");
 
+            control.ApplyPlacementMotionSuspension(true);
+            Assert.IsTrue(overflow.IsVisible, "拖动不能隐藏独立宠物或切回栏内。");
+            Assert.AreEqual(Visibility.Hidden, inline.Visibility);
+            control.ApplyPlacementMotionSuspension(false);
+            Assert.AreSame(overflow, window.OwnedWindows.Cast<Window>().Single());
             control.ApplyHostVisibilitySuspension(true);
             Assert.IsFalse(input.IsSampling);
             Assert.IsFalse(overflow.IsVisible, "挂起不能留下越界宠物。");
@@ -103,7 +108,7 @@ internal static class PetPresentationChecks
             control.ApplyBackgroundPruneLevel(MemoryPruneLevel.None);
             Assert.IsTrue(input.IsSampling);
             control.ApplyPlacementMotionSuspension(true);
-            Assert.IsFalse(input.IsSampling);
+            Assert.IsTrue(input.IsSampling, "拖动保持宠物输入与呈现租约。");
             control.ApplyPlacementMotionSuspension(false);
             Assert.IsTrue(input.IsSampling);
 

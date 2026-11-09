@@ -11,6 +11,15 @@ internal static class PetExperienceChecks
 {
     internal static void Verify()
     {
+        var stroke = new AFMediaBar.Components.PetStrokeGesture();
+        Assert.IsFalse(stroke.Move(4, 48, 0));
+        Assert.IsFalse(stroke.Move(32, 48, 100));
+        Assert.IsFalse(stroke.Move(8, 48, 200));
+        Assert.IsTrue(stroke.Move(32, 48, 300));
+        stroke.Reset();
+        Assert.IsFalse(stroke.Move(8, 48, 500), "冷却不受离开重置影响。");
+        Assert.IsFalse(stroke.Move(8, 48, 3000));
+        Assert.IsFalse(stroke.Move(32, 48, 4000), "超时不能积累摸摸手势。");
         var previous = SettingsManager.Current;
         try
         {
