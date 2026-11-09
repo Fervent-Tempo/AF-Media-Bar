@@ -18,6 +18,8 @@ internal sealed class PetOverflowHost : IDisposable
     private readonly Window _window;
     private readonly PetView _pet = new();
     private HwndSource? _source;
+    private readonly DesktopWidgetZOrderService? _zOrder;
+    private IDisposable? _zRegistration;
     private Rect? _lastBounds;
     private PetComponentSettings _settings = new();
     private bool _vertical;
@@ -26,9 +28,10 @@ internal sealed class PetOverflowHost : IDisposable
     private bool _disposed;
     private bool _positioning;
 
-    internal PetOverflowHost(FrameworkElement anchor, Window owner, PetWebEnvironment? environment)
+    internal PetOverflowHost(FrameworkElement anchor, Window owner, PetWebEnvironment? environment, DesktopWidgetZOrderService? zOrder = null)
     {
         _anchor = anchor;
+        _zOrder = zOrder;
         _owner = owner;
         _pet.BindEnvironment(environment);
         var surface = new InputSurface { Child = _pet };
@@ -123,12 +126,17 @@ internal sealed class PetOverflowHost : IDisposable
         Position();
         _pet.SetPresentation(true, true);
         _window.Opacity = 1;
+        if (_source is not null && _zOrder is not null)
+            _zRegistration ??= _zOrder.Attach(_source.Handle, FloatingBarLayer.Topmost,
+                () => !_disposed && _visible && _owner.IsVisible);
     }
 
     internal void Hide()
     {
         if (_disposed || !_visible) return;
         _visible = false;
+        _zRegistration?.Dispose();
+        _zRegistration = null;
         _pet.SetPresentation(false, true);
         _window.Hide();
         _lastBounds = null;
@@ -199,6 +207,8 @@ internal sealed class PetOverflowHost : IDisposable
         if (_disposed) return;
         _disposed = true;
         _visible = false;
+        _zRegistration?.Dispose();
+        _zRegistration = null;
         _anchor.LayoutUpdated -= OnLayoutUpdated;
         _owner.LocationChanged -= OnOwnerChanged;
         _owner.SizeChanged -= OnOwnerSizeChanged;

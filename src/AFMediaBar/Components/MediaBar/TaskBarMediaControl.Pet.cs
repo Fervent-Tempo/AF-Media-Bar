@@ -21,6 +21,7 @@ public partial class TaskBarMediaControl
     private bool _petDisposed;
     private PetWebEnvironment? _petEnvironment;
     private PetOverflowHost? _petOverflow;
+    private DesktopWidgetZOrderService? _petZOrder;
     private double PetCrossSize => Math.Max(1, (_isVertical ? MainBorder.Width : MainBorder.Height) - 4);
     private double PetInlineSize
     {
@@ -40,12 +41,13 @@ public partial class TaskBarMediaControl
         : Math.Min(PresentationSettings.PetComponent.SizeDip, double.IsFinite(PetCrossSize) ? PetCrossSize : PetComponentSettings.DefaultSizeDip)) + TaskbarWidgetPadding * 2;
     private PetView ActivePet => _petOverflow?.IsVisible == true ? _petOverflow.View : TaskbarPet;
 
-    public void BindPetInput(PetInputService source, PetWebEnvironment? environment = null, PetCompanionService? companion = null)
+    public void BindPetInput(PetInputService source, PetWebEnvironment? environment = null, PetCompanionService? companion = null, DesktopWidgetZOrderService? zOrder = null)
     {
         if (_petDisposed) return;
         _petLease?.Dispose();
         _petLease = null;
         _petCompanion = companion;
+        _petZOrder = zOrder;
         _petInput = source;
         _petEnvironment = environment;
         ReleasePetOverflow();
@@ -70,7 +72,7 @@ public partial class TaskBarMediaControl
             TaskbarPet.Visibility = Visibility.Hidden;
             if (_petOverflow is null)
             {
-                _petOverflow = new PetOverflowHost(TaskbarPetSurface, owner, _petEnvironment);
+                _petOverflow = new PetOverflowHost(TaskbarPetSurface, owner, _petEnvironment, _petZOrder);
                 _petOverflow.Moved += _petBubble.Reposition;
                 _petOverflow.Activated += SpeakPet;
                 _petOverflow.PositionSaved += SavePetPosition;

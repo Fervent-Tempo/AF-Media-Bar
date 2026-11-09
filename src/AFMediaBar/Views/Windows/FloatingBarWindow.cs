@@ -139,7 +139,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         ShowActivated = false;
         WindowHelper.SetNoActivate(this);
         _mediaControl.BindBatterySource(batterySource);
-        if (petInput is not null) _mediaControl.BindPetInput(petInput, petWebEnvironment, petCompanion);
+        if (petInput is not null) _mediaControl.BindPetInput(petInput, petWebEnvironment, petCompanion, zOrder);
         InitializeEdgeCollapse();
         PresentationSettings = ProjectSettings();
         _centerPx = new Point(monitor.WorkArea.Left + monitor.WorkArea.Width / 2,

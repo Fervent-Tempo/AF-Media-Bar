@@ -1,6 +1,8 @@
 // 在已有隔离 WPF 进程中验证控件的真实加载、隐藏和重挂，不启动业务服务或鼠标 Hook。
 using System.Windows;
 using System.Windows.Threading;
+using System.Windows.Interop;
+using static AFMediaBar.Classes.Interop.NativeMethods;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Models.Layout;
@@ -16,6 +18,7 @@ internal static class PetPresentationChecks
     internal static void Verify()
     {
         var previous = SettingsManager.Current;
+        using var zOrder = new DesktopWidgetZOrderService();
         using var input = new PetInputService(Dispatcher.CurrentDispatcher, () => new Point(-900, 300));
         var window = new Window
         {
@@ -43,7 +46,7 @@ internal static class PetPresentationChecks
                 }
             };
             control = new TaskBarMediaControl { AllowRestConnectionTransition = false };
-            control.BindPetInput(input);
+            control.BindPetInput(input, zOrder: zOrder);
             control.UpdateSongInfo(MediaSnapshot.Disconnected with { IsConnected = true, Title = "Pet test" });
             control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal, 100, 100, 44);
             control.ApplyPrimaryLength(500);
@@ -75,6 +78,18 @@ internal static class PetPresentationChecks
             Assert.IsFalse(overflow.ShowActivated);
             Assert.AreEqual(96d, overflow.Width);
             Assert.IsTrue(overflow.Height > surface.ActualHeight, "越界窗口必须独立于媒体栏厚度。");
+
+            overflow.Topmost = false;
+            var deadline = DateTime.UtcNow.AddSeconds(2);
+            while ((GetWindowLong(new WindowInteropHelper(overflow).Handle, GWL_EXSTYLE) & 8) == 0 && DateTime.UtcNow < deadline)
+            {
+                var frame = new DispatcherFrame();
+                var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+                timer.Tick += (_, _) => { timer.Stop(); frame.Continue = false; };
+                timer.Start();
+                Dispatcher.PushFrame(frame);
+            }
+            Assert.IsTrue((GetWindowLong(new WindowInteropHelper(overflow).Handle, GWL_EXSTYLE) & 8) != 0, "矩形不变时也必须恢复层级。");
 
             control.ApplyHostVisibilitySuspension(true);
             Assert.IsFalse(input.IsSampling);
@@ -114,7 +129,7 @@ internal static class PetPresentationChecks
             Assert.IsFalse(surface.IsHitTestVisible);
             control.DisposePresentation();
             control.DisposePresentation();
-            control.BindPetInput(input);
+            control.BindPetInput(input, zOrder: zOrder);
             Assert.IsFalse(input.IsSampling, "最终释放后不得重新订阅。");
         }
         finally

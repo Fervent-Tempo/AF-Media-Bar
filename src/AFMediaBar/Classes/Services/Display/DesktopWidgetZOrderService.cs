@@ -99,7 +99,10 @@ public sealed partial class DesktopWidgetZOrderService : IDisposable
             var after = entry.Layer == FloatingBarLayer.Topmost || desktopIsAboveApplications ? new nint(-1) :
                 lowestApplication == nint.Zero ? new nint(-2) : lowestApplication;
             var previous = GetWindow(entry.Handle, 3);
-            if (restore || entry.LastAfter != after ||
+            // Shell 重新置顶时，HWND_TOPMOST 标志和缓存矩形都可能仍然不变。
+            var lostTopmost = entry.Layer == FloatingBarLayer.Topmost &&
+                ((GetWindowLong(entry.Handle, GWL_EXSTYLE) & 8) == 0 || IsTaskbarAbove(entry.Handle));
+            if (restore || lostTopmost || entry.LastAfter != after ||
                 (entry.Layer == FloatingBarLayer.Desktop && desktopIsAboveApplications && previous != nint.Zero && !_entries.ContainsKey(previous) && (GetWindowLong(previous, GWL_EXSTYLE) & 8) == 0))
             {
                 SetWidgetWindowPosition(entry.Handle, after, 0, 0, 0, 0,
@@ -107,6 +110,19 @@ public sealed partial class DesktopWidgetZOrderService : IDisposable
                 entry.LastAfter = after;
             }
         }
+    }
+
+    private static bool IsTaskbarAbove(nint handle)
+    {
+        var name = new StringBuilder(256);
+        var inspected = 0;
+        for (var above = GetWindow(handle, 3); above != nint.Zero && inspected++ < 512; above = GetWindow(above, 3))
+        {
+            if (!IsWindowVisible(above) || IsIconic(above)) continue;
+            GetClassName(above, name, name.Capacity);
+            if (name.ToString() is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd") return true;
+        }
+        return false;
     }
 
     private void Detach(Entry entry)
