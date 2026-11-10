@@ -621,19 +621,18 @@ public sealed class TaskbarArrangementPresentationTests
                             Assert.IsTrue(origin.X >= 0 && origin.Y >= 0 && origin.X + panel.ActualWidth <= size.Width + .01 &&
                                 origin.Y + panel.ActualHeight <= size.Height + .01, $"{mode}/{orientation}: lyric viewport escaped the bar.");
                             var frame = LyricsPresentationProjector.Project(snapshot, settings, DateTimeOffset.UtcNow);
-                            Assert.AreEqual(orientation == LayoutOrientation.Vertical || frame.IsVisible ? 1d : 0d, panel.Opacity);
-                            if (orientation == LayoutOrientation.Horizontal)
+                            Assert.AreEqual(frame.IsVisible ? 1d : 0d, panel.Opacity);
+                            Assert.AreEqual(frame.IsVisible ? Visibility.Collapsed : Visibility.Visible,
+                                ((FrameworkElement)control.FindName("SongMetadataPanel")).Visibility);
+                            Assert.AreEqual(orientation == LayoutOrientation.Vertical ? Visibility.Visible : Visibility.Collapsed,
+                                ((FrameworkElement)control.FindName("VerticalMetadataSurface")).Visibility);
+                            if (frame.IsVisible)
                             {
-                                Assert.AreEqual(frame.IsVisible ? Visibility.Collapsed : Visibility.Visible,
-                                    ((FrameworkElement)control.FindName("SongMetadataPanel")).Visibility);
-                                if (frame.IsVisible)
-                                {
-                                    var effective = (LyricsPresentationFrame)MediaBarTestAccess.GetField("_lastEffectiveLyricsFrame", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
-                                    Assert.AreEqual(frame.Current, effective.Current);
-                                    Assert.AreEqual(twoLines && position == 3 ? "Next line" : string.Empty, effective.Next);
-                                    if (position == 3)
-                                        Assert.IsTrue(effective.WordScanProgress is >= 0 and <= 1);
-                                }
+                                var effective = (LyricsPresentationFrame)MediaBarTestAccess.GetField("_lastEffectiveLyricsFrame", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+                                Assert.AreEqual(frame.Current, effective.Current);
+                                Assert.AreEqual(twoLines && position == 3 ? "Next line" : string.Empty, effective.Next);
+                                if (position == 3)
+                                    Assert.IsTrue(effective.WordScanProgress is >= 0 and <= 1);
                             }
                         }
                     }

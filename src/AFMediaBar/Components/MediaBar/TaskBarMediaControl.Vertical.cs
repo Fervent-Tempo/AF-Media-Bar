@@ -18,7 +18,6 @@ public partial class TaskBarMediaControl
     private bool _verticalTaskbarOnLeft;
     private double _verticalPerformanceLength = 44;
     private double _verticalSpectrumLength = 28;
-    private bool VerticalTextRequired => _isVertical && _snapshot.IsConnected;
     private double VerticalPrimaryFontSize => VerticalTaskbarPresentationPolicy.PrimaryFontSizeDip *
         PresentationSettings.TaskbarExperience.Normalize().MediaFontSizePercent / 100d * _textBudget.FontScale;
     private double VerticalSecondaryFontSize => VerticalTaskbarPresentationPolicy.SecondaryFontSizeDip *
@@ -43,6 +42,9 @@ public partial class TaskBarMediaControl
         HideTaskbarHoverLayer(immediate: true);
         _artworkHover.AnimateArtworkHover(false, immediate: true);
         _verticalHostConfigured = vertical;
+        HorizontalMetadataPanel.Visibility = vertical ? Visibility.Collapsed : Visibility.Visible;
+        VerticalMetadataSurface.Visibility = vertical ? Visibility.Visible : Visibility.Collapsed;
+        SongMetadataPanel.VerticalAlignment = vertical ? VerticalAlignment.Stretch : VerticalAlignment.Center;
         TaskbarHoverActions.Orientation = vertical ? Orientation.Vertical : Orientation.Horizontal;
         TaskbarTransportButtons.Orientation = TaskbarHoverActions.Orientation;
         TaskbarHoverActionsOffset.X = 0;
@@ -68,11 +70,20 @@ public partial class TaskBarMediaControl
         }
     }
 
-    private LyricsPresentationFrame BuildVerticalMetadataFrame() => new(
-        true, _actualTitle + "\n" + DisplayedArtist, -1,
-        VisibleMetadataTitle(PresentationSettings.TaskbarExperience), _isSmallTaskbar || PresentationSettings.TaskbarExperience.ContentLayout == TaskbarContentLayout.CompactInline
-            ? string.Empty : DisplayedArtist,
-        string.Empty, string.Empty, false, 0, null, null, _snapshot.IsPlaying);
+    private string VerticalMetadataArtist(TaskbarExperienceSettings experience) =>
+        _isSmallTaskbar || experience.ContentLayout == TaskbarContentLayout.CompactInline ? string.Empty : DisplayedArtist;
+
+    private void RefreshVerticalMetadata()
+    {
+        var experience = PresentationSettings.TaskbarExperience.Normalize();
+        var titleFont = MarqueeFontKey.Capture(SongTitle) with { Size = VerticalPrimaryFontSize };
+        var artistFont = MarqueeFontKey.Capture(SongArtist) with { Size = VerticalSecondaryFontSize };
+        var gapDip = 2 + LyricsLineGap.Normalize(PresentationSettings.LyricsLineGapPercent) / 100d * titleFont.Size;
+        VerticalMetadata.Configure(
+            new(VisibleMetadataTitle(experience), titleFont, SongTitle.Foreground),
+            new(VerticalMetadataArtist(experience), artistFont, SongArtist.Foreground, SystemParameters.HighContrast ? 1 : 0.68),
+            gapDip, experience.MediaTextAlignment, CurrentMotion.UseContinuousMotion, IsAdvancePruned);
+    }
 
     private TaskbarRestLayout ResolveVerticalLayout(double primaryLength)
     {
@@ -116,16 +127,19 @@ public partial class TaskBarMediaControl
     private MediaBarSizeRequest BuildVerticalSizeRequest(MediaBarSizeRequest request, bool lyricsVisible, string current, string secondary)
     {
         var experience = PresentationSettings.TaskbarExperience.Normalize();
-        double Measure(string text, double fontSize) => VerticalTaskbarPresentationPolicy.MeasureText(
-            text, fontSize, lyricsVisible ? PresentationSettings.LyricsCharacterSpacingPercent : 0,
+        double MeasureLyric(string text, double fontSize) => VerticalTaskbarPresentationPolicy.MeasureText(
+            text, fontSize, PresentationSettings.LyricsCharacterSpacingPercent,
             sideways => MeasureTextWidthExact(sideways, SongTitle) * fontSize / Math.Max(1, SongTitle.FontSize));
-        if (!lyricsVisible)
-            current = VisibleMetadataTitle(experience);
+        static double MeasureMetadata(string text, MarqueeFontKey font) => VerticalTaskbarPresentationPolicy.MeasureText(
+            text, font.Size, 0, sideways => MeasureMetadataText(sideways, font).Width);
         var hoverMinimum = experience.HoverLayerEnabled ? VerticalHoverMinimumLength() : 0;
-        var textLength = lyricsVisible && PresentationSettings.LyricsFixedWidthEnabled
-            ? LyricsFixedWidth.Normalize(PresentationSettings.LyricsFixedWidthDip)
-            : Math.Max(Measure(current, VerticalPrimaryFontSize),
-                Measure(lyricsVisible ? secondary : _isSmallTaskbar ? string.Empty : DisplayedArtist, lyricsVisible ? VerticalPrimaryFontSize : VerticalSecondaryFontSize));
+        var textLength = lyricsVisible
+            ? PresentationSettings.LyricsFixedWidthEnabled
+                ? LyricsFixedWidth.Normalize(PresentationSettings.LyricsFixedWidthDip)
+                : Math.Max(MeasureLyric(current, VerticalPrimaryFontSize), MeasureLyric(secondary, VerticalPrimaryFontSize))
+            : Math.Max(
+                MeasureMetadata(VisibleMetadataTitle(experience), MarqueeFontKey.Capture(SongTitle) with { Size = VerticalPrimaryFontSize }),
+                MeasureMetadata(VerticalMetadataArtist(experience), MarqueeFontKey.Capture(SongArtist) with { Size = VerticalSecondaryFontSize }));
         var components = EffectiveRestComponents();
         var metrics = TaskbarDensityMetrics.From(experience.Density);
         double Content(double text) => TaskbarExperiencePolicy.CalculateRestWidth(
@@ -190,13 +204,8 @@ public partial class TaskBarMediaControl
         var textLength = layout.TextWidth;
         SongLyricsPanel.Width = innerWidth;
         SongLyricsPanel.Height = textLength;
-        // Web 不可用时保留未旋转的简化元数据。
-        SongTitleContainer.Width = innerWidth;
-        SongArtistContainer.Width = innerWidth;
-        SongTitle.Width = innerWidth;
-        SongArtist.Width = innerWidth;
-        SongArtistContainer.Visibility = _isSmallTaskbar || string.IsNullOrEmpty(DisplayedArtist) ? Visibility.Collapsed : Visibility.Visible;
-        SongArtistContainer.Margin = new Thickness(0, 2, 0, 0);
+        if (SongMetadataPanel.Visibility == Visibility.Visible)
+            RefreshVerticalMetadata();
         TaskbarPerformanceSurface.Width = Math.Max(1, innerWidth - TaskbarPerformanceHoverSurface.Padding.Left -
             TaskbarPerformanceHoverSurface.Padding.Right - TaskbarPerformanceHoverSurface.BorderThickness.Left - TaskbarPerformanceHoverSurface.BorderThickness.Right);
         TaskbarPerformanceSurface.Padding = new Thickness(1);

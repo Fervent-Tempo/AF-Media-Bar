@@ -201,44 +201,51 @@
                         <Grid x:Name="SongInfoSurface"
                               Width="{Binding ElementName=SongInfoStackPanel, Path=Width}"
                               Height="{Binding ElementName=SongInfoStackPanel, Path=Height}">
-                            <StackPanel x:Name="SongMetadataPanel"
+                            <Grid x:Name="SongMetadataPanel"
                                         RenderOptions.ClearTypeHint="Enabled"
                                         TextOptions.TextRenderingMode="ClearType"
                                         TextOptions.TextFormattingMode="Display">
-                                <!-- 标题同样可点（打开播放器菜单）也可拖：原理同封面，不挂 MediaAction。 -->
-                                <!-- The title is clickable (player menu) and draggable as well: same as the artwork, no MediaAction tag. -->
-                                <Canvas x:Name="SongTitleContainer" Height="19" ClipToBounds="True" Cursor="Hand"
+                                <StackPanel x:Name="HorizontalMetadataPanel">
+                                    <!-- 标题同样可点（打开播放器菜单）也可拖：原理同封面，不挂 MediaAction。 -->
+                                    <!-- The title is clickable (player menu) and draggable as well: same as the artwork, no MediaAction tag. -->
+                                    <Canvas x:Name="SongTitleContainer" Height="19" ClipToBounds="True" Cursor="Hand"
+                                            MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
+                                        <TextBlock x:Name="SongTitle" Text=""
+                                                   TextTrimming="CharacterEllipsis"
+                                                   FontFamily="{DynamicResource AppTextFontFamily}"
+                                                   FontWeight="{DynamicResource AppTextFontWeight}" />
+                                        <TextBlock x:Name="SongTitleDuplicate" Visibility="Collapsed" IsHitTestVisible="False"
+                                                   FontFamily="{Binding FontFamily, ElementName=SongTitle}"
+                                                   FontSize="{Binding FontSize, ElementName=SongTitle}"
+                                                   FontWeight="{Binding FontWeight, ElementName=SongTitle}"
+                                                   FontStyle="{Binding FontStyle, ElementName=SongTitle}"
+                                                   FontStretch="{Binding FontStretch, ElementName=SongTitle}"
+                                                   Foreground="{Binding Foreground, ElementName=SongTitle}"
+                                                   Opacity="{Binding Opacity, ElementName=SongTitle}"
+                                                   FlowDirection="{Binding FlowDirection, ElementName=SongTitle}" />
+                                    </Canvas>
+                                    <Canvas x:Name="SongArtistContainer" Margin="0,-1.5,0,0" Height="19" ClipToBounds="True">
+                                        <TextBlock x:Name="SongArtist" Text="" Opacity="0.5"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   FontFamily="{DynamicResource AppTextFontFamily}"
+                                                   FontWeight="{DynamicResource AppTextFontWeight}" />
+                                        <TextBlock x:Name="SongArtistDuplicate" Visibility="Collapsed" IsHitTestVisible="False"
+                                                   FontFamily="{Binding FontFamily, ElementName=SongArtist}"
+                                                   FontSize="{Binding FontSize, ElementName=SongArtist}"
+                                                   FontWeight="{Binding FontWeight, ElementName=SongArtist}"
+                                                   FontStyle="{Binding FontStyle, ElementName=SongArtist}"
+                                                   FontStretch="{Binding FontStretch, ElementName=SongArtist}"
+                                                   Foreground="{Binding Foreground, ElementName=SongArtist}"
+                                                   Opacity="{Binding Opacity, ElementName=SongArtist}"
+                                                   FlowDirection="{Binding FlowDirection, ElementName=SongArtist}" />
+                                    </Canvas>
+                                </StackPanel>
+                                <Border x:Name="VerticalMetadataSurface" Visibility="Collapsed" ClipToBounds="True"
+                                        Background="Transparent" Cursor="Hand"
                                         MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
-                                    <TextBlock x:Name="SongTitle" Text=""
-                                               TextTrimming="CharacterEllipsis"
-                                               FontFamily="{DynamicResource AppTextFontFamily}"
-                                               FontWeight="{DynamicResource AppTextFontWeight}" />
-                                    <TextBlock x:Name="SongTitleDuplicate" Visibility="Collapsed" IsHitTestVisible="False"
-                                               FontFamily="{Binding FontFamily, ElementName=SongTitle}"
-                                               FontSize="{Binding FontSize, ElementName=SongTitle}"
-                                               FontWeight="{Binding FontWeight, ElementName=SongTitle}"
-                                               FontStyle="{Binding FontStyle, ElementName=SongTitle}"
-                                               FontStretch="{Binding FontStretch, ElementName=SongTitle}"
-                                               Foreground="{Binding Foreground, ElementName=SongTitle}"
-                                               Opacity="{Binding Opacity, ElementName=SongTitle}"
-                                               FlowDirection="{Binding FlowDirection, ElementName=SongTitle}" />
-                                </Canvas>
-                                <Canvas x:Name="SongArtistContainer" Margin="0,-1.5,0,0" Height="19" ClipToBounds="True">
-                                    <TextBlock x:Name="SongArtist" Text="" Opacity="0.5"
-                                               TextTrimming="CharacterEllipsis"
-                                               FontFamily="{DynamicResource AppTextFontFamily}"
-                                               FontWeight="{DynamicResource AppTextFontWeight}" />
-                                    <TextBlock x:Name="SongArtistDuplicate" Visibility="Collapsed" IsHitTestVisible="False"
-                                               FontFamily="{Binding FontFamily, ElementName=SongArtist}"
-                                               FontSize="{Binding FontSize, ElementName=SongArtist}"
-                                               FontWeight="{Binding FontWeight, ElementName=SongArtist}"
-                                               FontStyle="{Binding FontStyle, ElementName=SongArtist}"
-                                               FontStretch="{Binding FontStretch, ElementName=SongArtist}"
-                                               Foreground="{Binding Foreground, ElementName=SongArtist}"
-                                               Opacity="{Binding Opacity, ElementName=SongArtist}"
-                                               FlowDirection="{Binding FlowDirection, ElementName=SongArtist}" />
-                                </Canvas>
-                            </StackPanel>
+                                    <local:VerticalMetadataText x:Name="VerticalMetadata" IsHitTestVisible="False" />
+                                </Border>
+                            </Grid>
 
                             <Grid x:Name="SongLyricsPanel" Opacity="0" IsHitTestVisible="False" ClipToBounds="True">
                                 <!--

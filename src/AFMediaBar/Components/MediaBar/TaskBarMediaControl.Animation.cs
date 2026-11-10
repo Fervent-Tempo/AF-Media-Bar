@@ -32,6 +32,8 @@ public partial class TaskBarMediaControl
     // 文字保留原文，溢出时仅移动两份绘制；暂停保留时钟位置，卸载才解除时钟。
     internal void ApplyMarqueeLayout(double availableWidth)
     {
+        if (_isVertical && SongMetadataPanel.Visibility == Visibility.Visible)
+            RefreshVerticalMetadata();
         var enabled = IsLoaded && IsBarPresentation && !_isVertical &&
                       (_isConnected || _restTransitionKeepsOutgoingText) && CurrentMotion.UseContinuousMotion;
         var paused = IsAdvancePruned || !IsVisible || SongMetadataPanel.Visibility != Visibility.Visible ||
@@ -106,24 +108,27 @@ public partial class TaskBarMediaControl
         if (string.IsNullOrEmpty(text))
             return (0, 0);
 
-        var formatted = new FormattedText(
+        var formatted = FormatMetadataText(text, font, Brushes.Transparent);
+        // Display 模式会逐字形对齐像素；按实际渲染条件测量，另外保留斜体等越出排版边界的墨迹。
+        var leading = Math.Max(0, -formatted.OverhangLeading);
+        var trailing = Math.Max(0, -formatted.OverhangTrailing);
+        return (formatted.WidthIncludingTrailingWhitespace + leading + trailing, leading);
+    }
+
+    internal static FormattedText FormatMetadataText(string text, MarqueeFontKey font, Brush foreground) =>
+        new(
             text,
             font.Culture,
             font.Direction,
             new Typeface(font.Family, font.Style, font.Weight, font.Stretch),
             font.Size,
-            Brushes.Transparent,
+            foreground,
             null,
             font.FormattingMode,
             font.PixelsPerDip)
         {
             Trimming = TextTrimming.None
         };
-        // Display 模式会逐字形对齐像素；按实际渲染条件测量，另外保留斜体等越出排版边界的墨迹。
-        var leading = Math.Max(0, -formatted.OverhangLeading);
-        var trailing = Math.Max(0, -formatted.OverhangTrailing);
-        return (formatted.WidthIncludingTrailingWhitespace + leading + trailing, leading);
-    }
 
     /// <summary>
     /// 入场动画：标题/艺术家变化时触发淡入和左滑效果。

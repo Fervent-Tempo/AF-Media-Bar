@@ -26,7 +26,6 @@ public sealed record LyricsWebStyle(
     string TextShadow,
     bool IsVertical = false,
     double SecondaryFontSize = 14,
-    string MetadataAlignment = "Left",
     bool ReduceMotion = false,
     bool Compact = false);
 
@@ -172,7 +171,6 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView, Ap
             style.TextShadow,
             style.IsVertical,
             style.SecondaryFontSize,
-            style.MetadataAlignment,
             style.ReduceMotion,
             style.Compact,
             colorTransitionMilliseconds = IsReady ? Math.Clamp(colorDuration.TotalMilliseconds, 0, 220) : 0
@@ -180,7 +178,7 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView, Ap
         StartDrain();
     }
 
-    public void Present(LyricsPresentationFrame frame, bool animateTransition, bool isMetadata = false)
+    public void Present(LyricsPresentationFrame frame, bool animateTransition)
     {
         ArgumentNullException.ThrowIfNull(frame);
         if (_disposed || _failed) return;
@@ -199,7 +197,7 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView, Ap
             nextTranslation = frame.IsVisible ? frame.NextTranslation : string.Empty,
             translationMode = frame.IsVisible && frame.TranslationMode,
             animateTransition = frame.IsVisible && animateTransition,
-            scene = isMetadata ? "metadata" : "lyrics"
+            scene = "lyrics"
         });
         StartDrain();
     }

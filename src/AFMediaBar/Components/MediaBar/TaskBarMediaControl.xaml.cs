@@ -223,6 +223,7 @@ namespace AFMediaBar.Components
             _batterySource = null;
             _artworkHover.Dispose();
             _lyrics.Dispose();
+            VerticalMetadata.StopAnimations();
         }
 
         // === 内部状态缓存 Internal State Cache ===
@@ -1142,7 +1143,6 @@ namespace AFMediaBar.Components
             if (!IsSpectrumComponentVisible)
                 ApplySpectrum(ReadOnlySpan<float>.Empty);
 
-            SongMetadataPanel.Orientation = Orientation.Vertical;
             SongArtistContainer.Margin = new Thickness(0, -1.5, 0, 0);
             var metadataAlignment = experience.MediaTextAlignment switch
             {
@@ -1775,6 +1775,8 @@ namespace AFMediaBar.Components
             var displayedForeground = TransitionColor("PlayerForeground", foreground, colorDuration);
             SongTitle.Foreground = displayedForeground;
             SongArtist.Foreground = displayedForeground;
+            if (_isVertical && SongMetadataPanel.Visibility == Visibility.Visible)
+                RefreshVerticalMetadata();
             System.Windows.Documents.TextElement.SetForeground(TaskbarPerformanceItems, displayedForeground);
             foreach (var presenter in _metricPresenters.Values) System.Windows.Documents.TextElement.SetForeground(presenter, displayedForeground);
             // 静置层的设备与音量图标和媒体文字取同一支自动前景：它们铺在同一块任务栏表面上。
@@ -2141,14 +2143,16 @@ namespace AFMediaBar.Components
 
             var effectiveLyrics = VisibleLyricsFrame(_lyrics._lyricsFrame);
             var lyricsVisible = effectiveLyrics.IsVisible;
-            var metadataTitle = IsBarPresentation && orientation == LayoutOrientation.Horizontal
+            var metadataTitle = IsBarPresentation
                 ? VisibleMetadataTitle(PresentationSettings.TaskbarExperience)
                 : _actualTitle;
             var visibleText = !_isConnected ? string.Empty : lyricsVisible ? effectiveLyrics.Current : metadataTitle;
             var secondaryText = _isConnected && lyricsVisible
                 ? string.IsNullOrEmpty(effectiveLyrics.CurrentTranslation) ? effectiveLyrics.Next : effectiveLyrics.CurrentTranslation
                 : string.Empty;
-            var artist = _isConnected && !lyricsVisible && SongArtistContainer.Visibility == Visibility.Visible ? DisplayedArtist : string.Empty;
+            var artist = !_isConnected || lyricsVisible ? string.Empty : orientation == LayoutOrientation.Vertical
+                ? VerticalMetadataArtist(PresentationSettings.TaskbarExperience)
+                : SongArtistContainer.Visibility == Visibility.Visible ? DisplayedArtist : string.Empty;
             // Spectrum tuning and metric selection never change their reserved widths. Keeping
             // those values (or play/pause) in the fingerprint causes redundant host size
             // animations and visibly nudges title/artist/lyrics while sliders are adjusted.

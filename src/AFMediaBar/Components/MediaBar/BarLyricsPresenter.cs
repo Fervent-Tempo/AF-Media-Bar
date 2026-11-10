@@ -55,6 +55,7 @@ public partial class TaskBarMediaControl
         private bool _hasSuspendAttempt;
         private LyricsWebViewRenderer? _suspendingRenderer;
         private bool _isRestoringFromPrune;
+        private bool _isInitializingWebLyrics;
         internal bool ShowMetadataDuringPruneRecovery => _isRestoringFromPrune &&
             !_webLyricsGraphicsDisabled && _lyricsCreationFailures < 2;
         internal LyricsPresentationFrame _lyricsFrame = LyricsPresentationFrame.Hidden;
@@ -158,6 +159,8 @@ public partial class TaskBarMediaControl
             var projected = LyricsPresentationProjector.Project(_owner._snapshot, _owner.PresentationSettings, DateTimeOffset.UtcNow);
             if (VisibleContentChanged(_lyricsFrame, projected))
                 UpdateWebLyricsPresentation(allowTransition: true);
+            else
+                ApplyWebLyricsLifetime();
         }
 
         internal void OnWebLyricsReady(object? sender, EventArgs e)
@@ -165,6 +168,7 @@ public partial class TaskBarMediaControl
             if (!_lyricsHostLoaded || !ReferenceEquals(sender, _lyricsWebRenderer))
                 return;
 
+            _isInitializingWebLyrics = false;
             if (_graphicsRecoveryPending)
             {
                 _graphicsRecoveryPending = false;
@@ -213,6 +217,7 @@ public partial class TaskBarMediaControl
                     IsHitTestVisible = false
                 };
                 renderer = new LyricsWebViewRenderer(webView, AppLogService.Current, _diagnosticHostId, generation);
+                _isInitializingWebLyrics = true;
                 _lyricsWebRenderer = renderer;
                 renderer.Ready += OnWebLyricsReady;
                 renderer.Failed += OnWebLyricsFailed;
@@ -261,12 +266,13 @@ public partial class TaskBarMediaControl
         internal void OnWebLyricsReleaseTimerTick(object? sender, EventArgs e)
         {
             _lyricsReleaseTimer.Stop();
-            if (LyricsWebViewLifetimePolicy.Resolve(
-                    _lyricsHostLoaded, _owner.PresentationSettings.LyricsEnabled || _owner.VerticalTextRequired, _webLyricsGraphicsDisabled,
-                    _owner._snapshot.IsConnected, _owner.VerticalTextRequired ? 1 : _owner._snapshot.Lyrics?.Document.Lines?.Count ?? 0,
-                    _lyricsWebRenderer is not null) == LyricsWebViewLifetimeAction.ReleaseAfterGrace)
+            if (ResolveWebLyricsLifetime() == LyricsWebViewLifetimeAction.ReleaseAfterGrace)
                 ReleaseWebLyricsRenderer();
         }
+
+        private LyricsWebViewLifetimeAction ResolveWebLyricsLifetime() => LyricsWebViewLifetimePolicy.Resolve(
+            _lyricsHostLoaded, _owner.PresentationSettings.LyricsEnabled, _webLyricsGraphicsDisabled,
+            _owner._snapshot.IsConnected, _owner._snapshot.Lyrics?.Document.Lines?.Count ?? 0, _lyricsWebRenderer is not null);
 
         internal void ApplyWebLyricsLifetime()
         {
@@ -285,10 +291,7 @@ public partial class TaskBarMediaControl
             }
 
             _webLyricsGraphicsDisabled |= WebLyricsGraphicsRecovery.Session.IsDisabled;
-            var action = LyricsWebViewLifetimePolicy.Resolve(
-                _lyricsHostLoaded, _owner.PresentationSettings.LyricsEnabled || _owner.VerticalTextRequired, _webLyricsGraphicsDisabled,
-                _owner._snapshot.IsConnected, _owner.VerticalTextRequired ? 1 : _owner._snapshot.Lyrics?.Document.Lines?.Count ?? 0,
-                _lyricsWebRenderer is not null);
+            var action = ResolveWebLyricsLifetime();
             switch (action)
             {
                 case LyricsWebViewLifetimeAction.Create:
@@ -418,8 +421,7 @@ public partial class TaskBarMediaControl
             var next = LyricsPresentationProjector.Project(_owner._snapshot, _owner.PresentationSettings, DateTimeOffset.UtcNow);
             _lyricsFrame = next;
             _owner.RefreshTaskbarTextBudget(next);
-            var isMetadata = _owner._isVertical && !next.IsVisible && _owner._snapshot.IsConnected;
-            var presentation = isMetadata ? _owner.BuildVerticalMetadataFrame() : _owner.VisibleLyricsFrame(next);
+            var presentation = _owner.VisibleLyricsFrame(next);
             _lastEffectiveLyricsFrame = presentation;
             // 设置变更可能改掉这一行显示的文字（隐藏日语读音标注、繁简转换在后台就绪）。只有"之前和现在都在显示
             // 歌词"时才让这类变化走过渡：开启/关闭歌词、首次就绪与故障恢复仍然立即落位，与改动前一致。
@@ -428,7 +430,7 @@ public partial class TaskBarMediaControl
             // lyrics, first readiness, and fault recovery keep snapping into place exactly as before.
             var animateTransition = allowTransition && previous.IsVisible && presentation.IsVisible;
 
-            var showWebLyrics = presentation.IsVisible && !_webLyricsGraphicsDisabled && !_isRestoringFromPrune &&
+            var showWebLyrics = presentation.IsVisible && !_webLyricsGraphicsDisabled && !_isInitializingWebLyrics &&
                                 _owner._backgroundPruneLevel < MemoryPruneLevel.DisplayOff && !_owner._isHostVisibilitySuspended &&
                                 _lyricsWebRenderer?.IsReady == true;
             var metadataVisibility = showWebLyrics ? Visibility.Collapsed : Visibility.Visible;
@@ -443,15 +445,11 @@ public partial class TaskBarMediaControl
             _owner.SongLyricsPanel.IsHitTestVisible = showWebLyrics;
             // The web engine decides whether a frame is a progress patch or a line transition.
             // Sending false on every 50 ms progress frame interrupts its in-flight roll animation.
-            // 设置变更链路（简繁转换方向、日语读音标注开关等）带 skipUnchangedContent：可见内容一字未变时
-            // 这里直接不下发。纵向元数据帧携带播放状态且不带进度，仍按原路径走。
-            // The settings-change chain (Chinese conversion direction, Japanese reading-annotation toggles) passes
-            // skipUnchangedContent: when the visible content is character-for-character identical nothing is sent
-            // here. The vertical metadata frame carries playback state and no progress, so it keeps its path.
-            var contentUnchanged = skipUnchangedContent && !isMetadata && !VisibleContentChanged(previous, presentation);
+            // 只影响文字内容的设置变更，在可见内容相同的情况下不重发帧。
+            var contentUnchanged = skipUnchangedContent && !VisibleContentChanged(previous, presentation);
             if (!_owner.IsBackgroundPruned && !contentUnchanged &&
-                (isMetadata || LyricsPresentationRefreshPolicy.ShouldPresent(presentation.IsVisible, previous, presentation)))
-                _lyricsWebRenderer?.Present(presentation, animateTransition && MotionPolicy.ResolveCurrent().UseTransitions, isMetadata);
+                LyricsPresentationRefreshPolicy.ShouldPresent(presentation.IsVisible, previous, presentation))
+                _lyricsWebRenderer?.Present(presentation, animateTransition && MotionPolicy.ResolveCurrent().UseTransitions);
             if (!_owner.IsBackgroundPruned)
                 _lyricsWebRenderer?.ResumeDelivery();
             RefreshWebLyricsTimer();
@@ -560,7 +558,6 @@ public partial class TaskBarMediaControl
                 textShadow,
                 _owner._isVertical,
                 _owner.VerticalSecondaryFontSize,
-                _owner.PresentationSettings.TaskbarExperience.MediaTextAlignment.ToString(),
                 !_owner.CurrentMotion.UseContinuousMotion,
                 _owner.UsesAdaptiveTaskbarText && _owner._textBudget.HideSecondary), colorDuration, finishColorTransition);
         }
@@ -635,6 +632,7 @@ public partial class TaskBarMediaControl
             _suspendGeneration++;
             _hasSuspendAttempt = false;
             _suspendingRenderer = null;
+            _isInitializingWebLyrics = false;
             var renderer = _lyricsWebRenderer;
             _lyricsWebRenderer = null;
             if (renderer is not null)
@@ -653,6 +651,8 @@ public partial class TaskBarMediaControl
                     _owner.SongLyricsPanel.Opacity = 0;
                     _owner.SongLyricsPanel.IsHitTestVisible = false;
                     _owner.SongMetadataPanel.Visibility = Visibility.Visible;
+                    if (_lyricsHostLoaded && _owner._isVertical)
+                        _owner.RefreshVerticalMetadata();
                 }
             }
         }
