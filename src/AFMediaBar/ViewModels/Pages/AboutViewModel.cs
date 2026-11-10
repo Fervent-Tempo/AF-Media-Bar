@@ -187,9 +187,6 @@ namespace AFMediaBar.ViewModels.Pages
         /// <summary>「赞助我」的条目：微信与支付宝收款码。/ The "support me" entries: WeChat and Alipay payment codes.</summary>
         public ObservableCollection<SupportEntryViewModel> SupportEntries { get; }
 
-        /// <summary>是否已经拿到开发人员名单（决定该分组是否显示）。/ Whether the developer list has arrived, which decides if that group is shown.</summary>
-        public bool HasContributors => Contributors.Count > 0;
-
         /// <summary>
         /// 是否显示赞助者分组。
         ///
@@ -216,9 +213,6 @@ namespace AFMediaBar.ViewModels.Pages
 
         /// <summary>是否有名单状态要说（正在取或取失败）。/ Whether there is any list status to show: a fetch in flight, or a failure.</summary>
         public bool HasCreditsStatus => IsCreditsLoading || HasCreditsFailure;
-
-        /// <summary>没有开发人员数据时仍显示名单状态与重试入口。</summary>
-        public bool HasDevelopersSection => HasContributors || HasCreditsStatus;
 
         public string CreditsRefreshButtonText => Translations.Get(IsCreditsLoading ? "Credits.Updating" : "Credits.Retry");
 
@@ -300,11 +294,9 @@ namespace AFMediaBar.ViewModels.Pages
                         ? Translations.Get("Credits.Status.Partial")
                         : Translations.Format("Credits.Status.Failed", reason);
 
-            OnPropertyChanged(nameof(HasContributors));
             OnPropertyChanged(nameof(HasSponsors));
             OnPropertyChanged(nameof(HasNoSponsorsYet));
             OnPropertyChanged(nameof(HasCreditsStatus));
-            OnPropertyChanged(nameof(HasDevelopersSection));
         }
 
         /// <summary>
