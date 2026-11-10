@@ -1589,7 +1589,6 @@ namespace AFMediaBar.Components
                 _artworkHover.AnimateArtworkHover(false, immediate: true);
             }
             ApplyTimerSuspensionState();
-            _lyrics.UpdateWebLyricsPowerState();
             _lyrics.UpdateWebLyricsPresentation(allowTransition: false);
         }
 

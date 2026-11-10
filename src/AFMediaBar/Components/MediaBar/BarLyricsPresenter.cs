@@ -27,6 +27,7 @@ public partial class TaskBarMediaControl
             OnWebLyricsUnloaded(_owner, new RoutedEventArgs());
             _owner.Loaded -= OnWebLyricsLoaded;
             _owner.Unloaded -= OnWebLyricsUnloaded;
+            _owner.IsVisibleChanged -= OnHostVisibilityChanged;
             StopWebLyrics();
         }
 
@@ -53,6 +54,9 @@ public partial class TaskBarMediaControl
         private bool _isTaskbarSuspendRequested;
         private bool _hasSuspendAttempt;
         private LyricsWebViewRenderer? _suspendingRenderer;
+        private bool _isRestoringFromPrune;
+        internal bool ShowMetadataDuringPruneRecovery => _isRestoringFromPrune &&
+            !_webLyricsGraphicsDisabled && _lyricsCreationFailures < 2;
         internal LyricsPresentationFrame _lyricsFrame = LyricsPresentationFrame.Hidden;
         internal LyricsPresentationFrame _lastEffectiveLyricsFrame = LyricsPresentationFrame.Hidden;
         internal Brush _lyricsForeground = Brushes.White;
@@ -82,6 +86,13 @@ public partial class TaskBarMediaControl
             _lyricsRetryTimer.Tick += OnWebLyricsRetryTimerTick;
             _owner.Loaded += OnWebLyricsLoaded;
             _owner.Unloaded += OnWebLyricsUnloaded;
+            _owner.IsVisibleChanged += OnHostVisibilityChanged;
+        }
+
+        private void OnHostVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (e.NewValue is true && _lyricsHostLoaded && _lyricsWebRenderer is null)
+                ApplyWebLyricsLifetime();
         }
 
         internal void OnWebLyricsLoaded(object sender, RoutedEventArgs e)
@@ -158,6 +169,11 @@ public partial class TaskBarMediaControl
             {
                 _graphicsRecoveryPending = false;
                 AppLogService.Current?.Info("Lyrics", $"WebView2 歌词视图重建完成: generation={_lyricsRendererGeneration} recovery={_lyricsGraphicsRecoveries}");
+            }
+            if (_isRestoringFromPrune)
+            {
+                _isRestoringFromPrune = false;
+                AppLogService.Current?.Info("Lyrics", $"phase=prune-restored host={_diagnosticHostId} generation={_lyricsRendererGeneration}");
             }
             _lyricsRetryTimer.Stop();
             UpdateWebLyricsPowerState();
@@ -255,6 +271,19 @@ public partial class TaskBarMediaControl
         internal void ApplyWebLyricsLifetime()
         {
             if (_disposed) return;
+            if (_owner._backgroundPruneLevel >= MemoryPruneLevel.DisplayOff)
+            {
+                _isRestoringFromPrune = true;
+                _lyricsReleaseTimer.Stop();
+                _lyricsRetryTimer.Stop();
+                if (_lyricsWebRenderer is not null)
+                {
+                    AppLogService.Current?.Info("Lyrics", $"phase=prune-release host={_diagnosticHostId} generation={_lyricsRendererGeneration} level={_owner._backgroundPruneLevel}");
+                    ReleaseWebLyricsRenderer();
+                }
+                return;
+            }
+
             _webLyricsGraphicsDisabled |= WebLyricsGraphicsRecovery.Session.IsDisabled;
             var action = LyricsWebViewLifetimePolicy.Resolve(
                 _lyricsHostLoaded, _owner.PresentationSettings.LyricsEnabled || _owner.VerticalTextRequired, _webLyricsGraphicsDisabled,
@@ -264,7 +293,7 @@ public partial class TaskBarMediaControl
             {
                 case LyricsWebViewLifetimeAction.Create:
                     _lyricsReleaseTimer.Stop();
-                    if (_owner._backgroundPruneLevel < MemoryPruneLevel.DisplayOff && !_owner._isHostVisibilitySuspended &&
+                    if (_owner.IsVisible && !_owner._isHostVisibilitySuspended &&
                         !_lyricsRetryTimer.IsEnabled && _lyricsCreationFailures < 2)
                         _ = EnsureWebLyricsAsync();
                     break;
@@ -307,21 +336,14 @@ public partial class TaskBarMediaControl
                 _owner.LyricsWebViewHost.Child is not WebView2CompositionControl webView)
                 return;
 
-            var displayOff = _owner._backgroundPruneLevel >= MemoryPruneLevel.DisplayOff;
-            var shouldSuspend = displayOff || _isTaskbarSuspendRequested;
-            if (_owner._isHostVisibilitySuspended || shouldSuspend)
+            if (_owner._isHostVisibilitySuspended || _isTaskbarSuspendRequested)
                 renderer.PauseDelivery();
             if (!renderer.IsReady)
                 return;
 
-            if (shouldSuspend)
+            if (_isTaskbarSuspendRequested)
             {
                 webView.Visibility = Visibility.Hidden;
-                if (displayOff)
-                {
-                    _owner.SongLyricsPanel.Opacity = 0;
-                    _owner.SongMetadataPanel.Visibility = Visibility.Visible;
-                }
                 if (!_hasSuspendAttempt && !ReferenceEquals(renderer, _suspendingRenderer))
                 {
                     _hasSuspendAttempt = true;
@@ -406,7 +428,7 @@ public partial class TaskBarMediaControl
             // lyrics, first readiness, and fault recovery keep snapping into place exactly as before.
             var animateTransition = allowTransition && previous.IsVisible && presentation.IsVisible;
 
-            var showWebLyrics = presentation.IsVisible && !_webLyricsGraphicsDisabled &&
+            var showWebLyrics = presentation.IsVisible && !_webLyricsGraphicsDisabled && !_isRestoringFromPrune &&
                                 _owner._backgroundPruneLevel < MemoryPruneLevel.DisplayOff && !_owner._isHostVisibilitySuspended &&
                                 _lyricsWebRenderer?.IsReady == true;
             var metadataVisibility = showWebLyrics ? Visibility.Collapsed : Visibility.Visible;

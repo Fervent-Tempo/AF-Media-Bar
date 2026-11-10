@@ -686,9 +686,10 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     {
         if (_isClosing) return;
         if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(() => PruneChanged(sender, args)); return; }
+        if (args.Level != _prune.CurrentLevel) return;
         _mediaControl.ApplyBackgroundPruneLevel(args.Level);
         if (IsBackgroundPruned) { StopEdgeCollapse(); ClearInteraction(); _backgroundTimer.Stop(); _sizeTimer.Stop(); }
-        else if (!_suspended) { _mediaControl.ApplyHostVisibilitySuspension(false); _backgroundTimer.Start(); ApplySnapshot(_lastSnapshot); }
+        else if (!_suspended) { _backgroundTimer.Start(); ApplySnapshot(_lastSnapshot); }
         SynchronizeResources();
         UpdateEdgeObservation();
     }
@@ -730,6 +731,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         cancellationToken.ThrowIfCancellationRequested();
         _handle = new WindowInteropHelper(this).EnsureHandle();
         if (_handle == nint.Zero) throw new InvalidOperationException("Floating window creation failed.");
+        if (IsBackgroundPruned) _mediaControl.ApplyBackgroundPruneLevel(_prune.CurrentLevel);
         _suspended = false;
         Show();
         await Dispatcher.Yield(DispatcherPriority.Loaded);
