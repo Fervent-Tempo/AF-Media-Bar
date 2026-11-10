@@ -220,7 +220,7 @@ test("music poses never spin, beats nod, and pause lowers only the right ear cup
     }
     assert.equal(p.document.documentElement.attributes["data-animation"], animation);
     const ear = p.nodes.get("outfit-ear-right").attributes.transform;
-    assert.match(ear, animation === "music-paused" ? /translate\(2 8\)/ : /translate\(0 0\)/);
+    assert.match(ear, animation === "music-paused" ? /translate\(0 8\)/ : /translate\(0 0\)/);
   }
   p.receive({ animation: "music-playing", headphoneOff: false });
   p.advance(1500);
@@ -229,6 +229,6 @@ test("music poses never spin, beats nod, and pause lowers only the right ear cup
   assert.notEqual(p.nodes.get("pose").attributes.transform, resting);
   p.receive({ motion: 1, headphoneOff: true, animation: "music-paused", beat: 0 });
   p.advance(32);
-  assert.match(p.nodes.get("outfit-ear-right").attributes.transform, /translate\(2 8\)/);
+  assert.match(p.nodes.get("outfit-ear-right").attributes.transform, /translate\(0 8\)/);
   assert.match(p.nodes.get("pose").attributes.transform, /rotate\(0\)/);
 });

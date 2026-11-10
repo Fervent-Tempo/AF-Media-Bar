@@ -126,7 +126,7 @@
     gaze.setAttribute("opacity", 1 - clamp(v("morph") * 1.8, 0, 1));
     lids.setAttribute("transform", `translate(0 32) scale(1 ${opening * v("lid")}) translate(0 -32)`);
     const off = clamp(v("headphone"), 0, 1);
-    document.getElementById("outfit-ear-right").setAttribute("transform", `translate(${off * 2} ${off * 8}) rotate(${-off * 14} 54 35)`);
+    document.getElementById("outfit-ear-right").setAttribute("transform", `translate(0 ${off * 8}) rotate(${off * 10} 54 35)`);
     document.getElementById("outfit-ear-hinge").setAttribute("d", `M54 27 Q${54 + off * 6} ${31 + off * 3} ${54 + off * 6} ${32 + off * 6}`);
     const amount = clamp(v("squash"), -0.2, 1.15);
     pose.setAttribute("transform", `translate(${32 + v("x")} ${34 + v("y") - v("lift")}) rotate(${v("turn")}) scale(${v("sx")} ${v("sy")}) translate(-32 -34)`);
