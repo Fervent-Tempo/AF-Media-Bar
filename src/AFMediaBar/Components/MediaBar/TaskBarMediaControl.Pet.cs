@@ -125,7 +125,7 @@ public partial class TaskBarMediaControl
             TaskbarPet.SetPresentation(active, visible);
         }
         if (active && _petCompanion is not null)
-            _petContextLease ??= _petCompanion.Subscribe((animation, beat) => { ActivePet.SetAmbient(_petCompanion.ArtworkColor); ActivePet.SetContext(animation, beat); }, (text, activation) => _petBubble.Show(ActivePet, text, false, activation));
+            _petContextLease ??= _petCompanion.Subscribe((animation, beat) => { ActivePet.SetPlayback(_petCompanion.Snapshot.IsConnected && !_petCompanion.Snapshot.IsPlaying); ActivePet.SetAmbient(_petCompanion.ArtworkColor); ActivePet.SetContext(animation, beat); }, (text, activation) => _petBubble.Show(ActivePet, text, false, activation));
         if (active && _petCompanion is not null)
             _petStatusLease ??= _petCompanion.SubscribeStatus((key, text) => _petMenu?.IsOpen != true && _petBubble.ShowStatus(ActivePet, key, text));
         if (active && _petInput is not null)

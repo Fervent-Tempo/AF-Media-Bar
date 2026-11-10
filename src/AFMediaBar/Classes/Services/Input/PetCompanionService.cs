@@ -35,7 +35,7 @@ public sealed class PetCompanionService : IDisposable
     private int _artworkVersion, _deviceVersion;
     private string? _artworkColor, _deviceName;
     public string? ArtworkColor => _artworkColor;
-        private string _musicAnimation = "listening", _candidate = "listening";
+    private string _musicAnimation = "music-quiet", _candidate = "music-quiet";
     private long _candidateSince, _statusAt;
     private (string Key, string Text)? _pendingStatus;
     public event Action? ArtworkColorChanged;
@@ -192,7 +192,7 @@ public sealed class PetCompanionService : IDisposable
             _happyUntil = Environment.TickCount64 + 1800;
         if (_snapshot.IsConnected != snapshot.IsConnected) _idleSince = Environment.TickCount64;
         if (_snapshot.IsPlaying != snapshot.IsPlaying)
-        { _reactionAnimation = snapshot.IsPlaying ? "waking" : "drowsy"; _reactionUntil = Environment.TickCount64 + 700; }
+        { _reactionAnimation = snapshot.IsPlaying ? "waking" : "music-paused"; _reactionUntil = Environment.TickCount64 + 700; }
         _snapshot = snapshot;
         UpdateArtwork(snapshot.Artwork);
     }
@@ -212,11 +212,11 @@ public sealed class PetCompanionService : IDisposable
     {
         var now = Environment.TickCount64;
         if (_pendingStatus is { } status && now - _statusAt >= 200) { _pendingStatus = null; ShowStatus(status.Key, status.Text); }
-        var desired = _average < 0.025 ? "humming" : _average > 0.12 ? "excited" : "listening";
+        var desired = _average < 0.025 ? "music-quiet" : "music-playing";
         if (_candidate != desired) { _candidate = desired; _candidateSince = now; }
         if (now - _candidateSince >= 1000) _musicAnimation = _candidate;
         var animation = now < _reactionUntil ? _reactionAnimation : now < _happyUntil ? "happy" : _snapshot.IsPlaying ? _musicAnimation :
-            !_snapshot.IsConnected && now - _idleSince > 30000 ? "drowsy" : "idle";
+            _snapshot.IsConnected ? "music-paused" : now - _idleSince > 30000 ? "drowsy" : "idle";
         foreach (var view in _views.ToArray()) view(animation, now < _reactionUntil || now < _happyUntil ? 0 : _beat);
     }
 

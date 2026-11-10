@@ -33,7 +33,9 @@ internal static class PetExperienceChecks
             string? animation = null;
             var accept = false;
             Action? activate = null;
+            pet.UpdateSnapshot(MediaSnapshot.Disconnected with { IsConnected = true });
             var lease = pet.Subscribe((state, _) => animation = state, (_, action) => { activate = action; return accept; });
+            Assert.AreEqual("music-paused", animation, "连接但暂停时必须使用暂停音乐姿态。");
             Assert.IsFalse(pet.TryNotify("title", "body"), "宿主忙碌必须回退。");
             accept = true;
             var detailsOpened = false;

@@ -25,6 +25,7 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
 
     private void PetDemoPlay(object sender, RoutedEventArgs args)
     {
+        PetPreview.SetPlayback(false);
         _petDemoUntil = Environment.TickCount64 + 1800;
         _petDemoTimer.Start();
     }
@@ -34,10 +35,10 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
         if (!IsLoaded || !_petPreviewExpanded || remaining <= 0)
         {
             _petDemoTimer.Stop();
-            PetPreview.SetContext("idle", 0);
+            ResetPetPreviewContext();
             return;
         }
-        PetPreview.SetContext("listening", Math.Exp(-((1800 - remaining) % 450) / 90d) * 0.8);
+        PetPreview.SetContext("music-playing", Math.Exp(-((1800 - remaining) % 450) / 90d) * 0.8);
     }
     private void PetDemoSpeak(object sender, RoutedEventArgs args)
     {
@@ -77,7 +78,7 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
             _petDemoTimer.Stop();
             _petBubble.Close();
             _petVoice?.Stop();
-            PetPreview.SetContext("idle", 0);
+            ResetPetPreviewContext();
             PetPreview.SetPresentation(false, false);
         };
     }
@@ -93,15 +94,23 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
     {
         _petDemoTimer.Stop();
         _petBubble.Close();
-        PetPreview.SetContext("idle", 0);
+        ResetPetPreviewContext();
         _petPreviewExpanded = false;
         PetPreview.SetPresentation(false, false);
+    }
+
+    private void ResetPetPreviewContext()
+    {
+        PetPreview.SetPlayback(_companion?.Snapshot is { IsConnected: true, IsPlaying: false });
+        PetPreview.SetContext(_companion?.Snapshot.IsPlaying == true ? "music-quiet" :
+            _companion?.Snapshot.IsConnected == true ? "music-paused" : "idle", 0);
     }
 
     private void PreviewSettingsChanged(object? sender, PropertyChangedEventArgs args) => RefreshPetPreview();
     private void RefreshPetPreview()
     {
         if (!_petPreviewExpanded || !IsLoaded) return;
+        if (!_petDemoTimer.IsEnabled) ResetPetPreviewContext();
         PetPreview.SetAmbient(_companion?.ArtworkColor);
         PetPreview.Configure(ViewModel.Components.PetSettings with { SizeDip = 120 });
         PetPreview.SetPresentation(true, true);

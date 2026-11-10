@@ -22,14 +22,17 @@ public sealed class PetControl : FrameworkElement
     private readonly ScaleTransform _eyelids = new(1, 1, 0, 32);
     private string _outfit = "original";
     private Brush _accent = Brushes.SteelBlue;
-    private double _turn;
+    private double _turn, _nod;
+    private bool _headphoneOff;
     internal void React() => Blink();
-    internal void SetContext(string animation, double beat, string outfit, string accent)
+    internal void SetContext(string animation, double beat, string outfit, string accent, bool headphoneOff = false)
     {
         _outfit = outfit;
+        _headphoneOff = headphoneOff;
         if (ColorHex.TryParse(accent, out var color)) _accent = new SolidColorBrush(color);
         var animate = MotionPolicy.ResolveCurrent().Mode == MotionMode.Full;
-        _turn = animate ? animation == "happy" ? 4 : Math.Sin(Environment.TickCount64 / 450d) * (animation == "excited" ? 4 : animation == "listening" ? 2 : 0) + beat * 3 : 0;
+        _turn = animate ? animation == "happy" ? 4 : Math.Sin(Environment.TickCount64 / 450d) * (animation is "music-quiet" or "music-playing" ? 1.5 : animation == "listening" ? 2 : 0) + beat * 3 : 0;
+        _nod = animate && animation is "music-quiet" or "music-playing" ? beat * 1.2 : 0;
         InvalidateVisual();
     }
     private Point? _screenPosition;
@@ -148,6 +151,7 @@ public sealed class PetControl : FrameworkElement
         if (size <= 0) return;
         drawing.PushTransform(new TranslateTransform((ActualWidth - size) / 2, (ActualHeight - size) / 2));
         drawing.PushTransform(new ScaleTransform(size / 64, size / 64));
+        drawing.PushTransform(new TranslateTransform(0, _nod));
         drawing.PushTransform(new RotateTransform(_turn, 32, 34));
         var highContrast = SystemParameters.HighContrast;
         if (!highContrast) drawing.DrawGeometry(null, new Pen(Brushes.White, 2.4), _body);
@@ -157,7 +161,7 @@ public sealed class PetControl : FrameworkElement
         if (_outfit == "headphones")
         {
             drawing.DrawGeometry(null, new Pen(accent, 3), Geometry.Parse("M12,31 C12,7 52,7 52,31"));
-            foreach (var x in new[] { 9d, 49d }) drawing.DrawRoundedRectangle(accent, new Pen(Brushes.White, 0.7), new Rect(x, 27, 6, 15), 2, 2);
+            foreach (var x in new[] { 9d, 49d }) drawing.DrawRoundedRectangle(accent, new Pen(Brushes.White, 0.7), new Rect(x + (_headphoneOff && x > 32 ? 2 : 0), 27 + (_headphoneOff && x > 32 ? 8 : 0), 6, 15), 2, 2);
         }
         else if (_outfit == "badge")
         {
@@ -175,6 +179,7 @@ public sealed class PetControl : FrameworkElement
         foreach (var centerX in new[] { 24d, 40d })
             drawing.DrawRoundedRectangle(eyes, null,
                 new Rect(centerX - 3, 25.5, 6, 13), 3, 3);
+        drawing.Pop();
         drawing.Pop();
         drawing.Pop();
         drawing.Pop();

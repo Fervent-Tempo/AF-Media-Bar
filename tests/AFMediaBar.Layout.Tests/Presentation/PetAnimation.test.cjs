@@ -205,3 +205,30 @@ test("outfit exists once outside gaze and eyelids", () => {
   assert.equal(new Set(ids).size, ids.length);
   assert.match(html, /id="eye-right"[\s\S]*?<\/g><\/g><\/g>\s*<g id="outfit"/);
 });
+
+
+test("music poses never spin, beats nod, and pause lowers only the right ear cup", () => {
+  const p = page();
+  for (const animation of ["music-quiet", "music-playing", "music-paused"]) {
+    p.receive({ animation, outfit: "headphones", headphoneOff: animation === "music-paused", beat: 0 }, true);
+    for (let t = 0; t < 20; t += 0.25) {
+      const pose = p.engine.target(animation, t);
+      assert.equal(pose.spinY, 0);
+      assert.ok(Math.abs(pose.turn) <= 1.8);
+      assert.equal(pose.morph, 0);
+      p.advance(250);
+    }
+    assert.equal(p.document.documentElement.attributes["data-animation"], animation);
+    const ear = p.nodes.get("outfit-ear-right").attributes.transform;
+    assert.match(ear, animation === "music-paused" ? /translate\(2 8\)/ : /translate\(0 0\)/);
+  }
+  p.receive({ animation: "music-playing", headphoneOff: false });
+  p.advance(1500);
+  const resting = p.nodes.get("pose").attributes.transform;
+  p.receive({ beat: 1 }); p.advance(160);
+  assert.notEqual(p.nodes.get("pose").attributes.transform, resting);
+  p.receive({ motion: 1, headphoneOff: true, animation: "music-paused", beat: 0 });
+  p.advance(32);
+  assert.match(p.nodes.get("outfit-ear-right").attributes.transform, /translate\(2 8\)/);
+  assert.match(p.nodes.get("pose").attributes.transform, /rotate\(0\)/);
+});

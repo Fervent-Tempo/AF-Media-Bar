@@ -6,7 +6,7 @@
     "excited", "surprised", "suspicious", "angry", "drowsy", "happy", "curious", "confused", "bored", "proud",
     "shy", "sad", "laughing", "scared", "playful", "celebrate", "orbit", "radar", "progress", "spawning",
     "humming", "loading", "dictating", "writing", "sending", "receiving", "uploading", "notifying", "alerting",
-    "dragging", "bouncing", "powering-down"
+    "dragging", "bouncing", "powering-down", "music-quiet", "music-playing", "music-paused"
   ]);
   const tricks = Object.freeze(["emphasis", "hop", "spin", "spin-dizzy", "spin-wild", "particles"]);
   const clamp = (n, low = 0, high = 1) => Math.max(low, Math.min(high, n));
@@ -51,6 +51,9 @@
         p.particles = t > 0.55 && t < 1.8 ? (t - 0.55) / 1.25 : 0; break;
       }
       case "idle": p.y = wave(t, 7.4) * 0.35; p.x = wave(t, 20) * 0.25; p.turn = wave(t, 13) * 1.7; p.sy = 1 + wave(t, 7.4) * 0.006; break;
+      case "music-quiet": p.face = "soft"; p.turn = wave(t, 5.2) * 1.5; p.x = wave(t, 5.2) * 0.35; break;
+      case "music-playing": p.face = "soft"; p.turn = wave(t, 3.6) * 1.8; p.x = wave(t, 3.6) * 0.45; break;
+      case "music-paused": p.face = "neutral"; break;
       case "listening": p.turn = 8 + wave(t, 12) * 1.2; p.x = 0.5; p.y = -0.5 + bump(t % 2.8, 1.8, 0.4) * 1.2; break;
       case "thinking": { const pulse = Math.sin(t * 4.2 - 1.1); p.effect = "dots"; p.morph = 1; p.sx = p.sy = 0.86 + pulse * 0.08; p.y = -(1 + pulse) * 1.15; break; }
       case "searching": p.turn = wave(t, 4.5) * 12; p.x = wave(t, 4.5) * 1.8; p.gazeX = wave(t, 2.2) * 2.5; p.gazeY = wave(t, 3.4); break;

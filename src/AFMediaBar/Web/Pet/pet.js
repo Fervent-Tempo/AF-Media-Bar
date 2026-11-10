@@ -12,7 +12,7 @@
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const axis = (x = 0) => ({ x, v: 0 });
   const values = { eyeX: axis(), eyeY: axis(), x: axis(), y: axis(), turn: axis(), yaw: axis(),
-    sx: axis(1), sy: axis(1), lift: axis(), squash: axis(), morph: axis(), effect: axis(), lid: axis(1), fit: axis(1) };
+    sx: axis(1), sy: axis(1), lift: axis(), squash: axis(), morph: axis(), effect: axis(), lid: axis(1), headphone: axis(), fit: axis(1) };
   const eyes = [0, 1].map(() => [axis(6), axis(13), axis(), axis()]);
   const winks = [axis(1), axis(1)];
   let state = null, active = false, frame = 0, last = 0, natural = 0, nextFrameAt = 0;
@@ -68,12 +68,10 @@
     const changed = selected !== next;
     if (changed) { selected = next; age = 0; scheduleNatural(); }
     const p = motion.target(selected, looping ? age : 0);
-    if (selected === "listening") { p.x = Math.sin(age * 2.3) * 1.2; p.turn = Math.sin(age * 2.3) * 4; }
-    if (selected === "humming") { p.x = 0; p.y = Math.sin(age * 1.5) * 0.35; p.turn = Math.sin(age * 1.5) * 1.5; p.effect = null; }
-    if (selected === "excited") { p.x = Math.sin(age * 3) * 1.5; p.y = -Math.abs(Math.sin(age * 3)) * 0.7; p.turn = Math.sin(age * 3) * 5; p.sx = p.sy = 1; }
 
     const animatedPose = full && (looping || state.hovered);
     document.getElementById("outfit").setAttribute("opacity", (1 - clamp(p.morph * 1.8, 0, 1)) * Math.max(0, Math.cos(values.yaw.x * Math.PI / 180)));
+    const music = selected === "music-playing" || selected === "music-quiet";
     const beat = full ? clamp(Number(state.beat) || 0, 0, 1) : 0;
     const targets = {
       eyeX: state.gazeX + (looping ? p.gazeX * 0.2 : 0),
@@ -82,13 +80,14 @@
       turn: animatedPose ? p.turn + (state.hovered ? state.gazeX * 0.4 : 0) : 0,
       yaw: looping ? p.spinY : 0, sx: animatedPose ? p.sx : 1, sy: animatedPose ? p.sy : 1,
       lift: full && state.hovered ? 0.6 : 0, squash: full && now < pressUntil ? 1 : 0,
-      morph: p.morph, effect: p.effect ? (["humming", "notifying"].includes(p.effect) ? 1 : p.morph) : 0, lid: p.lid
+      morph: p.morph, effect: p.effect ? (["humming", "notifying"].includes(p.effect) ? 1 : p.morph) : 0, lid: p.lid, headphone: state.headphoneOff ? 1 : 0
     };
     document.getElementById("outfit-bars").setAttribute("transform", `translate(0 ${52 * (1 - (1 + beat * 0.25))}) scale(1 ${1 + beat * 0.25})`);
     targets.y += beat * 1.2;
     targets.sy -= beat * 0.035;
     targets.sx += beat * 0.025;
-    targets.turn += beat * 4;
+    targets.turn += music ? 0 : beat * 4;
+    if (music) targets.eyeY += beat * 1.1;
     targets.yaw = looping ? motion.unwrapTurn(turn, targets.yaw, values.yaw.x, changed || !wasLooping)
       : Math.round(values.yaw.x / 360) * 360;
     wasLooping = looping;
@@ -126,6 +125,9 @@
     gaze.setAttribute("transform", `translate(${clamp(v("eyeX"), -4.5, 4.5)} ${clamp(v("eyeY"), -3.5, 3.5)})`);
     gaze.setAttribute("opacity", 1 - clamp(v("morph") * 1.8, 0, 1));
     lids.setAttribute("transform", `translate(0 32) scale(1 ${opening * v("lid")}) translate(0 -32)`);
+    const off = clamp(v("headphone"), 0, 1);
+    document.getElementById("outfit-ear-right").setAttribute("transform", `translate(${off * 2} ${off * 8}) rotate(${-off * 14} 54 35)`);
+    document.getElementById("outfit-ear-hinge").setAttribute("d", `M54 27 Q${54 + off * 6} ${31 + off * 3} ${54 + off * 6} ${32 + off * 6}`);
     const amount = clamp(v("squash"), -0.2, 1.15);
     pose.setAttribute("transform", `translate(${32 + v("x")} ${34 + v("y") - v("lift")}) rotate(${v("turn")}) scale(${v("sx")} ${v("sy")}) translate(-32 -34)`);
     breath.setAttribute("transform", `translate(32 59) scale(${1 + amount * 0.025} ${1 - amount * 0.065}) translate(-32 -59)`);
