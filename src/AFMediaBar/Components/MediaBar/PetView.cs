@@ -33,6 +33,7 @@ public sealed class PetView : Grid, IDisposable
     private string? _interaction;
     private long _interactionUntil;
     private readonly PetStrokeGesture _stroke = new();
+    internal bool IsInteracting => Environment.TickCount64 < _interactionUntil;
     internal bool InputSuspended { get; set; }
     internal void SetAmbient(string? accent) { if (_accent == accent) return; _accent = accent; UpdateFallback(); SendState(); }
     internal void SetInteraction(string? interaction, int duration = 1200)

@@ -59,7 +59,8 @@ public static class ContextMenuHelper
     {
         if (sender is ContextMenu menu && e.ChangedButton == MouseButton.Left)
         {
-            menu.IsOpen = false;
+            var point = menu.PointToScreen(e.GetPosition(menu));
+            CloseIfOutside(menu, (int)point.X, (int)point.Y);
         }
     }
 
@@ -67,7 +68,7 @@ public static class ContextMenuHelper
     {
         for (var index = 0; index < owner.Items.Count; index++)
         {
-            if (owner.ItemContainerGenerator.ContainerFromIndex(index) is not MenuItem item)
+            if ((owner.Items[index] as MenuItem ?? owner.ItemContainerGenerator.ContainerFromIndex(index) as MenuItem) is not { } item)
             {
                 continue;
             }

@@ -31,21 +31,15 @@ internal sealed class PetSpeechBubble : IDisposable
         return true;
     }
     internal bool IsOpen => _popup.IsOpen;
-    private readonly TextBlock _text = new() { TextWrapping = TextWrapping.Wrap, MaxWidth = 280, FontSize = 13, Margin = new Thickness(0, 0, 8, 0) };
-    private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(6) };
+    private readonly TextBlock _text = new() { TextWrapping = TextWrapping.Wrap, MaxWidth = 280, FontSize = 13, Margin = new Thickness(0) };
+    private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(2) };
     private readonly Border _surface;
 
     internal PetSpeechBubble()
     {
-        var close = new Button { Content = "×", MinWidth = 28, MinHeight = 28, VerticalAlignment = VerticalAlignment.Top };
-        close.SetResourceReference(FrameworkElement.ToolTipProperty, "Loc.Widgets.Pet.Close");
-        System.Windows.Automation.AutomationProperties.SetName(close, Translations.Get("Widgets.Pet.Close"));
-        close.Click += (_, _) => Close();
         _details.SetResourceReference(ContentControl.ContentProperty, "Loc.Widgets.Pet.Details");
         _details.Click += (_, _) => { var action = _activation; Close(); action?.Invoke(); };
         var panel = new DockPanel();
-        DockPanel.SetDock(close, Dock.Right);
-        panel.Children.Add(close);
         DockPanel.SetDock(_details, Dock.Bottom);
         panel.Children.Add(_details);
         panel.Children.Add(_text);
@@ -54,8 +48,6 @@ internal sealed class PetSpeechBubble : IDisposable
         _surface.SetResourceReference(Border.BorderBrushProperty, "ControlStrokeColorDefaultBrush");
         _text.SetResourceReference(TextBlock.ForegroundProperty, "TextFillColorPrimaryBrush");
         _popup = new Popup { Child = _surface, AllowsTransparency = true, StaysOpen = true, Placement = PlacementMode.Top, VerticalOffset = -8 };
-        _surface.MouseEnter += (_, _) => { if (_activation is not null) _timer.Stop(); };
-        _surface.MouseLeave += (_, _) => { if (_popup.IsOpen && _activation is not null) _timer.Start(); };
         _surface.KeyDown += (_, args) => { if (args.Key == System.Windows.Input.Key.Escape) Close(); };
         _timer.Tick += OnTimeout;
         System.Windows.Automation.AutomationProperties.SetLiveSetting(_text, System.Windows.Automation.AutomationLiveSetting.Polite);
@@ -78,7 +70,7 @@ internal sealed class PetSpeechBubble : IDisposable
             _text.SetResourceReference(TextBlock.ForegroundProperty, "TextFillColorPrimaryBrush");
         }
         _statusKey = null;
-        _timer.Interval = TimeSpan.FromSeconds(activation is null ? 3 : 6);
+        _timer.Interval = TimeSpan.FromSeconds(2);
         _popup.PlacementTarget = anchor;
         _activation = activation;
         _details.Visibility = activation is null ? Visibility.Collapsed : Visibility.Visible;

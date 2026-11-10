@@ -103,23 +103,23 @@ internal static class PetPresentationChecks
 
             using (var bubble = new PetSpeechBubble())
             {
-                Assert.IsTrue(bubble.Show(surface, "三秒后收起"));
+                Assert.IsTrue(bubble.Show(surface, "两秒后收起"));
                 var bubbleSurface = (Border)typeof(PetSpeechBubble).GetField("_surface", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(bubble)!;
                 var bubbleTimer = (DispatcherTimer)typeof(PetSpeechBubble).GetField("_timer", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(bubble)!;
                 bubbleSurface.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, 0) { RoutedEvent = Mouse.MouseEnterEvent });
                 Assert.IsTrue(bubbleTimer.IsEnabled, "普通台词悬停不能停止计时。");
                 var frame = new DispatcherFrame();
-                var deadlineTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(3300) };
+                var deadlineTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(2300) };
                 deadlineTimer.Tick += (_, _) => { deadlineTimer.Stop(); frame.Continue = false; };
                 deadlineTimer.Start();
                 Dispatcher.PushFrame(frame);
-                Assert.IsFalse(bubble.IsOpen, "普通台词应在三秒后关闭。");
+                Assert.IsFalse(bubble.IsOpen, "普通台词应在两秒后关闭。");
                 Assert.IsTrue(bubble.ShowStatus(surface, "volume", "音量 36%"));
                 Assert.AreEqual(TimeSpan.FromSeconds(2), bubbleTimer.Interval);
                 bubble.Close();
                 Assert.IsTrue(bubble.Show(surface, "查看详情", activation: () => { }));
                 bubbleSurface.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, 0) { RoutedEvent = Mouse.MouseEnterEvent });
-                Assert.IsFalse(bubbleTimer.IsEnabled, "带详情通知保留悬停阅读。");
+                Assert.IsTrue(bubbleTimer.IsEnabled, "详情气泡悬停也不能停止计时。");
             }
 
             overflow.Topmost = false;

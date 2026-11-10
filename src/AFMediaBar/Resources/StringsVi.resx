@@ -3407,4 +3407,10 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Widgets.Pet.Menu.Settings" xml:space="preserve"><value>Cài đặt thú cưng</value></data>
   <data name="Widgets.Pet.Menu.LockColor" xml:space="preserve"><value>Khóa màu hiện tại</value></data>
   <data name="Widgets.Pet.Menu.FollowColor" xml:space="preserve"><value>Theo màu bìa album</value></data>
+  <data name="Widgets.Pet.Focus.Title" xml:space="preserve"><value>Tập trung ngắn</value></data>
+  <data name="Widgets.Pet.Focus.Minutes" xml:space="preserve"><value>{0} phút</value></data>
+  <data name="Widgets.Pet.Focus.Custom" xml:space="preserve"><value>Số phút tùy chọn (1–120)</value></data>
+  <data name="Widgets.Pet.Focus.Start" xml:space="preserve"><value>Bắt đầu</value></data>
+  <data name="Widgets.Pet.Focus.Cancel" xml:space="preserve"><value>Kết thúc tập trung</value></data>
+  <data name="Widgets.Pet.Focus.Remaining" xml:space="preserve"><value>Tập trung · còn {0}</value></data>
 </root>

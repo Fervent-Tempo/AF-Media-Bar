@@ -37,6 +37,34 @@ internal static class PetExperienceChecks
             using var voice = new PetVoiceService();
             var display = new Display();
             using var pet = new PetCompanionService(audio, display, voice);
+            var clock = new Clock();
+            using (var focus = new PetCompanionService(audio, display, voice, clock: clock))
+            {
+                var reminders = 0;
+                var idle = false;
+                var focusLease = focus.Subscribe((_, _) => { }, focusReminder: () => { if (!idle) return false; reminders++; return true; });
+                Assert.ThrowsException<ArgumentOutOfRangeException>(() => focus.StartFocus(0));
+                Assert.ThrowsException<ArgumentOutOfRangeException>(() => focus.StartFocus(121));
+                focus.StartFocus(25);
+                Assert.AreEqual(TimeSpan.FromMinutes(25), focus.FocusRemaining);
+                focus.StartFocus(10);
+                Assert.AreEqual(TimeSpan.FromMinutes(25), focus.FocusRemaining, "运行期间不能重开另一份计时。");
+                Assert.AreEqual(string.Empty, focus.Speak(), "专注点击不产生台词。");
+                focusLease.Dispose();
+                clock.Now += TimeSpan.FromMinutes(25);
+                focus.UpdateFocus();
+                Assert.IsFalse(focus.IsFocusActive);
+                Assert.AreEqual(0, reminders, "隐藏时不播放提醒。");
+                focusLease = focus.Subscribe((_, _) => { }, focusReminder: () => { reminders++; return true; });
+                display.Fullscreen = true; focus.UpdateFocus(); Assert.AreEqual(0, reminders);
+                display.Fullscreen = false; focus.UpdateFocus(); focus.UpdateFocus();
+                Assert.AreEqual(1, reminders, "回到可见时只提醒一次。");
+                focus.StartFocus(1); focus.CancelFocus(); clock.Now += TimeSpan.FromMinutes(2); focus.UpdateFocus();
+                Assert.AreEqual(1, reminders, "取消不应留下到期提醒。");
+                focus.StartFocus(1); focusLease.Dispose(); clock.Now += TimeSpan.FromMinutes(7); focus.UpdateFocus();
+                using var expiredLease = focus.Subscribe((_, _) => { }, focusReminder: () => { reminders++; return true; });
+                focus.UpdateFocus(); Assert.AreEqual(1, reminders, "过时提醒必须丢弃。");
+            }
             System.Windows.Media.Imaging.BitmapSource Cover(byte red, byte blue)
             {
                 var bitmap = System.Windows.Media.Imaging.BitmapSource.Create(1, 1, 96, 96, System.Windows.Media.PixelFormats.Bgra32, null, new byte[] { blue, 32, red, 255 }, 4);
@@ -113,5 +141,11 @@ internal static class PetExperienceChecks
         public DisplayMonitorInfo? ResolveFixedMonitor(string? deviceId) => null;
         public DisplayMonitorInfo? ResolveNotificationMonitor(NotificationTargetMode mode, string? fixedDeviceId) => null;
         public bool IsForegroundWindowFullscreen() => Fullscreen;
+    }
+
+    private sealed class Clock : TimeProvider
+    {
+        internal DateTimeOffset Now = DateTimeOffset.UtcNow;
+        public override DateTimeOffset GetUtcNow() => Now;
     }
 }

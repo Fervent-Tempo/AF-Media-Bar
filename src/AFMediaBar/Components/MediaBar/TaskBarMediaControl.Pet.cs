@@ -108,6 +108,42 @@ public partial class TaskBarMediaControl
             else { var s = SettingsManager.Current.PetComponent; SettingsManager.Current.PetComponent = s with { FollowArtworkColor = true }; }
         };
         menu.Items.Add(colorItem);
+        var focus = new MenuItem { Icon = new SymbolIcon(SymbolRegular.Timer24), IsEnabled = _petCompanion is not null };
+        var cancelFocus = new MenuItem { Header = Translations.Get("Widgets.Pet.Focus.Cancel") };
+        cancelFocus.Click += (_, _) => { menu.IsOpen = false; _petCompanion?.CancelFocus(); };
+        foreach (var minutes in new[] { 10, 25, 45 })
+        {
+            var preset = new MenuItem { Header = Translations.Format("Widgets.Pet.Focus.Minutes", minutes) };
+            preset.Click += (_, _) => { menu.IsOpen = false; _petCompanion?.StartFocus(minutes); };
+            focus.Items.Add(preset);
+        }
+        focus.Items.Add(new Separator());
+        var customPanel = new StackPanel { Margin = new Thickness(4) };
+        customPanel.Children.Add(new System.Windows.Controls.TextBlock { Text = Translations.Get("Widgets.Pet.Focus.Custom"), Margin = new Thickness(0, 0, 0, 6) });
+        var customRow = new StackPanel { Orientation = Orientation.Horizontal };
+        var minutesInput = new NumberBox { Minimum = 1, Maximum = 120, Value = 25, Width = 120 };
+        System.Windows.Automation.AutomationProperties.SetName(minutesInput, Translations.Get("Widgets.Pet.Focus.Custom"));
+        var startFocus = new Wpf.Ui.Controls.Button { Content = Translations.Get("Widgets.Pet.Focus.Start"), Margin = new Thickness(6, 0, 0, 0) };
+        startFocus.Click += (_, args) =>
+        {
+            var value = minutesInput.Value;
+            if (value is null || !double.IsFinite(value.Value) || value < 1 || value > 120 || value != Math.Truncate(value.Value)) return;
+            args.Handled = true; menu.IsOpen = false; _petCompanion?.StartFocus((int)value.Value);
+        };
+        customRow.Children.Add(minutesInput); customRow.Children.Add(startFocus); customPanel.Children.Add(customRow);
+        var customItem = new MenuItem { Header = customPanel, StaysOpenOnClick = true, Focusable = false };
+        focus.Items.Add(customItem);
+        focus.Items.Add(cancelFocus);
+        void RefreshFocus()
+        {
+            var running = _petCompanion?.IsFocusActive == true;
+            var remaining = _petCompanion?.FocusRemaining ?? TimeSpan.Zero;
+            focus.Header = running ? Translations.Format("Widgets.Pet.Focus.Remaining", $"{(int)remaining.TotalMinutes:00}:{remaining.Seconds:00}") : Translations.Get("Widgets.Pet.Focus.Title");
+            foreach (var item in focus.Items.OfType<FrameworkElement>()) item.Visibility = ReferenceEquals(item, cancelFocus) == running ? Visibility.Visible : Visibility.Collapsed;
+        }
+        RefreshFocus();
+        if (_petCompanion is not null) _petCompanion.FocusChanged += RefreshFocus;
+        menu.Items.Add(focus);
         Add("Settings", SymbolRegular.Settings24, () => PetSettingsRequested?.Invoke(this, EventArgs.Empty));
         menu.PreviewKeyDown += (_, args) =>
         {
@@ -124,7 +160,7 @@ public partial class TaskBarMediaControl
         };
         menu.Closed += (_, _) =>
         {
-            if (_petCompanion is not null) _petCompanion.ArtworkColorChanged -= RefreshColorItem;
+            if (_petCompanion is not null) { _petCompanion.ArtworkColorChanged -= RefreshColorItem; _petCompanion.FocusChanged -= RefreshFocus; }
             if (!ReferenceEquals(_petMenu, menu)) return;
             _petMenuDismissedPress = _petInput?.LastButtonPressTicks ?? 0;
             _petPressPoint = null;
@@ -225,7 +261,12 @@ public partial class TaskBarMediaControl
             TaskbarPet.SetPresentation(active, visible);
         }
         if (active && _petCompanion is not null)
-            _petContextLease ??= _petCompanion.Subscribe((animation, beat) => { ActivePet.SetAmbient(_petCompanion.ArtworkColor); ActivePet.SetContext(animation, beat); }, (text, activation) => _petBubble.Show(ActivePet, text, false, activation));
+            _petContextLease ??= _petCompanion.Subscribe((animation, beat) => { ActivePet.SetAmbient(_petCompanion.ArtworkColor); ActivePet.SetContext(animation, beat); }, (text, activation) => _petBubble.Show(ActivePet, text, false, activation), () =>
+            {
+                if (!ActivePet.IsVisible || IsPetBubbleOpen || ActivePet.IsInteracting) return false;
+                ActivePet.SetInteraction("waking", 2000);
+                return true;
+            });
         if (active && _petCompanion is not null)
             _petStatusLease ??= _petCompanion.SubscribeStatus((key, text) => _petMenu?.IsOpen != true && _petBubble.ShowStatus(ActivePet, key, text));
         if (active && _petInput is not null)
@@ -313,6 +354,7 @@ public partial class TaskBarMediaControl
 
     private void SpeakPet()
     {
+        if (_petCompanion?.IsFocusActive == true) { ActivePet.SetInteraction("happy", 800); return; }
         if (_petCompanion is not null) _petBubble.Show(ActivePet, _petCompanion.Speak());
     }
 

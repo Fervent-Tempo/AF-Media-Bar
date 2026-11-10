@@ -3369,4 +3369,10 @@
   <data name="Widgets.Pet.Menu.Settings" xml:space="preserve"><value>小寵物設定</value></data>
   <data name="Widgets.Pet.Menu.LockColor" xml:space="preserve"><value>鎖定目前配色</value></data>
   <data name="Widgets.Pet.Menu.FollowColor" xml:space="preserve"><value>跟隨專輯配色</value></data>
+  <data name="Widgets.Pet.Focus.Title" xml:space="preserve"><value>短時專注</value></data>
+  <data name="Widgets.Pet.Focus.Minutes" xml:space="preserve"><value>{0} 分鐘</value></data>
+  <data name="Widgets.Pet.Focus.Custom" xml:space="preserve"><value>自訂分鐘（1—120）</value></data>
+  <data name="Widgets.Pet.Focus.Start" xml:space="preserve"><value>開始</value></data>
+  <data name="Widgets.Pet.Focus.Cancel" xml:space="preserve"><value>結束專注</value></data>
+  <data name="Widgets.Pet.Focus.Remaining" xml:space="preserve"><value>專注 · 剩餘 {0}</value></data>
 </root>

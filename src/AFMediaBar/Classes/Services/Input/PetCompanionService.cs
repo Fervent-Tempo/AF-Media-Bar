@@ -1,4 +1,4 @@
-// 应用容器拥有状态协调与按需频谱采样；最后一个呈现租约释放后停止计时。
+// 应用容器拥有宠物协调与按需频谱采样；无可见宿主时仅为专注保留低频计时。
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -14,6 +14,66 @@ namespace AFMediaBar.Classes.Services;
 /// <summary>将播放状态和共享频谱变成宠物的呈现输入。</summary>
 public sealed class PetCompanionService : IDisposable
 {
+    private readonly TimeProvider _clock;
+    private DateTimeOffset? _focusDeadline, _focusReminderUntil;
+    private int _focusSeconds = -1;
+    private readonly List<Func<bool>> _focusReminders = [];
+    public bool IsFocusActive => _focusDeadline is not null;
+    public TimeSpan FocusRemaining => _focusDeadline is { } end ? TimeSpan.FromSeconds(Math.Max(0, Math.Ceiling((end - _clock.GetUtcNow()).TotalSeconds))) : TimeSpan.Zero;
+    public event Action? FocusChanged;
+
+    public void StartFocus(int minutes)
+    {
+        _dispatcher.VerifyAccess();
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (minutes is < 1 or > 120) throw new ArgumentOutOfRangeException(nameof(minutes));
+        if (IsFocusActive) return;
+        _focusDeadline = _clock.GetUtcNow().AddMinutes(minutes);
+        _focusReminderUntil = null;
+        _pendingStatus = null;
+        _voice.Stop();
+        RefreshTimer();
+        UpdateFocus();
+    }
+
+    public void CancelFocus()
+    {
+        _dispatcher.VerifyAccess();
+        if (_disposed) return;
+        _focusDeadline = _focusReminderUntil = null;
+        _focusSeconds = -1;
+        FocusChanged?.Invoke();
+        RefreshTimer();
+    }
+
+    internal void UpdateFocus()
+    {
+        if (_disposed) return;
+        var now = _clock.GetUtcNow();
+        if (_focusDeadline is { } end && now >= end)
+        {
+            _focusDeadline = null;
+            _focusReminderUntil = end.AddMinutes(5);
+        }
+        var seconds = IsFocusActive ? (int)FocusRemaining.TotalSeconds : -1;
+        if (_focusSeconds != seconds) { _focusSeconds = seconds; FocusChanged?.Invoke(); }
+        if (_focusReminderUntil is { } expiry)
+        {
+            if (now >= expiry) _focusReminderUntil = null;
+            else if (!_display.IsForegroundWindowFullscreen())
+                foreach (var remind in _focusReminders.ToArray())
+                    if (remind()) { _focusReminderUntil = null; break; }
+        }
+        RefreshTimer();
+    }
+
+    private void RefreshTimer()
+    {
+        if (_disposed) return;
+        _timer.Interval = TimeSpan.FromMilliseconds(_views.Count == 0 ? 1000 : 50);
+        if (_views.Count > 0 || IsFocusActive || _focusReminderUntil is not null) _timer.Start();
+        else _timer.Stop();
+    }
     private readonly PetVoiceService _voice;
     private readonly ApplicationAudioControlCoordinator? _controls;
     private readonly AudioDeviceService? _devices;
@@ -65,7 +125,7 @@ public sealed class PetCompanionService : IDisposable
     }
     private void ShowStatus(string key, string text)
     {
-        if (_disposed || _statusViews.Count == 0 || !SettingsManager.Current.PetComponent.AudioStatusEnabled || _display.IsForegroundWindowFullscreen()) return;
+        if (_disposed || IsFocusActive || _statusViews.Count == 0 || !SettingsManager.Current.PetComponent.AudioStatusEnabled || _display.IsForegroundWindowFullscreen()) return;
         var now = Environment.TickCount64;
         if (now - _statusAt < 200) { _pendingStatus = (key, text); return; }
         _pendingStatus = null;
@@ -149,6 +209,7 @@ public sealed class PetCompanionService : IDisposable
         _reactionAnimation = "happy";
         _reactionUntil = Environment.TickCount64 + 1800;
         Publish();
+        if (IsFocusActive) return string.Empty;
         var text = NextPhrase();
         _voice.Play(text);
         return text;
@@ -183,8 +244,9 @@ public sealed class PetCompanionService : IDisposable
     private double _beat;
     private long _lastBeat;
 
-    public PetCompanionService(AudioMonitorService audio, IDisplayMonitorService display, PetVoiceService voice, ApplicationAudioControlCoordinator? controls = null, AudioDeviceService? devices = null, ApplicationVolumeService? volumes = null)
+    public PetCompanionService(AudioMonitorService audio, IDisplayMonitorService display, PetVoiceService voice, ApplicationAudioControlCoordinator? controls = null, AudioDeviceService? devices = null, ApplicationVolumeService? volumes = null, TimeProvider? clock = null)
     {
+        _clock = clock ?? TimeProvider.System;
         _dispatcher = Application.Current.Dispatcher;
         _voice = voice;
         _controls = controls;
@@ -211,15 +273,17 @@ public sealed class PetCompanionService : IDisposable
         UpdateArtwork(snapshot.Artwork);
     }
 
-    public IDisposable Subscribe(Action<string, double> view, Func<string, Action?, bool>? message = null)
+    public IDisposable Subscribe(Action<string, double> view, Func<string, Action?, bool>? message = null, Func<bool>? focusReminder = null)
     {
         _dispatcher.VerifyAccess();
         ObjectDisposedException.ThrowIf(_disposed, this);
         _views.Add(view);
         if (message is not null) _messages.Add(message);
+        if (focusReminder is not null) _focusReminders.Add(focusReminder);
         if (!_timer.IsEnabled) { _generation++; _timer.Start(); }
+        RefreshTimer();
         Publish();
-        return new Lease(this, view, message);
+        return new Lease(this, view, message, focusReminder);
     }
 
     private void Publish()
@@ -236,7 +300,9 @@ public sealed class PetCompanionService : IDisposable
 
     private async void OnTick(object? sender, EventArgs args)
     {
+        UpdateFocus();
         if (_disposed || _pending) return;
+        if (_views.Count == 0) return;
         var generation = _generation;
         var settings = SettingsManager.Current.PetComponent.Normalize();
         _beat = _beat < 0.005 ? 0 : _beat * 0.68;
@@ -264,7 +330,7 @@ public sealed class PetCompanionService : IDisposable
         if (!_disposed && generation == _generation) Publish();
     }
 
-    private sealed class Lease(PetCompanionService owner, Action<string, double> view, Func<string, Action?, bool>? message) : IDisposable
+    private sealed class Lease(PetCompanionService owner, Action<string, double> view, Func<string, Action?, bool>? message, Func<bool>? focusReminder) : IDisposable
     {
         private bool _released;
         public void Dispose()
@@ -273,7 +339,9 @@ public sealed class PetCompanionService : IDisposable
             _released = true;
             owner._views.Remove(view);
             if (message is not null) owner._messages.Remove(message);
-            if (owner._views.Count == 0) { owner._generation++; owner._timer.Stop(); owner._voice.Stop(); owner._pendingStatus = null; owner._beat = owner._average = 0; }
+            if (focusReminder is not null) owner._focusReminders.Remove(focusReminder);
+            if (owner._views.Count == 0) { owner._generation++; owner._voice.Stop(); owner._pendingStatus = null; owner._beat = owner._average = 0; }
+            owner.RefreshTimer();
         }
     }
 
@@ -281,6 +349,9 @@ public sealed class PetCompanionService : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        _focusDeadline = _focusReminderUntil = null;
+        _focusReminders.Clear();
+        FocusChanged = null;
         _artworkVersion++;
         if (_controls is not null) _controls.Completed -= AudioCompleted;
         if (_devices is not null) _devices.Changed -= DevicesChanged;

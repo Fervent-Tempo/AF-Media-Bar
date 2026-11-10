@@ -43,6 +43,7 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
     {
         _petDemoTimer.Stop();
         PetPreview.SetContext("happy", 0);
+        if (_companion?.IsFocusActive == true) return;
         var text = _companion?.NextPhrase() ?? AFMediaBar.Resources.Translations.Get("Widgets.Pet.Line.Idle.0");
         _petBubble.Show(PetPreview, text);
         _petVoice?.Play(text);
@@ -53,7 +54,11 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
         PetPreview.SetContext("notifying", 0);
         _petBubble.Show(PetPreview, AFMediaBar.Resources.Translations.Get("Widgets.Pet.Demo.Message"));
     }
-    private void PetDemoVoice(object sender, RoutedEventArgs args) => _petVoice?.Play(_companion?.NextPhrase() ?? AFMediaBar.Resources.Translations.Get("Widgets.Pet.Line.Idle.0"), true);
+    private void PetDemoVoice(object sender, RoutedEventArgs args)
+    {
+        if (_companion?.IsFocusActive == true) { PetPreview.SetInteraction("happy", 800); return; }
+        _petVoice?.Play(_companion?.NextPhrase() ?? AFMediaBar.Resources.Translations.Get("Widgets.Pet.Line.Idle.0"), true);
+    }
 
     public WidgetsSettingsPage(WidgetsSettingsViewModel viewModel, PetWebEnvironment? petEnvironment = null, PetVoiceService? petVoice = null, PetCompanionService? companion = null)
     {
