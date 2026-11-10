@@ -35,6 +35,15 @@ public sealed class PetCompanionService : IDisposable
     private int _artworkVersion, _deviceVersion;
     private string? _artworkColor, _deviceName;
     public string? ArtworkColor => _artworkColor;
+    public bool IsArtworkColorPending { get; private set; }
+    public bool CanFixOutfitColor => !IsArtworkColorPending;
+    public void FixOutfitColor()
+    {
+        if (_disposed || !CanFixOutfitColor) return;
+        var settings = SettingsManager.Current.PetComponent;
+        var color = (settings.FollowArtworkColor ? ArtworkColor : null) ?? settings.OutfitColorHex ?? ColorHex.Format(SystemParameters.WindowGlassColor);
+        SettingsManager.Current.PetComponent = settings with { OutfitColorHex = color, FollowArtworkColor = false };
+    }
     private string _musicAnimation = "music-quiet", _candidate = "music-quiet";
     private long _candidateSince, _statusAt;
     private (string Key, string Text)? _pendingStatus;
@@ -86,7 +95,8 @@ public sealed class PetCompanionService : IDisposable
         if (ReferenceEquals(_artwork, artwork)) return;
         _artwork = artwork;
         var version = ++_artworkVersion;
-        _artworkColor = null;
+        IsArtworkColorPending = artwork is BitmapSource { IsFrozen: true };
+        if (!IsArtworkColorPending) _artworkColor = null;
         ArtworkColorChanged?.Invoke();
         if (artwork is not BitmapSource bitmap || !bitmap.IsFrozen) return;
         try
@@ -100,9 +110,13 @@ public sealed class PetCompanionService : IDisposable
                 var colors = DominantColorCalculator.Calculate(bytes, sample.PixelWidth, sample.PixelHeight, 1);
                 return colors.Count == 0 ? null : ColorHex.Format(colors[0]);
             });
-            if (!_disposed && version == _artworkVersion) { _artworkColor = color; ArtworkColorChanged?.Invoke(); }
+            if (!_disposed && version == _artworkVersion) { IsArtworkColorPending = false; _artworkColor = color; ArtworkColorChanged?.Invoke(); }
         }
-        catch (Exception error) { AppLogService.Current?.Warn("Pet", error.Message); }
+        catch (Exception error)
+        {
+            if (!_disposed && version == _artworkVersion) { IsArtworkColorPending = false; _artworkColor = null; ArtworkColorChanged?.Invoke(); }
+            AppLogService.Current?.Warn("Pet", error.Message);
+        }
     }
     private readonly AudioMonitorService _audio;
     private readonly List<Func<string, Action?, bool>> _messages = [];

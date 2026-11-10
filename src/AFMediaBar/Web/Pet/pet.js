@@ -12,7 +12,7 @@
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const axis = (x = 0) => ({ x, v: 0 });
   const values = { eyeX: axis(), eyeY: axis(), x: axis(), y: axis(), turn: axis(), yaw: axis(),
-    sx: axis(1), sy: axis(1), lift: axis(), squash: axis(), morph: axis(), effect: axis(), lid: axis(1), headphone: axis(), fit: axis(1) };
+    sx: axis(1), sy: axis(1), lift: axis(), squash: axis(), morph: axis(), effect: axis(), lid: axis(1), fit: axis(1) };
   const eyes = [0, 1].map(() => [axis(6), axis(13), axis(), axis()]);
   const winks = [axis(1), axis(1)];
   let state = null, active = false, frame = 0, last = 0, natural = 0, nextFrameAt = 0;
@@ -80,7 +80,7 @@
       turn: animatedPose ? p.turn + (state.hovered ? state.gazeX * 0.4 : 0) : 0,
       yaw: looping ? p.spinY : 0, sx: animatedPose ? p.sx : 1, sy: animatedPose ? p.sy : 1,
       lift: full && state.hovered ? 0.6 : 0, squash: full && now < pressUntil ? 1 : 0,
-      morph: p.morph, effect: p.effect ? (["humming", "notifying"].includes(p.effect) ? 1 : p.morph) : 0, lid: p.lid, headphone: state.headphoneOff ? 1 : 0
+      morph: p.morph, effect: p.effect ? (["humming", "notifying"].includes(p.effect) ? 1 : p.morph) : 0, lid: p.lid
     };
     document.getElementById("outfit-bars").setAttribute("transform", `translate(0 ${52 * (1 - (1 + beat * 0.25))}) scale(1 ${1 + beat * 0.25})`);
     targets.y += beat * 1.2;
@@ -125,9 +125,6 @@
     gaze.setAttribute("transform", `translate(${clamp(v("eyeX"), -4.5, 4.5)} ${clamp(v("eyeY"), -3.5, 3.5)})`);
     gaze.setAttribute("opacity", 1 - clamp(v("morph") * 1.8, 0, 1));
     lids.setAttribute("transform", `translate(0 32) scale(1 ${opening * v("lid")}) translate(0 -32)`);
-    const off = clamp(v("headphone"), 0, 1);
-    document.getElementById("outfit-ear-right").setAttribute("transform", `translate(0 ${off * 8}) rotate(${off * 10} 54 35)`);
-    document.getElementById("outfit-ear-hinge").setAttribute("d", `M54 27 Q${54 + off * 6} ${31 + off * 3} ${54 + off * 6} ${32 + off * 6}`);
     const amount = clamp(v("squash"), -0.2, 1.15);
     pose.setAttribute("transform", `translate(${32 + v("x")} ${34 + v("y") - v("lift")}) rotate(${v("turn")}) scale(${v("sx")} ${v("sy")}) translate(-32 -34)`);
     breath.setAttribute("transform", `translate(32 59) scale(${1 + amount * 0.025} ${1 - amount * 0.065}) translate(-32 -59)`);
@@ -168,12 +165,11 @@
     body.setAttribute("fill", state.bodyColor);
     const outfit = document.getElementById("outfit");
     const accent = state.highContrast ? state.eyeColor : state.accent || state.eyeColor;
-    outfit.style.transition = state.highContrast || state.motion !== 0 ? "none" : "color 400ms, stroke 400ms";
+    outfit.style.transition = state.highContrast || state.motion !== 0 ? "none" : "color 1200ms";
     outfit.style.color = accent;
-    outfit.setAttribute("color", accent);
-    outfit.setAttribute("stroke", accent);
+    outfit.setAttribute("stroke", "currentColor");
     const rgb = parseInt(accent.slice(1), 16);
-    outfit.setAttribute("style", "--pet-ink:" + (((rgb >> 16) * 299 + ((rgb >> 8) & 255) * 587 + (rgb & 255) * 114 > 140000) ? "#18232c" : "#fff"));
+    outfit.style.setProperty("--pet-ink", (((rgb >> 16) * 299 + ((rgb >> 8) & 255) * 587 + (rgb & 255) * 114 > 140000) ? "#18232c" : "#fff"));
     for (const id of ["headphones", "badge", "spectrum"])
       document.getElementById("outfit-" + id).style.display = state.outfit === id ? "" : "none";
     body.setAttribute("stroke", state.highContrast ? state.eyeColor : "#161B26");

@@ -41,6 +41,7 @@ internal sealed class PetOverflowHost : IDisposable
         surface.MouseLeave += (_, _) => _pet.SetHovered(false);
         surface.MouseLeftButtonDown += (_, args) =>
         {
+            if (DismissMenuPointer?.Invoke() == true) { args.Handled = true; return; }
             _pet.Press();
             _pressPoint = surface.PointToScreen(args.GetPosition(surface));
             _pressBounds = _lastBounds;
@@ -112,6 +113,7 @@ internal sealed class PetOverflowHost : IDisposable
     internal event Action? Moved;
     internal event Action? Activated;
     internal event Action? MenuRequested;
+    internal Func<bool>? DismissMenuPointer { get; set; }
     internal PetView View => _pet;
     internal bool IsVisible => _visible && !_disposed;
 

@@ -184,7 +184,7 @@
                                     </StackPanel>
                                 </components:SettingsRow>
                                 <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.ArtworkColor}"><ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.PetFollowArtworkColor, Mode=TwoWay}"/></components:SettingsRow>
-                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.FixColor}"><ui:Button Content="{DynamicResource Loc.Widgets.Pet.FixColor}" Command="{Binding ViewModel.Components.FixPetOutfitColorCommand}" Style="{StaticResource AfSettingsButtonStyle}"/></components:SettingsRow>
+                                <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.FixColor}"><ui:Button Content="{DynamicResource Loc.Widgets.Pet.FixColor}" Command="{Binding ViewModel.Components.FixPetOutfitColorCommand}" IsEnabled="{Binding ViewModel.Components.CanFixPetOutfitColor}" Style="{StaticResource AfSettingsButtonStyle}"/></components:SettingsRow>
                                 <components:SettingsRow Title="{DynamicResource Loc.Widgets.Pet.OutfitColor}" Description="{Binding ViewModel.Components.PetOutfitColorStatus}" Icon="{ui:SymbolIcon Color24}">
                                     <StackPanel>
                                         <WrapPanel Margin="0,0,0,8">

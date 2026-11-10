@@ -11,6 +11,14 @@ internal static class PetExperienceChecks
 {
     internal static void Verify()
     {
+        foreach (var floating in new[] { false, true })
+        {
+            var dock = floating ? "DockBar" : "Dock";
+            var inline = floating ? "InlineBar" : "Inline";
+            CollectionAssert.AreEqual(new[] { dock, "Free" }, AFMediaBar.Components.TaskBarMediaControl.PetPlacementChoices(new() { AllowOverflow = false }, floating).Select(c => c.Key).ToArray());
+            CollectionAssert.AreEqual(new[] { inline, "Free" }, AFMediaBar.Components.TaskBarMediaControl.PetPlacementChoices(new() { AllowOverflow = true }, floating).Select(c => c.Key).ToArray());
+            CollectionAssert.AreEqual(new[] { dock, inline }, AFMediaBar.Components.TaskBarMediaControl.PetPlacementChoices(new() { AllowOverflow = true, FreePlacement = true }, floating).Select(c => c.Key).ToArray());
+        }
         var stroke = new AFMediaBar.Components.PetStrokeGesture();
         Assert.IsFalse(stroke.Move(4, 48, 0));
         Assert.IsFalse(stroke.Move(32, 48, 100));
@@ -29,6 +37,26 @@ internal static class PetExperienceChecks
             using var voice = new PetVoiceService();
             var display = new Display();
             using var pet = new PetCompanionService(audio, display, voice);
+            System.Windows.Media.Imaging.BitmapSource Cover(byte red, byte blue)
+            {
+                var bitmap = System.Windows.Media.Imaging.BitmapSource.Create(1, 1, 96, 96, System.Windows.Media.PixelFormats.Bgra32, null, new byte[] { blue, 32, red, 255 }, 4);
+                bitmap.Freeze(); return bitmap;
+            }
+            pet.UpdateSnapshot(MediaSnapshot.Disconnected with { Artwork = Cover(180, 20) });
+            Assert.IsFalse(pet.CanFixOutfitColor, "计算中不能锁住旧封面色。");
+            pet.UpdateSnapshot(MediaSnapshot.Disconnected with { Artwork = Cover(20, 180) });
+            var colorFrame = new System.Windows.Threading.DispatcherFrame();
+            var colorWait = System.Diagnostics.Stopwatch.StartNew();
+            var colorTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(20) };
+            colorTimer.Tick += (_, _) => { if (!pet.IsArtworkColorPending || colorWait.ElapsedMilliseconds > 3000) { colorTimer.Stop(); colorFrame.Continue = false; } };
+            colorTimer.Start(); System.Windows.Threading.Dispatcher.PushFrame(colorFrame);
+            Assert.IsTrue(AFMediaBar.Classes.Utils.ColorHex.TryParse(pet.ArtworkColor, out var latestColor) && latestColor.B > latestColor.R * 2, "快速换封面只应用最新蓝色结果。");
+            SettingsManager.Current.PetComponent = SettingsManager.Current.PetComponent with { FollowArtworkColor = true };
+            pet.FixOutfitColor();
+            Assert.IsFalse(SettingsManager.Current.PetComponent.FollowArtworkColor);
+            Assert.AreEqual(pet.ArtworkColor, SettingsManager.Current.PetComponent.OutfitColorHex);
+            pet.UpdateSnapshot(MediaSnapshot.Disconnected);
+            Assert.IsNull(pet.ArtworkColor, "无封面应回退自定义色。");
             Assert.IsFalse(pet.TryNotify("title", "body"), "无可见宿主必须回退。");
             string? animation = null;
             var accept = false;

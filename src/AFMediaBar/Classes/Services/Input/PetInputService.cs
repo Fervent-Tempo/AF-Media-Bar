@@ -7,7 +7,7 @@ using System.Windows.Threading;
 namespace AFMediaBar.Classes.Services;
 
 /// <summary>宠物的一次输入：物理屏幕坐标，以及是否需要眨眼。</summary>
-public readonly record struct PetInputSnapshot(Point ScreenPosition, bool Blink);
+public readonly record struct PetInputSnapshot(Point ScreenPosition, bool Blink, long ObservedAtTicks = 0);
 
 /// <summary>按可见宠物的租约共享全局输入，不拦截系统鼠标操作。</summary>
 public sealed class PetInputService : IDisposable
@@ -38,6 +38,7 @@ public sealed class PetInputService : IDisposable
     }
 
     internal bool IsSampling => _timer.IsEnabled;
+    internal long LastButtonPressTicks => _mouse?.LastButtonPressTicks ?? 0;
 
     /// <summary>取得 UI 线程租约；首次通知为当前指针，不重放此前的点击。</summary>
     public IDisposable Subscribe(Action<PetInputSnapshot> receive)
@@ -87,7 +88,7 @@ public sealed class PetInputService : IDisposable
         {
             // Hook 事件可能在 UI 队列里跨过隐藏、重建和重新订阅，不能给新租约补播旧点击。
             if (observedAtTicks >= lease.ActivatedAtTicks)
-                lease.Publish(new PetInputSnapshot(position, true));
+                lease.Publish(new PetInputSnapshot(position, true, observedAtTicks));
         }
     }
 

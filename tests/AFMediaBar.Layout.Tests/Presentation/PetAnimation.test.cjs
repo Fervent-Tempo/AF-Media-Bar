@@ -10,7 +10,7 @@ const script = ["geometry.js", "motion.js", "effects.js", "pet.js"].map(source).
 function page() {
   let time = 0, serial = 0, receiver;
   const frames = new Map(), timers = new Map(), nodes = new Map();
-  const make = () => ({ attributes: {}, style: {}, setAttribute(key, value) { this.attributes[key] = value; }, getAttribute(key) { return this.attributes[key]; }, children: [] });
+  const make = () => ({ attributes: {}, style: { setProperty(key,value) { this[key] = value; } }, setAttribute(key, value) { this.attributes[key] = value; }, getAttribute(key) { return this.attributes[key]; }, children: [] });
   for (const match of source("index.html").matchAll(/id="([^"]+)"/g)) nodes.set(match[1], make());
   for (let n = 0; n < 16; n++) nodes.set("particle-" + n, make());
   const contour = fs.readFileSync(path.join(__dirname, "../../../src/AFMediaBar/Components/MediaBar/PetVisualDefinition.cs"), "utf8").match(/BodyPath = "([^"]+)"/)[1];
@@ -207,7 +207,7 @@ test("outfit exists once outside gaze and eyelids", () => {
 });
 
 
-test("music poses never spin, beats nod, and pause lowers only the right ear cup", () => {
+test("music poses never spin, beats nod, and pause keeps headphones fixed", () => {
   const p = page();
   for (const animation of ["music-quiet", "music-playing", "music-paused"]) {
     p.receive({ animation, outfit: "headphones", headphoneOff: animation === "music-paused", beat: 0 }, true);
@@ -220,7 +220,7 @@ test("music poses never spin, beats nod, and pause lowers only the right ear cup
     }
     assert.equal(p.document.documentElement.attributes["data-animation"], animation);
     const ear = p.nodes.get("outfit-ear-right").attributes.transform;
-    assert.match(ear, animation === "music-paused" ? /translate\(0 8\)/ : /translate\(0 0\)/);
+    assert.equal(ear, undefined);
   }
   p.receive({ animation: "music-playing", headphoneOff: false });
   p.advance(1500);
@@ -229,6 +229,20 @@ test("music poses never spin, beats nod, and pause lowers only the right ear cup
   assert.notEqual(p.nodes.get("pose").attributes.transform, resting);
   p.receive({ motion: 1, headphoneOff: true, animation: "music-paused", beat: 0 });
   p.advance(32);
-  assert.match(p.nodes.get("outfit-ear-right").attributes.transform, /translate\(0 8\)/);
+  assert.equal(p.nodes.get("outfit-ear-right").attributes.transform, undefined);
   assert.match(p.nodes.get("pose").attributes.transform, /rotate\(0\)/);
+});
+
+test("outfit color transition survives frequent state messages", () => {
+  const p = page();
+  p.receive({ animation: "music-quiet", accent: "#A04050" }, true);
+  for (let n = 0; n < 20; n++) { p.receive({ beat: n / 20 }); p.advance(50); }
+  const outfit = p.nodes.get("outfit");
+  assert.equal(outfit.style.transition, "color 1200ms");
+  assert.equal(outfit.style.color, "#A04050");
+  assert.equal(outfit.attributes.stroke, "currentColor");
+  assert.equal(outfit.attributes.style, undefined, "整段样式不能覆盖过渡");
+  p.receive({ accent: "#206080", motion: 1 });
+  assert.equal(outfit.style.transition, "none");
+  assert.equal(outfit.style.color, "#206080");
 });

@@ -29,14 +29,6 @@ public sealed class PetView : Grid, IDisposable
     private PetWebState? _lastState;
     private string? _contextAnimation;
     private double _beat;
-    private bool _headphoneOff;
-    internal void SetPlayback(bool paused)
-    {
-        if (_headphoneOff == paused) return;
-        _headphoneOff = paused;
-        UpdateFallback();
-        SendState();
-    }
     private string? _accent;
     private string? _interaction;
     private long _interactionUntil;
@@ -194,7 +186,7 @@ public sealed class PetView : Grid, IDisposable
     {
         if (_disposed || _ready) return;
         var accent = (_settings.FollowArtworkColor ? _accent : null) ?? _settings.OutfitColorHex ?? AFMediaBar.Classes.Utils.ColorHex.Format(SystemParameters.WindowGlassColor);
-        _fallback.SetContext(Environment.TickCount64 < _interactionUntil ? _interaction ?? "idle" : _contextAnimation ?? "idle", _beat, _settings.Outfit, accent, _headphoneOff && _settings.FollowPlayback);
+        _fallback.SetContext(Environment.TickCount64 < _interactionUntil ? _interaction ?? "idle" : _contextAnimation ?? "idle", _beat, _settings.Outfit, accent);
     }
 
     private void SendState()
@@ -206,7 +198,7 @@ public sealed class PetView : Grid, IDisposable
         var state = new PetWebState(_gaze.X, _gaze.Y, _hovered, _blinkSequence, _pressSequence,
             colors.Body, colors.Eyes, colors.HighContrast, _settings.IdleAnimationsEnabled,
             MotionPolicy.ResolveCurrent().Mode, _active, interaction ?? (_settings.Animation == "auto" && _settings.FollowPlayback ? _contextAnimation ?? "idle" : _settings.Animation), _settings.Animation == "auto" ? _beat : 0, _settings.Outfit,
-            SystemParameters.HighContrast ? colors.Eyes : (_settings.FollowArtworkColor ? _accent : null) ?? _settings.OutfitColorHex ?? AFMediaBar.Classes.Utils.ColorHex.Format(SystemParameters.WindowGlassColor), _headphoneOff && _settings.FollowPlayback);
+            SystemParameters.HighContrast ? colors.Eyes : (_settings.FollowArtworkColor ? _accent : null) ?? _settings.OutfitColorHex ?? AFMediaBar.Classes.Utils.ColorHex.Format(SystemParameters.WindowGlassColor));
         if (state == _lastState) return;
         _lastState = state;
         _renderer.Present(state);

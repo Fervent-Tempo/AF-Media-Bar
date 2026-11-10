@@ -3361,6 +3361,12 @@ Double-click to launch · Scroll to select · Click for list</value>
   <data name="Widgets.Pet.Menu.Next" xml:space="preserve"><value>Next track</value></data>
   <data name="Widgets.Pet.Menu.Mute" xml:space="preserve"><value>Mute current player</value></data>
   <data name="Widgets.Pet.Menu.Unmute" xml:space="preserve"><value>Unmute current player</value></data>
-  <data name="Widgets.Pet.Menu.Dock" xml:space="preserve"><value>Return to taskbar</value></data>
+  <data name="Widgets.Pet.Menu.Dock" xml:space="preserve"><value>Half-embed in taskbar</value></data>
+  <data name="Widgets.Pet.Menu.Inline" xml:space="preserve"><value>Fit inside taskbar</value></data>
+  <data name="Widgets.Pet.Menu.Free" xml:space="preserve"><value>Place freely</value></data>
+  <data name="Widgets.Pet.Menu.DockBar" xml:space="preserve"><value>Half-embed in media bar</value></data>
+  <data name="Widgets.Pet.Menu.InlineBar" xml:space="preserve"><value>Fit inside media bar</value></data>
   <data name="Widgets.Pet.Menu.Settings" xml:space="preserve"><value>Pet settings</value></data>
+  <data name="Widgets.Pet.Menu.LockColor" xml:space="preserve"><value>Lock current color</value></data>
+  <data name="Widgets.Pet.Menu.FollowColor" xml:space="preserve"><value>Follow album color</value></data>
 </root>

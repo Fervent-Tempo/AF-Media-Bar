@@ -31,6 +31,7 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     {
         _configuration = configuration;
         _petCompanion = petCompanion;
+        if (_petCompanion is not null) _petCompanion.ArtworkColorChanged += PetArtworkChanged;
         InitializeCaptureDevices(captureDevices);
         ReorderMetricCommand = new RelayCommand<SettingsReorderRequest>(ReorderMetric);
         MoveMetricUpCommand = new RelayCommand<PerformanceMetricSettingItem>(item => MoveMetric(item, -1));
@@ -323,9 +324,12 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     { get => PetSettings.FollowArtworkColor; set => _configuration.SetPetComponent(PetSettings with { FollowArtworkColor = value }); }
     public bool PetAudioStatusEnabled
     { get => PetSettings.AudioStatusEnabled; set => _configuration.SetPetComponent(PetSettings with { AudioStatusEnabled = value }); }
+    public bool CanFixPetOutfitColor => _petCompanion?.CanFixOutfitColor != false;
+    private void PetArtworkChanged() => OnPropertyChanged(nameof(CanFixPetOutfitColor));
     [RelayCommand]
     private void FixPetOutfitColor()
     {
+        if (!CanFixPetOutfitColor) return;
         var color = (PetSettings.FollowArtworkColor ? _petCompanion?.ArtworkColor : null) ?? PetSettings.OutfitColorHex ?? ColorHex.Format(System.Windows.SystemParameters.WindowGlassColor);
         _configuration.SetPetComponent(PetSettings with { OutfitColorHex = color, FollowArtworkColor = false });
         RefreshPetColor();
@@ -485,6 +489,7 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
     {
         if (_disposed) return;
         _disposed = true;
+        if (_petCompanion is not null) _petCompanion.ArtworkColorChanged -= PetArtworkChanged;
         DisposeCaptureDevices();
         _configuration.Activated -= OnActivated;
         SettingsManager.SettingsChanged -= OnSettingsChanged;

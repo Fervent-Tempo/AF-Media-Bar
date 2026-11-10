@@ -22,15 +22,22 @@ public sealed class PetControl : FrameworkElement
     private readonly ScaleTransform _eyelids = new(1, 1, 0, 32);
     private string _outfit = "original";
     private Brush _accent = Brushes.SteelBlue;
+    private Color? _accentTarget;
     private double _turn, _nod;
-    private bool _headphoneOff;
     internal void React() => Blink();
-    internal void SetContext(string animation, double beat, string outfit, string accent, bool headphoneOff = false)
+    internal void SetContext(string animation, double beat, string outfit, string accent)
     {
         _outfit = outfit;
-        _headphoneOff = headphoneOff;
-        if (ColorHex.TryParse(accent, out var color)) _accent = new SolidColorBrush(color);
         var animate = MotionPolicy.ResolveCurrent().Mode == MotionMode.Full;
+        if (ColorHex.TryParse(accent, out var color) && _accentTarget != color)
+        {
+            var current = (_accent as SolidColorBrush)?.Color ?? color;
+            var next = new SolidColorBrush(color);
+            if (animate && !SystemParameters.HighContrast)
+                next.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(current, color, TimeSpan.FromSeconds(1.2)) { FillBehavior = FillBehavior.Stop });
+            _accent = next;
+            _accentTarget = color;
+        }
         _turn = animate ? animation == "happy" ? 4 : Math.Sin(Environment.TickCount64 / 450d) * (animation is "music-quiet" or "music-playing" ? 1.5 : animation == "listening" ? 2 : 0) + beat * 3 : 0;
         _nod = animate && animation is "music-quiet" or "music-playing" ? beat * 1.2 : 0;
         InvalidateVisual();
@@ -160,8 +167,9 @@ public sealed class PetControl : FrameworkElement
         var accent = highContrast ? SystemColors.WindowTextBrush : _accent;
         if (_outfit == "headphones")
         {
-            drawing.DrawGeometry(null, new Pen(accent, 3), Geometry.Parse("M12,31 C12,7 52,7 52,31"));
-            foreach (var x in new[] { 9d, 49d }) drawing.DrawRoundedRectangle(accent, new Pen(Brushes.White, 0.7), new Rect(x + (_headphoneOff && x > 32 ? 2 : 0), 27 + (_headphoneOff && x > 32 ? 8 : 0), 6, 15), 2, 2);
+            drawing.DrawGeometry(null, new Pen(accent, 3), Geometry.Parse("M9,31 C9,7 55,7 55,31"));
+            DrawEarCup(drawing, accent, 6, 28, 14);
+            DrawEarCup(drawing, accent, 51, 28, 14);
         }
         else if (_outfit == "badge")
         {
@@ -193,6 +201,17 @@ public sealed class PetControl : FrameworkElement
         var geometry = Geometry.Parse(PetVisualDefinition.BodyPath);
         geometry.Freeze();
         return geometry;
+    }
+
+    private static void DrawEarCup(DrawingContext drawing, Brush accent, double x, double y, double height)
+    {
+        drawing.DrawRoundedRectangle(accent, new Pen(accent, 2), new Rect(x, y, 7, height), 3, 3);
+        drawing.PushOpacity(0.65);
+        drawing.DrawLine(new Pen(Brushes.White, 1.2), new Point(x + 2, y + 3), new Point(x + 2, y + height - 3));
+        drawing.Pop();
+        drawing.PushOpacity(0.4);
+        drawing.DrawLine(new Pen(Brushes.Black, 2), new Point(x + 6, y + 4), new Point(x + 6, y + height - 3));
+        drawing.Pop();
     }
 
 }

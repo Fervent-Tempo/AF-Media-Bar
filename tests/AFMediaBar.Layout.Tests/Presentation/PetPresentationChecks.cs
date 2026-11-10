@@ -10,6 +10,10 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Components;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Reflection;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Diagnostics;
 
 namespace AFMediaBar.Layout.Tests;
 
@@ -78,6 +82,45 @@ internal static class PetPresentationChecks
             Assert.IsFalse(overflow.ShowActivated);
             Assert.AreEqual(96d, overflow.Width);
             Assert.IsTrue(overflow.Height > surface.ActualHeight, "越界窗口必须独立于媒体栏厚度。");
+
+            // 菜单曾漏接跨 HWND 关闭，气泡曾因悬停无限延时；在真实 WPF 弹层上回归。
+            var openMenu = typeof(TaskBarMediaControl).GetMethod("OpenPetMenuAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var menuField = typeof(TaskBarMediaControl).GetField("_petMenu", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            _ = (System.Threading.Tasks.Task)openMenu.Invoke(control, [surface, true])!;
+            DrainLayout(window);
+            var menu = (ContextMenu)menuField.GetValue(control)!;
+            Assert.IsTrue(menu.IsOpen);
+            input.PublishPress(new Point(-30000, -30000), Stopwatch.GetTimestamp());
+            Assert.IsFalse(menu.IsOpen, "跨窗口点击必须关闭菜单。");
+            WaitUntil(() => menu.PlacementTarget is null);
+            Assert.IsNull(menu.PlacementTarget, "关闭必须释放旧锚点。");
+            _ = (System.Threading.Tasks.Task)openMenu.Invoke(control, [surface, true])!;
+            menu = (ContextMenu)menuField.GetValue(control)!;
+            control.ApplyHostVisibilitySuspension(true);
+            Assert.IsFalse(menu.IsOpen, "隐藏宿主必须关闭菜单。");
+            WaitUntil(() => menu.PlacementTarget is null);
+            control.ApplyHostVisibilitySuspension(false);
+
+            using (var bubble = new PetSpeechBubble())
+            {
+                Assert.IsTrue(bubble.Show(surface, "三秒后收起"));
+                var bubbleSurface = (Border)typeof(PetSpeechBubble).GetField("_surface", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(bubble)!;
+                var bubbleTimer = (DispatcherTimer)typeof(PetSpeechBubble).GetField("_timer", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(bubble)!;
+                bubbleSurface.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, 0) { RoutedEvent = Mouse.MouseEnterEvent });
+                Assert.IsTrue(bubbleTimer.IsEnabled, "普通台词悬停不能停止计时。");
+                var frame = new DispatcherFrame();
+                var deadlineTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(3300) };
+                deadlineTimer.Tick += (_, _) => { deadlineTimer.Stop(); frame.Continue = false; };
+                deadlineTimer.Start();
+                Dispatcher.PushFrame(frame);
+                Assert.IsFalse(bubble.IsOpen, "普通台词应在三秒后关闭。");
+                Assert.IsTrue(bubble.ShowStatus(surface, "volume", "音量 36%"));
+                Assert.AreEqual(TimeSpan.FromSeconds(2), bubbleTimer.Interval);
+                bubble.Close();
+                Assert.IsTrue(bubble.Show(surface, "查看详情", activation: () => { }));
+                bubbleSurface.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, 0) { RoutedEvent = Mouse.MouseEnterEvent });
+                Assert.IsFalse(bubbleTimer.IsEnabled, "带详情通知保留悬停阅读。");
+            }
 
             overflow.Topmost = false;
             var deadline = DateTime.UtcNow.AddSeconds(2);
@@ -149,5 +192,15 @@ internal static class PetPresentationChecks
     {
         window.UpdateLayout();
         window.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+    }
+
+    private static void WaitUntil(Func<bool> condition)
+    {
+        var frame = new DispatcherFrame();
+        var deadline = Stopwatch.StartNew();
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(20) };
+        timer.Tick += (_, _) => { if (condition() || deadline.ElapsedMilliseconds > 1000) { timer.Stop(); frame.Continue = false; } };
+        timer.Start();
+        Dispatcher.PushFrame(frame);
     }
 }

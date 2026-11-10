@@ -7,6 +7,11 @@ using System.Windows.Media;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Utils;
+using AFMediaBar.Classes.Models;
+using System.Diagnostics;
+using Wpf.Ui.Controls;
+using MenuItem = Wpf.Ui.Controls.MenuItem;
 
 namespace AFMediaBar.Components;
 
@@ -15,35 +20,129 @@ public partial class TaskBarMediaControl
     private readonly PetSpeechBubble _petBubble = new();
     public bool IsPetBubbleOpen => _petBubble.IsOpen || _petMenu?.IsOpen == true;
     private ContextMenu? _petMenu;
+    private long _petMenuOpenedAtTicks, _petMenuDismissedPress;
     public event EventHandler? PetSettingsRequested;
-    private async void OpenPetMenu(FrameworkElement target)
+    private bool DismissPetMenuPointer()
     {
-        if (_petMenu?.IsOpen == true || _petCompanion is null) return;
-        ActivePet.ResetPetting();
-        ActivePet.InputSuspended = true;
-        var menu = new ContextMenu { PlacementTarget = target };
-        _petMenu = menu;
-        void Add(string key, Action action, bool enabled = true)
+        if (_petMenu is not null)
         {
-            var item = new MenuItem { Header = Translations.Get("Widgets.Pet.Menu." + key), IsEnabled = enabled };
-            item.Click += (_, _) => action(); menu.Items.Add(item);
+            _petMenuDismissedPress = _petInput?.LastButtonPressTicks ?? 0;
+            _petMenu.IsOpen = false;
+            return true;
         }
-        var snapshot = _petCompanion.Snapshot;
-        Add(snapshot.IsPlaying ? "Pause" : "Play", () => TogglePlayPauseRequested?.Invoke(this, EventArgs.Empty), snapshot.CanPlayPause);
-        Add("Previous", () => SkipPreviousRequested?.Invoke(this, EventArgs.Empty), snapshot.CanSkipPrevious);
-        Add("Next", () => SkipNextRequested?.Invoke(this, EventArgs.Empty), snapshot.CanSkipNext);
-        var mute = new MenuItem { Header = Translations.Get("Widgets.Pet.Menu.Mute"), IsEnabled = false };
-        mute.Click += async (_, _) => { try { await _petCompanion.ToggleMuteAsync(); } catch (Exception error) { AFMediaBar.Classes.Services.AppLogService.Current?.Warn("Pet", error.Message); } };
+        // Hook 在 WPF 消息前记录按压身份，关闭菜单的同一次按压不能再次打开或说话。
+        return _petMenuDismissedPress != 0 && _petMenuDismissedPress == _petInput?.LastButtonPressTicks;
+    }
+
+    internal static IEnumerable<(string Key, bool Overflow, bool Free)> PetPlacementChoices(PetComponentSettings settings, bool floating)
+    {
+        if (!settings.AllowOverflow || settings.FreePlacement) yield return (floating ? "DockBar" : "Dock", true, false);
+        if (settings.AllowOverflow) yield return (floating ? "InlineBar" : "Inline", false, false);
+        if (!settings.AllowOverflow || !settings.FreePlacement) yield return ("Free", true, true);
+    }
+
+    private async Task OpenPetMenuAsync(FrameworkElement target, bool keyboard = false)
+    {
+        if (!keyboard && DismissPetMenuPointer()) return;
+        if (_petMenu?.IsOpen == true) return;
+        var pet = ActivePet;
+        pet.ResetPetting();
+        pet.InputSuspended = true;
+        var menu = new ContextMenu { StaysOpen = false, Width = 256, Padding = new Thickness(4) };
+        menu.SetResourceReference(StyleProperty, typeof(ContextMenu));
+        menu.SetResourceReference(FontFamilyProperty, "AppTextFontFamily");
+        menu.SetResourceReference(FontWeightProperty, "AppTextFontWeight");
+        menu.SetResourceReference(ForegroundProperty, "TextFillColorPrimaryBrush");
+        menu.SetResourceReference(BorderBrushProperty, "ControlStrokeColorDefaultBrush");
+        menu.BorderThickness = new Thickness(1);
+        ContextMenuHelper.AttachOutsideClickDismissal(menu);
+        _petMenu = menu;
+        void Add(string key, SymbolRegular icon, Action action, bool enabled = true)
+        {
+            var item = new MenuItem { Header = Translations.Get("Widgets.Pet.Menu." + key), Icon = new SymbolIcon(icon), IsEnabled = enabled };
+            item.Click += (_, _) => { menu.IsOpen = false; action(); }; menu.Items.Add(item);
+        }
+        var snapshot = _petCompanion?.Snapshot ?? MediaSnapshot.Disconnected;
+        var transport = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+        var buttons = new List<System.Windows.Controls.Button>();
+        void Transport(string key, SymbolRegular icon, bool enabled, Action action)
+        {
+            var label = Translations.Get("Widgets.Pet.Menu." + key);
+            var button = new Wpf.Ui.Controls.Button { Content = new SymbolIcon(icon), Width = 60, Height = 40, Margin = new Thickness(2), IsEnabled = enabled, ToolTip = label, Appearance = ControlAppearance.Transparent };
+            System.Windows.Automation.AutomationProperties.SetName(button, label);
+            button.Click += (_, args) => { args.Handled = true; menu.IsOpen = false; action(); };
+            buttons.Add(button); transport.Children.Add(button);
+        }
+        Transport("Previous", SymbolRegular.Previous24, snapshot.CanSkipPrevious, () => SkipPreviousRequested?.Invoke(this, EventArgs.Empty));
+        Transport(snapshot.IsPlaying ? "Pause" : "Play", snapshot.IsPlaying ? SymbolRegular.Pause24 : SymbolRegular.Play24, snapshot.CanPlayPause, () => TogglePlayPauseRequested?.Invoke(this, EventArgs.Empty));
+        Transport("Next", SymbolRegular.Next24, snapshot.CanSkipNext, () => SkipNextRequested?.Invoke(this, EventArgs.Empty));
+        var transportItem = new MenuItem { Header = transport, Focusable = false, StaysOpenOnClick = true };
+        menu.Items.Add(transportItem);
+        menu.Items.Add(new Separator());
+        var mute = new MenuItem { Header = Translations.Get("Widgets.Pet.Menu.Mute"), Icon = new SymbolIcon(SymbolRegular.SpeakerMute24), IsEnabled = false };
+        mute.Click += async (_, _) => { menu.IsOpen = false; try { if (_petCompanion is not null) await _petCompanion.ToggleMuteAsync(); } catch (Exception error) { AppLogService.Current?.Warn("Pet", error.Message); } };
         menu.Items.Add(mute);
         menu.Items.Add(new Separator());
-        Add("Dock", () => { var s = SettingsManager.Current.PetComponent; SettingsManager.Current.PetComponent = s with { AllowOverflow = true, FreePlacement = false }; });
-        Add("Settings", () => PetSettingsRequested?.Invoke(this, EventArgs.Empty));
-        menu.Closed += (_, _) => { ActivePet.InputSuspended = false; ActivePet.ResetPetting(); if (ReferenceEquals(_petMenu, menu)) _petMenu = null; };
-        menu.IsOpen = true;
+        foreach (var choice in PetPlacementChoices(PresentationSettings.PetComponent, Window.GetWindow(this) is AFMediaBar.Views.Windows.FloatingBarWindow))
+            Add(choice.Key, choice.Free ? SymbolRegular.ArrowMove24 : SymbolRegular.ArrowDown24, () =>
+            {
+                var s = SettingsManager.Current.PetComponent;
+                SettingsManager.Current.PetComponent = s with { AllowOverflow = choice.Overflow, FreePlacement = choice.Free };
+            });
+        menu.Items.Add(new Separator());
+        var follow = SettingsManager.Current.PetComponent.FollowArtworkColor;
+        var colorItem = new MenuItem();
+        void RefreshColorItem()
+        {
+            colorItem.Header = Translations.Get("Widgets.Pet.Menu." + (follow ? "LockColor" : "FollowColor"));
+            colorItem.IsEnabled = !follow || _petCompanion?.CanFixOutfitColor == true;
+            var hex = (follow ? _petCompanion?.ArtworkColor : null) ?? SettingsManager.Current.PetComponent.OutfitColorHex ?? ColorHex.Format(SystemParameters.WindowGlassColor);
+            if (ColorHex.TryParse(hex, out var color)) colorItem.Icon = new FontIcon { Glyph = "●", FontSize = 14, Foreground = new SolidColorBrush(color) };
+        }
+        RefreshColorItem();
+        if (_petCompanion is not null) _petCompanion.ArtworkColorChanged += RefreshColorItem;
+        colorItem.Click += (_, _) =>
+        {
+            menu.IsOpen = false;
+            if (follow) _petCompanion?.FixOutfitColor();
+            else { var s = SettingsManager.Current.PetComponent; SettingsManager.Current.PetComponent = s with { FollowArtworkColor = true }; }
+        };
+        menu.Items.Add(colorItem);
+        Add("Settings", SymbolRegular.Settings24, () => PetSettingsRequested?.Invoke(this, EventArgs.Empty));
+        menu.PreviewKeyDown += (_, args) =>
+        {
+            if (args.Key == Key.Escape) { menu.IsOpen = false; args.Handled = true; return; }
+            var enabled = buttons.Where(b => b.IsEnabled).ToArray();
+            var current = Array.FindIndex(enabled, b => b.IsKeyboardFocusWithin);
+            var firstItem = menu.Items.OfType<MenuItem>().FirstOrDefault(i => i != transportItem && i.IsEnabled);
+            if (current >= 0 && args.Key is Key.Left or Key.Right)
+            { enabled[(current + (args.Key == Key.Left ? enabled.Length - 1 : 1)) % enabled.Length].Focus(); args.Handled = true; }
+            else if (current >= 0 && args.Key is Key.Up or Key.Down)
+            { (args.Key == Key.Down ? firstItem : menu.Items.OfType<MenuItem>().LastOrDefault(i => i.IsEnabled))?.Focus(); args.Handled = true; }
+            else if (args.Key == Key.Up && firstItem?.IsKeyboardFocusWithin == true && enabled.Length > 0)
+            { enabled[^1].Focus(); args.Handled = true; }
+        };
+        menu.Closed += (_, _) =>
+        {
+            if (_petCompanion is not null) _petCompanion.ArtworkColorChanged -= RefreshColorItem;
+            if (!ReferenceEquals(_petMenu, menu)) return;
+            _petMenuDismissedPress = _petInput?.LastButtonPressTicks ?? 0;
+            _petPressPoint = null;
+            pet.InputSuspended = false;
+            pet.ResetPetting();
+            menu.PlacementTarget = null;
+            _petMenu = null;
+        };
+        _petMenuOpenedAtTicks = Stopwatch.GetTimestamp();
+        ContextMenuHelper.OpenAtScreenAnchor(menu, Window.GetWindow(this) ?? target,
+            keyboard ? target.PointToScreen(new Point(target.ActualWidth / 2, target.ActualHeight / 2)) : null);
+        menu.Focus();
+        if (keyboard) { if (buttons.FirstOrDefault(b => b.IsEnabled) is { } first) first.Focus(); else menu.MoveFocus(new TraversalRequest(FocusNavigationDirection.First)); }
         try
         {
+            if (_petCompanion is null) return;
             var volume = await _petCompanion.ReadVolumeAsync();
-            if (!_petDisposed && menu.IsOpen && snapshot.SourceId == _petCompanion.Snapshot.SourceId && volume is not null)
+            if (!_petDisposed && ReferenceEquals(_petMenu, menu) && menu.IsOpen && snapshot.SourceId == _petCompanion.Snapshot.SourceId && volume is not null)
             { mute.IsEnabled = true; mute.Header = Translations.Get("Widgets.Pet.Menu." + (volume.IsMuted ? "Unmute" : "Mute")); }
         }
         catch (Exception error) { AFMediaBar.Classes.Services.AppLogService.Current?.Warn("Pet", error.Message); }
@@ -112,7 +211,8 @@ public partial class TaskBarMediaControl
                 _petOverflow = new PetOverflowHost(TaskbarPetSurface, owner, _petEnvironment, _petZOrder);
                 _petOverflow.Moved += _petBubble.Reposition;
                 _petOverflow.Activated += SpeakPet;
-                _petOverflow.MenuRequested += () => OpenPetMenu(_petOverflow.View);
+                _petOverflow.MenuRequested += async () => await OpenPetMenuAsync(_petOverflow.View);
+                _petOverflow.DismissMenuPointer = DismissPetMenuPointer;
                 _petOverflow.PositionSaved += SavePetPosition;
             }
             _petOverflow.Show(settings, _isVertical, _verticalTaskbarOnLeft);
@@ -125,20 +225,27 @@ public partial class TaskBarMediaControl
             TaskbarPet.SetPresentation(active, visible);
         }
         if (active && _petCompanion is not null)
-            _petContextLease ??= _petCompanion.Subscribe((animation, beat) => { ActivePet.SetPlayback(_petCompanion.Snapshot.IsConnected && !_petCompanion.Snapshot.IsPlaying); ActivePet.SetAmbient(_petCompanion.ArtworkColor); ActivePet.SetContext(animation, beat); }, (text, activation) => _petBubble.Show(ActivePet, text, false, activation));
+            _petContextLease ??= _petCompanion.Subscribe((animation, beat) => { ActivePet.SetAmbient(_petCompanion.ArtworkColor); ActivePet.SetContext(animation, beat); }, (text, activation) => _petBubble.Show(ActivePet, text, false, activation));
         if (active && _petCompanion is not null)
             _petStatusLease ??= _petCompanion.SubscribeStatus((key, text) => _petMenu?.IsOpen != true && _petBubble.ShowStatus(ActivePet, key, text));
         if (active && _petInput is not null)
         {
             if (!ReferenceEquals(_petLeaseView, ActivePet))
             {
+                if (_petMenu is not null) _petMenu.IsOpen = false;
                 _petBubble.Close();
                 // 换到新的呈现窗口也要丢弃旧租约的排队点击。
                 _petLease?.Dispose();
                 _petLease = null;
                 _petLeaseView = ActivePet;
             }
-            _petLease ??= _petInput.Subscribe(input => { if (!_petDisposed && IsLoaded) ActivePet.Present(input); });
+            _petLease ??= _petInput.Subscribe(input =>
+            {
+                if (_petDisposed || !IsLoaded) return;
+                if (input.Blink && input.ObservedAtTicks > _petMenuOpenedAtTicks && _petMenu is { } menu)
+                    ContextMenuHelper.CloseIfOutside(menu, (int)input.ScreenPosition.X, (int)input.ScreenPosition.Y);
+                ActivePet.Present(input);
+            });
         }
         else SuspendPetPresentation();
     }
@@ -187,9 +294,10 @@ public partial class TaskBarMediaControl
         AnimateComponentHover(TaskbarPetSurface, false);
         ActivePet.SetHovered(false);
     }
-    private void PetSurfaceMouseDown(object sender, MouseButtonEventArgs args)
+    private async void PetSurfaceMouseDown(object sender, MouseButtonEventArgs args)
     {
-        if (args.ChangedButton == MouseButton.Right) { OpenPetMenu(TaskbarPetSurface); args.Handled = true; return; }
+        if (args.ChangedButton == MouseButton.Right) { args.Handled = true; await OpenPetMenuAsync(TaskbarPetSurface); return; }
+        if (DismissPetMenuPointer()) { args.Handled = true; return; }
         if (args.ChangedButton == MouseButton.Left) ActivePet.Press();
         if (args.ChangedButton == MouseButton.Left) _petPressPoint = args.GetPosition(this);
     }
@@ -217,9 +325,9 @@ public partial class TaskBarMediaControl
         args.Handled = true;
     }
 
-    private void PetSurfaceKeyDown(object sender, KeyEventArgs args)
+    private async void PetSurfaceKeyDown(object sender, KeyEventArgs args)
     {
-        if (args.Key == Key.Apps || (args.Key == Key.F10 && Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))) { OpenPetMenu(TaskbarPetSurface); args.Handled = true; }
+        if (args.Key == Key.Apps || (args.Key == Key.F10 && Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))) { args.Handled = true; await OpenPetMenuAsync(TaskbarPetSurface, true); }
         else if (args.Key is Key.Enter or Key.Space) { SpeakPet(); args.Handled = true; }
     }
 

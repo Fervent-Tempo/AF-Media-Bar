@@ -54,8 +54,8 @@ internal sealed class PetSpeechBubble : IDisposable
         _surface.SetResourceReference(Border.BorderBrushProperty, "ControlStrokeColorDefaultBrush");
         _text.SetResourceReference(TextBlock.ForegroundProperty, "TextFillColorPrimaryBrush");
         _popup = new Popup { Child = _surface, AllowsTransparency = true, StaysOpen = true, Placement = PlacementMode.Top, VerticalOffset = -8 };
-        _surface.MouseEnter += (_, _) => _timer.Stop();
-        _surface.MouseLeave += (_, _) => { if (_popup.IsOpen) _timer.Start(); };
+        _surface.MouseEnter += (_, _) => { if (_activation is not null) _timer.Stop(); };
+        _surface.MouseLeave += (_, _) => { if (_popup.IsOpen && _activation is not null) _timer.Start(); };
         _surface.KeyDown += (_, args) => { if (args.Key == System.Windows.Input.Key.Escape) Close(); };
         _timer.Tick += OnTimeout;
         System.Windows.Automation.AutomationProperties.SetLiveSetting(_text, System.Windows.Automation.AutomationLiveSetting.Polite);
@@ -78,7 +78,7 @@ internal sealed class PetSpeechBubble : IDisposable
             _text.SetResourceReference(TextBlock.ForegroundProperty, "TextFillColorPrimaryBrush");
         }
         _statusKey = null;
-        _timer.Interval = TimeSpan.FromSeconds(6);
+        _timer.Interval = TimeSpan.FromSeconds(activation is null ? 3 : 6);
         _popup.PlacementTarget = anchor;
         _activation = activation;
         _details.Visibility = activation is null ? Visibility.Collapsed : Visibility.Visible;

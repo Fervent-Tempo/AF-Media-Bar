@@ -3361,6 +3361,12 @@
   <data name="Widgets.Pet.Menu.Next" xml:space="preserve"><value>下一首</value></data>
   <data name="Widgets.Pet.Menu.Mute" xml:space="preserve"><value>將目前播放器靜音</value></data>
   <data name="Widgets.Pet.Menu.Unmute" xml:space="preserve"><value>取消目前播放器靜音</value></data>
-  <data name="Widgets.Pet.Menu.Dock" xml:space="preserve"><value>回到工作列</value></data>
+  <data name="Widgets.Pet.Menu.Dock" xml:space="preserve"><value>半嵌工作列</value></data>
+  <data name="Widgets.Pet.Menu.Inline" xml:space="preserve"><value>收進工作列</value></data>
+  <data name="Widgets.Pet.Menu.Free" xml:space="preserve"><value>自由擺放</value></data>
+  <data name="Widgets.Pet.Menu.DockBar" xml:space="preserve"><value>半嵌媒體列</value></data>
+  <data name="Widgets.Pet.Menu.InlineBar" xml:space="preserve"><value>收進媒體列</value></data>
   <data name="Widgets.Pet.Menu.Settings" xml:space="preserve"><value>小寵物設定</value></data>
+  <data name="Widgets.Pet.Menu.LockColor" xml:space="preserve"><value>鎖定目前配色</value></data>
+  <data name="Widgets.Pet.Menu.FollowColor" xml:space="preserve"><value>跟隨專輯配色</value></data>
 </root>

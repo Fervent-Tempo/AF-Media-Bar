@@ -3399,6 +3399,12 @@ Nhấp đúp để chạy · Cuộn để chọn · Nhấp để mở danh sách
   <data name="Widgets.Pet.Menu.Next" xml:space="preserve"><value>Bài tiếp theo</value></data>
   <data name="Widgets.Pet.Menu.Mute" xml:space="preserve"><value>Tắt tiếng trình phát</value></data>
   <data name="Widgets.Pet.Menu.Unmute" xml:space="preserve"><value>Bật tiếng trình phát</value></data>
-  <data name="Widgets.Pet.Menu.Dock" xml:space="preserve"><value>Về thanh tác vụ</value></data>
+  <data name="Widgets.Pet.Menu.Dock" xml:space="preserve"><value>Gắn nửa vào thanh tác vụ</value></data>
+  <data name="Widgets.Pet.Menu.Inline" xml:space="preserve"><value>Thu vào thanh tác vụ</value></data>
+  <data name="Widgets.Pet.Menu.Free" xml:space="preserve"><value>Đặt tự do</value></data>
+  <data name="Widgets.Pet.Menu.DockBar" xml:space="preserve"><value>Gắn nửa vào thanh media</value></data>
+  <data name="Widgets.Pet.Menu.InlineBar" xml:space="preserve"><value>Thu vào thanh media</value></data>
   <data name="Widgets.Pet.Menu.Settings" xml:space="preserve"><value>Cài đặt thú cưng</value></data>
+  <data name="Widgets.Pet.Menu.LockColor" xml:space="preserve"><value>Khóa màu hiện tại</value></data>
+  <data name="Widgets.Pet.Menu.FollowColor" xml:space="preserve"><value>Theo màu bìa album</value></data>
 </root>

@@ -33,6 +33,8 @@ public sealed class NativeMouseInputMonitor : IDisposable
     private volatile bool _disposed;
     private bool _isLeftButtonDown;
     private bool _isRightButtonDown;
+    private long _lastButtonPressTicks;
+    internal long LastButtonPressTicks => Interlocked.Read(ref _lastButtonPressTicks);
     // 这三个字段由钩子线程写、由 UI 线程读：钩子回调一定先于目标窗口的鼠标消息执行，因此 UI 线程读到的状态
     // 属于"这次按压"的结果，不依赖 Dispatcher 投递顺序。
     // These three fields are written on the hook thread and read on the UI thread: a hook callback always runs before the target
@@ -201,6 +203,7 @@ public sealed class NativeMouseInputMonitor : IDisposable
                 {
                     _isLeftButtonDown = true;
                     var observedAtTicks = Stopwatch.GetTimestamp();
+                    Interlocked.Exchange(ref _lastButtonPressTicks, observedAtTicks);
                     Post(() => LeftButtonPressed?.Invoke(
                         this,
                         new NativeMouseButtonEventArgs(data.Point.X, data.Point.Y) { ObservedAtTicks = observedAtTicks }));
@@ -217,6 +220,7 @@ public sealed class NativeMouseInputMonitor : IDisposable
                 {
                     _isRightButtonDown = true;
                     var observedAtTicks = Stopwatch.GetTimestamp();
+                    Interlocked.Exchange(ref _lastButtonPressTicks, observedAtTicks);
                     Post(() => RightButtonPressed?.Invoke(
                         this,
                         new NativeMouseButtonEventArgs(data.Point.X, data.Point.Y) { ObservedAtTicks = observedAtTicks }));

@@ -25,7 +25,6 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
 
     private void PetDemoPlay(object sender, RoutedEventArgs args)
     {
-        PetPreview.SetPlayback(false);
         _petDemoUntil = Environment.TickCount64 + 1800;
         _petDemoTimer.Start();
     }
@@ -101,7 +100,6 @@ public partial class WidgetsSettingsPage : INavigableView<WidgetsSettingsViewMod
 
     private void ResetPetPreviewContext()
     {
-        PetPreview.SetPlayback(_companion?.Snapshot is { IsConnected: true, IsPlaying: false });
         PetPreview.SetContext(_companion?.Snapshot.IsPlaying == true ? "music-quiet" :
             _companion?.Snapshot.IsConnected == true ? "music-paused" : "idle", 0);
     }
