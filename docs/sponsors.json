@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedUtc": "2026-11-09T02:33:51Z",
+  "updatedUtc": "2026-11-10T15:26:09Z",
   "sponsors": [
     {
       "name": "好奇怪",
@@ -83,6 +83,10 @@
     },
     {
       "name": "外埃克斯",
+      "since": "2026-11"
+    },
+    {
+      "name": "远旅",
       "since": "2026-11"
     }
   ]

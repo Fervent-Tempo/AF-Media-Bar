@@ -16,12 +16,11 @@
                     </WrapPanel>
                 </components:SettingsRow>
             </components:SettingsGroup>
-            <components:SettingsGroup GroupId="Common.Group.Developers" Header="{DynamicResource Loc.Common.Group.Developers}" Icon="{ui:SymbolIcon Code24}">
+            <components:SettingsGroup GroupId="Common.Group.Developers" Header="{DynamicResource Loc.Common.Group.Developers}" Icon="{ui:SymbolIcon Code24}" Visibility="{Binding ViewModel.HasDevelopersSection, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                 <StackPanel>
                     <components:SettingsRow x:Name="CreditsStatusRow" MinHeight="84" Description="{Binding ViewModel.CreditsStatusText}" Icon="{ui:SymbolIcon Info24}" Title="{DynamicResource Loc.Credits.Status.Title}" Visibility="{Binding ViewModel.HasCreditsStatus, Converter={StaticResource AfBooleanToVisibilityConverter}}">
                         <ui:Button Width="148" Command="{Binding ViewModel.RefreshCreditsCommand}" Content="{Binding ViewModel.CreditsRefreshButtonText}" Icon="{ui:SymbolIcon ArrowSync24}" Style="{StaticResource AfSettingsButtonStyle}"/>
                     </components:SettingsRow>
-                    <components:SettingsCallout Margin="0,0,0,10" FontSize="14" IsAccent="False" Symbol="Person24" Text="远旅"/>
                     <ItemsControl ItemsSource="{Binding ViewModel.Contributors}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
