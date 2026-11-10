@@ -31,25 +31,18 @@ public sealed class KuGou : IDisposable
     /// </summary>
     private static readonly string[] ProcessNames = ["KuGou", "KuGouMusic"];
 
-    // 进度：kgplayer.dll 内的静态 double，毫秒精度。整秒读数配合"每次发布都盖时间戳"的外推会产生锯齿（歌词抽搐），
-    // 双精度读数与网易云走同一条路，不再需要任何补偿。
-    // duration: "kugou.dll"+0x023C9B68 -> +0x70 -> +0x30 -> +0x0 -> +0x24
-    // CE 表的 <Offsets> 自底向上书写，套用时要按相反顺序。
-    // Position: a static double inside kgplayer.dll, millisecond precision. The whole-second reading sawtoothed under the UI's
-    // extrapolation (twitching lyrics); a double reads like NetEase's and needs no compensation.
-    // The CE table lists <Offsets> bottom-up and they apply in reverse order.
-    private const nint PositionModuleOffset = 0x3929D8;
+    // 进度和播放图的入口位于 kgplayer.dll，时长链的入口位于 kugou.dll。
+    private sealed record MemoryLayout(nint PositionOffset, nint DurationRootOffset, nint[] DurationOffsets, nint GraphRootOffset);
 
-    private const nint LegacyDurationBaseOffset = 0x023C9B68;
-    private static readonly nint[] DurationOffsets = [0x70, 0x30, 0x0, 0x24];
-    private const nint GraphBaseOffset = 0x3936A8;
-    private static readonly nint[] GraphOffsets = [0xC0, 0xB8];
+    private static readonly MemoryLayout _legacyLayout = new(0x3929D8, 0x023C9B68, [0x70, 0x30, 0x0, 0x24], 0x3936A8);
+    private static readonly MemoryLayout _layout27974 = _legacyLayout with { DurationRootOffset = 0x023C7B68 };
+    private static readonly nint[] _graphOffsets = [0xC0, 0xB8];
 
     private readonly Process _process;
     private readonly ProcessMemory _memory;
     private readonly nint _positionModuleBase;
     private readonly nint _durationModuleBase;
-    private readonly nint _durationBaseOffset;
+    private readonly MemoryLayout _layout;
     private nint _quartzBase;
     private int _quartzSize;
     private readonly bool _supportsIndependentRead;
@@ -57,13 +50,13 @@ public sealed class KuGou : IDisposable
     private bool _disposed;
 
     private KuGou(Process process, ProcessMemory memory, nint positionModuleBase, nint durationModuleBase,
-        nint quartzBase, int quartzSize, bool supportsIndependentRead, nint durationBaseOffset)
+        nint quartzBase, int quartzSize, bool supportsIndependentRead, MemoryLayout layout)
     {
         _process = process;
         _memory = memory;
         _positionModuleBase = positionModuleBase;
         _durationModuleBase = durationModuleBase;
-        _durationBaseOffset = durationBaseOffset;
+        _layout = layout;
         _quartzBase = quartzBase;
         _quartzSize = quartzSize;
         _supportsIndependentRead = supportsIndependentRead;
@@ -105,7 +98,7 @@ public sealed class KuGou : IDisposable
         nint quartzBase;
         int quartzSize;
         bool supportsIndependentRead;
-        nint durationBaseOffset;
+        MemoryLayout layout;
         try
         {
             var modules = process.Modules.OfType<ProcessModule>().ToArray();
@@ -130,8 +123,7 @@ public sealed class KuGou : IDisposable
                 engineVersion.FileBuildPart == 0 && engineVersion.FilePrivatePart == 519 &&
                 clientVersion.FileMajorPart == 20 && clientVersion.FileMinorPart == 1 && clientVersion.FileBuildPart == 51 &&
                 clientVersion.FilePrivatePart is 27972 or 27974;
-            durationBaseOffset = supportsIndependentRead && clientVersion.FilePrivatePart == 27974
-                ? 0x023C7B68 : LegacyDurationBaseOffset;
+            layout = supportsIndependentRead && clientVersion.FilePrivatePart == 27974 ? _layout27974 : _legacyLayout;
         }
         catch
         {
@@ -141,7 +133,7 @@ public sealed class KuGou : IDisposable
         }
 
         var reader = new KuGou(process, new ProcessMemory(process.Id), positionModuleBase, durationModuleBase,
-            quartzBase, quartzSize, supportsIndependentRead, durationBaseOffset);
+            quartzBase, quartzSize, supportsIndependentRead, layout);
         if (reader.TryReadTimeline(out _, out _))
         {
             return reader;
@@ -168,14 +160,14 @@ public sealed class KuGou : IDisposable
             return false;
         }
 
-        if (!_memory.TryReadDouble(_positionModuleBase + PositionModuleOffset, out var positionValue) ||
+        if (!_memory.TryReadDouble(_positionModuleBase + _layout.PositionOffset, out var positionValue) ||
             !double.IsFinite(positionValue) ||
             positionValue < 0)
         {
             return false;
         }
 
-        if (!TryReadChain(_durationBaseOffset, DurationOffsets, out var durationSeconds) || durationSeconds < 0)
+        if (!TryReadChain(_layout.DurationRootOffset, _layout.DurationOffsets, out var durationSeconds) || durationSeconds < 0)
         {
             return false;
         }
@@ -222,8 +214,8 @@ public sealed class KuGou : IDisposable
             return false;
 
         // DirectShow 播放图的 FilterState：1 暂停，2 播放。先验证对象虚表属于 quartz.dll。
-        var address = _positionModuleBase + GraphBaseOffset;
-        foreach (var offset in GraphOffsets)
+        var address = _positionModuleBase + _layout.GraphRootOffset;
+        foreach (var offset in _graphOffsets)
         {
             if (!_memory.TryReadInt64(address, out var pointer) || pointer == 0) return false;
             address = (nint)pointer + offset;
