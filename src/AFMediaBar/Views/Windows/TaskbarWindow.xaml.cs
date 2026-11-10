@@ -275,8 +275,11 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _taskbarHiddenTrimTimer.Tick += (_, _) =>
         {
             _taskbarHiddenTrimTimer.Stop();
-            if (!_isClosing && _taskbarMotionState.IsHidden && !_taskbarMotionState.IsMoving)
+            if (!_isClosing && !_isEnvironmentSuspended && _taskbarMotionState.IsHidden && !_taskbarMotionState.IsMoving)
+            {
+                MediaControl.SetTaskbarLyricsSuspension(true);
                 _memoryPruneCoordinator.RequestTrim(MemoryTrimTrigger.TaskbarHidden);
+            }
         };
 
         // 后台剪枝：宿主自己订阅档位变化，按档位停掉或恢复自己的计时器与指标订阅。
@@ -490,6 +493,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private void ApplyTaskbarPresentationState(TaskbarMotionState previous)
     {
         var suspended = IsTaskbarPresentationSuspended;
+        if (_taskbarMotionState.IsMoving || !_taskbarMotionState.IsHidden)
+            MediaControl.SetTaskbarLyricsSuspension(false);
         SuspendHostInput();
 
         if (suspended)
@@ -1378,6 +1383,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         ClosePlayerMenu();
         _compactFlyout.Dismiss();
         MediaControl.ApplyHostVisibilitySuspension(true);
+        if (!_isClosing)
+            MediaControl.SetTaskbarLyricsSuspension(false);
         MediaControl.IsHitTestVisible = false;
         WindowHelper.SetInputTransparent(this, true);
     }

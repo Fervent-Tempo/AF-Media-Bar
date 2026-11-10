@@ -49,8 +49,10 @@ public partial class TaskBarMediaControl
         internal int _lyricsConversionRefreshQueued;
         internal int _lyricsRendererGeneration;
         internal int _lyricsCreationFailures;
-        internal int _lyricsSuspendGeneration;
-        internal bool _lyricsSuspendRequested;
+        private int _suspendGeneration;
+        private bool _isTaskbarSuspendRequested;
+        private bool _hasSuspendAttempt;
+        private LyricsWebViewRenderer? _suspendingRenderer;
         internal LyricsPresentationFrame _lyricsFrame = LyricsPresentationFrame.Hidden;
         internal LyricsPresentationFrame _lastEffectiveLyricsFrame = LyricsPresentationFrame.Hidden;
         internal Brush _lyricsForeground = Brushes.White;
@@ -289,69 +291,78 @@ public partial class TaskBarMediaControl
                 WebLyricsGraphicsRecovery.Session.ReportDegraded();
         }
 
+        internal void SetTaskbarSuspension(bool requested)
+        {
+            if (_isTaskbarSuspendRequested == requested)
+                return;
+
+            _isTaskbarSuspendRequested = requested;
+            UpdateWebLyricsPowerState();
+        }
+
         internal void UpdateWebLyricsPowerState()
         {
             if (_disposed) return;
-            if (_lyricsWebRenderer is not { IsReady: true } renderer ||
+            if (_lyricsWebRenderer is not { } renderer ||
                 _owner.LyricsWebViewHost.Child is not WebView2CompositionControl webView)
                 return;
 
-            // The host owns visibility while following Shell motion. Keep the current composition
-            // frame instead of replacing lyrics with metadata in the middle of the taskbar slide.
-            if (_owner._isHostVisibilitySuspended && _owner._backgroundPruneLevel < MemoryPruneLevel.DisplayOff)
-            {
+            var displayOff = _owner._backgroundPruneLevel >= MemoryPruneLevel.DisplayOff;
+            var shouldSuspend = displayOff || _isTaskbarSuspendRequested;
+            if (_owner._isHostVisibilitySuspended || shouldSuspend)
                 renderer.PauseDelivery();
+            if (!renderer.IsReady)
                 return;
-            }
 
-            var hidden = _owner._backgroundPruneLevel >= MemoryPruneLevel.DisplayOff;
-            if (hidden)
+            if (shouldSuspend)
             {
-                renderer.PauseDelivery();
-                // Hidden keeps the 1x1 layout guard while making the WPF view genuinely invisible to WebView2.
                 webView.Visibility = Visibility.Hidden;
-                _owner.SongLyricsPanel.Opacity = 0;
-                _owner.SongMetadataPanel.Visibility = Visibility.Visible;
-                if (_owner._backgroundPruneLevel >= MemoryPruneLevel.DisplayOff && !_lyricsSuspendRequested)
+                if (displayOff)
                 {
-                    _lyricsSuspendRequested = true;
-                    var generation = ++_lyricsSuspendGeneration;
-                    _ = SuspendWebLyricsAfterLayoutAsync(renderer, generation);
+                    _owner.SongLyricsPanel.Opacity = 0;
+                    _owner.SongMetadataPanel.Visibility = Visibility.Visible;
+                }
+                if (!_hasSuspendAttempt && !ReferenceEquals(renderer, _suspendingRenderer))
+                {
+                    _hasSuspendAttempt = true;
+                    _suspendingRenderer = renderer;
+                    _ = SuspendWebLyricsAfterLayoutAsync(renderer, _suspendGeneration);
                 }
                 return;
             }
 
-            var needsRefresh = webView.Visibility != Visibility.Visible || _lyricsSuspendRequested;
-            if (_lyricsSuspendRequested)
+            if (_hasSuspendAttempt)
             {
-                _lyricsSuspendRequested = false;
-                _lyricsSuspendGeneration++;
+                _hasSuspendAttempt = false;
+                _suspendGeneration++;
                 renderer.Resume();
                 if (!renderer.IsReady) return;
             }
             webView.Visibility = Visibility.Visible;
-            renderer.ResumeDelivery();
-            if (needsRefresh)
-                UpdateWebLyricsPresentation(allowTransition: false);
         }
 
-        internal async Task SuspendWebLyricsAfterLayoutAsync(LyricsWebViewRenderer renderer, int generation)
+        private async Task SuspendWebLyricsAfterLayoutAsync(LyricsWebViewRenderer renderer, int generation)
         {
             try
             {
-                // Let WPF propagate Visibility.Hidden to the WebView2 controller before TrySuspendAsync.
-                await _owner.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
-                if (generation != _lyricsSuspendGeneration || !ReferenceEquals(renderer, _lyricsWebRenderer) ||
-                    _owner._backgroundPruneLevel < MemoryPruneLevel.DisplayOff)
-                    return;
-
-                var suspended = await renderer.TrySuspendAsync();
-                if (generation != _lyricsSuspendGeneration || !ReferenceEquals(renderer, _lyricsWebRenderer) ||
-                    _owner._backgroundPruneLevel < MemoryPruneLevel.DisplayOff)
+                try
                 {
-                    if (suspended && ReferenceEquals(renderer, _lyricsWebRenderer))
+                    // 等 WPF 将隐藏状态同步到 WebView2 控制器。
+                    await _owner.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
+                    if (generation == _suspendGeneration && ReferenceEquals(renderer, _lyricsWebRenderer) &&
+                        await renderer.TrySuspendAsync() && generation != _suspendGeneration &&
+                        ReferenceEquals(renderer, _lyricsWebRenderer))
                         renderer.Resume();
                 }
+                finally
+                {
+                    if (ReferenceEquals(renderer, _suspendingRenderer))
+                        _suspendingRenderer = null;
+                }
+
+                // 快速重新隐藏时，新的请求只能在上一次完成后执行。
+                if (generation != _suspendGeneration && ReferenceEquals(renderer, _lyricsWebRenderer))
+                    UpdateWebLyricsPowerState();
             }
             catch (Exception ex)
             {
@@ -419,6 +430,8 @@ public partial class TaskBarMediaControl
             if (!_owner.IsBackgroundPruned && !contentUnchanged &&
                 (isMetadata || LyricsPresentationRefreshPolicy.ShouldPresent(presentation.IsVisible, previous, presentation)))
                 _lyricsWebRenderer?.Present(presentation, animateTransition && MotionPolicy.ResolveCurrent().UseTransitions, isMetadata);
+            if (!_owner.IsBackgroundPruned)
+                _lyricsWebRenderer?.ResumeDelivery();
             RefreshWebLyricsTimer();
 
             // 文本或逐字时间轴可用性变化后立即重发尺寸请求；没有时间轴时长行需要恢复自然宽度。
@@ -597,8 +610,9 @@ public partial class TaskBarMediaControl
         {
             _lyricsGraphicsRecoveryQueue?.Cancel();
             _lyricsRendererGeneration++;
-            _lyricsSuspendGeneration++;
-            _lyricsSuspendRequested = false;
+            _suspendGeneration++;
+            _hasSuspendAttempt = false;
+            _suspendingRenderer = null;
             var renderer = _lyricsWebRenderer;
             _lyricsWebRenderer = null;
             if (renderer is not null)

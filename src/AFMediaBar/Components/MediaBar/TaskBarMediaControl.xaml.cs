@@ -1593,6 +1593,8 @@ namespace AFMediaBar.Components
             _lyrics.UpdateWebLyricsPresentation(allowTransition: false);
         }
 
+        internal void SetTaskbarLyricsSuspension(bool requested) => _lyrics.SetTaskbarSuspension(requested);
+
         /// <summary>宿主挂起时立即收回悬停层和封面 Popup；恢复后按指针状态重新排入悬停。</summary>
         public void ApplyHostVisibilitySuspension(bool suspended)
         {
