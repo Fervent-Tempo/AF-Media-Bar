@@ -14,11 +14,8 @@ namespace AFMediaBar.Classes.Services.Media.Sources.KuGou;
 /// <summary>
 /// 独占酷狗进程的只读句柄，读取时间轴、播放状态与实时窗口标题；Dispose 释放句柄。
 ///
-/// 进度是 kgplayer.dll 内的静态 double（毫秒精度）；时长挂在一条入口相对 kugou.dll 模块基址固定的多级指针链上（int32 秒）。
-/// 本类只负责"把地址与链走通并读数"，数值是否可信（是否真是一对进度/时长）由调用方判定。
-/// The position is a static double inside kgplayer.dll (millisecond precision); the duration hangs off a multi-level pointer chain whose
-/// entry is fixed relative to the kugou.dll module base (int32 seconds). This class only resolves the address and the chain and reads the
-/// numbers; judging whether they are plausible (really a position/duration pair) is up to the caller.
+/// 进度来自 kgplayer.dll 中的 double 秒值，时长来自 kugou.dll 的指针链，按模块版本转换为秒。
+/// 调用方负责判断进度和时长是否匹配。
 /// </summary>
 public sealed class KuGou : IDisposable
 {
@@ -32,10 +29,13 @@ public sealed class KuGou : IDisposable
     private static readonly string[] ProcessNames = ["KuGou", "KuGouMusic"];
 
     // 进度和播放图的入口位于 kgplayer.dll，时长链的入口位于 kugou.dll。
-    private sealed record MemoryLayout(nint PositionOffset, nint DurationRootOffset, nint[] DurationOffsets, nint GraphRootOffset);
+    private sealed record MemoryLayout(nint PositionOffset, nint DurationRootOffset, nint[] DurationOffsets, nint GraphRootOffset,
+        int DurationUnitsPerSecond = 1);
 
     private static readonly MemoryLayout _legacyLayout = new(0x3929D8, 0x023C9B68, [0x70, 0x30, 0x0, 0x24], 0x3936A8);
     private static readonly MemoryLayout _layout27974 = _legacyLayout with { DurationRootOffset = 0x023C7B68 };
+    private static readonly MemoryLayout _layout28014 = new(0x3949F8, 0x02434B30, [0x108, 0x8C], 0x3956C8,
+        DurationUnitsPerSecond: 1000);
     private static readonly nint[] _graphOffsets = [0xC0, 0xB8];
 
     private readonly Process _process;
@@ -116,14 +116,16 @@ public sealed class KuGou : IDisposable
             var quartz = modules.FirstOrDefault(candidate => "quartz.dll".Equals(candidate.ModuleName, StringComparison.OrdinalIgnoreCase));
             quartzBase = quartz?.BaseAddress ?? 0;
             quartzSize = quartz?.ModuleMemorySize ?? 0;
-            var engineVersion = position.FileVersionInfo;
-            var clientVersion = duration.FileVersionInfo;
             // 私有偏移按已验证版本选择；未知版本继续尝试原有 SMTC 时间轴增强。
-            supportsIndependentRead = engineVersion.FileMajorPart == 1 && engineVersion.FileMinorPart == 2 &&
-                engineVersion.FileBuildPart == 0 && engineVersion.FilePrivatePart == 519 &&
-                clientVersion.FileMajorPart == 20 && clientVersion.FileMinorPart == 1 && clientVersion.FileBuildPart == 51 &&
-                clientVersion.FilePrivatePart is 27972 or 27974;
-            layout = supportsIndependentRead && clientVersion.FilePrivatePart == 27974 ? _layout27974 : _legacyLayout;
+            var verifiedLayout = (VersionParts(position.FileVersionInfo), VersionParts(duration.FileVersionInfo)) switch
+            {
+                ((1, 2, 0, 519), (20, 1, 51, 27972)) => _legacyLayout,
+                ((1, 2, 0, 519), (20, 1, 51, 27974)) => _layout27974,
+                ((1, 2, 0, 523), (20, 1, 61, 28014)) => _layout28014,
+                _ => null
+            };
+            supportsIndependentRead = verifiedLayout is not null;
+            layout = verifiedLayout ?? _legacyLayout;
         }
         catch
         {
@@ -142,6 +144,9 @@ public sealed class KuGou : IDisposable
         reader.Dispose();
         return null;
     }
+
+    private static (int Major, int Minor, int Build, int Revision) VersionParts(FileVersionInfo version) =>
+        (version.FileMajorPart, version.FileMinorPart, version.FileBuildPart, version.FilePrivatePart);
 
     /// <summary>
     /// 读取当前播放进度（毫秒精度的秒）与曲目时长（秒）。进度不是有限非负数、时长链任一环读不到、
@@ -167,13 +172,13 @@ public sealed class KuGou : IDisposable
             return false;
         }
 
-        if (!TryReadChain(_layout.DurationRootOffset, _layout.DurationOffsets, out var durationSeconds) || durationSeconds < 0)
+        if (!TryReadChain(_layout.DurationRootOffset, _layout.DurationOffsets, out var durationValue) || durationValue < 0)
         {
             return false;
         }
 
         position = positionValue;
-        duration = durationSeconds;
+        duration = (double)durationValue / _layout.DurationUnitsPerSecond;
         return true;
     }
 
