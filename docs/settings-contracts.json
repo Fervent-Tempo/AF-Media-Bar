@@ -1,6 +1,6 @@
 {
   "formatVersion": 2,
-  "latestRelease": "v1.7.0",
+  "latestRelease": "v1.7.1",
   "settingsSchemaVersion": 2,
   "settings": {
     "experiments": {
@@ -86,7 +86,7 @@
       "modifier": "v1.2.0",
       "primaryWheelAction": "v1.2.0",
       "showWheelTooltips": "v1.3.0",
-      "useNativeTrayIcon": "unreleased",
+      "useNativeTrayIcon": "v1.7.1",
       "textClickAction": "v1.2.0",
       "trayChordWheelAction": "v1.2.0",
       "trayClickAction": "v1.2.0",
