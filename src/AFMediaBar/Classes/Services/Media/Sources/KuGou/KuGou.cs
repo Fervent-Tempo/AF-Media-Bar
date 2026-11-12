@@ -34,7 +34,7 @@ public sealed class KuGou : IDisposable
 
     private static readonly MemoryLayout _legacyLayout = new(0x3929D8, 0x023C9B68, [0x70, 0x30, 0x0, 0x24], 0x3936A8);
     private static readonly MemoryLayout _layout27974 = _legacyLayout with { DurationRootOffset = 0x023C7B68 };
-    private static readonly MemoryLayout _layout28014 = new(0x3949F8, 0x02434B30, [0x108, 0x8C], 0x3956C8,
+    private static readonly MemoryLayout _layout28014 = new(0x3949F8, 0x024363D8, [0x30, 0x118], 0x3956C8,
         DurationUnitsPerSecond: 1000);
     private static readonly nint[] _graphOffsets = [0xC0, 0xB8];
 
