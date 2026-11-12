@@ -1754,7 +1754,7 @@
     <value>Cho phép</value>
   </data>
   <data name="Media.SourceList.Description" xml:space="preserve">
-    <value>NetEase Music luôn được liệt kê; các trình phát khác sẽ xuất hiện khi phát hiện được.</value>
+    <value>Các trình phát được phát hiện sẽ xuất hiện tại đây.</value>
   </data>
   <data name="Media.SourceList.Title" xml:space="preserve">
     <value>Nguồn phát khả dụng</value>

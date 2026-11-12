@@ -1776,7 +1776,7 @@
     <value>Allow</value>
   </data>
   <data name="Media.SourceList.Description" xml:space="preserve">
-    <value>NetEase Music is always listed; other players appear when detected.</value>
+    <value>Detected media players appear here.</value>
   </data>
   <data name="Media.SourceList.Title" xml:space="preserve">
     <value>Available sources</value>

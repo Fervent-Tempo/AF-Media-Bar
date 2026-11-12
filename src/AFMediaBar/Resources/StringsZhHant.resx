@@ -1776,7 +1776,7 @@
     <value>允許</value>
   </data>
   <data name="Media.SourceList.Description" xml:space="preserve">
-    <value>網易雲音樂隨時可選；其他播放器被偵測到後顯示。</value>
+    <value>偵測到的播放器會顯示在這裡。</value>
   </data>
   <data name="Media.SourceList.Title" xml:space="preserve">
     <value>可用來源</value>

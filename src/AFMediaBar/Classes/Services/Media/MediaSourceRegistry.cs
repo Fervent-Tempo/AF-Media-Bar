@@ -37,9 +37,12 @@ public sealed class MediaSourceRegistry
     public bool IsAllowed(string? sourceId, SmtcSourceFilterSettings settings) =>
         MediaSourceFilterPolicy.IsAllowed(sourceId, settings, NormalizeSourceId);
 
-    /// <summary>独立来源即使尚未连接或被禁用也可在设置页配置。</summary>
-    public IEnumerable<string> DiscoverSourceIds(IEnumerable<string> sessionSourceIds) =>
-        sessionSourceIds.Select(NormalizeSourceId).Concat(_sources.Select(p => p.SourcePolicy.SourceId))
+    /// <summary>供设置目录探测运行中的独立播放器。</summary>
+    internal IEnumerable<string> IndependentSourceIds => _sources.Select(source => source.SourcePolicy.SourceId);
+
+    /// <summary>合并已检测来源的别名，保留独立来源的规范标识。</summary>
+    public IEnumerable<string> DiscoverSourceIds(IEnumerable<string> detectedSourceIds) =>
+        detectedSourceIds.Select(NormalizeSourceId)
             .Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>通过各来源的纯策略组合候选，不要求存在 SMTC 会话。</summary>

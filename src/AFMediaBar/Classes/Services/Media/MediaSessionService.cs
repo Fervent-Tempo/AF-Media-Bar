@@ -402,9 +402,12 @@ public sealed class MediaSessionService : IDisposable, IMediaSourceCatalog
     {
         if (_isDisposed)
             return;
+        var previous = _sourceSnapshots.GetValueOrDefault(provider);
         _sourceSnapshots[provider] = snapshot;
         // 当前选择的播放状态先发布，不能等候选刷新或在途 SMTC 补全结束。
         PublishResolved(ResolveSnapshot(_sessionSnapshot));
+        if ((previous?.IsConnected == true) != (snapshot?.IsConnected == true))
+            PublishDiscoveredSources(_lastSessions);
         if (!_candidates.SequenceEqual(BuildCandidates()))
             RefreshSnapshot(_lastSessions);
 
@@ -713,7 +716,9 @@ public sealed class MediaSessionService : IDisposable, IMediaSourceCatalog
 
     private void PublishDiscoveredSources(IReadOnlyList<MediaSession> sessions)
     {
-        var sourceIds = _sources.DiscoverSourceIds(sessions.Select(MediaSessionGuard.GetSourceId))
+        var independentIds = _sourceSnapshots.Values.OfType<MediaSnapshot>()
+            .Where(snapshot => snapshot.IsConnected).Select(snapshot => snapshot.SourceId);
+        var sourceIds = _sources.DiscoverSourceIds(sessions.Select(MediaSessionGuard.GetSourceId).Concat(independentIds))
             .Order(StringComparer.OrdinalIgnoreCase).ToArray();
         if (!sourceIds.SequenceEqual(_discoverySourceIds, StringComparer.OrdinalIgnoreCase))
         {
@@ -730,10 +735,19 @@ public sealed class MediaSessionService : IDisposable, IMediaSourceCatalog
         try
         {
             // 启动路径解析会读取进程；与媒体快照分开在后台执行，同一时刻只保留一次解析。
-            var sources = await Task.Run(() => sourceIds.TakeWhile(_ => !_isDisposed)
-                .Select(_sourceActivator.Describe)
-                .OrderBy(source => source.DisplayName, StringComparer.CurrentCultureIgnoreCase)
-                .ToArray());
+            var sources = await Task.Run(() =>
+            {
+                var detected = sourceIds.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var descriptions = new List<MediaSourceDescriptor>();
+                foreach (var sourceId in sourceIds.Union(_sources.IndependentSourceIds, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (_isDisposed) break;
+                    var description = _sourceActivator.Describe(sourceId, out var isRunning);
+                    if (isRunning || detected.Contains(sourceId)) descriptions.Add(description);
+                }
+
+                return descriptions.OrderBy(source => source.DisplayName, StringComparer.CurrentCultureIgnoreCase).ToArray();
+            });
             if (_isDisposed || revision != _discoveryRevision || sources.SequenceEqual(_lastDiscoveredSources))
                 return;
             _lastDiscoveredSources = sources;

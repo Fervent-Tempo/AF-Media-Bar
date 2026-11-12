@@ -54,7 +54,8 @@ public sealed class KuGouSourceTests
             Assert.AreEqual(KuGouSourcePolicy.SelectionKey, independent.Key);
             Assert.IsNull(independent.SessionKey);
             Assert.AreEqual("browser", candidates[0].Key);
-            Assert.IsTrue(registry.DiscoverSourceIds([]).Contains("kugou"));
+            Assert.IsFalse(registry.DiscoverSourceIds([]).Any());
+            CollectionAssert.AreEqual(new[] { "kugou" }, registry.DiscoverSourceIds(["KuGou.exe", "KGMUSIC"]).ToArray());
             Assert.IsTrue(registry.IsAllowed("KuGou.exe", new(true, ["KGMUSIC"])));
 
             candidates = registry.BuildCandidates([browser, new("native", "KuGou.exe", true, "native")], snapshots);

@@ -69,8 +69,11 @@ public sealed class MediaSourceActivationService
     }
 
     /// <summary>解析当前已发现来源的安全启动描述。 / Resolves a safe launch descriptor for a currently discovered source.</summary>
-    public MediaSourceDescriptor Describe(string sourceId)
+    public MediaSourceDescriptor Describe(string sourceId) => Describe(sourceId, out _);
+
+    internal MediaSourceDescriptor Describe(string sourceId, out bool isRunning)
     {
+        isRunning = false;
         var displayName = MediaSourceNameFormatter.GetDisplayName(sourceId, Translations.Get("Service.MediaSource.Unknown"));
         if (string.IsNullOrWhiteSpace(sourceId))
             return new MediaSourceDescriptor(string.Empty, displayName, null, null);
@@ -79,9 +82,11 @@ public sealed class MediaSourceActivationService
 
         foreach (var processName in ResolveActivationProcessNames(sourceId))
         {
-            foreach (var process in Process.GetProcessesByName(processName))
+            var processes = Process.GetProcessesByName(processName);
+            isRunning |= processes.Length > 0;
+            try
             {
-                using (process)
+                foreach (var process in processes)
                 {
                     try
                     {
@@ -94,6 +99,10 @@ public sealed class MediaSourceActivationService
                         Debug.WriteLine($"[MediaSourceActivationService] Could not resolve launch path: {ex.Message}");
                     }
                 }
+            }
+            finally
+            {
+                foreach (var process in processes) process.Dispose();
             }
         }
 
