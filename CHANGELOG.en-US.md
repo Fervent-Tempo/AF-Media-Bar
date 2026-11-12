@@ -6,6 +6,33 @@ All notable changes to AF Media Bar are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-11-12
+
+Improve tray interactions and context menus, unify window materials, and fix player progress and lyrics issues.
+
+### Added
+
+- Optional native tray icons follow the system theme and tray click action. All five glyphs use less padding. The option is off by default.
+- Recognize Folia as a media source.
+
+### Changed
+
+- Context menus use a top-level window that supports system materials and inherits the app font and text color. Media sources and Quick Launch submenus open on hover.
+- Regular windows share a material tint and concentration setting. Notifications and submenus distinguish the Acrylic, Mica, and Mica Alt approximations.
+- Move the full panel drag handle outside the media bar and adapt its color to the background.
+- Use Raw Input for global mouse input and handle tray button release consistently after wheel gestures.
+- List players in Media Sources and Quick Launch based on detection. Preserve saved source settings and launch entries.
+- Give local lyrics and their folders a dedicated settings area. Use WPF for vertical track information, suspend hidden lyrics views, and release them during deeper memory pruning.
+- Add offline highlights for 1.7.0 and update the sponsor list.
+
+### Fixed
+
+- Close the previous submenu and clear stale highlights when switching context menu items.
+- Prevent an extra click on button release after a combined tray wheel gesture.
+- Restore progress for KuGou Music 20.1.61.28014 and fix missing duration after restart. Wait for a stable state before showing the missing-progress notice and handle lyrics visibility separately.
+- Keep the local lyrics result when the online match is clearly weaker.
+- Clean up temporary files when saving settings fails.
+
 ## [1.7.0] - 2026-11-04
 
 Redesign the Settings home and category navigation, unify three-state component layouts, performance charts and the full panel, add local lyrics, and improve audio, media recovery and window interactions.
@@ -409,6 +436,7 @@ The first release of the rebuilt interface and interaction model: taskbar lyrics
 - Restricted native library lookup to System32.
 - Removed generic execution of media-provided `.exe` source identifiers.
 
+[1.7.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.7.0...v1.7.1
 [1.4.0]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.3.2...v1.4.0
 [1.3.2]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/Fervent-Tempo/AF-Media-Bar/compare/v1.3.0...v1.3.1
