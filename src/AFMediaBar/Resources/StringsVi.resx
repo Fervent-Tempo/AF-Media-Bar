@@ -1384,6 +1384,12 @@
   <data name="Lyrics.Row.BrowserVideo.Title" xml:space="preserve">
     <value>Lời bài hát cho trình duyệt và ứng dụng video</value>
   </data>
+  <data name="Lyrics.Row.AppleMusicOriginalNames.Title" xml:space="preserve">
+    <value>Tên gốc cho Apple Music</value>
+  </data>
+  <data name="Lyrics.Row.AppleMusicOriginalNames.Description" xml:space="preserve">
+    <value>Khi không tìm được lời phù hợp cho Apple Music, tra tên gốc trong kho nhạc của Apple rồi tìm lại; chỉ áp dụng với quy tắc mặc định, mặc định bật.</value>
+  </data>
   <data name="Lyrics.Row.Local.Title" xml:space="preserve">
     <value>Lời bài hát cục bộ</value>
   </data>

@@ -1474,6 +1474,12 @@
   <data name="Lyrics.Row.BrowserVideo.Description" xml:space="preserve">
     <value>为浏览器和已识别的视频应用匹配歌词；默认关闭。</value>
   </data>
+  <data name="Lyrics.Row.AppleMusicOriginalNames.Title" xml:space="preserve">
+    <value>Apple Music 原名取词</value>
+  </data>
+  <data name="Lyrics.Row.AppleMusicOriginalNames.Description" xml:space="preserve">
+    <value>Apple Music 未找到可靠歌词时，向 Apple 曲库查询原名再取词；仅默认规则生效，默认开启。</value>
+  </data>
   <data name="Lyrics.Row.SecondLine.Description" xml:space="preserve">
     <value>设置第二行显示什么；缺失时尝试下一项。</value>
   </data>

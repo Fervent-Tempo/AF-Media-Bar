@@ -126,7 +126,8 @@
       "prioritySourceIds": "v1.5.0",
       "localEnabled": "v1.7.0",
       "localFallbackOnly": "v1.7.0",
-      "localFolders": "v1.7.0"
+      "localFolders": "v1.7.0",
+      "appleMusicOriginalNamesEnabled": "unreleased"
     },
     "lyricsSyllableHighlightEnabled": "v1.2.0",
     "lyricsTextAlignment": "v1.2.0",
@@ -1660,7 +1661,7 @@
       "prefixes": [
         "settings.lyricsSource"
       ],
-      "text": "null 全启用，空数组全关；保存未知ID，使用时忽略。按Ordinal去重；enabledSourceIds仅控制启用集合，手动规则使用独立prioritySourceIds排序，默认规则不使用手动调度选项。ID为Netease、NeteaseSearch、LRCLIB、QQMusic、Kugou、SodaMusic。"
+      "text": "null 全启用，空数组全关；保存未知ID，使用时忽略。按Ordinal去重；enabledSourceIds仅控制启用集合，手动规则使用独立prioritySourceIds排序，默认规则不使用手动调度选项。ID为Netease、NeteaseSearch、LRCLIB、QQMusic、Kugou、SodaMusic。appleMusicOriginalNamesEnabled默认开启，缺字段回开启，显式false保持关闭。"
     },
     {
       "id": "secondary-line",

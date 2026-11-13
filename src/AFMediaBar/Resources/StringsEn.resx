@@ -1474,6 +1474,12 @@
   <data name="Lyrics.Row.BrowserVideo.Description" xml:space="preserve">
     <value>Match lyrics for browsers and recognized video apps; off by default.</value>
   </data>
+  <data name="Lyrics.Row.AppleMusicOriginalNames.Title" xml:space="preserve">
+    <value>Original titles for Apple Music</value>
+  </data>
+  <data name="Lyrics.Row.AppleMusicOriginalNames.Description" xml:space="preserve">
+    <value>When no reliable lyrics are found for Apple Music, look up the original title in Apple's catalog and search again. Default rules only; on by default.</value>
+  </data>
   <data name="Lyrics.Row.SecondLine.Description" xml:space="preserve">
     <value>Choose the second line; if unavailable, try the next option.</value>
   </data>

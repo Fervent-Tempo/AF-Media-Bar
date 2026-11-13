@@ -62,29 +62,53 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         var settings = SettingsManager.Current.LyricsSource.Normalize();
         if (!settings.LocalEnabled || settings.LocalFolders is not { Count: > 0 } folders || string.IsNullOrWhiteSpace(request.Title))
             return Task.FromResult<LyricsResult?>(null);
-        return Task.Run(() => Search(request, folders, cancellationToken), cancellationToken);
+        return Task.Run(() => Match(request, Scan(folders, cancellationToken), cancellationToken), cancellationToken);
     }
 
-    private static LyricsResult? Search(LyricsRequest request, IReadOnlyList<string> folders, CancellationToken cancellationToken)
+    /// <summary>
+    /// 枚举已添加目录里的歌词文件；同一次取词要按多个名称匹配时复用这份清单，不重复扫描目录。关闭或未添加目录时为 null。
+    /// </summary>
+    internal Task<LocalLyricsScan?> ScanAsync(CancellationToken cancellationToken)
+    {
+        var settings = SettingsManager.Current.LyricsSource.Normalize();
+        if (!settings.LocalEnabled || settings.LocalFolders is not { Count: > 0 } folders)
+            return Task.FromResult<LocalLyricsScan?>(null);
+        return Task.Run<LocalLyricsScan?>(() => Scan(folders, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>在已有清单里按请求匹配，采纳规则与 <see cref="GetLyricsAsync"/> 相同。</summary>
+    internal static Task<LyricsResult?> MatchAsync(LocalLyricsScan scan, LyricsRequest request, CancellationToken cancellationToken) =>
+        string.IsNullOrWhiteSpace(request.Title)
+            ? Task.FromResult<LyricsResult?>(null)
+            : Task.Run(() => Match(request, scan, cancellationToken), cancellationToken);
+
+    private static LocalLyricsScan Scan(IReadOnlyList<string> folders, CancellationToken cancellationToken)
+    {
+        var files = new List<string>();
+        foreach (var folder in folders)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            files.AddRange(ListLyricFiles(folder, cancellationToken));
+        }
+        return new LocalLyricsScan(files);
+    }
+
+    private static LyricsResult? Match(LyricsRequest request, LocalLyricsScan scan, CancellationToken cancellationToken)
     {
         // 请求侧的派生值对每个候选都一样，算一次即可；候选侧的每份仍各自解析。
         var key = new RequestKey(VersionKeys(request.Title), SingleCharTitle(request.Title));
         Candidate? best = null;
-        foreach (var folder in folders)
+        foreach (var path in scan.Files)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            foreach (var path in ListLyricFiles(folder, cancellationToken))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var (baseName, role) = Classify(path);
-                // 翻译和罗马音只是主歌词的附件，不单独参与评分。
-                if (role != LyricRole.Main) continue;
-                if (!LooksRelated(baseName, request)) continue;
-                var candidate = Evaluate(request, path, baseName, key);
-                // 没有歌词的候选直接跳过：本地文件没内容就等于没找到，不能被它顶掉带词的那一份。
-                if (candidate is null || candidate.Document.Lines.Count == 0) continue;
-                if (best is null || Better(candidate, best)) best = candidate;
-            }
+            var (baseName, role) = Classify(path);
+            // 翻译和罗马音只是主歌词的附件，不单独参与评分。
+            if (role != LyricRole.Main) continue;
+            if (!LooksRelated(baseName, request)) continue;
+            var candidate = Evaluate(request, path, baseName, key);
+            // 没有歌词的候选直接跳过：本地文件没内容就等于没找到，不能被它顶掉带词的那一份。
+            if (candidate is null || candidate.Document.Lines.Count == 0) continue;
+            if (best is null || Better(candidate, best)) best = candidate;
         }
 
         // 一条都没命中就当没找到，继续原有链路。
@@ -619,3 +643,6 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
 
     private sealed record Candidate(string Path, int Score, LyricsLowConfidenceReason Confidence, LyricDocument Document);
 }
+
+/// <summary>一次取词内的本地歌词文件清单；只在该次取词内复用，不跨请求缓存。</summary>
+internal sealed record LocalLyricsScan(IReadOnlyList<string> Files);

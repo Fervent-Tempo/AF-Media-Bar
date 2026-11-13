@@ -141,7 +141,11 @@ namespace AFMediaBar
                 // 歌词提供器的顺序就是优先级：精确来源在前，模糊搜索在后；每多一个来源只增加一次未命中时的尝试。
                 // The provider order is the priority: exact sources first, fuzzy searches last. Every extra source only adds
                 // one attempt after the earlier ones miss.
-                services.AddSingleton<LyricsService>(_ => LyricsProviderFactory.CreateDefaultService());
+                // Apple Music 原名解析器持有 HttpClient、缓存与限流状态，随容器释放。
+                // The Apple Music original-name resolver owns its HttpClient, cache and rate limit, and is released with the container.
+                services.AddSingleton(sp => new AppleMusicOriginalMetadataResolver(sp.GetRequiredService<AppLogService>()));
+                services.AddSingleton<LyricsService>(sp =>
+                    LyricsProviderFactory.CreateDefaultService(sp.GetRequiredService<AppleMusicOriginalMetadataResolver>()));
                 services.AddSingleton<MediaSourceRegistry>();
                 services.AddSingleton<MediaSessionCatalog>();
                 services.AddSingleton<MediaSessionSelectionService>();
