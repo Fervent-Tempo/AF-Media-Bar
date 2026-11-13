@@ -1,143 +1,13 @@
 // Modified from https://github.com/Kxnrl/NetEase-Cloud-Music-DiscordRPC
 
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace AFMediaBar.Classes.Services.Win32;
 
 /// <summary>
-/// 读取外部进程内存并执行签名扫描的内部工具。
-/// Internal helper for reading external process memory and scanning signatures.
-/// </summary>
-internal static class Memory
-{
-    public static bool FindPattern(string pattern, int processId, nint address, out nint pointer)
-    {
-        var memory = new ProcessMemory(processId);
-
-        var ntOffset = memory.ReadInt32(address, 0x3C);
-        var ntHeader = address + ntOffset;
-
-        // IMAGE
-        var fileHeader = ntHeader + 4;
-        var sections = memory.ReadInt16(ntHeader, 6);
-        var sectionSize = memory.ReadInt16(fileHeader, 16);
-
-        // OPT HEADER
-        var optHeader = fileHeader + 20;
-        var sectionHeader = optHeader + sectionSize;
-
-        var cursor = sectionHeader;
-
-        var pStart = nint.Zero;
-        var memoryBlock = new List<byte>();
-
-        for (var i = 0; i < sections; i++)
-        {
-            var name = memory.ReadInt64(cursor);
-
-            if (name == 0x747865742E)
-            {
-                var offset = memory.ReadInt32(cursor, 12);
-
-                pStart = address + offset;
-
-                var size = memory.ReadInt32(cursor, 8);
-                var buffer = memory.ReadBytes(pStart, size);
-                memoryBlock.AddRange(buffer);
-
-                break;
-            }
-
-            cursor += 40;
-        }
-
-        pointer = FindPattern(pattern, pStart, memoryBlock);
-
-        return pointer != nint.Zero;
-    }
-
-    private static nint FindPattern(string pattern, nint pStart, List<byte> memoryBlock)
-    {
-        if (pattern.Length == 0 || pStart == nint.Zero || memoryBlock.Count == 0)
-        {
-            return nint.Zero;
-        }
-
-        var bytes = ParseSignature(pattern);
-        var first = bytes[0];
-        var result = nint.Zero;
-
-        var range = memoryBlock.Count - bytes.Length;
-
-        for (var i = 0; i < range; i++)
-        {
-            if (first != 0xFFFF)
-            {
-                i = memoryBlock.IndexOf((byte)first, i);
-
-                if (i == -1)
-                {
-                    break;
-                }
-            }
-
-            var found = true;
-
-            for (var j = 1; j < bytes.Length; j++)
-            {
-                var wildcard = bytes[j] == 0xFFFF;
-                var equals = bytes[j] == memoryBlock[i + j];
-
-                if (wildcard || equals)
-                {
-                    continue;
-                }
-
-                found = false;
-
-                break;
-            }
-
-            if (!found)
-            {
-                continue;
-            }
-
-            result = nint.Add(pStart, i);
-
-            break;
-        }
-
-        return result;
-    }
-
-    private static ushort[] ParseSignature(string signature)
-    {
-        var bytesStr = signature.Split(' ').AsSpan();
-
-        var bytes = new ushort[bytesStr.Length];
-
-        for (var i = 0; i < bytes.Length; i++)
-        {
-            var str = bytesStr[i];
-
-            if (str.Contains('?'))
-            {
-                bytes[i] = 0xFFFF;
-
-                continue;
-            }
-
-            bytes[i] = Convert.ToByte(str, 16);
-        }
-
-        return bytes;
-    }
-}
-
-/// <summary>
-/// 封装进程句柄和基础类型读取操作。
-/// Encapsulates a process handle and primitive typed reads.
+/// 封装进程句柄和基础类型读取操作。模式扫描已迁到 Media/Readers/MemoryPatternScanner。
+/// Encapsulates a process handle and primitive typed reads. Pattern scanning now lives in Media/Readers/MemoryPatternScanner.
 /// </summary>
 internal sealed class ProcessMemory : IDisposable
 {
@@ -149,6 +19,24 @@ internal sealed class ProcessMemory : IDisposable
 
     public ProcessMemory(int processId)
         => _process = OpenProcess(0x0010, IntPtr.Zero, processId);
+
+    /// <summary>读取句柄是否成功打开；0 表示 OpenProcess 失败。 / Whether OpenProcess succeeded; zero means failure.</summary>
+    internal bool IsOpen => _process != nint.Zero;
+
+    /// <summary>原始句柄，仅供同进程的 VirtualQueryEx 等只读检查使用。 / Raw handle for read-only checks such as VirtualQueryEx.</summary>
+    internal nint Handle => _process;
+
+    /// <summary>尝试打开只读句柄并保留 Win32 错误码，供诊断使用。 / Opens a read-only handle and keeps the Win32 error for diagnostics.</summary>
+    internal static ProcessMemory? TryOpen(int processId, out int error)
+    {
+        // VirtualQueryEx 需要 PROCESS_QUERY_INFORMATION；只申请 VM_READ 会让范围扫描静默返回 0 个区域。
+        // VirtualQueryEx needs PROCESS_QUERY_INFORMATION; requesting only VM_READ makes range scans silently return zero regions.
+        var handle = OpenProcess(0x0410, IntPtr.Zero, processId);
+        error = handle == nint.Zero ? Marshal.GetLastWin32Error() : 0;
+        if (handle == nint.Zero)
+            return null;
+        return new ProcessMemory(handle);
+    }
 
     public void Dispose()
     {
@@ -208,6 +96,57 @@ internal sealed class ProcessMemory : IDisposable
 
         value = BitConverter.ToDouble(bytes, 0);
         return true;
+    }
+
+    /// <summary>
+    /// 读取 MSVC std::string（32 字节布局：数据指针/容量/长度）；长度与容量必须自洽。
+    /// Reads an MSVC std::string (32-byte layout: data pointer/capacity/length); length and capacity must agree.
+    /// </summary>
+    internal bool TryReadStdString(IntPtr address, int maximumLength, out string value)
+    {
+        value = string.Empty;
+        if (maximumLength <= 0 || !TryReadProcessMemory(address, 0x20, out var header))
+            return false;
+
+        var length = BitConverter.ToInt64(header, 0x10);
+        var capacity = BitConverter.ToInt64(header, 0x18);
+        if (length <= 0 || length > maximumLength || capacity < length)
+            return false;
+
+        byte[] data;
+        if (length <= 15)
+        {
+            data = header[..(int)length];
+        }
+        else
+        {
+            var pointer = BitConverter.ToInt64(header, 0);
+            if (pointer == 0 || !TryReadProcessMemory((IntPtr)pointer, (int)length, out data))
+                return false;
+        }
+
+        try
+        {
+            value = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true).GetString(data);
+            return value.Length > 0 && !value.Contains('\0');
+        }
+        catch (DecoderFallbackException)
+        {
+            value = string.Empty;
+            return false;
+        }
+    }
+
+    /// <summary>带校验的任意长度只读；短读返回 false。 / Checked arbitrary-length read; short reads return false.</summary>
+    internal bool TryReadBytes(IntPtr address, int size, out byte[] bytes)
+    {
+        if (size <= 0 || size > 16 * 1024 * 1024)
+        {
+            bytes = [];
+            return false;
+        }
+
+        return TryReadProcessMemory(address, size, out bytes);
     }
 
     private bool TryReadProcessMemory(IntPtr address, int size, out byte[] bytes)

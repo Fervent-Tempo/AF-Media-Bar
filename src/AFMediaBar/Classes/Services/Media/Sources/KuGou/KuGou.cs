@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using AFMediaBar.Classes.Interop;
+using AFMediaBar.Classes.Services.Media.Readers;
+using AFMediaBar.Classes.Services.Media.Sources.Shared;
 using AFMediaBar.Classes.Services.Win32;
 
 namespace AFMediaBar.Classes.Services.Media.Sources.KuGou;
@@ -29,20 +31,14 @@ public sealed class KuGou : IDisposable
     private static readonly string[] ProcessNames = ["KuGou", "KuGouMusic"];
 
     // 进度和播放图的入口位于 kgplayer.dll，时长链的入口位于 kugou.dll。
-    private sealed record MemoryLayout(nint PositionOffset, nint DurationRootOffset, nint[] DurationOffsets, nint GraphRootOffset,
-        int DurationUnitsPerSecond = 1);
-
-    private static readonly MemoryLayout _legacyLayout = new(0x3929D8, 0x023C9B68, [0x70, 0x30, 0x0, 0x24], 0x3936A8);
-    private static readonly MemoryLayout _layout27974 = _legacyLayout with { DurationRootOffset = 0x023C7B68 };
-    private static readonly MemoryLayout _layout28014 = new(0x3949F8, 0x024363D8, [0x30, 0x118], 0x3956C8,
-        DurationUnitsPerSecond: 1000);
     private static readonly nint[] _graphOffsets = [0xC0, 0xB8];
 
     private readonly Process _process;
     private readonly ProcessMemory _memory;
     private readonly nint _positionModuleBase;
     private readonly nint _durationModuleBase;
-    private readonly MemoryLayout _layout;
+    private readonly KuGouMemoryLayout _layout;
+    private readonly KuGouMetadataProbe _metadataProbe;
     private nint _quartzBase;
     private int _quartzSize;
     private readonly bool _supportsIndependentRead;
@@ -50,13 +46,14 @@ public sealed class KuGou : IDisposable
     private bool _disposed;
 
     private KuGou(Process process, ProcessMemory memory, nint positionModuleBase, nint durationModuleBase,
-        nint quartzBase, int quartzSize, bool supportsIndependentRead, MemoryLayout layout)
+        nint quartzBase, int quartzSize, bool supportsIndependentRead, KuGouMemoryLayout layout)
     {
         _process = process;
         _memory = memory;
         _positionModuleBase = positionModuleBase;
         _durationModuleBase = durationModuleBase;
         _layout = layout;
+        _metadataProbe = new KuGouMetadataProbe(memory);
         _quartzBase = quartzBase;
         _quartzSize = quartzSize;
         _supportsIndependentRead = supportsIndependentRead;
@@ -93,12 +90,8 @@ public sealed class KuGou : IDisposable
     /// </summary>
     private static KuGou? TryAttach(Process process)
     {
-        nint positionModuleBase;
-        nint durationModuleBase;
-        nint quartzBase;
-        int quartzSize;
-        bool supportsIndependentRead;
-        MemoryLayout layout;
+        ProcessMemory? memory = null;
+        KuGou? reader = null;
         try
         {
             var modules = process.Modules.OfType<ProcessModule>().ToArray();
@@ -108,45 +101,57 @@ public sealed class KuGou : IDisposable
                 candidate => DurationModuleName.Equals(candidate.ModuleName, StringComparison.OrdinalIgnoreCase));
             if (position is null || duration is null)
             {
+                MediaReadDiagnostics.Report("kugou", "attach", "缺少 kgplayer.dll 或 kugou.dll", process.Id, process.ProcessName);
                 return null;
             }
 
-            positionModuleBase = position.BaseAddress;
-            durationModuleBase = duration.BaseAddress;
-            var quartz = modules.FirstOrDefault(candidate => "quartz.dll".Equals(candidate.ModuleName, StringComparison.OrdinalIgnoreCase));
-            quartzBase = quartz?.BaseAddress ?? 0;
-            quartzSize = quartz?.ModuleMemorySize ?? 0;
-            // 私有偏移按已验证版本选择；未知版本继续尝试原有 SMTC 时间轴增强。
-            var verifiedLayout = (VersionParts(position.FileVersionInfo), VersionParts(duration.FileVersionInfo)) switch
+            memory = ProcessMemory.TryOpen(process.Id, out var openError);
+            if (memory is null)
             {
-                ((1, 2, 0, 519), (20, 1, 51, 27972)) => _legacyLayout,
-                ((1, 2, 0, 519), (20, 1, 51, 27974)) => _layout27974,
-                ((1, 2, 0, 523), (20, 1, 61, 28014)) => _layout28014,
-                _ => null
-            };
-            supportsIndependentRead = verifiedLayout is not null;
-            layout = verifiedLayout ?? _legacyLayout;
-        }
-        catch
-        {
-            // 候选进程可能恰好退出，或模块枚举被拒绝：按"没有这个候选"处理。
-            // The candidate may have just exited, or the module enumeration was denied: treat it as absent.
+                MediaReadDiagnostics.Report("kugou", "attach", $"OpenProcess 失败 error={openError}", process.Id, process.ProcessName);
+                return null;
+            }
+
+            var positionFingerprint = PeBuildFingerprint.TryRead(memory, position.BaseAddress, out var playerBuild)
+                ? playerBuild : default;
+            var durationFingerprint = PeBuildFingerprint.TryRead(memory, duration.BaseAddress, out var durationBuild)
+                ? durationBuild : default;
+            var profile = KuGouBuildProfiles.Match(
+                positionFingerprint, durationFingerprint, position.FileVersionInfo, duration.FileVersionInfo);
+            var supportsIndependentRead = profile is not null;
+            var layout = profile?.Layout ?? KuGouBuildProfiles.LegacyFallback;
+            if (profile is null)
+            {
+                MediaReadDiagnostics.Report("kugou", "attach",
+                    $"未登记构建 kgplayer={positionFingerprint}/{position.FileVersionInfo.FileVersion} kugou={durationFingerprint}/{duration.FileVersionInfo.FileVersion}",
+                    process.Id, process.ProcessName);
+            }
+
+            var quartz = modules.FirstOrDefault(candidate => "quartz.dll".Equals(candidate.ModuleName, StringComparison.OrdinalIgnoreCase));
+            reader = new KuGou(process, memory, position.BaseAddress, duration.BaseAddress,
+                quartz?.BaseAddress ?? 0, quartz?.ModuleMemorySize ?? 0, supportsIndependentRead, layout);
+            memory = null; // 句柄与 Process 已交给 reader。
+            if (reader.TryReadTimelineForAttach(out _, out _))
+            {
+                MediaReadDiagnostics.Info("kugou",
+                    $"已附加 pid={process.Id} profile={(supportsIndependentRead ? "verified" : "legacy-fallback")} " +
+                    $"kgplayer={positionFingerprint} kugou={durationFingerprint}");
+                return reader;
+            }
+
+            MediaReadDiagnostics.Report("kugou", "attach", "TryReadTimeline 失败", process.Id, process.ProcessName);
+            reader.Dispose();
+            reader = null;
             return null;
         }
-
-        var reader = new KuGou(process, new ProcessMemory(process.Id), positionModuleBase, durationModuleBase,
-            quartzBase, quartzSize, supportsIndependentRead, layout);
-        if (reader.TryReadTimeline(out _, out _))
+        catch (Exception exception)
         {
-            return reader;
+            reader?.Dispose();
+            memory?.Dispose();
+            MediaReadDiagnostics.Report("kugou", "attach", "枚举模块或读取失败", process.Id, process.ProcessName, exception);
+            return null;
         }
-
-        reader.Dispose();
-        return null;
     }
-
-    private static (int Major, int Minor, int Build, int Revision) VersionParts(FileVersionInfo version) =>
-        (version.FileMajorPart, version.FileMinorPart, version.FileBuildPart, version.FilePrivatePart);
 
     /// <summary>
     /// 读取当前播放进度（毫秒精度的秒）与曲目时长（秒）。进度不是有限非负数、时长链任一环读不到、
@@ -159,27 +164,43 @@ public sealed class KuGou : IDisposable
     {
         position = 0;
         duration = 0;
-
-        if (_disposed)
-        {
+        if (_disposed || !TryReadPosition(out position))
             return false;
-        }
+        return TryReadDuration(null, out duration);
+    }
 
-        if (!_memory.TryReadDouble(_positionModuleBase + _layout.PositionOffset, out var positionValue) ||
-            !double.IsFinite(positionValue) ||
-            positionValue < 0)
-        {
+    /// <summary>附加阶段允许用元数据 JSON 补时长，避免时长链更新后整个进程被判为不可用。</summary>
+    internal bool TryReadTimelineForAttach(out double position, out double duration)
+    {
+        position = 0;
+        duration = 0;
+        if (_disposed || !TryReadPosition(out position))
             return false;
-        }
+        if (TryReadDuration(null, out duration))
+            return true;
+        return _metadataProbe.TryGetDuration(ReadCaption(), out duration) && duration > 0;
+    }
 
-        if (!TryReadChain(_layout.DurationRootOffset, _layout.DurationOffsets, out var durationValue) || durationValue < 0)
-        {
+    private bool TryReadPosition(out double position)
+    {
+        position = 0;
+        if (!_memory.TryReadDouble(_positionModuleBase + _layout.PositionOffset, out var value) ||
+            !double.IsFinite(value) || value < 0)
             return false;
-        }
-
-        position = positionValue;
-        duration = (double)durationValue / _layout.DurationUnitsPerSecond;
+        position = value;
         return true;
+    }
+
+    private bool TryReadDuration(string? caption, out double duration)
+    {
+        duration = 0;
+        if (TryReadChain(_layout.DurationRootOffset, _layout.DurationOffsets, out var value) && value >= 0)
+        {
+            duration = (double)value / _layout.DurationUnitsPerSecond;
+            return true;
+        }
+
+        return caption is not null && _metadataProbe.TryGetDuration(caption, out duration) && duration > 0;
     }
 
     private bool TryReadChain(nint baseOffset, nint[] offsets, out int value)
@@ -202,6 +223,25 @@ public sealed class KuGou : IDisposable
     internal bool TryReadPlayback(out KuGouPlaybackInfo? info)
     {
         info = null;
+        if (!TryReadPlaybackOnce(out var first) || first is null)
+            return false;
+
+        // 两次读取之间切歌、seek 或图状态变化时拒绝本轮，下一轮再发布。
+        Thread.Sleep(20);
+        if (_disposed || !TryReadPlaybackOnce(out var second) || second is null)
+            return false;
+        if (first.Identity != second.Identity ||
+            Math.Abs(first.Duration - second.Duration) > 1 ||
+            Math.Abs(first.Position - second.Position) > 2 ||
+            first.IsPlaying != second.IsPlaying)
+            return false;
+        info = second;
+        return true;
+    }
+
+    private bool TryReadPlaybackOnce(out KuGouPlaybackInfo? info)
+    {
+        info = null;
         if (_disposed || !_supportsIndependentRead || _process.HasExited) return false;
         if (_quartzBase == 0)
         {
@@ -213,9 +253,11 @@ public sealed class KuGou : IDisposable
             _quartzSize = quartz?.ModuleMemorySize ?? 0;
             if (_quartzBase == 0) return false;
         }
+
         var caption = ReadCaption();
         if (!KuGouTrackMetadata.TryParse(caption, out var title, out var artist) ||
-            !TryReadTimeline(out var position, out var duration) || duration <= 0 || duration > 86_400 || position > duration + 2)
+            !TryReadPosition(out var position) || !TryReadDuration(caption, out var duration) ||
+            duration <= 0 || duration > 86_400 || position > duration + 2)
             return false;
 
         // DirectShow 播放图的 FilterState：1 暂停，2 播放。先验证对象虚表属于 quartz.dll。

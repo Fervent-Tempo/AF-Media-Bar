@@ -1,9 +1,10 @@
 // Modified from https://github.com/Kxnrl/NetEase-Cloud-Music-DiscordRPC
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Services.Media.Readers;
 using AFMediaBar.Classes.Services.Win32;
 
 namespace AFMediaBar.Classes.Services.Media.Sources.NetEase;
@@ -31,6 +32,7 @@ public sealed class NetEase : IDisposable
     private string _cachedArtists = string.Empty;
     private string _cachedAlbum = string.Empty;
     private string _cachedCover = string.Empty;
+    private double _cachedDuration;
 
     // 元数据文件可能晚于内存曲目更新；失败只短暂退避，不能永久拒绝同一首歌。
     // Metadata files can lag behind memory; retry a missing track after a bounded backoff.
@@ -55,59 +57,57 @@ public sealed class NetEase : IDisposable
         _playlistPath = Path.Combine(fileDirectory, "playingList");
         _fmQueuePath = Path.Combine(fileDirectory, "fmPlay");
 
-        using var p = Process.GetProcessById(pid);
-
+        ProcessMemory? process = null;
         try
         {
-            foreach (ProcessModule module in p.Modules)
+            using var p = Process.GetProcessById(pid);
+            var module = p.Modules.OfType<ProcessModule>()
+                .FirstOrDefault(candidate => "cloudmusic.dll".Equals(candidate.ModuleName, StringComparison.OrdinalIgnoreCase))
+                ?? throw new EntryPointNotFoundException("Failed to find cloudmusic.dll");
+            var error = 0;
+            process = ProcessMemory.TryOpen(pid, out error)
+                ?? throw new Win32Exception(error, "Failed to open NetEase process for reading");
+            if (PeBuildFingerprint.TryRead(process, module.BaseAddress, out var loaded) &&
+                PeBuildFingerprint.TryReadFile(module.FileName, out var installed) && loaded != installed)
             {
-                if (!"cloudmusic.dll".Equals(module.ModuleName))
-                {
-                    continue;
-                }
-
-                var process = new ProcessMemory(pid);
-                _process = process;
-                var address = module.BaseAddress;
-
-                if (Memory.FindPattern(AudioPlayerPattern, pid, address, out var app))
-                {
-                    var textAddress = nint.Add(app, 3);
-                    var displacement = process.ReadInt32(textAddress);
-
-                    _audioPlayerPointer = textAddress + displacement + sizeof(int);
-                }
-
-                if (Memory.FindPattern(AudioSchedulePattern, pid, address, out var asp))
-                {
-                    var textAddress = nint.Add(asp, 4);
-                    var displacement = process.ReadInt32(textAddress);
-                    _schedulePointer = textAddress + displacement + sizeof(int);
-                }
-
-                break;
+                throw new InvalidOperationException(
+                    $"cloudmusic.dll 正在更新: loaded={loaded} installed={installed}");
             }
 
-            if (_audioPlayerPointer == nint.Zero)
-            {
-                throw new EntryPointNotFoundException("Failed to find AudioPlayer");
-            }
-
-            if (_schedulePointer == nint.Zero)
-            {
-                throw new EntryPointNotFoundException("Failed to find Scheduler");
-            }
-
-            if (_process is null)
-            {
-                throw new EntryPointNotFoundException("Failed to find process");
-            }
+            var playerMatch = FindUniquePattern(process, module, AudioPlayerPattern, "AudioPlayer");
+            var scheduleMatch = FindUniquePattern(process, module, AudioSchedulePattern, "AudioSchedule");
+            _audioPlayerPointer = ResolveRipPointer(process, playerMatch, 3);
+            _schedulePointer = ResolveRipPointer(process, scheduleMatch, 4);
+            _process = process;
+            process = null;
         }
         catch
         {
-            _process?.Dispose();
+            process?.Dispose();
             throw;
         }
+
+        if (_audioPlayerPointer == nint.Zero)
+            throw new EntryPointNotFoundException("Failed to resolve AudioPlayer");
+        if (_schedulePointer == nint.Zero)
+            throw new EntryPointNotFoundException("Failed to resolve Scheduler");
+    }
+
+    private static nint FindUniquePattern(ProcessMemory process, ProcessModule module, string pattern, string name)
+    {
+        var matches = MemoryPatternScanner.Find(process, module.BaseAddress, module.ModuleMemorySize, pattern,
+            maxMatches: 2, maxBytes: 64 * 1024 * 1024);
+        if (matches.Count != 1)
+            throw new EntryPointNotFoundException($"{name} pattern matches={matches.Count}");
+        return matches[0];
+    }
+
+    private static nint ResolveRipPointer(ProcessMemory process, nint match, int displacementOffset)
+    {
+        var textAddress = match + displacementOffset;
+        if (!process.TryReadInt32(textAddress, out var displacement))
+            throw new EntryPointNotFoundException("Failed to read RIP displacement");
+        return textAddress + displacement + sizeof(int);
     }
 
     public void Dispose() => _process.Dispose();
@@ -124,21 +124,50 @@ public sealed class NetEase : IDisposable
     /// The title SMTC reports, used only to verify that a private-FM track taken by <c>currentIndex</c> really is the current one; an empty value
     /// rejects the index fallback.
     /// </param>
-    public PlayerInfo? GetPlayerInfo(string? expectedTitle = null)
+    public PlayerInfo? GetPlayerInfo(string? expectedTitle = null, string? expectedArtist = null,
+        double? expectedDuration = null)
+    {
+        if (GetPlayerInfoOnce(expectedTitle) is not { } first)
+            return null;
+
+        Thread.Sleep(30);
+        if (GetPlayerInfoOnce(expectedTitle) is not { } second)
+            return null;
+        if (!string.Equals(first.Identity, second.Identity, StringComparison.Ordinal) ||
+            Math.Abs(first.Duration - second.Duration) > 1 ||
+            Math.Abs(first.Schedule - second.Schedule) > 0.3 ||
+            first.Pause != second.Pause)
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(expectedTitle) &&
+            !NetEaseTrackMetadataReader.TitlesDescribeTheSameTrack(expectedTitle, second.Title))
+            return null;
+        if (!string.IsNullOrWhiteSpace(expectedArtist) &&
+            !ArtistsOverlap(expectedArtist, second.Artists))
+            return null;
+        if (expectedDuration is > 0 && Math.Abs(second.Duration - expectedDuration.Value) > 2)
+            return null;
+        return second;
+    }
+
+    private static bool ArtistsOverlap(string expected, string actual)
+    {
+        var separators = new[] { ',', '、', '/', '&', ';' };
+        var wanted = expected.Split(separators, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var reported = actual.Split(separators, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        return wanted.Length > 0 && reported.Length > 0 &&
+               wanted.Any(name => reported.Any(other => string.Equals(name, other, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private PlayerInfo? GetPlayerInfoOnce(string? expectedTitle)
     {
         var status = GetPlayerStatus();
-
-        if (status == PlayStatus.Waiting)
-        {
+        if (status is not (PlayStatus.Playing or PlayStatus.Paused))
             return null;
-        }
 
         var identity = GetCurrentSongId();
-
         if (string.IsNullOrEmpty(identity))
-        {
             return null;
-        }
 
         if (!string.Equals(identity, _cachedIdentity, StringComparison.Ordinal) &&
             ((string.Equals(identity, _rejectedIdentity, StringComparison.Ordinal) &&
@@ -152,6 +181,11 @@ public sealed class NetEase : IDisposable
             return null;
         }
 
+        if (GetSchedule() is not { } schedule || GetSongDuration() is not { } duration ||
+            !double.IsFinite(schedule) || !double.IsFinite(duration) ||
+            schedule < 0 || duration <= 0 || duration > 86_400 || schedule > duration + 2)
+            return null;
+
         return new PlayerInfo
         {
             Identity = identity,
@@ -159,8 +193,8 @@ public sealed class NetEase : IDisposable
             Artists = _cachedArtists,
             Album = _cachedAlbum,
             Cover = _cachedCover,
-            Duration = GetSongDuration(),
-            Schedule = GetSchedule(),
+            Duration = duration,
+            Schedule = Math.Clamp(schedule, 0, duration),
             Pause = status == PlayStatus.Paused,
 
             // lock
@@ -273,6 +307,7 @@ public sealed class NetEase : IDisposable
         _cachedArtists = metadata.Artists;
         _cachedAlbum = metadata.Album;
         _cachedCover = metadata.Cover;
+        _cachedDuration = metadata.DurationSeconds;
     }
 
     #region Unsafe
@@ -286,11 +321,13 @@ public sealed class NetEase : IDisposable
         Unknown4,
     }
 
-    private double GetSchedule()
-        => _process.ReadDouble(_schedulePointer);
+    private double? GetSchedule()
+        => _process.TryReadDouble(_schedulePointer, out var value) && double.IsFinite(value) && value >= 0
+            ? value : null;
 
-    private PlayStatus GetPlayerStatus()
-        => (PlayStatus)_process.ReadInt32(_audioPlayerPointer, 0x60);
+    private PlayStatus? GetPlayerStatus()
+        => _process.TryReadInt32(_audioPlayerPointer + 0x60, out var value) && Enum.IsDefined(typeof(PlayStatus), value)
+            ? (PlayStatus)value : null;
 
     private float GetPlayerVolume()
         => _process.ReadFloat(_audioPlayerPointer, 0x64);
@@ -298,51 +335,29 @@ public sealed class NetEase : IDisposable
     private float GetCurrentVolume()
         => _process.ReadFloat(_audioPlayerPointer, 0x68);
 
-    private double GetSongDuration()
-        => _process.ReadDouble(_audioPlayerPointer, 0xa8);
+    private double? GetSongDuration()
+    {
+        var value = _process.TryReadDouble(_audioPlayerPointer + 0xa8, out var memory) &&
+                    double.IsFinite(memory) && memory > 0 && memory < 86_400
+            ? memory
+            : 0;
+        if (value > 0)
+            return value;
+        return _cachedDuration > 0 ? _cachedDuration : null;
+    }
 
     private string GetCurrentSongId()
     {
-        var audioPlayInfo = _process.ReadInt64(_audioPlayerPointer, 0x50);
-
-        if (audioPlayInfo == 0)
-        {
+        if (!_process.TryReadInt64(_audioPlayerPointer + 0x50, out var audioPlayInfo) || audioPlayInfo == 0)
             return string.Empty;
-        }
-
-        var strPtr = audioPlayInfo + 0x10;
-
-        var strLength = _process.ReadInt64((nint)strPtr, 0x10);
-
-        // small string optimization
-        byte[] strBuffer;
-
-        if (strLength <= 15)
-        {
-            strBuffer = _process.ReadBytes((nint)strPtr, (int)strLength);
-        }
-        else
-        {
-            var strAddress = _process.ReadInt64((nint)strPtr);
-            strBuffer = _process.ReadBytes((nint)strAddress, (int)strLength);
-        }
-
-        var str = Encoding.UTF8.GetString(strBuffer);
-
-        if (string.IsNullOrEmpty(str))
-        {
+        if (!_process.TryReadStdString((nint)audioPlayInfo + 0x10, 256, out var str) ||
+            string.IsNullOrEmpty(str))
             return string.Empty;
-        }
 
-        // 内存里的字符串形如 "<songid>_…"，id 就是下划线之前的那一段。没有下划线时整段就是 id：
-        // 越界切片会抛 ArgumentOutOfRangeException，而它会被轮询循环当成"内存读取失败"吞掉并重建读取器——
-        // 表现是这一首歌永远没有来源补充，且没有任何一条日志指向真正的原因。
-        // The string in memory looks like "<songid>_…", so the id is what precedes the underscore. Without an underscore the whole
-        // string is the id: slicing out of range throws ArgumentOutOfRangeException, which the poll loop swallows as "the memory read
-        // failed" and rebuilds the reader for — the symptom being a track that never gets source enrichment, with no log line
-        // pointing at the real cause.
+        // 内存里的字符串形如 "<songid>_…"，id 就是下划线之前的那一段。
         var separator = str.IndexOf('_');
-        return (separator > 0 ? str[..separator] : str).TrimEnd('\0').Trim();
+        var identity = (separator > 0 ? str[..separator] : str).Trim();
+        return identity.Length is > 0 and <= 32 && identity.All(char.IsAsciiDigit) ? identity : string.Empty;
     }
 
     #endregion

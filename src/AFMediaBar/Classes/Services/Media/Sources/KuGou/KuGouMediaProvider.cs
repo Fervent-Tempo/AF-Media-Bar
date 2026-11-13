@@ -3,6 +3,7 @@ using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Lyrics;
+using AFMediaBar.Classes.Services.Media.Sources.Shared;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
 
@@ -21,6 +22,7 @@ public sealed class KuGouMediaProvider : IIndependentMediaSourceProvider, IMemor
     private readonly LyricsRetryTracker<string> _lyricsRetries = new(CacheCapacity);
     private readonly Dictionary<string, CancellationTokenSource> _pendingLyrics = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _readerGate = new(1, 1);
+    private readonly SourceContinuityBuffer _continuity = new(TimeSpan.FromSeconds(1.5));
     private CancellationTokenSource? _cancellation;
     private Task _pollTask = Task.CompletedTask;
     private MediaSnapshot _sessionSnapshot = MediaSnapshot.Disconnected;
@@ -60,6 +62,7 @@ public sealed class KuGouMediaProvider : IIndependentMediaSourceProvider, IMemor
     public void Start()
     {
         if (_isDisposed || _cancellation is not null || !IsAllowed || _pruneLevel >= MemoryPruneLevel.DisplayOff) return;
+        _continuity.Clear();
         var cancellation = new CancellationTokenSource();
         _cancellation = cancellation;
         _pollTask = Task.Run(() => PollAsync(cancellation));
@@ -111,7 +114,8 @@ public sealed class KuGouMediaProvider : IIndependentMediaSourceProvider, IMemor
                         if (!_isDisposed && ReferenceEquals(_cancellation, cancellation))
                         {
                             _cancellation = null;
-                            ApplyRead(null, DateTimeOffset.UtcNow, CancellationToken.None);
+                            _continuity.Clear();
+                            SnapshotChanged?.Invoke(this, null);
                         }
                     }, DispatcherPriority.Background).Task.ConfigureAwait(false);
             }
@@ -128,7 +132,9 @@ public sealed class KuGouMediaProvider : IIndependentMediaSourceProvider, IMemor
         _readAt = readAt;
         if (info is null)
         {
-            SnapshotChanged?.Invoke(this, null);
+            // 短暂失败先冻结最后快照并标记 stale；合并层会回退 SMTC，超过 1.5 秒才真正断开。
+            var stale = _continuity.Update(null, processPresent: true, DateTimeOffset.UtcNow);
+            SnapshotChanged?.Invoke(this, stale);
             return;
         }
         var hasCached = _lyricsCache.TryGetValue(info.Identity, out var lyrics);
@@ -144,11 +150,12 @@ public sealed class KuGouMediaProvider : IIndependentMediaSourceProvider, IMemor
     private void Publish(KuGouPlaybackInfo info, LyricsResult? lyrics, bool searching)
     {
         if (_isDisposed) return;
-        SnapshotChanged?.Invoke(this, new MediaSnapshot(true, info.IsPlaying, false, false, false,
+        var snapshot = new MediaSnapshot(true, info.IsPlaying, false, false, false,
             info.Title, info.Artist, KuGouSourcePolicy.SourceId,
             MediaSourceNameFormatter.GetDisplayName(KuGouSourcePolicy.SourceId, ""), null, lyrics,
             info.Position, info.Duration, false, false, MediaRepeatMode.Unavailable, 1, _readAt)
-        { IsSearchingLyrics = searching });
+        { IsSearchingLyrics = searching };
+        SnapshotChanged?.Invoke(this, _continuity.Update(snapshot, processPresent: true, DateTimeOffset.UtcNow));
     }
 
     private async Task LoadLyricsAsync(KuGouPlaybackInfo info, CancellationTokenSource cancellation)
@@ -196,6 +203,7 @@ public sealed class KuGouMediaProvider : IIndependentMediaSourceProvider, IMemor
         try { cancellation?.Cancel(); }
         catch (ObjectDisposedException) { }
         CancelLyrics();
+        _continuity.Clear();
         _currentInfo = null;
         if (!_isDisposed) SnapshotChanged?.Invoke(this, null);
     }

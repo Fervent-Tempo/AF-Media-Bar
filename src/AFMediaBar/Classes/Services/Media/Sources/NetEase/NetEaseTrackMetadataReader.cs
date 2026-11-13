@@ -11,7 +11,8 @@ namespace AFMediaBar.Classes.Services.Media.Sources.NetEase;
 /// <param name="Artists">歌手，已用逗号连接。/ Artists, already joined with commas.</param>
 /// <param name="Album">专辑名。/ Album name.</param>
 /// <param name="Cover">封面地址。/ Cover URL.</param>
-public readonly record struct NetEaseTrackMetadata(string Title, string Artists, string Album, string Cover);
+public readonly record struct NetEaseTrackMetadata(string Title, string Artists, string Album, string Cover,
+    double DurationSeconds = 0);
 
 /// <summary>
 /// 解析网易云客户端两个元数据文件的纯策略：正在播放列表（playingList）与私人FM 队列（fmPlay）。
@@ -64,7 +65,8 @@ public static class NetEaseTrackMetadataReader
             track.Name,
             string.Join(',', track.Artists.Select(artist => artist.Singer)),
             track.Album.Name,
-            track.Album.Cover);
+            track.Album.Cover,
+            ResolveDuration(track.Duration, track.Dt));
         return true;
     }
 
@@ -135,7 +137,8 @@ public static class NetEaseTrackMetadataReader
             track.Name,
             string.Join(',', (track.Artists ?? []).Select(artist => artist.Name).Where(name => !string.IsNullOrWhiteSpace(name))),
             track.Album?.Name ?? string.Empty,
-            track.Album?.ResolvedCover ?? string.Empty);
+            track.Album?.ResolvedCover ?? string.Empty,
+            ResolveDuration(track.Duration, track.Dt));
         return true;
     }
 
@@ -146,6 +149,17 @@ public static class NetEaseTrackMetadataReader
     /// players append decorations such as "(Live)" or "(feat. …)", and this test only exists to rule out a stale queue holding an entirely
     /// different song.
     /// </summary>
+    private static double ResolveDuration(double duration, double dt)
+    {
+        var value = duration > 0 ? duration : dt;
+        if (value <= 0 || value >= 86_400_000)
+            return 0;
+
+        // playingList 通常写毫秒；少数旧文件写秒。按量级择一，最终仍受播放器时长范围约束。
+        var seconds = value < 1000 ? value : value / 1000.0;
+        return seconds is > 0 and < 86_400 ? seconds : 0;
+    }
+
     /// <param name="expectedTitle">SMTC 报出的曲名。/ Title SMTC reports.</param>
     /// <param name="queueTitle">队列里的曲名。/ Title inside the queue.</param>
     public static bool TitlesDescribeTheSameTrack(string? expectedTitle, string? queueTitle)
@@ -172,7 +186,9 @@ file record NetEasePlaylistTrack(
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("artists")]
     NetEasePlaylistTrackArtist[] Artists,
-    [property: JsonPropertyName("album")] NetEasePlaylistTrackAlbum Album);
+    [property: JsonPropertyName("album")] NetEasePlaylistTrackAlbum Album,
+    [property: JsonPropertyName("duration")] double Duration = 0,
+    [property: JsonPropertyName("dt")] double Dt = 0);
 
 file record NetEasePlaylistItem(
     [property: JsonPropertyName("id")] string Identity,
@@ -204,7 +220,9 @@ file record NetEaseFmTrack(
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("artists")]
     NetEaseFmTrackArtist[]? Artists,
-    [property: JsonPropertyName("album")] NetEaseFmTrackAlbum? Album);
+    [property: JsonPropertyName("album")] NetEaseFmTrackAlbum? Album,
+    [property: JsonPropertyName("duration")] double Duration = 0,
+    [property: JsonPropertyName("dt")] double Dt = 0);
 
 /// <summary>私人FM 队列：<c>currentIndex</c> 指向当前曲目。/ The private-FM queue, whose <c>currentIndex</c> points at the current track.</summary>
 file record NetEaseFmQueue(
