@@ -18,32 +18,68 @@
                 <ResourceDictionary Source="/AFMediaBar;component/Resources/MediaVisualResources.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <BooleanToVisibilityConverter x:Key="QueueVisibility" />
-            <Style x:Key="QueueItemStyle" TargetType="ListBoxItem">
+
+            <!-- 与任务栏设备弹窗使用同一套行按钮反馈：透明底、圆角、ControlFill 系列 hover/pressed。 -->
+            <Style x:Key="QueueItemButtonStyle" TargetType="Button">
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                <Setter Property="Padding" Value="8,6,14,6" />
                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                <Setter Property="Padding" Value="8,6" />
-                <Setter Property="Margin" Value="0,1" />
                 <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
                 <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
                 <Setter Property="Template">
                     <Setter.Value>
-                        <ControlTemplate TargetType="ListBoxItem">
-                            <Border x:Name="RowSurface" Background="{TemplateBinding Background}"
-                                    CornerRadius="6" Padding="{TemplateBinding Padding}"
-                                    SnapsToDevicePixels="True">
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="ButtonSurface" Background="{TemplateBinding Background}"
+                                    CornerRadius="5" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
                                 <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                                   VerticalAlignment="Center" />
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="RowSurface" Property="Background"
-                                            Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                    <Setter TargetName="ButtonSurface" Property="Background"
+                                            Value="{DynamicResource ControlFillColorSecondaryBrush}" />
                                 </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="ButtonSurface" Property="Background"
+                                            Value="{DynamicResource ControlFillColorTertiaryBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="0.5" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- 选中态与设备弹窗一致：AfAccentTintBrush 背景 + 左侧 3px AfAccentBrush 标记。 -->
+            <Style x:Key="QueueItemStyle" TargetType="ListBoxItem">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Margin" Value="0,2" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                            <Border x:Name="ItemSurface" Background="Transparent" CornerRadius="6"
+                                    SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Border x:Name="CandidateMark" Width="3" CornerRadius="1" Margin="1,8,0,8"
+                                            HorizontalAlignment="Left"
+                                            Background="{DynamicResource AfAccentBrush}"
+                                            Visibility="Collapsed" />
+                                    <ContentPresenter Margin="5,0,0,0" HorizontalAlignment="Stretch" />
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter TargetName="RowSurface" Property="Background"
-                                            Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
-                                </Trigger>
-                                <Trigger Property="IsEnabled" Value="False">
-                                    <Setter Property="Opacity" Value="0.5" />
+                                    <Setter TargetName="ItemSurface" Property="Background"
+                                            Value="{DynamicResource AfAccentTintBrush}" />
+                                    <Setter TargetName="CandidateMark" Property="Visibility" Value="Visible" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -65,15 +101,12 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0" Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
@@ -82,7 +115,8 @@
                                        FontWeight="{DynamicResource AppTextStrongFontWeight}"
                                        TextTrimming="CharacterEllipsis" />
                             <TextBlock Text="{Binding StatusText}" Style="{StaticResource PanelLabelStyle}"
-                                       Margin="0,3,0,0" TextWrapping="Wrap" />
+                                       Margin="0,3,0,0" TextWrapping="Wrap"
+                                       Visibility="{Binding HasStatusText, Converter={StaticResource QueueVisibility}}" />
                         </StackPanel>
                         <ui:Button Grid.Column="1" MinWidth="52" Height="32" Margin="4,0,0,0"
                                    Padding="10,0" Content="{DynamicResource Loc.Panel.Queue.Retry}"
@@ -95,97 +129,73 @@
                                    AutomationProperties.Name="{DynamicResource Loc.Panel.Queue.Refresh}">
                             <ui:SymbolIcon Symbol="ArrowClockwise24" FontSize="16" />
                         </ui:Button>
-                        <ui:Button Grid.Column="3" Width="32" Height="32" Margin="4,0,0,0" Padding="0"
-                                   Command="{Binding CloseCommand}"
-                                   ToolTip="{DynamicResource Loc.Common.Close}"
-                                   AutomationProperties.Name="{DynamicResource Loc.Common.Close}">
-                            <ui:SymbolIcon Symbol="Dismiss24" FontSize="16" />
-                        </ui:Button>
                     </Grid>
 
-                    <Border Grid.Row="1" Style="{StaticResource PanelCardStyle}" Margin="0,0,0,10"
-                            Visibility="{Binding HasCurrent, Converter={StaticResource QueueVisibility}}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="44" />
-                                <ColumnDefinition Width="10" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <Border Width="44" Height="44" CornerRadius="10"
-                                    Background="{DynamicResource AfMaterialCardBrush}">
-                                <ui:SymbolIcon Symbol="MusicNote220" FontSize="22"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Border>
-                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding CurrentTitle}" FontSize="14"
-                                           FontWeight="{DynamicResource AppTextMediumFontWeight}"
-                                           TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding CurrentSubtitle}" Style="{StaticResource PanelLabelStyle}"
-                                           Margin="0,3,0,0" TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                        Margin="8,0,0,0">
-                                <TextBlock Text="{Binding CurrentStatusText}" Style="{StaticResource PanelLabelStyle}"
-                                           HorizontalAlignment="Right" />
-                                <TextBlock Text="{Binding ShuffleText}" Style="{StaticResource PanelLabelStyle}"
-                                           Margin="0,3,0,0" HorizontalAlignment="Right"
-                                           Foreground="{DynamicResource AfAccentBrush}"
-                                           Visibility="{Binding IsShuffleOn, Converter={StaticResource QueueVisibility}}" />
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-
-                    <Grid Grid.Row="2">
+                    <Grid Grid.Row="1">
                         <ListBox x:Name="QueueList" ItemsSource="{Binding Items}"
                                  ItemContainerStyle="{StaticResource QueueItemStyle}"
                                  Background="Transparent" BorderThickness="0" Padding="0"
                                  SelectionMode="Single"
                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.VerticalScrollBarVisibility="Visible"
                                  VirtualizingPanel.IsVirtualizing="True"
                                  VirtualizingPanel.VirtualizationMode="Recycling"
-                                 AutomationProperties.Name="{DynamicResource Loc.Panel.Queue.ListName}"
-                                 MouseDoubleClick="QueueList_MouseDoubleClick"
-                                 PreviewKeyDown="QueueList_PreviewKeyDown">
+                                 AutomationProperties.Name="{DynamicResource Loc.Panel.Queue.ListName}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="26" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding Number}" Style="{StaticResource PanelLabelStyle}"
-                                                   VerticalAlignment="Top" Margin="0,2,4,0"
-                                                   Typography.NumeralAlignment="Tabular" />
-                                        <StackPanel Grid.Column="1" Margin="0,0,8,0">
-                                            <TextBlock Text="{Binding Title}" FontSize="13"
-                                                       TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Text="{Binding Subtitle}" Style="{StaticResource PanelLabelStyle}"
-                                                       Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2" VerticalAlignment="Center"
-                                                    HorizontalAlignment="Right">
-                                            <ui:SymbolIcon Symbol="Play24" FontSize="12"
-                                                           HorizontalAlignment="Right"
-                                                           Foreground="{DynamicResource AfAccentBrush}">
-                                                <ui:SymbolIcon.Style>
-                                                    <Style TargetType="ui:SymbolIcon">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ui:SymbolIcon.Style>
-                                            </ui:SymbolIcon>
-                                            <TextBlock Text="{Binding DurationText}" Style="{StaticResource PanelLabelStyle}"
-                                                       HorizontalAlignment="Right" Margin="0,2,0,0"
+                                    <Button Style="{StaticResource QueueItemButtonStyle}"
+                                            Click="QueueItem_Click"
+                                            AutomationProperties.Name="{Binding AutomationName}">
+                                        <Grid Loaded="QueueItem_Loaded"
+                                              DataContextChanged="QueueItem_DataContextChanged">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="26" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Number}" Style="{StaticResource PanelLabelStyle}"
+                                                       VerticalAlignment="Center" Margin="0,0,4,0"
                                                        Typography.NumeralAlignment="Tabular" />
-                                        </StackPanel>
-                                    </Grid>
+                                            <Border Grid.Column="1" Width="32" Height="32" CornerRadius="5"
+                                                    Margin="0,0,8,0" ClipToBounds="True"
+                                                    Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                                <Grid>
+                                                    <ui:SymbolIcon Symbol="MusicNote220" FontSize="14"
+                                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    <Image Source="{Binding Artwork}" Stretch="UniformToFill"
+                                                           RenderOptions.BitmapScalingMode="HighQuality" />
+                                                </Grid>
+                                            </Border>
+                                            <StackPanel Grid.Column="2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Title}" FontSize="13"
+                                                           TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Subtitle}" Style="{StaticResource PanelLabelStyle}"
+                                                           Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="3" VerticalAlignment="Center"
+                                                        HorizontalAlignment="Right">
+                                                <ui:SymbolIcon Symbol="Play24" FontSize="12"
+                                                               HorizontalAlignment="Right"
+                                                               Foreground="{DynamicResource AfAccentBrush}">
+                                                    <ui:SymbolIcon.Style>
+                                                        <Style TargetType="ui:SymbolIcon">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ui:SymbolIcon.Style>
+                                                </ui:SymbolIcon>
+                                                <TextBlock Text="{Binding DurationText}" Style="{StaticResource PanelLabelStyle}"
+                                                           HorizontalAlignment="Right" Margin="0,2,0,0"
+                                                           Typography.NumeralAlignment="Tabular" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Button>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
@@ -200,18 +210,6 @@
                                        HorizontalAlignment="Center" Margin="0,8,0,0" />
                         </StackPanel>
                     </Grid>
-
-                    <StackPanel Grid.Row="3" Margin="0,10,0,0">
-                        <TextBlock Text="{Binding ActionStatus}" Style="{StaticResource PanelLabelStyle}"
-                                   Foreground="{DynamicResource AfAccentBrush}" TextWrapping="Wrap"
-                                   Visibility="{Binding HasActionStatus, Converter={StaticResource QueueVisibility}}" />
-                        <Grid Margin="0,4,0,0">
-                            <TextBlock Text="{DynamicResource Loc.Panel.Queue.DoubleClickHint}"
-                                       Style="{StaticResource PanelLabelStyle}" />
-                            <TextBlock Text="{Binding CountText}" Style="{StaticResource PanelLabelStyle}"
-                                       HorizontalAlignment="Right" Typography.NumeralAlignment="Tabular" />
-                        </Grid>
-                    </StackPanel>
                 </Grid>
             </Border>
         </Grid>

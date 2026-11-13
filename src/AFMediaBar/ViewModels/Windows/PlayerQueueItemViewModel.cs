@@ -1,3 +1,4 @@
+using System.Windows.Media;
 using AFMediaBar.Classes.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -40,6 +41,10 @@ public partial class PlayerQueueItemViewModel : ObservableObject
     /// <summary>是否为 Nons 当前播放项；只由快照索引驱动。</summary>
     [ObservableProperty]
     private bool _isCurrent;
+
+    /// <summary>低分辨率封面缩略图；未加载或失败时为 null，界面显示主题占位图。</summary>
+    [ObservableProperty]
+    private ImageSource? _artwork;
 
     internal static string FormatDuration(long durationMs)
     {

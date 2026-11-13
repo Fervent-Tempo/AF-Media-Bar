@@ -1,20 +1,22 @@
-// 播放队列面板的呈现状态与命令协调；只读取 companion 快照，不持有窗口或网络资源。
+// 播放队列面板的呈现状态与命令协调；只读取 companion 快照，不持有窗口或音频资源。
 using System.Threading;
 using System.Threading.Tasks;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Media.Companions.Nons;
 using AFMediaBar.Resources;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace AFMediaBar.ViewModels.Windows;
 
-/// <summary>播放队列面板的状态、列表投影和双击/重试命令。</summary>
+/// <summary>播放队列面板的状态、列表投影、单击播放和后端封面缩略图。</summary>
 public partial class PlayerQueueViewModel : ObservableObject, IDisposable
 {
     private readonly IPlayerCompanion _companion;
     private readonly AppLogService? _log;
+    private readonly NonsCoverThumbnailService? _coverThumbnails;
     private PlayerCompanionSnapshot _snapshot = PlayerCompanionSnapshot.Empty;
     private CancellationTokenSource? _lifetime;
     private int _active;
@@ -22,40 +24,34 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
     private long _lastQueueRevision = -1;
     private PlayerCompanionConnectionState _lastConnectionState = PlayerCompanionConnectionState.Disconnected;
 
-    public PlayerQueueViewModel(IPlayerCompanion companion, AppLogService? log = null)
+    public PlayerQueueViewModel(
+        IPlayerCompanion companion,
+        AppLogService? log = null,
+        NonsCoverThumbnailService? coverThumbnails = null)
     {
         _companion = companion;
         _log = log;
+        _coverThumbnails = coverThumbnails;
     }
-
-    /// <summary>窗口关闭时由窗口订阅；面板本身不直接关闭窗口。</summary>
-    public event EventHandler? CloseRequested;
 
     [ObservableProperty] private IReadOnlyList<PlayerQueueItemViewModel> _items = Array.Empty<PlayerQueueItemViewModel>();
 
-    /// <summary>当前歌曲对应的行，供窗口首次打开时滚动到可见位置。</summary>
+    /// <summary>当前歌曲对应的行，供窗口首次打开时把列表中心对齐到当前歌曲。</summary>
     [ObservableProperty] private PlayerQueueItemViewModel? _currentItem;
 
+    /// <summary>只在连接中、重连、队列失效或错误时显示；连接正常时为空。</summary>
     [ObservableProperty] private string _statusText = string.Empty;
-    [ObservableProperty] private string _actionStatus = string.Empty;
-    [ObservableProperty] private string _currentTitle = string.Empty;
-    [ObservableProperty] private string _currentSubtitle = string.Empty;
-    [ObservableProperty] private string _currentStatusText = string.Empty;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private bool _isConnected;
     [ObservableProperty] private bool _isStale;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private bool _canJump;
     [ObservableProperty] private bool _canRetry;
-    [ObservableProperty] private bool _hasCurrent;
     [ObservableProperty] private bool _hasError;
-    [ObservableProperty] private bool _isShuffleOn;
 
-    public string TitleText => Translations.Format("Panel.Queue.TitleFormat", _companion.DisplayName);
-    public string CountText => Translations.Format("Panel.Queue.CountFormat", Items.Count);
+    public string TitleText => Translations.Get("Panel.Queue.WindowTitle");
     public bool IsEmpty => IsConnected && !IsLoading && Items.Count == 0;
-    public bool HasActionStatus => !string.IsNullOrEmpty(ActionStatus);
-    public string ShuffleText => IsShuffleOn ? Translations.Get("Panel.Queue.ShuffleOn") : string.Empty;
+    public bool HasStatusText => !string.IsNullOrEmpty(StatusText);
 
     /// <summary>窗口显示后调用；只连接和读取，不修改真实队列。</summary>
     public async Task ActivateAsync()
@@ -69,8 +65,8 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
         var token = _lifetime.Token;
         _companion.Changed += OnCompanionChanged;
         Translations.LanguageChanged += OnLanguageChanged;
-        SetActionStatus(string.Empty);
         HasError = false;
+        StatusText = string.Empty;
         UpdateSnapshot(_companion.Current, forceQueue: true);
 
         try
@@ -97,6 +93,31 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
         _lifetime?.Cancel();
         _companion.Changed -= OnCompanionChanged;
         Translations.LanguageChanged -= OnLanguageChanged;
+    }
+
+    /// <summary>行进入可视树或复用容器时按需加载低清封面；失败保留占位图。</summary>
+    public async Task LoadArtworkAsync(PlayerQueueItemViewModel item)
+    {
+        if (_coverThumbnails is null || item.Artwork is not null || Volatile.Read(ref _disposed) != 0)
+            return;
+
+        var token = _lifetime?.Token ?? CancellationToken.None;
+        if (!IsActive(token))
+            return;
+
+        try
+        {
+            var image = await _coverThumbnails.LoadAsync(item.Track, token);
+            if (image is not null && IsActive(token))
+                item.Artwork = image;
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            _log?.Warn("Nons", "queue cover thumbnail failed", exception);
+        }
     }
 
     [RelayCommand]
@@ -129,7 +150,7 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
             return;
 
         HasError = false;
-        SetActionStatus(string.Empty);
+        StatusText = string.Empty;
         try
         {
             await LoadAsync(token);
@@ -154,8 +175,6 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
 
         IsBusy = true;
         UpdateCommandState();
-        SetActionStatus(Translations.Get("Panel.Queue.Jumping"));
-
         try
         {
             var expectedRevision = _snapshot.QueueRevision;
@@ -167,16 +186,14 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
                 UpdateSnapshot(_companion.Current, forceQueue: true);
             if (!result.Accepted)
             {
-                SetActionStatus(Translations.Get(PlayerCompanionErrorPresentation.ResourceKey(result.Error)));
+                ShowCommandError(result.Error);
                 return;
             }
 
-            var confirmed = await WaitForCurrentTrackAsync(item.TrackId, token);
-            if (!IsActive(token))
-                return;
-
-            UpdateSnapshot(_companion.Current, result.Refreshed);
-            SetActionStatus(Translations.Get(confirmed ? "Panel.Queue.JumpConfirmed" : "Panel.Queue.AcceptedPending"));
+            // 已接收还不是播放成功；等待实际当前曲目变化，超时后由服务刷新并更新列表。
+            await WaitForCurrentTrackAsync(item.TrackId, token);
+            if (IsActive(token))
+                UpdateSnapshot(_companion.Current, result.Refreshed);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
@@ -185,7 +202,7 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
         {
             _log?.Warn("Nons", "queue jump failed", exception);
             if (IsActive(token))
-                SetActionStatus(Translations.Get("Panel.Queue.Error.Internal"));
+                ShowCommandError(PlayerCompanionError.Internal);
         }
         finally
         {
@@ -195,14 +212,11 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
         }
     }
 
-    [RelayCommand]
-    private void Close() => CloseRequested?.Invoke(this, EventArgs.Empty);
-
     private async Task LoadAsync(CancellationToken token)
     {
         IsLoading = Items.Count == 0;
         HasError = false;
-        SetActionStatus(string.Empty);
+        StatusText = string.Empty;
 
         var connected = await _companion.EnsureConnectedAsync(token);
         if (!IsActive(token))
@@ -241,8 +255,6 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
         if (!IsActive(_lifetime?.Token ?? CancellationToken.None))
             return;
 
-        // 旧 ActionStatus 是上一语言拼出的字符串；清掉后按新语言重算状态与当前曲目卡。
-        SetActionStatus(string.Empty);
         UpdateSnapshot(_snapshot, forceQueue: false);
     }
 
@@ -251,7 +263,6 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
         _snapshot = snapshot;
         IsConnected = snapshot.IsConnected;
         IsStale = snapshot.IsStale;
-        IsShuffleOn = snapshot.Player?.Shuffle == true;
 
         var connectionChanged = snapshot.ConnectionState != _lastConnectionState;
         _lastConnectionState = snapshot.ConnectionState;
@@ -268,7 +279,6 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
             ApplyCurrent(snapshot);
         }
 
-        UpdateCurrentCard(snapshot);
         UpdateStatus(snapshot);
         UpdateCommandState();
         OnPropertyChanged(string.Empty);
@@ -296,23 +306,17 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
         CurrentItem = target;
     }
 
-    private void UpdateCurrentCard(PlayerCompanionSnapshot snapshot)
-    {
-        var track = snapshot.CurrentTrack ?? CurrentItem?.Track;
-        HasCurrent = track is not null;
-        CurrentTitle = track?.Title ?? string.Empty;
-        CurrentSubtitle = track is null ? string.Empty : FormatSubtitle(track);
-        CurrentStatusText = PlaybackStatusText(snapshot.Player?.Status);
-    }
-
     private void UpdateStatus(PlayerCompanionSnapshot snapshot)
     {
         if (snapshot.ConnectionState == PlayerCompanionConnectionState.Connected)
         {
             HasError = false;
             CanRetry = false;
+            StatusText = snapshot.IsStale ? Translations.Get("Panel.Queue.Status.Stale") : string.Empty;
+            return;
         }
-        else if (snapshot.Error != PlayerCompanionError.None)
+
+        if (snapshot.Error != PlayerCompanionError.None)
         {
             HasError = true;
             CanRetry = true;
@@ -324,11 +328,6 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
         {
             PlayerCompanionConnectionState.Connecting => Translations.Get("Panel.Queue.Status.Connecting"),
             PlayerCompanionConnectionState.Reconnecting => Translations.Get("Panel.Queue.Status.Reconnecting"),
-            PlayerCompanionConnectionState.Connected when snapshot.IsStale => Translations.Get("Panel.Queue.Status.Stale"),
-            PlayerCompanionConnectionState.Connected => Translations.Format(
-                "Panel.Queue.Status.ConnectedFormat",
-                string.IsNullOrWhiteSpace(snapshot.PlayerVersion) ? _companion.DisplayName : snapshot.PlayerVersion,
-                Items.Count),
             _ => Translations.Get("Panel.Queue.Status.Disconnected")
         };
         CanRetry = snapshot.ConnectionState is PlayerCompanionConnectionState.Unavailable or PlayerCompanionConnectionState.Disconnected;
@@ -342,20 +341,18 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
 
     private bool CanJumpItem(PlayerQueueItemViewModel? item) => item is not null && CanJump;
 
-    private async Task<bool> WaitForCurrentTrackAsync(string trackId, CancellationToken token)
+    private async Task WaitForCurrentTrackAsync(string trackId, CancellationToken token)
     {
         for (var attempt = 0; attempt < 50; attempt++)
         {
             if (IsCurrentTrack(trackId))
-                return true;
+                return;
             await Task.Delay(100, token);
         }
 
         var refresh = await _companion.RefreshAsync(token);
-        if (!refresh.Success)
-            return false;
-        UpdateSnapshot(_companion.Current, forceQueue: true);
-        return IsCurrentTrack(trackId);
+        if (refresh.Success)
+            UpdateSnapshot(_companion.Current, forceQueue: true);
     }
 
     private bool IsCurrentTrack(string trackId) =>
@@ -370,33 +367,18 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
         OnPropertyChanged(string.Empty);
     }
 
-    private void SetActionStatus(string text)
+    private void ShowCommandError(PlayerCompanionError error)
     {
-        ActionStatus = text;
-        OnPropertyChanged(nameof(HasActionStatus));
+        HasError = true;
+        CanRetry = error is PlayerCompanionError.ServiceUnavailable or PlayerCompanionError.ConnectionLost or
+            PlayerCompanionError.Timeout or PlayerCompanionError.Busy;
+        IsLoading = false;
+        StatusText = Translations.Get(PlayerCompanionErrorPresentation.ResourceKey(error));
+        OnPropertyChanged(string.Empty);
     }
 
     private bool IsActive(CancellationToken token) =>
         Volatile.Read(ref _disposed) == 0 && Volatile.Read(ref _active) != 0 && !token.IsCancellationRequested;
-
-    private static string FormatSubtitle(PlayerCompanionTrack track)
-    {
-        var artists = string.Join(" / ", track.Artists);
-        if (string.IsNullOrWhiteSpace(track.Album))
-            return artists;
-        return string.IsNullOrWhiteSpace(artists) ? track.Album : $"{artists} · {track.Album}";
-    }
-
-    private static string PlaybackStatusText(PlayerCompanionPlaybackStatus? status) => status switch
-    {
-        PlayerCompanionPlaybackStatus.Playing => Translations.Get("Panel.Queue.Status.Playing"),
-        PlayerCompanionPlaybackStatus.Paused => Translations.Get("Panel.Queue.Status.Paused"),
-        PlayerCompanionPlaybackStatus.Stopped => Translations.Get("Panel.Queue.Status.Stopped"),
-        PlayerCompanionPlaybackStatus.Loading => Translations.Get("Panel.Queue.Status.Loading"),
-        PlayerCompanionPlaybackStatus.Buffering => Translations.Get("Panel.Queue.Status.Buffering"),
-        PlayerCompanionPlaybackStatus.Error => Translations.Get("Panel.Queue.Status.Error"),
-        _ => Translations.Get("Panel.Queue.Status.Unknown")
-    };
 
     public void Dispose()
     {
@@ -406,6 +388,5 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
         Deactivate();
         _lifetime?.Dispose();
         _lifetime = null;
-        CloseRequested = null;
     }
 }

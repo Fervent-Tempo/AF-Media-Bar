@@ -51,7 +51,6 @@ public partial class PlayerQueuePanelWindow : FluentWindow, IDisposable
             RequestClose();
         });
         appearanceService.Attach(this);
-        _viewModel.CloseRequested += OnCloseRequested;
         Closed += OnClosed;
         ApplyMotionEffects();
     }
@@ -100,14 +99,8 @@ public partial class PlayerQueuePanelWindow : FluentWindow, IDisposable
             if (_isClosing || _isDisposed)
                 return;
 
-            // 激活期间列表可能经历初始快照和刷新两次重建；只在最终列表落地后滚动一次当前项。
-            await Dispatcher.InvokeAsync(() =>
-            {
-                if (_isClosing || _viewModel.CurrentItem is not { } current)
-                    return;
-                QueueList.UpdateLayout();
-                QueueList.ScrollIntoView(current);
-            }, DispatcherPriority.Loaded);
+            // 激活期间列表可能经历初始快照和刷新两次重建；只在最终列表落地后把当前项放到视口中间。
+            await Dispatcher.InvokeAsync(CenterCurrentItem, DispatcherPriority.Loaded);
         }
         catch (Exception exception)
         {
@@ -211,47 +204,59 @@ public partial class PlayerQueuePanelWindow : FluentWindow, IDisposable
         Close();
     }
 
-    private void OnCloseRequested(object? sender, EventArgs e) => RequestClose();
-
-    private void QueueList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    private void QueueItem_Click(object sender, RoutedEventArgs e)
     {
-        if (e.ChangedButton != MouseButton.Left)
+        if (_isClosing || sender is not System.Windows.Controls.Button { DataContext: PlayerQueueItemViewModel item })
             return;
 
-        var item = FindQueueItem(e.OriginalSource as DependencyObject);
-        if (item is null || !_viewModel.JumpCommand.CanExecute(item))
+        QueueList.SelectedItem = item;
+        if (!_viewModel.JumpCommand.CanExecute(item))
             return;
 
         e.Handled = true;
         _viewModel.JumpCommand.Execute(item);
     }
 
-    private void QueueList_PreviewKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Escape)
-        {
-            RequestClose();
-            e.Handled = true;
-            return;
-        }
+    private void QueueItem_Loaded(object sender, RoutedEventArgs e) => TryLoadArtwork(sender);
 
-        if (e.Key == Key.Enter && QueueList.SelectedItem is PlayerQueueItemViewModel item &&
-            _viewModel.JumpCommand.CanExecute(item))
-        {
-            e.Handled = true;
-            _viewModel.JumpCommand.Execute(item);
-        }
+    private void QueueItem_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e) => TryLoadArtwork(sender);
+
+    private void TryLoadArtwork(object sender)
+    {
+        if (sender is FrameworkElement { DataContext: PlayerQueueItemViewModel item })
+            _ = _viewModel.LoadArtworkAsync(item);
     }
 
-    private static PlayerQueueItemViewModel? FindQueueItem(DependencyObject? source)
+    /// <summary>把当前歌曲放在列表视口中间；靠近首尾时由滚动范围自然夹取。</summary>
+    private void CenterCurrentItem()
     {
-        while (source is not null)
+        if (_isClosing || _viewModel.CurrentItem is not { } current)
+            return;
+
+        QueueList.ScrollIntoView(current);
+        QueueList.UpdateLayout();
+        if (QueueList.ItemContainerGenerator.ContainerFromItem(current) is not ListBoxItem container)
+            return;
+
+        var scrollViewer = FindVisualChild<ScrollViewer>(QueueList);
+        if (scrollViewer is null)
+            return;
+
+        var point = container.TransformToAncestor(scrollViewer).Transform(new Point(0, 0));
+        var target = scrollViewer.VerticalOffset + point.Y -
+            Math.Max(0, (scrollViewer.ViewportHeight - container.ActualHeight) / 2);
+        scrollViewer.ScrollToVerticalOffset(Math.Clamp(target, 0, scrollViewer.ScrollableHeight));
+    }
+
+    private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+    {
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
         {
-            if (source is ListBoxItem { DataContext: PlayerQueueItemViewModel item })
-                return item;
-            source = source is Visual
-                ? VisualTreeHelper.GetParent(source)
-                : LogicalTreeHelper.GetParent(source);
+            var child = VisualTreeHelper.GetChild(parent, index);
+            if (child is T match)
+                return match;
+            if (FindVisualChild<T>(child) is { } descendant)
+                return descendant;
         }
 
         return null;
@@ -281,7 +286,6 @@ public partial class PlayerQueuePanelWindow : FluentWindow, IDisposable
         _isDisposed = true;
         _outsideClick.Dispose();
         _windowPresentation.Dispose();
-        _viewModel.CloseRequested -= OnCloseRequested;
         _viewModel.Dispose();
         Closed -= OnClosed;
         PanelChrome.Effect = null;

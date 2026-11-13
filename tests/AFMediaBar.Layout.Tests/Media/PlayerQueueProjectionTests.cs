@@ -35,7 +35,7 @@ public sealed class PlayerQueueProjectionTests
         Assert.AreEqual(1, viewModel.Items.Count(item => item.IsCurrent));
         Assert.AreEqual("track-b", viewModel.CurrentItem!.TrackId);
         Assert.IsTrue(viewModel.Items[1].IsCurrent);
-        StringAssert.Contains(viewModel.StatusText, "1.12.4");
+        Assert.AreEqual(string.Empty, viewModel.StatusText);
     }
 
     [TestMethod]
@@ -62,7 +62,6 @@ public sealed class PlayerQueueProjectionTests
 
         Assert.AreEqual(0, viewModel.Items.Count);
         Assert.IsNull(viewModel.CurrentItem);
-        Assert.IsFalse(viewModel.HasCurrent);
         Assert.IsTrue(viewModel.IsEmpty);
     }
 
