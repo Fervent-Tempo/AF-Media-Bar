@@ -1,3 +1,4 @@
+using AFMediaBar.Classes.Services.Media.Companions.Nons;
 using AFMediaBar.Classes.Services.Media.Sources.KuGou;
 using AFMediaBar.Classes.Services.Media.Sources.NetEase;
 using AFMediaBar.Classes.Services.Media.Smtc;
@@ -168,6 +169,9 @@ namespace AFMediaBar
                 services.AddSingleton<QuickLaunchIconService>();
                 services.AddSingleton<MediaSessionService>();
                 services.AddSingleton<AFMediaBar.Classes.Abstractions.IMediaSourceCatalog>(provider => provider.GetRequiredService<MediaSessionService>());
+                // 播放器可选能力：Nons 通过本机开放 API 提供真实队列/跳转/随机，窗口不持有其生命周期。
+                services.AddSingleton<NonsPlayerCompanion>();
+                services.AddSingleton<IPlayerCompanion>(provider => provider.GetRequiredService<NonsPlayerCompanion>());
                 services.AddSingleton<TrackChangeNotificationCoordinator>();
                 services.AddSingleton<MediaSourceProcessResolver>();
                 services.AddSingleton<SpectrumCaptureProcessResolver>();
