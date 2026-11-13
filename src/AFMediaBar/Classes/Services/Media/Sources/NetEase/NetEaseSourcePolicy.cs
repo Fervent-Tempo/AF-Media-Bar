@@ -1,6 +1,7 @@
 // 统一网易云两条通道的来源身份、候选与快照；纯策略，不读取进程或调用 SMTC。
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Abstractions;
+using AFMediaBar.Classes.Services.Media.Sources.Shared;
 
 namespace AFMediaBar.Classes.Services.Media.Sources.NetEase;
 
@@ -11,6 +12,14 @@ public sealed class NetEaseSourcePolicy : IMediaSourcePolicy
     public const string SourceId = "cloudmusic";
     /// <summary>跨 SMTC 重建和通道切换保持稳定的选择键。</summary>
     public const string SelectionKey = "source:cloudmusic";
+    private readonly SmtcFirstMergeState _merge;
+
+    public NetEaseSourcePolicy() : this(TimeProvider.System) { }
+
+    internal NetEaseSourcePolicy(TimeProvider timeProvider)
+    {
+        _merge = new SmtcFirstMergeState(snapshot => Matches(snapshot.SourceId), SameTrack, timeProvider);
+    }
 
     string IMediaSourcePolicy.SourceId => SourceId;
     string IMediaSourcePolicy.SelectionKey => SelectionKey;
@@ -40,30 +49,13 @@ public sealed class NetEaseSourcePolicy : IMediaSourcePolicy
         return result;
     }
 
-    /// <summary>内存数据优先；仅从同来源 SMTC 补充控制及同曲目信息。</summary>
-    public MediaSnapshot Merge(MediaSnapshot? memory, MediaSnapshot smtc)
-    {
-        var baseline = smtc.IsConnected && Matches(smtc.SourceId) ? smtc : MediaSnapshot.Disconnected;
-        if (memory is not { IsConnected: true } || (memory.IsStale && baseline.IsConnected))
-            return baseline.IsConnected ? baseline with { SourceId = SourceId } : MediaSnapshot.Disconnected;
+    /// <summary>SMTC 提供元数据、封面与控制，内存补充同来源时间轴和歌词。</summary>
+    public MediaSnapshot Merge(MediaSnapshot? memory, MediaSnapshot smtc) => _merge.Merge(memory, smtc, SourceId);
 
-        var sameTrack = baseline.IsConnected &&
-            !string.IsNullOrWhiteSpace(memory.Title) &&
-            string.Equals(memory.Title.Trim(), baseline.Title.Trim(), StringComparison.OrdinalIgnoreCase) &&
-            ArtistsDescribeTheSameTrack(memory.Artist, baseline.Artist);
-        return memory with
-        {
-            SourceId = SourceId,
-            Artwork = sameTrack ? baseline.Artwork : null,
-            Lyrics = memory.Lyrics ?? (sameTrack ? baseline.Lyrics : null),
-            CanPlayPause = baseline.CanPlayPause,
-            CanSkipPrevious = baseline.CanSkipPrevious,
-            CanSkipNext = baseline.CanSkipNext,
-            CanSeek = baseline.CanSeek && memory.Duration > 0,
-            CanChangeRepeat = baseline.CanChangeRepeat,
-            RepeatMode = baseline.RepeatMode
-        };
-    }
+    private static bool SameTrack(MediaSnapshot memory, MediaSnapshot smtc) =>
+        !string.IsNullOrWhiteSpace(memory.Title) &&
+        string.Equals(memory.Title.Trim(), smtc.Title.Trim(), StringComparison.OrdinalIgnoreCase) &&
+        ArtistsDescribeTheSameTrack(memory.Artist, smtc.Artist);
 
     private static bool ArtistsDescribeTheSameTrack(string memoryArtist, string smtcArtist)
     {

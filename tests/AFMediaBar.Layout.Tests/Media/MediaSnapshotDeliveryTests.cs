@@ -132,7 +132,7 @@ public sealed class MediaSnapshotDeliveryTests
     }
 
     [TestMethod]
-    public void SourcePauseIsPublishedBeforeCandidateRefresh()
+    public void SourceProgressIsPublishedBeforeCandidateRefresh()
     {
         StaTest.Run(dispatcher =>
         {
@@ -164,11 +164,11 @@ public sealed class MediaSnapshotDeliveryTests
             Set(service, "_lastSessionOptions", Array.Empty<MediaSessionOption>());
             Set(service, "_browserPresentation", new BrowserMissingPresentationState());
             Set(service, "_publishGate", new object());
-            var observedPause = false;
-            service.SessionsChanged += _ => observedPause = service.CurrentSnapshot?.IsPlaying == false;
-            Call(service, "OnSourceSnapshotChanged", provider, old with { IsPlaying = false, Position = 86 });
-            Assert.IsTrue(observedPause, "候选及补全刷新开始前，最新暂停状态应已发布。");
-            Assert.IsFalse(service.CurrentSnapshot!.IsPlaying);
+            var observedProgress = false;
+            service.SnapshotChanged += (_, _) => observedProgress = service.CurrentSnapshot?.Position == 86;
+            Call(service, "OnSourceSnapshotChanged", provider, old with { Position = 86 });
+            Assert.IsTrue(observedProgress, "候选及补全刷新开始前，最新内存进度应已发布。");
+            Assert.IsTrue(service.CurrentSnapshot!.IsPlaying, "播放状态以 SMTC 为准。");
             Assert.AreEqual(86d, service.CurrentSnapshot.Position);
             return Task.CompletedTask;
         });

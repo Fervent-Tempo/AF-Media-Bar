@@ -16,10 +16,10 @@ namespace AFMediaBar.Layout.Tests;
 public sealed class KuGouSourceTests
 {
     [DataTestMethod]
-    [DataRow("TSAR、SaMZIng、PonyCat", "QUAKE", true)]
-    [DataRow("PonyCat", "QUAKE", false)]
-    [DataRow("TSAR、SaMZIng、PonyCat", "Other track", false)]
-    public void CoverMatchingNormalizesArtistSeparatorsWithoutAcceptingAnotherTrack(string smtcArtist, string title, bool sameTrack)
+    [DataRow("TSAR、SaMZIng、PonyCat", "QUAKE")]
+    [DataRow("PonyCat", "QUAKE")]
+    [DataRow("TSAR、SaMZIng、PonyCat", "Other track")]
+    public void CoverAlwaysComesFromSmtcEvenWhenMemoryDisagrees(string smtcArtist, string title)
     {
         var artwork = new System.Windows.Media.DrawingImage();
         artwork.Freeze();
@@ -29,8 +29,8 @@ public sealed class KuGouSourceTests
         };
         var session = memory with { SourceId = "KuGou.exe", Title = title, Artist = smtcArtist, Artwork = artwork };
         var merged = new KuGouSourcePolicy().Merge(memory, session);
-        if (sameTrack) Assert.AreSame(artwork, merged.Artwork);
-        else Assert.IsNull(merged.Artwork, "不同曲目或仅匹配客串歌手时不能继承封面。");
+        Assert.AreSame(artwork, merged.Artwork, "封面始终由 SMTC 提供，不能再被内存身份判断清空。");
+        Assert.AreEqual(title, merged.Title, "标题以 SMTC 为准。");
     }
 
     [TestMethod]
@@ -68,7 +68,8 @@ public sealed class KuGouSourceTests
             Assert.AreEqual(17d, merged.Position);
             Assert.AreSame(session.Lyrics, merged.Lyrics);
             merged = registry.ResolveSnapshot(independent.Key, session with { Title = "Other" }, snapshots, new());
-            Assert.IsNull(merged!.Lyrics, "不同歌曲不能继承旧歌词。");
+            Assert.AreSame(session.Lyrics, merged!.Lyrics,
+                "SMTC 仍是当前会话时，换歌保护只暂缓内存时间轴/歌词，不应丢掉 SMTC 自己的歌词。");
             merged = registry.ResolveSnapshot(independent.Key, session with { SourceId = "chrome" }, snapshots, new());
             Assert.IsFalse(merged!.CanPlayPause, "不能用其他播放器的会话控制酷狗。");
             snapshots[kuGou] = null;
