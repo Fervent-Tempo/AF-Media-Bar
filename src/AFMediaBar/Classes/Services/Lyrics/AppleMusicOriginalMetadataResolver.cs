@@ -85,37 +85,51 @@ public sealed class AppleMusicOriginalMetadataResolver : IDisposable
         }
     }
 
-    /// <summary>JP 区搜索（无候选时补搜 TW 区），US/CN 区 lookup 校验，必要时补查 KR/TW/HK 后按文字选原名。</summary>
+    /// <summary>
+    /// JP 区搜索（无候选时补搜 TW 区；组合搜索词两区都零结果时改用曲名），US/CN 区 lookup 校验，必要时补查 KR/TW/HK 后按文字选原名。
+    /// </summary>
     private async Task<(Outcome Outcome, AppleMusicOriginal? Original)> LookUpAsync(LyricsRequest request, CancellationToken token)
     {
-        var term = $"{request.Title} {request.Artist}".Trim();
         IReadOnlyList<AppleMusicTrack> anchors = [];
-        var unfiltered = new List<AppleMusicTrack>();
-        foreach (var region in AppleMusicCatalogPolicy.SearchRegions)
+        var searched = new List<AppleMusicTrack>();
+        var terms = AppleMusicCatalogPolicy.SearchTerms(request);
+        for (var index = 0; index < terms.Count && searched.Count == 0; index++)
         {
-            var (found, blocked) = await RequestAsync([region],
-                searchRegion => AppleMusicCatalogPolicy.SearchUri(term, searchRegion), token).ConfigureAwait(false);
-            if (found is null) return (blocked, null);
-            anchors = AppleMusicCatalogPolicy.FilterByDuration(found[region], request.DurationSeconds);
-            if (anchors.Count > 0) break;
-            unfiltered.AddRange(found[region]);
+            var term = terms[index];
+            // 首个搜索词按 JP → TW 顺序，JP 区有时长对得上的候选就不再搜 TW；回退搜索词两区并发，避免超出解析预算。
+            var batches = index == 0
+                ? AppleMusicCatalogPolicy.SearchRegions.Select(region => new[] { region }).ToArray()
+                : new[] { AppleMusicCatalogPolicy.SearchRegions };
+            foreach (var regions in batches)
+            {
+                var (found, blocked) = await RequestAsync(regions,
+                    region => AppleMusicCatalogPolicy.SearchUri(term, region), token).ConfigureAwait(false);
+                if (found is null) return (blocked, null);
+                foreach (var region in regions)
+                {
+                    searched.AddRange(found[region]);
+                    if (anchors.Count == 0) anchors = AppleMusicCatalogPolicy.FilterByDuration(found[region], request.DurationSeconds);
+                }
+                if (anchors.Count > 0) break;
+            }
         }
-        // 切歌瞬间 SMTC 可能还报上一首的时长：没有时长对得上的候选时，合并各地区的搜索结果按「没有时长」处理，
-        // 曲名与歌手都一致才采用。这样得出的未命中可能只是时长不可信，不写缓存，留给带正确时长的重试。
-        var durationDropped = anchors.Count == 0 && unfiltered.Count > 0;
-        if (durationDropped)
-        {
-            anchors = unfiltered;
-            request = request with { DurationSeconds = null };
-        }
-        if (anchors.Count == 0) return (Outcome.None, null);
+        if (searched.Count == 0) return (Outcome.None, null);
 
-        var ids = anchors.Select(anchor => anchor.TrackId).Distinct().ToArray();
+        // 时长对得上的候选排在前面；lookup 与搜索一样最多带 25 个 id。
+        var ids = anchors.Concat(searched).Select(track => track.TrackId).Distinct().Take(AppleMusicCatalogPolicy.ResultLimit).ToArray();
         var (lookups, lookupBlocked) = await RequestAsync(AppleMusicCatalogPolicy.LookupRegions,
             region => AppleMusicCatalogPolicy.LookupUri(ids, region), token).ConfigureAwait(false);
         if (lookups is null) return (lookupBlocked, null);
-        if (AppleMusicCatalogPolicy.SelectCandidate(request, anchors, lookups) is not { } anchor)
-            return (durationDropped ? Outcome.UnmatchedWithoutDuration : Outcome.None, null);
+        var anchor = AppleMusicCatalogPolicy.SelectCandidate(request, anchors, lookups);
+        // 切歌瞬间 SMTC 常沿用上一首的时长，可能筛掉正确曲目、只留下时长碰巧相同的无关曲目。时长对得上的候选都不通过时，
+        // 对全部搜索结果按「没有时长」处理，曲名与歌手都一致才采用；这样仍未命中可能只是时长不可信，不写缓存。
+        var durationDropped = anchor is null && request.DurationSeconds is > 0;
+        if (durationDropped)
+        {
+            request = request with { DurationSeconds = null };
+            anchor = AppleMusicCatalogPolicy.SelectCandidate(request, searched, lookups);
+        }
+        if (anchor is null) return (durationDropped ? Outcome.UnmatchedWithoutDuration : Outcome.None, null);
 
         var names = AppleMusicCatalogPolicy.NamesOf(anchor, lookups);
         var extra = AppleMusicCatalogPolicy.ExtraRegions(request, anchor, names);
@@ -240,7 +254,7 @@ public sealed class AppleMusicOriginalMetadataResolver : IDisposable
     {
         Found,
         None,
-        /// <summary>时长对不上、按严格规则也没有候选；可能只是 SMTC 时长滞后，不缓存。</summary>
+        /// <summary>时长对得上的候选都不通过、按严格规则也没有候选；可能只是 SMTC 时长滞后，不缓存。</summary>
         UnmatchedWithoutDuration,
         CoolingDown,
         RateLimited,

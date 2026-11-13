@@ -131,10 +131,13 @@ public sealed class LyricsService
         finally { work.Cancel(); }
     }
 
-    /// <summary>默认规则、Apple Music 来源、开关开启且至少启用一个在线来源时，才解析原名。</summary>
+    /// <summary>
+    /// 默认规则、Apple Music 来源、开关开启、歌手不为空且至少启用一个在线来源时，才解析原名。
+    /// 歌手为空时校验不可能通过，Apple Music 加载下一首时的「Connecting…」占位也因此不会请求曲库。
+    /// </summary>
     private bool UsesOriginalNames(LyricsRequest request, LyricsSourceSettings settings, IReadOnlyList<ILyricsProvider> active) =>
         _originalNames is not null && settings.Rule == LyricsSourceRule.Default && settings.AppleMusicOriginalNamesEnabled &&
-        active.Count > 0 && AppleMusicCatalogPolicy.IsAppleMusic(request.PlaybackSourceId);
+        active.Count > 0 && !string.IsNullOrWhiteSpace(request.Artist) && AppleMusicCatalogPolicy.IsAppleMusic(request.PlaybackSourceId);
 
     /// <summary>
     /// Apple Music 的默认规则取词：本地阶段与首轮在线照旧；首轮不可靠时把译名还原为原名再取一轮，解析与第二轮都放进在线阶段，

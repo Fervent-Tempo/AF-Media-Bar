@@ -190,6 +190,50 @@ public sealed class AppleMusicOriginalNamesTests
     }
 
     [TestMethod]
+    public async Task UnrelatedTrackMatchingTheStaleDurationDoesNotHideTheRealOne()
+    {
+        // 实机：切歌时还是上一首的 242 秒，JP 区搜索里恰好有一首 240 秒的无关曲目；它校验不通过后仍要找到 142 秒的《但》。
+        var request = new LyricsRequest("Damn", "No Party for Cao Dong — The Clod", string.Empty, 242, null, PlaybackSourceId: AppleMusic);
+        var unrelated = Song("Ain't Nobody Knows", "Hedgehogs", 9, "", 240);
+        var catalog = Respond((path, country) => (path, country) switch
+        {
+            ("search", "jp") => [unrelated, Song("但", "No Party For Cao Dong", 1, "瓦合", 142)],
+            ("lookup", "us") => [unrelated, Song("Damn", "No Party for Cao Dong", 1, "The Clod", 142)],
+            ("lookup", "cn") => [unrelated, Song("但", "草东没有派对", 1, "瓦合", 142)],
+            _ => []
+        });
+        using var client = new HttpClient(catalog);
+        using var resolver = new AppleMusicOriginalMetadataResolver(null, client, new TestClock());
+
+        var original = await resolver.ResolveAsync(request, CancellationToken.None);
+
+        Assert.AreEqual("但", original?.Title);
+        Assert.AreEqual("草东没有派对", original?.Artist);
+    }
+
+    [TestMethod]
+    public async Task ArtistTermWithNoResultsFallsBackToTheTitleOnlySearch()
+    {
+        // 实机：歌手是一长串角色名和声优，「曲名 歌手」在 JP、TW 区都零结果；只用曲名能搜到《よいまちカンターレ》。
+        const string Artist = "コーロまちカド(シャミ子・桃・リリス・ミカン)/CV:小原好美・鬼頭明里・高橋未奈美・高柳知葉";
+        var request = new LyricsRequest("Yoimachi Cantare", Artist + " — Machikado Tangent / Yoimachi Cantare - EP", string.Empty, 220, null,
+            PlaybackSourceId: AppleMusic);
+        var catalog = RespondByTerm((path, country, term) => (path, country, term) switch
+        {
+            ("search", "jp", "Yoimachi Cantare") => [Song("よいまちカンターレ", Artist, 1, "", 220)],
+            ("lookup", _, _) => [Song("Yoimachi Cantare", Artist, 1, "", 220)],
+            _ => []
+        });
+        using var client = new HttpClient(catalog);
+        using var resolver = new AppleMusicOriginalMetadataResolver(null, client, new TestClock());
+
+        var original = await resolver.ResolveAsync(request, CancellationToken.None);
+
+        Assert.AreEqual("よいまちカンターレ", original?.Title);
+        Assert.AreEqual(6, catalog.Calls, "组合词 JP、TW 各一次零结果，曲名在 JP、TW 并发各一次，再 US/CN 各一次 lookup。");
+    }
+
+    [TestMethod]
     public async Task UnmatchedResultWithAStaleDurationIsNotCached()
     {
         // 时长对不上、严格校验也没通过：可能只是时长滞后，下一次带正确时长的请求必须重新查询。
@@ -229,20 +273,20 @@ public sealed class AppleMusicOriginalNamesTests
     [TestMethod]
     public async Task ResolverSkipsRequestsBeyondTheRateLimit()
     {
-        // JP、TW 区都搜不到时每首 2 次请求：9 首用满 60 秒内的 18 次。
+        // 没有歌手时只有一个搜索词，JP、TW 区都搜不到时每首 2 次请求：9 首用满 60 秒内的 18 次。
         var catalog = new Catalog((_, _) => Task.FromResult(Json("""{"resultCount":0,"results":[]}""")));
         var clock = new TestClock();
         using var client = new HttpClient(catalog);
         using var resolver = new AppleMusicOriginalMetadataResolver(null, client, clock);
         for (var index = 0; index < 9; index++)
-            await resolver.ResolveAsync(_smtc with { Title = $"Song {index}" }, CancellationToken.None);
+            await resolver.ResolveAsync(_smtc with { Title = $"Song {index}", Artist = string.Empty }, CancellationToken.None);
         Assert.AreEqual(18, catalog.Calls);
 
-        Assert.IsNull(await resolver.ResolveAsync(_smtc with { Title = "Song 9" }, CancellationToken.None));
+        Assert.IsNull(await resolver.ResolveAsync(_smtc with { Title = "Song 9", Artist = string.Empty }, CancellationToken.None));
         Assert.AreEqual(18, catalog.Calls);
 
         clock.Advance(TimeSpan.FromSeconds(60));
-        await resolver.ResolveAsync(_smtc with { Title = "Song 9" }, CancellationToken.None);
+        await resolver.ResolveAsync(_smtc with { Title = "Song 9", Artist = string.Empty }, CancellationToken.None);
         Assert.AreEqual(20, catalog.Calls, "超出限流时不写缓存，窗口过后照常请求。");
     }
 
@@ -268,9 +312,16 @@ public sealed class AppleMusicOriginalNamesTests
     [DataRow("ReliableFirstRound")]
     [DataRow("SwitchOff")]
     [DataRow("AllSourcesOff")]
+    [DataRow("EmptyArtist")]
     public async Task NoCatalogRequestOutsideTheTrigger(string scenario)
     {
-        var request = scenario == "OtherPlayer" ? _smtc with { PlaybackSourceId = "cloudmusic.exe" } : _smtc;
+        // EmptyArtist：Apple Music 加载下一首时 SMTC 先报「Connecting…」且歌手为空。
+        var request = scenario switch
+        {
+            "OtherPlayer" => _smtc with { PlaybackSourceId = "cloudmusic.exe" },
+            "EmptyArtist" => _smtc with { Title = "Connecting…", Artist = string.Empty },
+            _ => _smtc
+        };
         if (scenario == "SwitchOff")
             SettingsManager.Current.LyricsSource = LyricsSourceSettings.Default with { AppleMusicOriginalNamesEnabled = false };
         if (scenario == "AllSourcesOff")
@@ -461,10 +512,15 @@ public sealed class AppleMusicOriginalNamesTests
     });
 
     /// <summary>按接口路径与 country 参数应答固定的歌曲列表。</summary>
-    private static Catalog Respond(Func<string, string?, string[]> songs) => new((request, _) =>
+    private static Catalog Respond(Func<string, string?, string[]> songs) =>
+        RespondByTerm((path, country, _) => songs(path, country));
+
+    /// <summary>按接口路径、country 与搜索词应答固定的歌曲列表。</summary>
+    private static Catalog RespondByTerm(Func<string, string?, string?, string[]> songs) => new((request, _) =>
     {
         var path = request.RequestUri!.AbsolutePath.Trim('/');
-        var found = songs(path, HttpUtility.ParseQueryString(request.RequestUri.Query)["country"]);
+        var query = HttpUtility.ParseQueryString(request.RequestUri.Query);
+        var found = songs(path, query["country"], query["term"]);
         return Task.FromResult(Json($$"""{"resultCount":{{found.Length}},"results":[{{string.Join(",", found)}}]}"""));
     });
 

@@ -70,6 +70,13 @@ internal static class AppleMusicCatalogPolicy
         return request with { Artist = request.Artist[..index].Trim(), Album = album.Length > 0 ? album : request.Album };
     }
 
+    /// <summary>
+    /// 搜索词：先用「曲名 歌手」；歌手是一长串角色名和声优时可能零结果，再只用曲名搜索，无关曲目交给校验排除。
+    /// </summary>
+    public static IReadOnlyList<string> SearchTerms(LyricsRequest request) =>
+        new[] { $"{request.Title} {request.Artist}".Trim(), request.Title.Trim() }
+            .Where(term => term.Length > 0).Distinct(StringComparer.Ordinal).ToArray();
+
     public static Uri SearchUri(string term, string region) =>
         new($"{Endpoint}search?term={Uri.EscapeDataString(term)}&country={region.ToLowerInvariant()}" +
             $"&media=music&entity=song&limit={ResultLimit}");
