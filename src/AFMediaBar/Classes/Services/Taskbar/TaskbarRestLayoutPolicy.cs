@@ -68,11 +68,10 @@ public static class TaskbarRestLayoutPolicy
     ];
 
     /// <summary>
-    /// 可排序组件的默认顺序：频谱 → 性能 → 输出设备 → 音量。
-    /// 设备与音量排在最后是刻意的：它们默认不显示，一旦打开就落在最右侧，与悬停层里它们的位置一致。
-    /// The default order of the reorderable components: spectrum, performance, output device, volume.
-    /// The device and volume buttons sit last on purpose: they are hidden by default, and once switched on they land on the far right, matching
-    /// where they sit in the hover layer.
+    /// 可排序组件的默认顺序：频谱 → 性能 → 输出设备 → 输入设备 → 音量 → 播放队列 → 蓝牙电量。
+    /// 设备、音量和队列排在最后是刻意的：它们默认不显示，一旦打开就落在最右侧，与悬停层里设备/音量的位置一致。
+    /// The default order of the reorderable components: spectrum, performance, output, input, volume, playback queue, battery.
+    /// The optional widgets sit last on purpose: they are hidden by default, and once switched on they land on the far right.
     /// </summary>
     public static IReadOnlyList<TaskbarRestComponent> DefaultTailOrder { get; } =
     [
@@ -81,6 +80,7 @@ public static class TaskbarRestLayoutPolicy
         TaskbarRestComponent.OutputDevice,
         TaskbarRestComponent.InputDevice,
         TaskbarRestComponent.Volume,
+        TaskbarRestComponent.Queue,
         TaskbarRestComponent.BluetoothBattery
     ];
 
@@ -190,7 +190,8 @@ public static class TaskbarRestLayoutPolicy
         bool VolumeEnabled,
         bool ArtworkEnabled = true,
         bool InputDeviceEnabled = false,
-        bool BatteryEnabled = false);
+        bool BatteryEnabled = false,
+        bool QueueEnabled = false);
 
     /// <summary>
     /// 判定一个静置层组件这次是否可见。
@@ -236,6 +237,7 @@ public static class TaskbarRestLayoutPolicy
             TaskbarRestComponent.OutputDevice => visibility.OutputDeviceEnabled,
             TaskbarRestComponent.InputDevice => visibility.InputDeviceEnabled,
             TaskbarRestComponent.Volume => visibility.VolumeEnabled,
+            TaskbarRestComponent.Queue => visibility.QueueEnabled,
             _ => false
         };
     }

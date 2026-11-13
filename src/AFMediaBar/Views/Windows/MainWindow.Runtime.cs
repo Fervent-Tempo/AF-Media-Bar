@@ -138,7 +138,11 @@ public partial class MainWindow
                     }
                     window.ApplySnapshot(_mediaSessionService.CurrentSnapshot ?? MediaSnapshot.Disconnected);
                     window.OpenFullPanelRequested += FloatingFullPanelRequested;
-                    window.PlacementTransitionStarted += (_, _) => { if (_floatingWindows.Contains(window)) CloseFullPanelWindows(); };
+                    window.QueuePanelRequested += FloatingQueuePanelRequested;
+                    window.PlacementTransitionStarted += (_, _) =>
+                    {
+                        if (_floatingWindows.Contains(window)) CloseFullPanelWindows();
+                    };
                     window.PlayerMenuOpenRequested += (host, point) =>
                     {
                         if (_isClosing || !_floatingWindows.Contains(host)) return;
@@ -182,5 +186,11 @@ public partial class MainWindow
         var panel = _fullPanels.Open(host.TargetMonitorDeviceId, args.Anchor, args.VerticalAnchor,
             args.EnsureOpen, host.EffectiveSettings, args.PlacementSide, args.EntryCenter);
         if (panel is not null) host.SetFullPanelOpen(panel.IsVisible);
+    }
+
+    private void FloatingQueuePanelRequested(object? sender, PlayerQueuePanelRequestEventArgs args)
+    {
+        if (_isClosing || sender is not FloatingBarWindow host || !_floatingWindows.Contains(host)) return;
+        _queuePanels.Show(args.Anchor);
     }
 }

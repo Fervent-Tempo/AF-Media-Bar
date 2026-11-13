@@ -119,7 +119,8 @@ public partial class TaskBarMediaControl
         _ when ComponentLayoutPolicy.IsMetric(component) => MetricPrimarySize(component, true),
         TaskbarRestComponent.BluetoothBattery => BatteryVerticalLength,
         TaskbarRestComponent.PreviousTrack or TaskbarRestComponent.PlayPause or TaskbarRestComponent.NextTrack or
-        TaskbarRestComponent.OutputDevice or TaskbarRestComponent.InputDevice or TaskbarRestComponent.Volume =>
+        TaskbarRestComponent.OutputDevice or TaskbarRestComponent.InputDevice or TaskbarRestComponent.Volume or
+        TaskbarRestComponent.Queue =>
             VerticalAudioButtonSize(metrics) + RestWidgetVerticalInset(TaskbarOutputDeviceHoverSurface),
         _ => 0
     };
@@ -198,6 +199,7 @@ public partial class TaskBarMediaControl
         Place(TaskbarOutputDeviceHoverSurface, TaskbarRestComponent.OutputDevice);
         Place(TaskbarInputDeviceHoverSurface, TaskbarRestComponent.InputDevice);
         Place(TaskbarVolumeHoverSurface, TaskbarRestComponent.Volume);
+        Place(TaskbarQueueHoverSurface, TaskbarRestComponent.Queue);
         Place(ResidentPreviousSurface, TaskbarRestComponent.PreviousTrack);
         Place(ResidentPlayPauseSurface, TaskbarRestComponent.PlayPause);
         Place(ResidentNextSurface, TaskbarRestComponent.NextTrack);
@@ -213,7 +215,7 @@ public partial class TaskBarMediaControl
         PlaceMetricSurfaces(layout, innerWidth);
         PlaceBarMoveHandle(layout, innerWidth);
         var buttonSize = VerticalAudioButtonSize(TaskbarDensityMetrics.From(experience.Density));
-        foreach (var surface in new[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface })
+        foreach (var surface in new FrameworkElement[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface, TaskbarQueueButton })
         {
             surface.Width = buttonSize;
             surface.Height = buttonSize;

@@ -3912,4 +3912,46 @@
   <data name="Interaction.Row.NativeTrayIcon.Description" xml:space="preserve">
     <value>依單擊動作，自動使用音訊控制、輸出裝置、輸入裝置或目前應用程式音量的對應圖示。</value>
   </data>
+  <data name="Common.PlaybackQueue" xml:space="preserve"><value>播放佇列</value></data>
+  <data name="DisplayModes.Rest.Component.Queue" xml:space="preserve"><value>播放佇列</value></data>
+  <data name="DisplayModes.Rest.Component.Queue.Description" xml:space="preserve"><value>顯示外部播放器（如 Nons）的播放佇列入口；需要播放器提供本機佇列介面。</value></data>
+  <data name="Panel.Queue.WindowTitle" xml:space="preserve"><value>播放佇列</value></data>
+  <data name="Panel.Queue.TitleFormat" xml:space="preserve"><value>{0} 播放佇列</value></data>
+  <data name="Panel.Queue.ListName" xml:space="preserve"><value>播放佇列歌曲清單</value></data>
+  <data name="Panel.Queue.Status.Connecting" xml:space="preserve"><value>正在連線…</value></data>
+  <data name="Panel.Queue.Status.Reconnecting" xml:space="preserve"><value>正在重新連線…</value></data>
+  <data name="Panel.Queue.Status.Stale" xml:space="preserve"><value>佇列正在更新…</value></data>
+  <data name="Panel.Queue.Status.ConnectedFormat" xml:space="preserve"><value>已連線 {0} · {1} 首</value></data>
+  <data name="Panel.Queue.Status.Disconnected" xml:space="preserve"><value>Nons 未連線</value></data>
+  <data name="Panel.Queue.Status.Playing" xml:space="preserve"><value>正在播放</value></data>
+  <data name="Panel.Queue.Status.Paused" xml:space="preserve"><value>已暫停</value></data>
+  <data name="Panel.Queue.Status.Stopped" xml:space="preserve"><value>已停止</value></data>
+  <data name="Panel.Queue.Status.Loading" xml:space="preserve"><value>正在載入</value></data>
+  <data name="Panel.Queue.Status.Buffering" xml:space="preserve"><value>正在緩衝</value></data>
+  <data name="Panel.Queue.Status.Error" xml:space="preserve"><value>播放失敗</value></data>
+  <data name="Panel.Queue.Status.Unknown" xml:space="preserve"><value>狀態未知</value></data>
+  <data name="Panel.Queue.Empty" xml:space="preserve"><value>播放佇列為空</value></data>
+  <data name="Panel.Queue.Refresh" xml:space="preserve"><value>重新整理</value></data>
+  <data name="Panel.Queue.Retry" xml:space="preserve"><value>重試</value></data>
+  <data name="Panel.Queue.CountFormat" xml:space="preserve"><value>{0} 首</value></data>
+  <data name="Panel.Queue.DoubleClickHint" xml:space="preserve"><value>按兩下歌曲播放</value></data>
+  <data name="Panel.Queue.Jumping" xml:space="preserve"><value>正在跳轉…</value></data>
+  <data name="Panel.Queue.JumpConfirmed" xml:space="preserve"><value>已開始播放</value></data>
+  <data name="Panel.Queue.AcceptedPending" xml:space="preserve"><value>已提交，等待播放器更新…</value></data>
+  <data name="Panel.Queue.ShuffleOn" xml:space="preserve"><value>隨機播放中</value></data>
+  <data name="Panel.Queue.Error.Unavailable" xml:space="preserve"><value>無法連線 Nons 開放 API；請在 Nons 設定 → 網路與服務中啟用。</value></data>
+  <data name="Panel.Queue.Error.Incompatible" xml:space="preserve"><value>Nons 版本不支援所需的播放佇列介面。</value></data>
+  <data name="Panel.Queue.Error.Busy" xml:space="preserve"><value>播放器暫時忙碌，請稍後重試。</value></data>
+  <data name="Panel.Queue.Error.Stale" xml:space="preserve"><value>播放佇列已更新，請重試。</value></data>
+  <data name="Panel.Queue.Error.TrackMissing" xml:space="preserve"><value>這首歌已不在目前佇列中。</value></data>
+  <data name="Panel.Queue.Error.Invalid" xml:space="preserve"><value>請求無法執行。</value></data>
+  <data name="Panel.Queue.Error.Timeout" xml:space="preserve"><value>操作已提交，但播放器狀態尚未更新。</value></data>
+  <data name="Panel.Queue.Error.ConnectionLost" xml:space="preserve"><value>與 Nons 的連線已中斷。</value></data>
+  <data name="Panel.Queue.Error.Internal" xml:space="preserve"><value>Nons 傳回了無法處理的結果。</value></data>
+  <data name="Panel.FullPanel.ShuffleMode" xml:space="preserve"><value>隨機播放</value></data>
+  <data name="Panel.Shuffle.On" xml:space="preserve"><value>隨機播放：開</value></data>
+  <data name="Panel.Shuffle.Off" xml:space="preserve"><value>隨機播放：關</value></data>
+  <data name="Panel.Shuffle.Unavailable" xml:space="preserve"><value>隨機播放不可用</value></data>
+  <data name="Panel.Shuffle.Connecting" xml:space="preserve"><value>正在連線 Nons…</value></data>
+  <data name="Panel.Shuffle.Pending" xml:space="preserve"><value>隨機狀態未確認，正在重新整理…</value></data>
 </root>

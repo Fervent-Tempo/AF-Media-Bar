@@ -44,6 +44,7 @@ public static class SettingsDynamicSearchCatalog
             TaskbarRestComponent.OutputDevice => "DisplayModes.Rest.Component.OutputDevice",
             TaskbarRestComponent.InputDevice => "Common.InputDevice",
             TaskbarRestComponent.Volume => "DisplayModes.Rest.Component.Volume",
+            TaskbarRestComponent.Queue => "DisplayModes.Rest.Component.Queue",
             TaskbarRestComponent.BluetoothBattery => "Battery.Title",
             TaskbarRestComponent.SystemMemory => "Media.Metric.SystemMemory.Title",
             TaskbarRestComponent.ProcessMemory => "Media.Metric.ProcessMemory.Title",

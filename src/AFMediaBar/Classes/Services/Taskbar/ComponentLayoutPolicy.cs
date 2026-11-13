@@ -26,6 +26,8 @@ public static class ComponentLayoutPolicy
         [TaskbarRestComponent.PreviousTrack, TaskbarRestComponent.PlayPause, TaskbarRestComponent.NextTrack];
     public static IReadOnlyList<TaskbarRestComponent> HoverComponents { get; } =
         [.. TransportComponents, TaskbarRestComponent.OutputDevice, TaskbarRestComponent.InputDevice, TaskbarRestComponent.Volume];
+    // 队列组件只属于静置层；悬浮层保持原有五个按钮，不改变其宽度语义。
+
     public static bool IsMetric(TaskbarRestComponent component) => MetricComponents.Contains(component);
     public static MetricKind Metric(TaskbarRestComponent component) => component switch
     {
@@ -54,7 +56,13 @@ public static class ComponentLayoutPolicy
         var entries = configured.Where(entry => entry is not null && allowed.Contains(entry.Component))
             .DistinctBy(entry => entry.Component).Select(entry => entry with { }).ToList();
         foreach (var entry in legacy)
-            if (!entries.Any(existing => existing.Component == entry.Component)) entries.Add(entry with { IsVisible = false });
+            if (!entries.Any(existing => existing.Component == entry.Component))
+            {
+                // 新增的队列入口对旧布局采用“驻留层默认开启、空闲层默认关闭”，
+                // 用户显式关闭后仍由配置中的 false 保留。
+                var visible = state == BarLayoutState.Resident && entry.Component == TaskbarRestComponent.Queue;
+                entries.Add(entry with { IsVisible = visible });
+            }
         var fixedItems = legacy.Where(entry => !CanMove(entry.Component)).Select(entry => entry.Component).ToArray();
         var ordered = fixedItems.Select(component => entries.Single(entry => entry.Component == component))
             .Concat(entries.Where(entry => CanMove(entry.Component))).ToArray();
@@ -136,6 +144,7 @@ public static class ComponentLayoutPolicy
             TaskbarRestComponent.OutputDevice => experience.OutputDeviceVisible,
             TaskbarRestComponent.InputDevice => experience.InputDeviceVisible,
             TaskbarRestComponent.Volume => experience.VolumeVisible,
+            TaskbarRestComponent.Queue => true,
             TaskbarRestComponent.BluetoothBattery => settings.BluetoothBatteryWidget.Enabled,
             _ => false
         };

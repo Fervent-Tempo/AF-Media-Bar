@@ -3912,4 +3912,46 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
   <data name="Interaction.Row.NativeTrayIcon.Description" xml:space="preserve">
     <value>Automatically use the matching icon for audio controls, output devices, input devices, or current app volume based on the click action.</value>
   </data>
+  <data name="Common.PlaybackQueue" xml:space="preserve"><value>Playback queue</value></data>
+  <data name="DisplayModes.Rest.Component.Queue" xml:space="preserve"><value>Playback queue</value></data>
+  <data name="DisplayModes.Rest.Component.Queue.Description" xml:space="preserve"><value>Show the playback queue of an external player such as Nons; the player must expose a local queue API.</value></data>
+  <data name="Panel.Queue.WindowTitle" xml:space="preserve"><value>Playback queue</value></data>
+  <data name="Panel.Queue.TitleFormat" xml:space="preserve"><value>{0} playback queue</value></data>
+  <data name="Panel.Queue.ListName" xml:space="preserve"><value>Playback queue tracks</value></data>
+  <data name="Panel.Queue.Status.Connecting" xml:space="preserve"><value>Connecting…</value></data>
+  <data name="Panel.Queue.Status.Reconnecting" xml:space="preserve"><value>Reconnecting…</value></data>
+  <data name="Panel.Queue.Status.Stale" xml:space="preserve"><value>The queue is updating…</value></data>
+  <data name="Panel.Queue.Status.ConnectedFormat" xml:space="preserve"><value>Connected to {0} · {1} tracks</value></data>
+  <data name="Panel.Queue.Status.Disconnected" xml:space="preserve"><value>Nons is not connected</value></data>
+  <data name="Panel.Queue.Status.Playing" xml:space="preserve"><value>Playing</value></data>
+  <data name="Panel.Queue.Status.Paused" xml:space="preserve"><value>Paused</value></data>
+  <data name="Panel.Queue.Status.Stopped" xml:space="preserve"><value>Stopped</value></data>
+  <data name="Panel.Queue.Status.Loading" xml:space="preserve"><value>Loading</value></data>
+  <data name="Panel.Queue.Status.Buffering" xml:space="preserve"><value>Buffering</value></data>
+  <data name="Panel.Queue.Status.Error" xml:space="preserve"><value>Playback failed</value></data>
+  <data name="Panel.Queue.Status.Unknown" xml:space="preserve"><value>Unknown state</value></data>
+  <data name="Panel.Queue.Empty" xml:space="preserve"><value>The playback queue is empty</value></data>
+  <data name="Panel.Queue.Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Panel.Queue.Retry" xml:space="preserve"><value>Retry</value></data>
+  <data name="Panel.Queue.CountFormat" xml:space="preserve"><value>{0} tracks</value></data>
+  <data name="Panel.Queue.DoubleClickHint" xml:space="preserve"><value>Double-click a track to play</value></data>
+  <data name="Panel.Queue.Jumping" xml:space="preserve"><value>Jumping…</value></data>
+  <data name="Panel.Queue.JumpConfirmed" xml:space="preserve"><value>Playback started</value></data>
+  <data name="Panel.Queue.AcceptedPending" xml:space="preserve"><value>Submitted; waiting for the player…</value></data>
+  <data name="Panel.Queue.ShuffleOn" xml:space="preserve"><value>Shuffle is on</value></data>
+  <data name="Panel.Queue.Error.Unavailable" xml:space="preserve"><value>Cannot connect to the Nons open API. Enable it in Nons Settings → Network &amp; Services.</value></data>
+  <data name="Panel.Queue.Error.Incompatible" xml:space="preserve"><value>The Nons version does not support the required playback queue API.</value></data>
+  <data name="Panel.Queue.Error.Busy" xml:space="preserve"><value>The player is busy. Try again later.</value></data>
+  <data name="Panel.Queue.Error.Stale" xml:space="preserve"><value>The playback queue changed. Try again.</value></data>
+  <data name="Panel.Queue.Error.TrackMissing" xml:space="preserve"><value>This track is no longer in the current queue.</value></data>
+  <data name="Panel.Queue.Error.Invalid" xml:space="preserve"><value>The request could not be executed.</value></data>
+  <data name="Panel.Queue.Error.Timeout" xml:space="preserve"><value>The action was submitted, but the player state has not updated yet.</value></data>
+  <data name="Panel.Queue.Error.ConnectionLost" xml:space="preserve"><value>The connection to Nons was lost.</value></data>
+  <data name="Panel.Queue.Error.Internal" xml:space="preserve"><value>Nons returned a result that could not be handled.</value></data>
+  <data name="Panel.FullPanel.ShuffleMode" xml:space="preserve"><value>Shuffle</value></data>
+  <data name="Panel.Shuffle.On" xml:space="preserve"><value>Shuffle: on</value></data>
+  <data name="Panel.Shuffle.Off" xml:space="preserve"><value>Shuffle: off</value></data>
+  <data name="Panel.Shuffle.Unavailable" xml:space="preserve"><value>Shuffle unavailable</value></data>
+  <data name="Panel.Shuffle.Connecting" xml:space="preserve"><value>Connecting to Nons…</value></data>
+  <data name="Panel.Shuffle.Pending" xml:space="preserve"><value>Shuffle state not confirmed; refreshing…</value></data>
 </root>

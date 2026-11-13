@@ -1271,6 +1271,10 @@
         "NextTrack": {
           "value": 16,
           "release": "v1.7.0"
+        },
+        "Queue": {
+          "value": 17,
+          "release": "unreleased"
         }
       }
     },

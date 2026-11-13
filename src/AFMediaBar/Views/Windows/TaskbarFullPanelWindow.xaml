@@ -73,8 +73,15 @@
                                        ToolTip="{DynamicResource Loc.Common.PlayPause}" Click="PlayButton_Click"><ui:SymbolIcon x:Name="PlayIcon" Symbol="Play24" FontSize="24"/></ui:Button>
                             <ui:Button x:Name="NextButton" Width="40" Height="40" Padding="0" ToolTip="{DynamicResource Loc.Common.NextTrack}" Click="NextButton_Click"><ui:SymbolIcon Symbol="Next24" FontSize="20"/></ui:Button>
                         </StackPanel>
-                        <ui:Button x:Name="RepeatButton" Grid.Column="2" Width="36" Height="36" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                   ToolTip="{DynamicResource Loc.Panel.FullPanel.RepeatMode}" Click="RepeatButton_Click"><ui:SymbolIcon Symbol="ArrowRepeatAll24" FontSize="18"/></ui:Button>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <ui:Button x:Name="ShuffleButton" Width="36" Height="36" Padding="0" Margin="0,0,4,0"
+                                       Visibility="Collapsed"
+                                       ToolTip="{DynamicResource Loc.Panel.FullPanel.ShuffleMode}"
+                                       AutomationProperties.Name="{DynamicResource Loc.Panel.FullPanel.ShuffleMode}"
+                                       Click="ShuffleButton_Click"><ui:SymbolIcon x:Name="ShuffleIcon" Symbol="ArrowShuffle24" FontSize="18"/></ui:Button>
+                            <ui:Button x:Name="RepeatButton" Width="36" Height="36" Padding="0"
+                                       ToolTip="{DynamicResource Loc.Panel.FullPanel.RepeatMode}" Click="RepeatButton_Click"><ui:SymbolIcon Symbol="ArrowRepeatAll24" FontSize="18"/></ui:Button>
+                        </StackPanel>
                     </Grid>
                 </StackPanel>
 

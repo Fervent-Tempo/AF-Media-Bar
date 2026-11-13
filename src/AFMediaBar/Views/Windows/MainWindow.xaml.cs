@@ -33,6 +33,7 @@ namespace AFMediaBar.Views.Windows
     public partial class MainWindow : ITaskbarWindowHostActions
     {
         private readonly FullPanelWindowHost _fullPanels;
+        private readonly PlayerQueuePanelHost _queuePanels;
         public MainWindowViewModel ViewModel { get; }
         private readonly IApplicationExitService _exitService;
 
@@ -126,6 +127,7 @@ namespace AFMediaBar.Views.Windows
             MediaSourceActivationService sourceActivationService,
             SystemMetricsMonitorService systemMetricsMonitor,
             FullPanelWindowHost fullPanels,
+            PlayerQueuePanelHost queuePanels,
             IDisplayMonitorService displayMonitorService,
             TrackChangeNotificationCoordinator trackChangeNotificationCoordinator,
             Func<TrackChangeNotificationWindow> trackChangeNotificationFactory,
@@ -186,6 +188,7 @@ namespace AFMediaBar.Views.Windows
             _systemMetricsMonitor = systemMetricsMonitor;
             _fullPanels = fullPanels;
             _fullPanels.PanelClosed += FullPanelHostClosed;
+            _queuePanels = queuePanels;
             _displayMonitorService = displayMonitorService;
             _trackChangeNotificationCoordinator = trackChangeNotificationCoordinator;
             _trackChangeNotificationFactory = trackChangeNotificationFactory;
@@ -360,6 +363,7 @@ namespace AFMediaBar.Views.Windows
             // Make sure that closing this window will begin the process of closing the application.
             _fullPanels.PanelClosed -= FullPanelHostClosed;
             _fullPanels.Dispose();
+            _queuePanels.Dispose();
             _exitService.RequestExit();
         }
 
@@ -849,6 +853,7 @@ namespace AFMediaBar.Views.Windows
         {
             var window = _taskbarFactory(targetDeviceId, this);
             window.OpenFullPanelRequested += TaskbarWindow_OpenFullPanelRequested;
+            window.QueuePanelRequested += TaskbarWindow_QueuePanelRequested;
             window.InformationAutomaticallyHidden += TaskbarWindow_InformationAutomaticallyHidden;
             window.PlayerMenuOpenRequested += TaskbarWindow_PlayerMenuOpenRequested;
             window.PlacementTransitionStarted += TaskbarWindow_PlacementTransitionStarted;
@@ -860,6 +865,7 @@ namespace AFMediaBar.Views.Windows
         {
             if (sender is TaskbarWindow window && _taskbarWindows.Contains(window) && _fullPanels.TryGet(window.TargetMonitorDeviceId, out var panel))
                 panel.RequestClose();
+            _queuePanels.CloseAll();
         }
 
         private void TaskbarWindow_PlayerMenuOpenRequested(TaskbarWindow host, Point? screenAnchor)
@@ -880,6 +886,12 @@ namespace AFMediaBar.Views.Windows
             if (panel is not null) host.SetFullPanelOpen(panel.IsVisible);
         }
 
+        private void TaskbarWindow_QueuePanelRequested(object? sender, PlayerQueuePanelRequestEventArgs e)
+        {
+            if (_isClosing || sender is not TaskbarWindow host || !_taskbarWindows.Contains(host)) return;
+            _queuePanels.Show(e.Anchor);
+        }
+
         private void FullPanelHostClosed(string target)
         {
             foreach (var host in _taskbarWindows.Where(host => host.TargetMonitorDeviceId == target))
@@ -888,7 +900,11 @@ namespace AFMediaBar.Views.Windows
                 host.SetFullPanelOpen(false);
         }
 
-        private void CloseFullPanelWindows() => _fullPanels.CloseAll();
+        private void CloseFullPanelWindows()
+        {
+            _fullPanels.CloseAll();
+            _queuePanels.CloseAll();
+        }
 
         private void ViewModel_OpenSettingsRequested(object? sender, EventArgs e)
         {

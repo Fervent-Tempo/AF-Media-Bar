@@ -303,6 +303,10 @@ namespace AFMediaBar
                 services.AddTransient<FullPanelPresentationViewModel>();
                 services.AddTransient<TaskbarFullPanelWindow>();
                 services.AddSingleton<FullPanelWindowHost>();
+                services.AddTransient<PlayerQueueViewModel>();
+                services.AddTransient<PlayerQueuePanelWindow>();
+                services.AddSingleton<PlayerQueuePanelHost>();
+                services.AddSingleton<Func<PlayerQueuePanelWindow>>(sp => () => sp.GetRequiredService<PlayerQueuePanelWindow>());
                 services.AddSingleton<Func<ExternalFullPanelHandleWindow>>(sp =>
                     () => new ExternalFullPanelHandleWindow(sp.GetRequiredService<NativeMouseInputMonitor>(),
                         sp.GetRequiredService<ScreenBackgroundSampler>()));

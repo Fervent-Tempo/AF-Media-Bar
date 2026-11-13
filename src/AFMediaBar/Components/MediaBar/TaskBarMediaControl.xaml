@@ -411,6 +411,26 @@
                                    FontSize="{Binding FontSize, ElementName=TaskbarNextIcon}" />
                 </Button>
             </Border>
+            <!--
+                播放队列入口与音量/设备小组件同构：外层负责 hover、命中和几何，内层按钮复用现有 TaskbarHoverButton。
+                运行时的 companion 可用性由宿主写入；设置关闭或没有可用播放器时整块不进入布局。
+                The queue entry follows the same outer-hover/inner-button shape as the audio widgets. The host supplies runtime companion
+                availability; a disabled setting or unavailable player keeps the whole block out of the layout.
+            -->
+            <Border x:Name="TaskbarQueueHoverSurface" Panel.ZIndex="4" Width="26" Height="32"
+                    Padding="1,1,1,2.25" BorderThickness="0,1.25,0,0"
+                    HorizontalAlignment="Left" VerticalAlignment="Center" Background="Transparent"
+                    Visibility="Collapsed" Tag="MediaAction"
+                    MouseEnter="TaskbarSpectrumHoverSurface_MouseEnter"
+                    MouseLeave="TaskbarSpectrumHoverSurface_MouseLeave">
+                <Button x:Name="TaskbarQueueButton" Style="{StaticResource TaskbarHoverButton}" Margin="0"
+                        Foreground="{Binding Foreground, ElementName=SongTitle}"
+                        ToolTip="{DynamicResource Loc.Common.PlaybackQueue}"
+                        AutomationProperties.Name="{DynamicResource Loc.Common.PlaybackQueue}"
+                        Click="TaskbarQueueButton_Click">
+                    <ui:SymbolIcon x:Name="TaskbarQueueIcon" Symbol="DocumentQueue24" FontSize="14" />
+                </Button>
+            </Border>
             <Border x:Name="TaskbarBatterySurface" Panel.ZIndex="4" Width="66" Height="32" Padding="4" CornerRadius="5"
                 HorizontalAlignment="Left" VerticalAlignment="Center" Background="Transparent" Visibility="Collapsed" Tag="MediaAction"
                 MouseEnter="TaskbarBatterySurface_MouseEnter" MouseLeave="TaskbarBatterySurface_MouseLeave">

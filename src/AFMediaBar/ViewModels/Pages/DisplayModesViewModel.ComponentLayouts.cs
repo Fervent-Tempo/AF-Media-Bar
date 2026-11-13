@@ -52,7 +52,7 @@ public partial class DisplayModesViewModel
     {
         public BarLayoutState State { get; } = state;
         public string SearchId => $"component:{State}:{Component}";
-        public bool HasConfiguration => Component is not (TaskbarRestComponent.Artwork or TaskbarRestComponent.PreviousTrack or TaskbarRestComponent.PlayPause or TaskbarRestComponent.NextTrack);
+        public bool HasConfiguration => Component is not (TaskbarRestComponent.Artwork or TaskbarRestComponent.PreviousTrack or TaskbarRestComponent.PlayPause or TaskbarRestComponent.NextTrack or TaskbarRestComponent.Queue);
         public SettingsPageKey ConfigurationDestination => Component switch
         {
             TaskbarRestComponent.MediaText => SettingsPageKey.Lyrics,

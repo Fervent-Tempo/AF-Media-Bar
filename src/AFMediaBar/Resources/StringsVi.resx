@@ -3949,4 +3949,46 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Interaction.Row.NativeTrayIcon.Description" xml:space="preserve">
     <value>Tự động dùng biểu tượng tương ứng cho điều khiển âm thanh, thiết bị đầu ra, thiết bị đầu vào hoặc âm lượng ứng dụng hiện tại theo thao tác nhấp.</value>
   </data>
+  <data name="Common.PlaybackQueue" xml:space="preserve"><value>Hàng đợi phát</value></data>
+  <data name="DisplayModes.Rest.Component.Queue" xml:space="preserve"><value>Hàng đợi phát</value></data>
+  <data name="DisplayModes.Rest.Component.Queue.Description" xml:space="preserve"><value>Hiển thị mục hàng đợi phát của trình phát bên ngoài như Nons; trình phát phải cung cấp API hàng đợi cục bộ.</value></data>
+  <data name="Panel.Queue.WindowTitle" xml:space="preserve"><value>Hàng đợi phát</value></data>
+  <data name="Panel.Queue.TitleFormat" xml:space="preserve"><value>Hàng đợi phát {0}</value></data>
+  <data name="Panel.Queue.ListName" xml:space="preserve"><value>Danh sách bài hát trong hàng đợi phát</value></data>
+  <data name="Panel.Queue.Status.Connecting" xml:space="preserve"><value>Đang kết nối…</value></data>
+  <data name="Panel.Queue.Status.Reconnecting" xml:space="preserve"><value>Đang kết nối lại…</value></data>
+  <data name="Panel.Queue.Status.Stale" xml:space="preserve"><value>Hàng đợi đang cập nhật…</value></data>
+  <data name="Panel.Queue.Status.ConnectedFormat" xml:space="preserve"><value>Đã kết nối {0} · {1} bài</value></data>
+  <data name="Panel.Queue.Status.Disconnected" xml:space="preserve"><value>Nons chưa kết nối</value></data>
+  <data name="Panel.Queue.Status.Playing" xml:space="preserve"><value>Đang phát</value></data>
+  <data name="Panel.Queue.Status.Paused" xml:space="preserve"><value>Đã tạm dừng</value></data>
+  <data name="Panel.Queue.Status.Stopped" xml:space="preserve"><value>Đã dừng</value></data>
+  <data name="Panel.Queue.Status.Loading" xml:space="preserve"><value>Đang tải</value></data>
+  <data name="Panel.Queue.Status.Buffering" xml:space="preserve"><value>Đang đệm</value></data>
+  <data name="Panel.Queue.Status.Error" xml:space="preserve"><value>Phát thất bại</value></data>
+  <data name="Panel.Queue.Status.Unknown" xml:space="preserve"><value>Không rõ trạng thái</value></data>
+  <data name="Panel.Queue.Empty" xml:space="preserve"><value>Hàng đợi phát trống</value></data>
+  <data name="Panel.Queue.Refresh" xml:space="preserve"><value>Làm mới</value></data>
+  <data name="Panel.Queue.Retry" xml:space="preserve"><value>Thử lại</value></data>
+  <data name="Panel.Queue.CountFormat" xml:space="preserve"><value>{0} bài</value></data>
+  <data name="Panel.Queue.DoubleClickHint" xml:space="preserve"><value>Nhấp đúp một bài hát để phát</value></data>
+  <data name="Panel.Queue.Jumping" xml:space="preserve"><value>Đang chuyển…</value></data>
+  <data name="Panel.Queue.JumpConfirmed" xml:space="preserve"><value>Đã bắt đầu phát</value></data>
+  <data name="Panel.Queue.AcceptedPending" xml:space="preserve"><value>Đã gửi; đang chờ trình phát cập nhật…</value></data>
+  <data name="Panel.Queue.ShuffleOn" xml:space="preserve"><value>Đang phát ngẫu nhiên</value></data>
+  <data name="Panel.Queue.Error.Unavailable" xml:space="preserve"><value>Không thể kết nối API mở của Nons. Hãy bật trong Cài đặt Nons → Mạng và dịch vụ.</value></data>
+  <data name="Panel.Queue.Error.Incompatible" xml:space="preserve"><value>Phiên bản Nons không hỗ trợ API hàng đợi phát cần thiết.</value></data>
+  <data name="Panel.Queue.Error.Busy" xml:space="preserve"><value>Trình phát đang bận. Vui lòng thử lại sau.</value></data>
+  <data name="Panel.Queue.Error.Stale" xml:space="preserve"><value>Hàng đợi phát đã thay đổi. Vui lòng thử lại.</value></data>
+  <data name="Panel.Queue.Error.TrackMissing" xml:space="preserve"><value>Bài hát này không còn trong hàng đợi hiện tại.</value></data>
+  <data name="Panel.Queue.Error.Invalid" xml:space="preserve"><value>Không thể thực hiện yêu cầu.</value></data>
+  <data name="Panel.Queue.Error.Timeout" xml:space="preserve"><value>Thao tác đã được gửi nhưng trạng thái trình phát chưa cập nhật.</value></data>
+  <data name="Panel.Queue.Error.ConnectionLost" xml:space="preserve"><value>Mất kết nối với Nons.</value></data>
+  <data name="Panel.Queue.Error.Internal" xml:space="preserve"><value>Nons trả về kết quả không được hỗ trợ.</value></data>
+  <data name="Panel.FullPanel.ShuffleMode" xml:space="preserve"><value>Phát ngẫu nhiên</value></data>
+  <data name="Panel.Shuffle.On" xml:space="preserve"><value>Phát ngẫu nhiên: bật</value></data>
+  <data name="Panel.Shuffle.Off" xml:space="preserve"><value>Phát ngẫu nhiên: tắt</value></data>
+  <data name="Panel.Shuffle.Unavailable" xml:space="preserve"><value>Phát ngẫu nhiên không khả dụng</value></data>
+  <data name="Panel.Shuffle.Connecting" xml:space="preserve"><value>Đang kết nối Nons…</value></data>
+  <data name="Panel.Shuffle.Pending" xml:space="preserve"><value>Chưa xác nhận trạng thái phát ngẫu nhiên; đang làm mới…</value></data>
 </root>

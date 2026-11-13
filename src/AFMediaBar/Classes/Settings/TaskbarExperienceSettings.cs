@@ -80,7 +80,10 @@ public enum TaskbarRestComponent
     DragHandle = 13,
     PreviousTrack = 14,
     PlayPause = 15,
-    NextTrack = 16
+    NextTrack = 16,
+
+    /// <summary>播放器 companion 的队列入口；仅在实际提供队列能力时显示。 / Player-companion queue entry, shown only while a queue capability is available.</summary>
+    Queue = 17
 }
 
 /// <summary>播放器表面的基础背景方案。 / Basic background style for a player surface.</summary>

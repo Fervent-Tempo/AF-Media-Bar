@@ -1,3 +1,4 @@
+using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Audio;
@@ -35,7 +36,10 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     private static readonly TimeSpan VolumeWheelApplyDelay =
         TimeSpan.FromMilliseconds(AudioApplyPolicy.ApplicationVolumeDelayMilliseconds);
     private readonly MediaSessionService _mediaSessionService;
+    private readonly IPlayerCompanion _playerCompanion;
     private readonly AudioInteractionService _audioInteractionService;
+    private bool _shufflePending;
+    private bool _companionRequested;
     private readonly SystemMetricsMonitorService _metricsMonitor;
     private IDisposable? _metricsSubscription;
     private int _metricsSubscriptionGeneration;
@@ -70,6 +74,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
 
     public TaskbarFullPanelWindow(
         MediaSessionService mediaSessionService,
+        IPlayerCompanion playerCompanion,
         AudioInteractionService audioInteractionService,
         SystemMetricsMonitorService metricsMonitor,
         WindowAppearanceService appearanceService,
@@ -91,6 +96,8 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         DpiChanged += (_, _) => { if (_isResizing) CancelActiveResize(); QueuePanelPosition(); };
         ApplyMotionEffects();
         _mediaSessionService = mediaSessionService;
+        _playerCompanion = playerCompanion;
+        _playerCompanion.Changed += OnPlayerCompanionChanged;
         _audioInteractionService = audioInteractionService;
         _audioInteractionService.DeviceSwitches.Updated += OnAudioDeviceSwitchUpdated;
         _audioInteractionService.DeviceSwitches.Invalidated += OnAudioDeviceInvalidated;
@@ -126,6 +133,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         if (_isClosing || IsVisible) return;
 
         _isClosing = false;
+        _companionRequested = false;
         _anchor = anchor;
         _entryCenter = entryCenter;
         _resizePlacement = null;
@@ -306,6 +314,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         ProgressSlider.IsEnabled = snapshot.CanSeek;
         ProgressSlider.Maximum = Math.Max(1, snapshot.Duration);
         DurationText.Text = FormatTime(snapshot.Duration);
+        ApplyShuffleState(snapshot);
         UpdateProgress();
     }
 
@@ -583,6 +592,126 @@ public partial class TaskbarFullPanelWindow : FluentWindow
     private async void NextButton_Click(object sender, RoutedEventArgs e) => await _mediaSessionService.SkipNextAsync();
     private async void RepeatButton_Click(object sender, RoutedEventArgs e) => await _mediaSessionService.CycleRepeatModeAsync();
 
+    private void OnPlayerCompanionChanged(object? sender, PlayerCompanionSnapshot snapshot) =>
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (!_isClosing)
+                ApplyShuffleState(_snapshot);
+        });
+
+    /// <summary>
+    /// 随机按钮只在当前来源属于 companion 时出现；连接/待确认时禁用，真实状态由 companion 快照决定。
+    /// The shuffle button appears only while the current source belongs to the companion; it is disabled while connecting or
+    /// pending confirmation, and its real state comes from the companion snapshot.
+    /// </summary>
+    private void ApplyShuffleState(MediaSnapshot snapshot)
+    {
+        if (_isClosing)
+            return;
+
+        var matches = _playerCompanion.MatchesSource(snapshot.SourceId, snapshot.SourceName);
+        ShuffleButton.Visibility = matches ? Visibility.Visible : Visibility.Collapsed;
+        if (!matches)
+        {
+            _companionRequested = false;
+            return;
+        }
+
+        var state = _playerCompanion.Current;
+        var isOn = state.Player?.Shuffle == true;
+        var available = state.IsConnected && !state.IsStale && state.Capabilities.Shuffle && state.Player is not null;
+        SetButtonAvailability(ShuffleButton, available && !_shufflePending);
+        ShuffleIcon.Symbol = isOn ? SymbolRegular.ArrowShuffleOff24 : SymbolRegular.ArrowShuffle24;
+        ShuffleButton.ToolTip = state.Error != PlayerCompanionError.None && !state.IsConnected
+            ? Translations.Get(PlayerCompanionErrorPresentation.ResourceKey(state.Error))
+            : !state.IsConnected || state.IsStale
+                ? Translations.Get("Panel.Shuffle.Connecting")
+                : !state.Capabilities.Shuffle || state.Player is null
+                    ? Translations.Get("Panel.Shuffle.Unavailable")
+                    : Translations.Get(isOn ? "Panel.Shuffle.On" : "Panel.Shuffle.Off");
+
+        if (!state.IsConnected && !_companionRequested)
+        {
+            _companionRequested = true;
+            _ = ConnectCompanionAsync();
+        }
+    }
+
+    private async Task ConnectCompanionAsync()
+    {
+        try
+        {
+            await _playerCompanion.EnsureConnectedAsync();
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine($"[FullPanel] Companion connection failed: {exception}");
+        }
+
+        if (!_isClosing)
+            ApplyShuffleState(_snapshot);
+    }
+
+    private async void ShuffleButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isClosing || _shufflePending)
+            return;
+
+        var state = _playerCompanion.Current;
+        if (!state.IsConnected || state.IsStale || !state.Capabilities.Shuffle || state.Player is null)
+            return;
+
+        _shufflePending = true;
+        SetButtonAvailability(ShuffleButton, false);
+        var desired = !state.Player.Shuffle;
+        string? message = null;
+        try
+        {
+            var result = await _playerCompanion.SetShuffleAsync(desired, state.QueueRevision);
+            if (_isClosing)
+                return;
+            if (!result.Accepted)
+            {
+                message = Translations.Get(PlayerCompanionErrorPresentation.ResourceKey(result.Error));
+                return;
+            }
+
+            var confirmed = await WaitForShuffleAsync(desired);
+            if (!confirmed && !_isClosing)
+                message = Translations.Get("Panel.Shuffle.Pending");
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine($"[FullPanel] Shuffle command failed: {exception}");
+            message = Translations.Get("Panel.Queue.Error.Internal");
+        }
+        finally
+        {
+            _shufflePending = false;
+            if (!_isClosing)
+            {
+                ApplyShuffleState(_snapshot);
+                if (message is not null)
+                    ShuffleButton.ToolTip = message;
+            }
+        }
+    }
+
+    private async Task<bool> WaitForShuffleAsync(bool desired)
+    {
+        for (var attempt = 0; attempt < 50; attempt++)
+        {
+            if (_isClosing)
+                return false;
+            if (_playerCompanion.Current.Player?.Shuffle == desired)
+                return true;
+            await Task.Delay(100);
+        }
+
+        var refreshed = await _playerCompanion.RefreshAsync();
+        return refreshed.Success && _playerCompanion.Current.Player?.Shuffle == desired;
+    }
+
     private async void ArtworkBorder_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton == MouseButton.Left)
@@ -801,6 +930,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         CancelPanelResize();
         DisposeMetricsSubscription();
         _mediaSessionService.SnapshotChanged -= OnSnapshotChanged;
+        _playerCompanion.Changed -= OnPlayerCompanionChanged;
         SettingsManager.TaskbarExperienceSettingsChanged -= OnTaskbarExperienceSettingsChanged;
         Translations.LanguageChanged -= OnLanguageChanged;
         Closed -= OnClosed;

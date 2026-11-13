@@ -94,7 +94,8 @@ internal static class TaskbarHostActivationChecks
                     var window = new TaskbarWindow(battery, dock, "test", actions, appearance,
                         new TaskbarOccupiedAreaService(probe), new TaskbarLengthConstraintsService(),
                         new GlobalInteractionRouter(media, audio), audio, monitor, null!, null!,
-                        new ScreenBackgroundSampler(), mouse, prune, surfaceSessions, viewModel, null!, startImmediately: false);
+                        new ScreenBackgroundSampler(), mouse, prune, surfaceSessions, viewModel, null!,
+                        new FakePlayerCompanion(), startImmediately: false);
                     Assert.AreEqual(nint.Zero, new WindowInteropHelper(window).Handle,
                         "Prepared candidates have not created an HWND yet.");
                     var switched = await runtime.SwitchAsync(WindowMode.Taskbar,
@@ -141,7 +142,8 @@ internal static class TaskbarHostActivationChecks
             var firstWindow = new TaskbarWindow(battery, dock, "test", actions, appearance,
                 new TaskbarOccupiedAreaService(firstPlacement), new TaskbarLengthConstraintsService(),
                 new GlobalInteractionRouter(media, audio), audio, monitor, null!, null!,
-                new ScreenBackgroundSampler(), mouse, prune, surfaceSessions, viewModel, null!, startImmediately: false);
+                new ScreenBackgroundSampler(), mouse, prune, surfaceSessions, viewModel, null!,
+                new FakePlayerCompanion(), startImmediately: false);
             Assert.IsTrue(await runtime.SwitchAsync(WindowMode.Taskbar,
                 _ => Task.FromResult<IReadOnlyList<IBarRuntimeHost>>([firstWindow]), force: true));
             var firstHandle = new WindowInteropHelper(firstWindow).Handle;

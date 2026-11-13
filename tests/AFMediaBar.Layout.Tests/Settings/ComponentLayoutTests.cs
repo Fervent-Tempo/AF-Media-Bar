@@ -32,6 +32,48 @@ public sealed class ComponentLayoutTests
     }
 
     [TestMethod]
+    public void QueueEntryDefaultsOnForResidentAndIsAppendedToLegacyLayouts()
+    {
+        var settings = new AppSettings();
+        var resident = ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident);
+        Assert.IsTrue(resident.Any(entry => entry.Component == TaskbarRestComponent.Queue));
+        Assert.IsTrue(resident.Single(entry => entry.Component == TaskbarRestComponent.Queue).IsVisible);
+        Assert.IsFalse(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Idle)
+            .Any(entry => entry.Component == TaskbarRestComponent.Queue && entry.IsVisible));
+
+        settings.TaskbarExperience = settings.TaskbarExperience with
+        {
+            ComponentLayouts = new()
+            {
+                Resident =
+                [
+                    new(TaskbarRestComponent.Artwork, true),
+                    new(TaskbarRestComponent.MediaText, true),
+                    new(TaskbarRestComponent.Volume, true)
+                ]
+            }
+        };
+        var configured = ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident);
+        Assert.IsTrue(configured.Any(entry => entry.Component == TaskbarRestComponent.Queue && entry.IsVisible));
+
+        settings.TaskbarExperience = ComponentLayoutPolicy.SetVisible(settings, BarLayoutState.Resident,
+            TaskbarRestComponent.Queue, false);
+        Assert.IsFalse(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident)
+            .Single(entry => entry.Component == TaskbarRestComponent.Queue).IsVisible);
+    }
+
+    [TestMethod]
+    public void QueueUsesTheSameOrderAndVisibilityPolicyAsOtherTailComponents()
+    {
+        var order = TaskbarRestLayoutPolicy.ResolveOrder([TaskbarRestComponent.OutputDevice, TaskbarRestComponent.Spectrum]);
+        Assert.IsTrue(order.Contains(TaskbarRestComponent.Queue));
+        Assert.IsTrue(TaskbarRestLayoutPolicy.IsVisible(TaskbarRestComponent.Queue,
+            new TaskbarRestLayoutPolicy.Visibility(true, null, true, true, true, true, QueueEnabled: true)));
+        Assert.IsFalse(TaskbarRestLayoutPolicy.IsVisible(TaskbarRestComponent.Queue,
+            new TaskbarRestLayoutPolicy.Visibility(true, null, true, true, true, true, QueueEnabled: false)));
+    }
+
+    [TestMethod]
     public void LegacyGroupExpandsAtItsExplicitPositionAndUnconfiguredCycleIsLast()
     {
         var settings = new AppSettings();
