@@ -372,6 +372,9 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     public void Suspend() { SuspendForEnvironmentRecovery(); Hide(); }
     public void Resume() { ResumeAfterEnvironmentRecovery(); Show(); ApplyMediaBarVisibility(); UpdatePosition(); }
+
+    /// <summary>仅显示媒体卡片时释放本宿主的 WebView2，退出后重建；不改变任务栏宿主关系。</summary>
+    internal void SetMediaCardOnlyMode(bool active) => MediaControl.SetMediaCardOnlyMode(active);
     public void Dispose()
     {
         if (_isClosing) return;

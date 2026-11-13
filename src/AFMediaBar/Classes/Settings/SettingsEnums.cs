@@ -50,3 +50,30 @@ public enum LyricsChineseConversionMode
     /// <summary>繁体转简体。/ Convert Traditional Chinese to Simplified Chinese.</summary>
     TraditionalToSimplified = 2
 }
+
+/// <summary>
+/// 桌面媒体卡片的配色主题。成员值参与序列化，因此只能追加、不能改值或重排。
+/// Colour theme of the desktop media card. Member values take part in serialization, so members may only be
+/// appended, never renumbered or reordered.
+/// </summary>
+public enum MediaCardColorTheme
+{
+    /// <summary>深色底、浅色文字。/ Dark surface with light text.</summary>
+    Dark = 0,
+
+    /// <summary>浅色底、深色文字。/ Light surface with dark text.</summary>
+    Light = 1,
+
+    /// <summary>深色底，强调色从封面提取主色。/ Dark surface with the accent taken from the artwork.</summary>
+    FromCover = 2
+}
+
+/// <summary>媒体卡片频谱的参数来源。成员值参与序列化，只能追加。</summary>
+public enum DesktopSpectrumMode
+{
+    /// <summary>跟随主程序状态栏的频谱组件设置。</summary>
+    FollowMain = 0,
+
+    /// <summary>使用媒体卡片自己的频谱参数。</summary>
+    Custom = 1
+}

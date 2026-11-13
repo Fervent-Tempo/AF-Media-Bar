@@ -71,6 +71,7 @@ namespace AFMediaBar
         private LyricsRecoveryNotificationCoordinator? _lyricsRecoveryNotifications;
         private MediaSessionService? _spectrumMediaSessions;
         private EventHandler<MediaSnapshot>? _spectrumSnapshotHandler;
+        private MediaCardWindow? _mediaCard;
 
         // .NET Generic Host 提供依赖注入、配置、日志等服务。
         // The .NET Generic Host provides dependency injection, configuration, logging, and other services.
@@ -350,6 +351,8 @@ namespace AFMediaBar
                 services.AddScoped<InteractionPage>();
                 services.AddScoped<DeviceManagementPage>();
                 services.AddScoped<ExperimentalPage>();
+                services.AddScoped<MediaCardPage>();
+                services.AddScoped<MediaCardViewModel>();
                 services.AddScoped<ExperimentalViewModel>();
                 services.AddScoped<AudioDeviceSettingsViewModel>();
                 services.AddScoped<BluetoothBatterySettingsViewModel>();
@@ -622,11 +625,59 @@ namespace AFMediaBar
             _powerStateMonitor.Start();
             _memoryPruneCoordinator.Start();
 
+            SyncMediaCard();
+            SettingsManager.SettingsChanged += OnSettingsChangedForMediaCard;
+
 #if DEBUG
             _debugLyricsDiagnostics = new DebugLyricsDiagnostics();
             Services.GetRequiredService<MediaSessionService>().SnapshotChanged += _debugLyricsDiagnostics.OnSnapshotChanged;
 #endif
         }
+
+        /// <summary>按设置同步媒体卡片的窗口生命周期；开关与置顶都由设置驱动。</summary>
+        private void SyncMediaCard()
+        {
+            // 窗口被 Alt+F4 关掉后字段还指着旧实例，先丢掉再按设置决定是否重开。
+            if (_mediaCard is { IsLoaded: false })
+                _mediaCard = null;
+
+            var settings = SettingsManager.Current.MediaCard;
+            if (!settings.Enabled)
+            {
+                _mediaCard?.Close();
+                _mediaCard = null;
+                ApplyMediaCardOnlyMode(false);
+                return;
+            }
+
+            if (_mediaCard is null)
+            {
+                try
+                {
+                    _mediaCard = ActivatorUtilities.CreateInstance<MediaCardWindow>(Services);
+                    _mediaCard.Show();
+                }
+                catch (Exception exception)
+                {
+                    Debug.WriteLine($"[App] Media card failed to open: {exception}");
+                    ApplyMediaCardOnlyMode(false);
+                    return;
+                }
+            }
+
+            _mediaCard.ApplySettings(settings);
+            // 只有卡片真的显示出来才算「仅媒体卡片」。卡片上的关闭按钮把 Enabled 置 false，
+            // 下一次同步就会自动恢复任务栏媒体栏与悬浮条。
+            ApplyMediaCardOnlyMode(settings.OnlyCard && _mediaCard.IsLoaded);
+        }
+
+        private void ApplyMediaCardOnlyMode(bool active)
+        {
+            foreach (var main in Windows.OfType<MainWindow>().ToArray())
+                main.SetMediaCardOnlyMode(active);
+        }
+
+        private void OnSettingsChangedForMediaCard(object? sender, SettingsChangedEventArgs e) => SyncMediaCard();
 
         private void AttachSpectrumMediaSource()
         {
@@ -663,6 +714,9 @@ namespace AFMediaBar
 
             _exitCoordinator.ArmExitProtection();
             _startupCancellation.Cancel();
+            SettingsManager.SettingsChanged -= OnSettingsChangedForMediaCard;
+            _mediaCard?.Close();
+            _mediaCard = null;
             DetachSpectrumMediaSource();
             _developerToolsHost?.Dispose();
             _developerMode?.Dispose();

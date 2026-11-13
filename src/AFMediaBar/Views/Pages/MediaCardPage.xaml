@@ -1,0 +1,259 @@
+<?xml version="1.0" ?>
+<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:components="clr-namespace:AFMediaBar.Components"
+      xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      x:Class="AFMediaBar.Views.Pages.MediaCardPage"
+      Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+      ScrollViewer.CanContentScroll="False">
+    <Page.Resources>
+        <Style TargetType="{x:Type components:SettingsRow}" BasedOn="{StaticResource AfSettingsPilotRowStyle}" />
+        <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}" />
+        <DataTemplate x:Key="AfMediaCardFontChoiceTemplate">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock FontSize="13" Text="{Binding DisplayName}" VerticalAlignment="Center" />
+                <TextBlock Margin="14,0,0,0" FontSize="14" FontFamily="{Binding PreviewFontFamily}"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           Text="{Binding PreviewText}" VerticalAlignment="Center" />
+            </StackPanel>
+        </DataTemplate>
+    </Page.Resources>
+    <components:SettingsPageLayout x:Name="PageLayout">
+        <components:SettingsPageLayout.Header>
+            <components:SettingsGroupStrip Title="{DynamicResource Loc.Settings.Page.MediaCard}"
+                                           Subtitle="{DynamicResource Loc.Settings.Page.MediaCard.Description}"
+                                           PageIcon="{ui:SymbolIcon Desktop24}"
+                                           Target="{Binding ScrollViewer, ElementName=PageLayout}" />
+        </components:SettingsPageLayout.Header>
+        <StackPanel x:Name="PageRoot" Loaded="OnPageLoaded">
+            <components:SettingsGroup GroupId="MediaCard"
+                                      Header="{DynamicResource Loc.Settings.MediaCard.Group}"
+                                      Description="{DynamicResource Loc.Settings.MediaCard.Group.Description}"
+                                      Icon="{ui:SymbolIcon Desktop24}">
+                <StackPanel>
+                    <components:SettingsRow Icon="{ui:SymbolIcon Desktop24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.Enabled}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.Enabled.Description}"
+                                            KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.Enabled, Mode=TwoWay}" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon Desktop24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.OnlyCard}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.OnlyCard.Description}"
+                                            IsEnabled="{Binding ViewModel.Enabled}"
+                                            KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.OnlyCard, Mode=TwoWay}" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon Pin24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.Topmost}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.Topmost.Description}"
+                                            KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.Topmost, Mode=TwoWay}" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon Color24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.ColorTheme}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.ColorTheme.Description}">
+                        <ComboBox MinWidth="{StaticResource AfSettingsSelectShortWidth}"
+                                  SelectedValue="{Binding ViewModel.ColorTheme, Mode=TwoWay}"
+                                  SelectedValuePath="Tag">
+                            <ComboBoxItem Content="{DynamicResource Loc.Settings.MediaCard.ColorTheme.Dark}"
+                                          Tag="{x:Static settings:MediaCardColorTheme.Dark}" />
+                            <ComboBoxItem Content="{DynamicResource Loc.Settings.MediaCard.ColorTheme.Light}"
+                                          Tag="{x:Static settings:MediaCardColorTheme.Light}" />
+                            <ComboBoxItem Content="{DynamicResource Loc.Settings.MediaCard.ColorTheme.FromCover}"
+                                          Tag="{x:Static settings:MediaCardColorTheme.FromCover}" />
+                        </ComboBox>
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon TextQuote24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.Romanization}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.Romanization.Description}"
+                                            KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.ShowRomanization, Mode=TwoWay}" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon Info24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.TrackInfoOnEmptyLines}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.TrackInfoOnEmptyLines.Description}"
+                                            KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.ShowTrackInfoOnEmptyLines, Mode=TwoWay}" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon Clock24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.WavyProgressBar}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.WavyProgressBar.Description}"
+                                            KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.WavyProgressBar, Mode=TwoWay}" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon TextQuote24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.LyricsSource}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.LyricsSource.Description}"
+                                            KeepControlInline="True">
+                        <components:SettingsNavigationButton Style="{StaticResource AfSettingsNavigationButtonStyle}"
+                                                             Destination="Lyrics"
+                                                             Content="{DynamicResource Loc.Settings.MediaCard.OpenLyrics}" />
+                    </components:SettingsRow>
+                </StackPanel>
+            </components:SettingsGroup>
+
+            <components:SettingsGroup GroupId="MediaCardComponents"
+                                      Header="{DynamicResource Loc.Settings.MediaCard.Components}"
+                                      Description="{DynamicResource Loc.Settings.MediaCard.Components.Description}"
+                                      Icon="{ui:SymbolIcon DataBarVertical24}">
+                <StackPanel>
+                    <TextBlock Margin="0,0,0,8"
+                               Style="{StaticResource AfSettingsSubsectionTitleStyle}"
+                               Text="{DynamicResource Loc.Settings.MediaCard.Spectrum.Group}" />
+                    <components:SettingsRow Icon="{ui:SymbolIcon DataBarVertical24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.Spectrum}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.Spectrum.Description}"
+                                            KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.ShowSpectrum, Mode=TwoWay}" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon DataHistogram24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.ImmersiveSpectrum}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.ImmersiveSpectrum.Description}"
+                                            IsEnabled="{Binding ViewModel.ShowSpectrum}"
+                                            KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.ImmersiveSpectrum, Mode=TwoWay}" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon Settings24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.SpectrumMode}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.SpectrumMode.Description}"
+                                            IsEnabled="{Binding ViewModel.ShowSpectrum}">
+                        <ComboBox MinWidth="{StaticResource AfSettingsSelectShortWidth}"
+                                  SelectedValue="{Binding ViewModel.SpectrumMode, Mode=TwoWay}"
+                                  SelectedValuePath="Tag">
+                            <ComboBoxItem Content="{DynamicResource Loc.Settings.MediaCard.SpectrumMode.FollowMain}"
+                                          Tag="{x:Static settings:DesktopSpectrumMode.FollowMain}" />
+                            <ComboBoxItem Content="{DynamicResource Loc.Settings.MediaCard.SpectrumMode.Custom}"
+                                          Tag="{x:Static settings:DesktopSpectrumMode.Custom}" />
+                        </ComboBox>
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon PaintBrush24}"
+                                            Title="{DynamicResource Loc.Media.Spectrum.Style.Title}"
+                                            Description="{DynamicResource Loc.Media.Spectrum.Style.Description}"
+                                            IsEnabled="{Binding ViewModel.IsCustomSpectrum}">
+                        <ComboBox MinWidth="{StaticResource AfSettingsSelectShortWidth}"
+                                  SelectedValue="{Binding ViewModel.SpectrumStyle, Mode=TwoWay}"
+                                  SelectedValuePath="Tag">
+                            <ComboBoxItem Content="{DynamicResource Loc.Media.Spectrum.Style.Bars}"
+                                          Tag="{x:Static settings:SpectrumStyle.Bars}" />
+                            <ComboBoxItem Content="{DynamicResource Loc.Media.Spectrum.Style.Waveform}"
+                                          Tag="{x:Static settings:SpectrumStyle.Waveform}" />
+                            <ComboBoxItem Content="{DynamicResource Loc.Media.Spectrum.Style.PixelBars}"
+                                          Tag="{x:Static settings:SpectrumStyle.PixelBars}" />
+                            <ComboBoxItem Content="{DynamicResource Loc.Media.Spectrum.Style.MirroredBars}"
+                                          Tag="{x:Static settings:SpectrumStyle.MirroredBars}" />
+                        </ComboBox>
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon DataHistogram24}"
+                                            Title="{DynamicResource Loc.Media.Spectrum.BandCount.Title}"
+                                            Description="{DynamicResource Loc.Media.Spectrum.BandCount.Description}"
+                                            IsEnabled="{Binding ViewModel.IsCustomSpectrum}">
+                        <components:SettingsNumericEditor Value="{Binding ViewModel.SpectrumBarCount, Mode=TwoWay}"
+                                                         Minimum="{Binding ViewModel.MinimumSpectrumBarCount}"
+                                                         Maximum="{Binding ViewModel.MaximumSpectrumBarCount}"
+                                                         Step="1" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon TopSpeed24}"
+                                            Title="{DynamicResource Loc.Media.Spectrum.Sensitivity.Title}"
+                                            Description="{DynamicResource Loc.Media.Spectrum.Sensitivity.Description}"
+                                            IsEnabled="{Binding ViewModel.IsCustomSpectrum}">
+                        <components:SettingsNumericEditor Value="{Binding ViewModel.SpectrumSensitivity, Mode=TwoWay}"
+                                                         Minimum="{Binding ViewModel.MinimumSpectrumSensitivity}"
+                                                         Maximum="{Binding ViewModel.MaximumSpectrumSensitivity}"
+                                                         Step="{Binding ViewModel.SpectrumSensitivityStep}"
+                                                         Unit="{DynamicResource Loc.Settings.Numeric.Percent}" />
+                    </components:SettingsRow>
+
+                    <TextBlock Margin="0,12,0,8"
+                               Style="{StaticResource AfSettingsSubsectionTitleStyle}"
+                               Text="{DynamicResource Loc.Settings.MediaCard.Metrics}" />
+                    <TextBlock Margin="16,-2,16,8"
+                               Style="{StaticResource AfSettingsHintTextStyle}"
+                               Text="{DynamicResource Loc.Settings.MediaCard.Metrics.Description}" />
+                    <components:SettingsRow Icon="{ui:SymbolIcon Gauge24}"
+                                            Title="CPU"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.MetricCpu.Description}"
+                                            KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.ShowCpu, Mode=TwoWay}" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon Gauge24}"
+                                            Title="GPU"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.MetricGpu.Description}"
+                                            KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.ShowGpu, Mode=TwoWay}" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon Gauge24}"
+                                            Title="{DynamicResource Loc.Media.Metric.SystemMemory.Title}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.MetricMemory.Description}"
+                                            KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.ShowMemory, Mode=TwoWay}" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon ArrowSort24}"
+                                            Title="{DynamicResource Loc.Media.Metric.SystemNetwork.Title}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.MetricNetwork.Description}"
+                                            KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.ShowNetwork, Mode=TwoWay}" />
+                    </components:SettingsRow>
+                    <components:SettingsNavigationButton Margin="16,10,16,4"
+                                                         Style="{StaticResource AfSettingsNavigationButtonStyle}"
+                                                         Destination="Performance"
+                                                         GroupId="Performance.Sampling"
+                                                         Content="{DynamicResource Loc.Settings.MediaCard.OpenPerformance}" />
+                </StackPanel>
+            </components:SettingsGroup>
+            <components:SettingsGroup GroupId="MediaCardFonts"
+                                      Header="{DynamicResource Loc.Settings.MediaCard.Fonts}"
+                                      Description="{DynamicResource Loc.Settings.MediaCard.Fonts.Description}"
+                                      Icon="{ui:SymbolIcon TextFont24}">
+                <StackPanel>
+                    <components:SettingsRow Icon="{ui:SymbolIcon TextFont24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.FontChinese}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.FontChinese.Description}">
+                        <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}"
+                                  MaxDropDownHeight="360"
+                                  VirtualizingPanel.IsVirtualizing="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling"
+                                  ItemsSource="{Binding ViewModel.FontChoices}"
+                                  SelectedValue="{Binding ViewModel.ChineseFontFamily, Mode=TwoWay}"
+                                  SelectedValuePath="Name"
+                                  ItemTemplate="{StaticResource AfMediaCardFontChoiceTemplate}" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon TextFont24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.FontJapanese}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.FontJapanese.Description}">
+                        <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}"
+                                  MaxDropDownHeight="360"
+                                  VirtualizingPanel.IsVirtualizing="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling"
+                                  ItemsSource="{Binding ViewModel.FontChoices}"
+                                  SelectedValue="{Binding ViewModel.JapaneseFontFamily, Mode=TwoWay}"
+                                  SelectedValuePath="Name"
+                                  ItemTemplate="{StaticResource AfMediaCardFontChoiceTemplate}" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon TextFont24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.FontEnglish}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.FontEnglish.Description}">
+                        <ComboBox MinWidth="{StaticResource AfSettingsSelectMinWidth}"
+                                  MaxDropDownHeight="360"
+                                  VirtualizingPanel.IsVirtualizing="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling"
+                                  ItemsSource="{Binding ViewModel.FontChoices}"
+                                  SelectedValue="{Binding ViewModel.EnglishFontFamily, Mode=TwoWay}"
+                                  SelectedValuePath="Name"
+                                  ItemTemplate="{StaticResource AfMediaCardFontChoiceTemplate}" />
+                    </components:SettingsRow>
+                    <components:SettingsRow Icon="{ui:SymbolIcon ArrowReset24}"
+                                            Title="{DynamicResource Loc.Settings.MediaCard.FontReset}"
+                                            Description="{DynamicResource Loc.Settings.MediaCard.FontReset.Description}"
+                                            KeepControlInline="True">
+                        <ui:Button Content="{DynamicResource Loc.Settings.MediaCard.FontReset.Action}"
+                                   Style="{StaticResource AfSettingsButtonStyle}"
+                                   Click="ResetFontsButton_OnClick" />
+                    </components:SettingsRow>
+                </StackPanel>
+            </components:SettingsGroup>
+
+        </StackPanel>
+    </components:SettingsPageLayout>
+</Page>

@@ -60,6 +60,9 @@ public enum SettingsPageKey
     Diagnostics,
     MemoryTools,
     QuickStart,
+
+    /// <summary>媒体卡片：常驻桌面的独立媒体卡片。</summary>
+    MediaCard,
 }
 
 /// <summary>
