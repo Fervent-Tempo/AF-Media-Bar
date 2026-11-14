@@ -44,7 +44,9 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
     private readonly LyricsRetryTracker<(string SessionId, LyricsRequest Request)> _lyricsRetries = new(LyricsCacheCapacity);
     private readonly Dictionary<(string SessionId, LyricsRequest Request), CancellationTokenSource> _pendingLyrics = [];
     private readonly object _lyricsRequestGate = new();
+    private readonly SmtcLyricsDurationGate _durationGate;
     private (string SessionId, LyricsRequest Request)? _lastLyricsKey;
+    private bool _lyricsDeferred;
     private readonly CancellationTokenSource _lifetime = new();
     private bool _disposed;
 
@@ -80,6 +82,8 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
 
         _lyricsCache.Clear();
         _lyricsCacheGeneration++;
+        _lyricsDeferred = false;
+        _durationGate.Reset();
         CancelPendingLyrics();
 
         // 封面缩略图与主色缓存也归本构建器管：它们是本类在构建快照时填进去的（见 Build），因此也由本类丢弃，
@@ -105,6 +109,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         _lyricsService = lyricsService;
         _sources = sources;
         _log = log;
+        _durationGate = new SmtcLyricsDurationGate(timeProvider);
         _lyricsCache = new(LyricsCacheCapacity,
             result => LyricsCacheBudgetPolicy.EstimateBytes(result?.Document),
             LyricsCacheBudgetPolicy.DefaultBudgetBytes, timeProvider);
@@ -122,6 +127,8 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         _lifetime.Dispose();
         _lyricsCache.Clear();
         _lastLyricsKey = null;
+        _lyricsDeferred = false;
+        _durationGate.Reset();
         _lyricsRetries.Clear();
     }
 
@@ -139,6 +146,8 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         _lyricsCache.Clear();
         _lyricsRetries.Clear();
         _lyricsCacheGeneration++;
+        _lyricsDeferred = false;
+        _durationGate.Reset();
         CancelPendingLyrics();
         EnrichmentCompleted?.Invoke();
     }
@@ -231,7 +240,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         var artist = read.Artist;
         var request = new LyricsRequest(title, artist, read.Album, duration > 0 ? duration : null, null,
             PlaybackSourceId: sourceId);
-        var lyrics = GetLyrics(session.Id, sourceId, request, read.IsVideo, read.IsPlaying);
+        var lyrics = GetLyrics(session.Id, sourceId, request, read.IsVideo, read.IsPlaying, deferUntilDurationSettles: true);
         var searchingLyrics = lyrics is null && IsSearchingLyrics();
 
         return new MediaSnapshot(
@@ -282,31 +291,47 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
             PlaybackSourceId = LyricsSourceIdentity.Normalize(request.PlaybackSourceId)
         };
 
-    internal LyricsResult? GetLyrics(string sessionId, string sourceId, LyricsRequest request, bool isVideo = false, bool isPlaying = true)
+    internal LyricsResult? GetLyrics(string sessionId, string sourceId, LyricsRequest request, bool isVideo = false,
+        bool isPlaying = true, bool deferUntilDurationSettles = false)
     {
         if (_disposed) return null;
         if (!LyricsMediaEligibilityPolicy.ShouldFetch(sourceId, isVideo, SettingsManager.Current.AllowBrowserAndVideoLyrics))
         {
             _lastLyricsKey = null;
+            _lyricsDeferred = false;
             return null;
         }
         request = request with { PlaybackSourceId = sourceId };
         // SMTC 的总时长可能随时间轴更新变化；它用于匹配，不用于缓存或在途请求的曲目身份。
         // 来源标识同时归一成不带 .exe 的写法：同一个会话在兜底路径上会拿到 cloudmusic，常规路径拿到 cloudmusic.exe，
         // 不归一就是同一首歌取两次词。
-        var key = (sessionId, KeyRequest(request));
+        var normalizedRequest = KeyRequest(request);
+        var key = (sessionId, normalizedRequest);
         _lastLyricsKey = key;
         CancelPendingLyrics(key);
         if (_lyricsCache.TryGetValue(key, out var cached))
         {
+            _lyricsDeferred = false;
             return cached;
         }
         if (_sources?.ProvidesLyrics(sourceId) == true ||
             string.IsNullOrWhiteSpace(request.Title))
         {
+            _lyricsDeferred = false;
             return null;
         }
 
+        if (deferUntilDurationSettles)
+        {
+            var trackKey = $"{sessionId}\u001f{normalizedRequest.PlaybackSourceId}\u001f{normalizedRequest.Title}\u001f{normalizedRequest.Artist}\u001f{normalizedRequest.Album}";
+            if (_durationGate.ShouldDefer(trackKey, request.DurationSeconds))
+            {
+                _lyricsDeferred = true;
+                return null;
+            }
+        }
+
+        _lyricsDeferred = false;
         BeginLyricsRequest(key, request, isPlaying);
         return null;
     }
@@ -320,6 +345,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
             return false;
         }
 
+        if (_lyricsDeferred) return true;
         lock (_lyricsRequestGate)
         {
             return _pendingLyrics.ContainsKey(key);
