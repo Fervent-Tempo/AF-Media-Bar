@@ -59,6 +59,14 @@ public readonly record struct LyricsSourceSettings(IReadOnlyList<string>? Enable
     /// <summary>本地歌词目录，按列表顺序查找；空表示没添加过。/ Local lyric folders searched in order; empty means none were added.</summary>
     public IReadOnlyList<string>? LocalFolders { get; init; }
 
+    /// <summary>
+    /// Apple Music 播放且默认规则未取到可靠歌词时，向 Apple 曲库查询原名再取一轮；默认开启，手动规则不生效。
+    /// </summary>
+    public bool AppleMusicOriginalNamesEnabled { get => _appleMusicOriginalNamesEnabled ?? true; init => _appleMusicOriginalNamesEnabled = value; }
+
+    // 区分旧文件缺字段与用户明确关闭，序列化仍输出普通布尔值。
+    private readonly bool? _appleMusicOriginalNamesEnabled;
+
     /// <summary>默认值：从未配置，即全部来源启用。</summary>
     public static LyricsSourceSettings Default { get; } = new(null);
 
