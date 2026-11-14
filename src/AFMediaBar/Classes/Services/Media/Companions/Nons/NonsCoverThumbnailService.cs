@@ -9,14 +9,21 @@ namespace AFMediaBar.Classes.Services.Media.Companions.Nons;
 /// <summary>队列列表的低清封面缩略图服务；失败只回退占位图，不影响队列功能。</summary>
 public sealed class NonsCoverThumbnailService : IDisposable
 {
-    private const int DecodePixelWidth = 40;
-    private const int MaximumCachedImages = 256;
+    private const int DecodePixelWidth = 32;
+    private const int MaximumCachedImages = 96;
     private readonly HttpClient _httpClient;
     private readonly object _gate = new();
-    private readonly Dictionary<string, BitmapSource> _cache = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, CacheEntry> _cache = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Task<BitmapSource?>> _inFlight = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _downloadGate = new(4, 4);
+    private long _useClock;
     private bool _disposed;
+
+    private sealed class CacheEntry(BitmapSource image, long lastUsed)
+    {
+        internal BitmapSource Image { get; } = image;
+        internal long LastUsed { get; set; } = lastUsed;
+    }
 
     public NonsCoverThumbnailService() : this(CreateClient())
     {
@@ -36,7 +43,10 @@ public sealed class NonsCoverThumbnailService : IDisposable
         lock (_gate)
         {
             if (_cache.TryGetValue(track.TrackId, out var cached))
-                return Task.FromResult<BitmapSource?>(cached);
+            {
+                cached.LastUsed = ++_useClock;
+                return Task.FromResult<BitmapSource?>(cached.Image);
+            }
             if (_inFlight.TryGetValue(track.TrackId, out var existing))
             {
                 if (!existing.IsCompleted)
@@ -69,8 +79,12 @@ public sealed class NonsCoverThumbnailService : IDisposable
                     lock (_gate)
                     {
                         if (_cache.Count >= MaximumCachedImages)
-                            _cache.Clear();
-                        _cache[track.TrackId] = image;
+                        {
+                            var oldestKey = _cache.MinBy(pair => pair.Value.LastUsed).Key;
+                            if (!string.IsNullOrEmpty(oldestKey))
+                                _cache.Remove(oldestKey);
+                        }
+                        _cache[track.TrackId] = new CacheEntry(image, ++_useClock);
                     }
                 }
                 return image;

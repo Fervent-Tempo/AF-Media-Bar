@@ -432,14 +432,14 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
 
     private void PlayerCompanion_Changed(object? sender, PlayerCompanionSnapshot snapshot) => UpdateQueueAvailability();
 
-    /// <summary>队列入口跟随当前来源或已连接的 companion；面板负责连接失败时的原因与重试。</summary>
+    /// <summary>队列入口只跟随当前受支持的播放器来源；已连接 companion 不能覆盖“当前来源不支持”的状态。</summary>
     private void UpdateQueueAvailability()
     {
         if (_isClosing)
             return;
 
-        var available = _playerCompanion.Current.IsConnected ||
-            _playerCompanion.MatchesSource(_lastSnapshot.SourceId, _lastSnapshot.SourceName);
+        var hasSource = !string.IsNullOrEmpty(_lastSnapshot.SourceId) || !string.IsNullOrEmpty(_lastSnapshot.SourceName);
+        var available = hasSource && _playerCompanion.MatchesSource(_lastSnapshot.SourceId, _lastSnapshot.SourceName);
         _mediaControl.SetQueueAvailable(available);
     }
 

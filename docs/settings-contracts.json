@@ -232,7 +232,8 @@
         "playPauseVisible": "v1.2.0",
         "previousNextVisible": "v1.2.0",
         "progressVisible": "v1.2.0",
-        "inputDeviceVisible": "v1.5.0"
+        "inputDeviceVisible": "v1.5.0",
+        "queueVisible": "unreleased"
       },
       "hoverLayerEnabled": "v1.2.0",
       "idleComponents": "v1.2.1",

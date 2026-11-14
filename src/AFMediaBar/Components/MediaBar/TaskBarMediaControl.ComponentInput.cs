@@ -57,7 +57,8 @@ public partial class TaskBarMediaControl
         [TaskbarRestComponent.NextTrack] = TaskbarNextButton,
         [TaskbarRestComponent.OutputDevice] = TaskbarDeviceButton,
         [TaskbarRestComponent.InputDevice] = TaskbarInputDeviceButton,
-        [TaskbarRestComponent.Volume] = TaskbarVolumeButton
+        [TaskbarRestComponent.Volume] = TaskbarVolumeButton,
+        [TaskbarRestComponent.Queue] = TaskbarQueueHoverButton
     };
     private Dictionary<TaskbarRestComponent, FrameworkElement> RestElements()
     {
@@ -403,8 +404,9 @@ public partial class TaskBarMediaControl
         foreach (var entry in entries)
         {
             var element = elements[entry.Component];
-            element.Visibility = entry.IsVisible ? Visibility.Visible : Visibility.Collapsed;
-            if (entry.IsVisible)
+            var available = entry.Component != TaskbarRestComponent.Queue || _queueAvailable;
+            element.Visibility = entry.IsVisible && available ? Visibility.Visible : Visibility.Collapsed;
+            if (entry.IsVisible && available)
             {
                 var gap = visibleIndex++ == 0 ? 0 : PresentationSettings.TaskbarExperience.HoverButtonSpacingDip;
                 element.Margin = _isVertical ? new Thickness(0, gap, 0, 0) : new Thickness(gap, 0, 0, 0);
@@ -414,7 +416,8 @@ public partial class TaskBarMediaControl
     private double HoverMinimumWidth()
     {
         var experience = PresentationSettings.TaskbarExperience;
-        var count = ComponentLayoutPolicy.Resolve(PresentationSettings, BarLayoutState.Hover).Count(entry => entry.IsVisible);
+        var count = ComponentLayoutPolicy.Resolve(PresentationSettings, BarLayoutState.Hover)
+            .Count(entry => entry.IsVisible && (entry.Component != TaskbarRestComponent.Queue || _queueAvailable));
         var button = TaskbarDensityMetrics.From(experience.Density).ButtonSize;
         return 11 + count * button + Math.Max(0, count - 1) * experience.HoverButtonSpacingDip;
     }

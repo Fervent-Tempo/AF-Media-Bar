@@ -1546,17 +1546,17 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private void PlayerCompanion_Changed(object? sender, PlayerCompanionSnapshot snapshot) => UpdateQueueAvailability();
 
     /// <summary>
-    /// 队列入口只在当前来源是 Nons 或 companion 已经连接时进入布局；连接失败也保留入口，让面板显示原因和重试。
-    /// The queue entry enters the layout while the current source is Nons or the companion is already connected; a failed
-    /// connection still keeps the entry so the panel can explain and retry.
+    /// 队列入口只在 AFMB 当前显示的是受支持的播放器来源时进入布局；连接过 companion 但来源已切到不支持的播放器时必须隐藏。
+    /// The queue entry enters the layout only while the source AFMB currently displays is supported; a connected companion must not
+    /// keep it visible after the source switches to an unsupported player.
     /// </summary>
     private void UpdateQueueAvailability()
     {
         if (_isClosing)
             return;
 
-        var available = _playerCompanion.Current.IsConnected ||
-            _playerCompanion.MatchesSource(_lastSnapshot.SourceId, _lastSnapshot.SourceName);
+        var hasSource = !string.IsNullOrEmpty(_lastSnapshot.SourceId) || !string.IsNullOrEmpty(_lastSnapshot.SourceName);
+        var available = hasSource && _playerCompanion.MatchesSource(_lastSnapshot.SourceId, _lastSnapshot.SourceName);
         MediaControl.SetQueueAvailable(available);
     }
 

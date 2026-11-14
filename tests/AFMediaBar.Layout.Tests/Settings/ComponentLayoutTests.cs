@@ -32,12 +32,12 @@ public sealed class ComponentLayoutTests
     }
 
     [TestMethod]
-    public void QueueEntryDefaultsOnForResidentAndIsAppendedToLegacyLayouts()
+    public void QueueEntryDefaultsOffForResidentAndIsAppendedToLegacyLayouts()
     {
         var settings = new AppSettings();
         var resident = ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident);
         Assert.IsTrue(resident.Any(entry => entry.Component == TaskbarRestComponent.Queue));
-        Assert.IsTrue(resident.Single(entry => entry.Component == TaskbarRestComponent.Queue).IsVisible);
+        Assert.IsFalse(resident.Single(entry => entry.Component == TaskbarRestComponent.Queue).IsVisible);
         Assert.IsFalse(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Idle)
             .Any(entry => entry.Component == TaskbarRestComponent.Queue && entry.IsVisible));
 
@@ -54,10 +54,47 @@ public sealed class ComponentLayoutTests
             }
         };
         var configured = ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident);
-        Assert.IsTrue(configured.Any(entry => entry.Component == TaskbarRestComponent.Queue && entry.IsVisible));
+        Assert.IsFalse(configured.Single(entry => entry.Component == TaskbarRestComponent.Queue).IsVisible);
 
         settings.TaskbarExperience = ComponentLayoutPolicy.SetVisible(settings, BarLayoutState.Resident,
+            TaskbarRestComponent.Queue, true);
+        Assert.IsTrue(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident)
+            .Single(entry => entry.Component == TaskbarRestComponent.Queue).IsVisible);
+        settings.TaskbarExperience = ComponentLayoutPolicy.SetVisible(settings, BarLayoutState.Resident,
             TaskbarRestComponent.Queue, false);
+        Assert.IsFalse(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident)
+            .Single(entry => entry.Component == TaskbarRestComponent.Queue).IsVisible);
+    }
+
+    [TestMethod]
+    public void LegacyConfiguredHoverLayoutGetsQueueAppendedVisible()
+    {
+        var settings = new AppSettings();
+        settings.TaskbarExperience = settings.TaskbarExperience with
+        {
+            ComponentLayouts = new()
+            {
+                Hover = [new(TaskbarRestComponent.PlayPause, true)]
+            }
+        };
+
+        Assert.IsTrue(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Hover)
+            .Single(entry => entry.Component == TaskbarRestComponent.Queue).IsVisible);
+    }
+
+    [TestMethod]
+    public void HoverQueueDefaultsVisibleAndCanBeDisabledWithoutChangingRestQueue()
+    {
+        var settings = new AppSettings();
+        Assert.IsTrue(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Hover)
+            .Single(entry => entry.Component == TaskbarRestComponent.Queue).IsVisible);
+
+        settings.TaskbarExperience = settings.TaskbarExperience with
+        {
+            HoverControls = settings.TaskbarExperience.HoverControls with { QueueVisible = false }
+        };
+        Assert.IsFalse(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Hover)
+            .Single(entry => entry.Component == TaskbarRestComponent.Queue).IsVisible);
         Assert.IsFalse(ComponentLayoutPolicy.Resolve(settings, BarLayoutState.Resident)
             .Single(entry => entry.Component == TaskbarRestComponent.Queue).IsVisible);
     }

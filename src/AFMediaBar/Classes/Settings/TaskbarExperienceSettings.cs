@@ -145,6 +145,11 @@ public readonly record struct TaskbarHoverControlsSettings(
     /// <summary>默认显示全部可用悬停控制。</summary>
     public bool InputDeviceVisible { get; init; }
 
+    private readonly bool? _queueVisible;
+
+    /// <summary>悬停层是否显示播放队列入口；缺字段默认开启，实际仍受 companion 可用性限制。</summary>
+    public bool QueueVisible { get => _queueVisible ?? true; init => _queueVisible = value; }
+
     public static TaskbarHoverControlsSettings Default { get; } = new(true, true, true, true, true) { InputDeviceVisible = true };
 }
 

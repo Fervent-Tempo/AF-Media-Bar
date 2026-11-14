@@ -249,7 +249,8 @@ public partial class TaskBarMediaControl
     private double VerticalHoverMinimumLength()
     {
         var controls = PresentationSettings.TaskbarExperience.Normalize();
-        var count = ComponentLayoutPolicy.Resolve(PresentationSettings, BarLayoutState.Hover).Count(entry => entry.IsVisible);
+        var count = ComponentLayoutPolicy.Resolve(PresentationSettings, BarLayoutState.Hover)
+            .Count(entry => entry.IsVisible && (entry.Component != TaskbarRestComponent.Queue || _queueAvailable));
         return count * VerticalHoverButtonSize() + Math.Max(0, count - 1) * controls.HoverButtonSpacingDip + 8;
     }
 

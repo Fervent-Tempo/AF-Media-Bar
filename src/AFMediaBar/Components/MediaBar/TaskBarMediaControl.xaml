@@ -27,6 +27,34 @@
             styles share one brush, so a colour change cannot leave a style behind.
         -->
         <SolidColorBrush x:Key="TaskbarSpectrumBrush" Color="#DFFFFFFF" />
+        <!--
+            播放队列静置层按钮只保留外层 hover 动画；内层不再叠一层 TaskbarHoverButton 背景，
+            否则同一个小组件会出现两层高亮。
+            The rest-layer queue button keeps only the outer hover animation; the inner button no longer adds a
+            TaskbarHoverButton background, so one widget does not show two highlight layers.
+        -->
+        <Style x:Key="TaskbarQueueButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="1,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Tag" Value="MediaAction" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.32" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
         <Style x:Key="TaskbarSpectrumBar" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource TaskbarSpectrumBrush}" />
             <Setter Property="CornerRadius" Value="1" />
@@ -423,7 +451,7 @@
                     Visibility="Collapsed" Tag="MediaAction"
                     MouseEnter="TaskbarSpectrumHoverSurface_MouseEnter"
                     MouseLeave="TaskbarSpectrumHoverSurface_MouseLeave">
-                <Button x:Name="TaskbarQueueButton" Style="{StaticResource TaskbarHoverButton}" Margin="0"
+                <Button x:Name="TaskbarQueueButton" Style="{StaticResource TaskbarQueueButtonStyle}" Margin="0"
                         Foreground="{Binding Foreground, ElementName=SongTitle}"
                         ToolTip="{DynamicResource Loc.Common.PlaybackQueue}"
                         AutomationProperties.Name="{DynamicResource Loc.Common.PlaybackQueue}"
@@ -611,6 +639,15 @@
                                         MouseEnter="TaskbarVolumeButton_MouseEnter"
                                         PreviewMouseWheel="TaskbarVolumeButton_PreviewMouseWheel">
                                     <TextBlock x:Name="TaskbarHoverVolumeGlyph" Text="{x:Static local:MediaControlGlyphs.Volume}" FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14" />
+                                </Button>
+                                <Button x:Name="TaskbarQueueHoverButton"
+                                        Style="{StaticResource TaskbarHoverButton}"
+                                        Margin="4,0,1,0"
+                                        Visibility="Collapsed"
+                                        ToolTip="{DynamicResource Loc.Common.PlaybackQueue}"
+                                        AutomationProperties.Name="{DynamicResource Loc.Common.PlaybackQueue}"
+                                        Click="TaskbarQueueButton_Click">
+                                    <ui:SymbolIcon x:Name="TaskbarQueueHoverIcon" Symbol="DocumentQueue24" FontSize="14" />
                                 </Button>
                             </StackPanel>
                         </Grid>

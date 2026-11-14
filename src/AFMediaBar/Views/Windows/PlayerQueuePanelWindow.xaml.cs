@@ -20,7 +20,6 @@ namespace AFMediaBar.Views.Windows;
 public partial class PlayerQueuePanelWindow : FluentWindow, IDisposable
 {
     private const double NormalWidth = 380;
-    private const double NormalHeight = 520;
     private const double EdgeMargin = 8;
 
     private readonly PlayerQueueViewModel _viewModel;
@@ -100,7 +99,7 @@ public partial class PlayerQueuePanelWindow : FluentWindow, IDisposable
                 return;
 
             // 激活期间列表可能经历初始快照和刷新两次重建；只在最终列表落地后把当前项放到视口中间。
-            await Dispatcher.InvokeAsync(CenterCurrentItem, DispatcherPriority.Loaded);
+            await CenterCurrentItemAsync();
         }
         catch (Exception exception)
         {
@@ -128,7 +127,6 @@ public partial class PlayerQueuePanelWindow : FluentWindow, IDisposable
         MaxWidth = workWidth;
         MaxHeight = workHeight;
         Width = Math.Min(NormalWidth, workWidth);
-        Height = Math.Min(NormalHeight, workHeight);
         UpdateLayout();
 
         var widthPx = (int)Math.Ceiling(ActualWidth * scale);
@@ -219,33 +217,65 @@ public partial class PlayerQueuePanelWindow : FluentWindow, IDisposable
 
     private void QueueItem_Loaded(object sender, RoutedEventArgs e) => TryLoadArtwork(sender);
 
+    private void QueueItem_Unloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: PlayerQueueItemViewModel item })
+            _viewModel.ReleaseArtwork(item);
+    }
+
     private void QueueItem_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e) => TryLoadArtwork(sender);
 
     private void TryLoadArtwork(object sender)
     {
         if (sender is FrameworkElement { DataContext: PlayerQueueItemViewModel item })
+        {
+            item.IsArtworkRequested = true;
             _ = _viewModel.LoadArtworkAsync(item);
+        }
     }
 
-    /// <summary>把当前歌曲放在列表视口中间；靠近首尾时由滚动范围自然夹取。</summary>
-    private void CenterCurrentItem()
+    private void QueueList_PreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (_isClosing || _viewModel.CurrentItem is not { } current)
+        if (e.ChangedButton != MouseButton.Middle)
             return;
 
-        QueueList.ScrollIntoView(current);
-        QueueList.UpdateLayout();
+        e.Handled = true;
+        _ = CenterCurrentItemAsync();
+    }
+
+    /// <summary>把当前歌曲放在列表视口中间；容器尚未生成时等待一次布局后重试，靠近首尾时由滚动范围自然夹取。</summary>
+    private async Task CenterCurrentItemAsync()
+    {
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            if (_isClosing || _viewModel.CurrentItem is not { } current)
+                return;
+
+            // 激活时 Items 与 SelectedItem 几乎同时变化；在列表落地后显式再选一次，避免绑定顺序把选中清空。
+            QueueList.SelectedItem = current;
+            QueueList.ScrollIntoView(current);
+            QueueList.UpdateLayout();
+            if (TryCenterItem(current))
+                return;
+
+            await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Loaded);
+        }
+    }
+
+    private bool TryCenterItem(PlayerQueueItemViewModel current)
+    {
         if (QueueList.ItemContainerGenerator.ContainerFromItem(current) is not ListBoxItem container)
-            return;
+            return false;
 
         var scrollViewer = FindVisualChild<ScrollViewer>(QueueList);
         if (scrollViewer is null)
-            return;
+            return false;
 
         var point = container.TransformToAncestor(scrollViewer).Transform(new Point(0, 0));
         var target = scrollViewer.VerticalOffset + point.Y -
             Math.Max(0, (scrollViewer.ViewportHeight - container.ActualHeight) / 2);
         scrollViewer.ScrollToVerticalOffset(Math.Clamp(target, 0, scrollViewer.ScrollableHeight));
+        return true;
     }
 
     private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject

@@ -875,7 +875,12 @@ namespace AFMediaBar.Components
         public TrayIconBounds GetVolumeAnchor() => GetScreenBounds(_volumeSurface);
 
         /// <summary>返回播放队列面板的物理屏幕锚点。 / Returns the physical screen anchor for the playback-queue panel.</summary>
-        public TrayIconBounds GetQueueAnchor() => GetScreenBounds(TaskbarQueueHoverSurface);
+        public TrayIconBounds GetQueueAnchor() => GetScreenBounds(
+            TaskbarQueueHoverSurface.Visibility == Visibility.Visible
+                ? TaskbarQueueHoverSurface
+                : TaskbarQueueHoverButton.Visibility == Visibility.Visible
+                    ? TaskbarQueueHoverButton
+                    : TaskbarQueueHoverSurface);
 
         private static TrayIconBounds GetScreenBounds(FrameworkElement element)
         {
@@ -1114,6 +1119,7 @@ namespace AFMediaBar.Components
             TaskbarHoverDeviceGlyph.FontSize = metrics.IconSize;
             TaskbarHoverInputDeviceGlyph.FontSize = metrics.IconSize;
             TaskbarHoverVolumeGlyph.FontSize = metrics.IconSize;
+            TaskbarQueueHoverIcon.FontSize = metrics.IconSize;
             // 静置层进度条只在媒体报告了时长、且开关打开时显示；开关是用户对"静置层要不要这条进度"的回答。
             // The rest-layer progress bar appears only while the session reports a duration and the switch is on; the switch is the
             // user's answer to "should the rest layer carry this progress line at all".

@@ -46,6 +46,9 @@ public partial class PlayerQueueItemViewModel : ObservableObject
     [ObservableProperty]
     private ImageSource? _artwork;
 
+    /// <summary>当前是否有可见容器需要封面；行被虚拟化回收时阻止迟到结果继续占用内存。</summary>
+    public bool IsArtworkRequested { get; set; }
+
     internal static string FormatDuration(long durationMs)
     {
         var duration = TimeSpan.FromMilliseconds(Math.Max(0, durationMs));

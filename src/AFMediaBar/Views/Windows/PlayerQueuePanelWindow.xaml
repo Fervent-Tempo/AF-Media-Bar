@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="{DynamicResource Loc.Panel.Queue.WindowTitle}"
-        Width="380" Height="520" MinWidth="0" MinHeight="0"
+        Width="380" MinWidth="0" MinHeight="0" SizeToContent="Height"
         ShowInTaskbar="False" Topmost="True" ResizeMode="NoResize"
         WindowStyle="None" WindowCornerPreference="Round"
         ExtendsContentIntoTitleBar="True" Background="Transparent"
@@ -58,7 +58,8 @@
             <!-- 选中态与设备弹窗一致：AfAccentTintBrush 背景 + 左侧 3px AfAccentBrush 标记。 -->
             <Style x:Key="QueueItemStyle" TargetType="ListBoxItem">
                 <Setter Property="Padding" Value="0" />
-                <Setter Property="Margin" Value="0,2" />
+                <Setter Property="Margin" Value="0,1" />
+                <Setter Property="Height" Value="46" />
                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                 <Setter Property="Focusable" Value="False" />
                 <Setter Property="Background" Value="Transparent" />
@@ -134,19 +135,23 @@
                     <Grid Grid.Row="1">
                         <ListBox x:Name="QueueList" ItemsSource="{Binding Items}"
                                  ItemContainerStyle="{StaticResource QueueItemStyle}"
+                                 SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+                                 Height="240"
                                  Background="Transparent" BorderThickness="0" Padding="0"
                                  SelectionMode="Single"
                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                  ScrollViewer.VerticalScrollBarVisibility="Visible"
                                  VirtualizingPanel.IsVirtualizing="True"
                                  VirtualizingPanel.VirtualizationMode="Recycling"
-                                 AutomationProperties.Name="{DynamicResource Loc.Panel.Queue.ListName}">
+                                 AutomationProperties.Name="{DynamicResource Loc.Panel.Queue.ListName}"
+                                 PreviewMouseDown="QueueList_PreviewMouseDown">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Button Style="{StaticResource QueueItemButtonStyle}"
                                             Click="QueueItem_Click"
                                             AutomationProperties.Name="{Binding AutomationName}">
                                         <Grid Loaded="QueueItem_Loaded"
+                                              Unloaded="QueueItem_Unloaded"
                                               DataContextChanged="QueueItem_DataContextChanged">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="26" />

@@ -39,6 +39,9 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
     /// <summary>当前歌曲对应的行，供窗口首次打开时把列表中心对齐到当前歌曲。</summary>
     [ObservableProperty] private PlayerQueueItemViewModel? _currentItem;
 
+    /// <summary>当前选中的行；跟随当前歌曲，使重新打开面板后选中/播放两种标记仍然成立。</summary>
+    [ObservableProperty] private PlayerQueueItemViewModel? _selectedItem;
+
     /// <summary>只在连接中、重连、队列失效或错误时显示；连接正常时为空。</summary>
     [ObservableProperty] private string _statusText = string.Empty;
     [ObservableProperty] private bool _isLoading;
@@ -105,10 +108,11 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
         if (!IsActive(token))
             return;
 
+        item.IsArtworkRequested = true;
         try
         {
             var image = await _coverThumbnails.LoadAsync(item.Track, token);
-            if (image is not null && IsActive(token))
+            if (image is not null && IsActive(token) && item.IsArtworkRequested)
                 item.Artwork = image;
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
@@ -118,6 +122,13 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
         {
             _log?.Warn("Nons", "queue cover thumbnail failed", exception);
         }
+    }
+
+    /// <summary>行被虚拟化回收/窗口关闭时释放该行封面，缓存仍保有有界缩略图供再次滚动回来使用。</summary>
+    public void ReleaseArtwork(PlayerQueueItemViewModel item)
+    {
+        item.IsArtworkRequested = false;
+        item.Artwork = null;
     }
 
     [RelayCommand]
@@ -293,6 +304,7 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
 
         Items = items;
         CurrentItem = currentIndex is int index2 && index2 >= 0 && index2 < items.Length ? items[index2] : null;
+        SelectedItem = CurrentItem;
     }
 
     private void ApplyCurrent(PlayerCompanionSnapshot snapshot)
@@ -304,6 +316,7 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
         if (target is not null)
             target.IsCurrent = true;
         CurrentItem = target;
+        SelectedItem = target;
     }
 
     private void UpdateStatus(PlayerCompanionSnapshot snapshot)
