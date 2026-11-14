@@ -46,6 +46,10 @@ public partial class PlayerQueueItemViewModel : ObservableObject
     [ObservableProperty]
     private ImageSource? _artwork;
 
+    /// <summary>当前是否正在等待封面；只控制行内加载指示，不阻塞列表。</summary>
+    [ObservableProperty]
+    private bool _isArtworkLoading;
+
     /// <summary>当前是否有可见容器需要封面；行被虚拟化回收时阻止迟到结果继续占用内存。</summary>
     public bool IsArtworkRequested { get; set; }
 

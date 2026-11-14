@@ -170,8 +170,17 @@
                                                     <ui:SymbolIcon Symbol="MusicNote220" FontSize="14"
                                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                    <Image Source="{Binding Artwork}" Stretch="UniformToFill"
+                                                    <Image x:Name="QueueArtworkImage"
+                                                           Source="{Binding Artwork, NotifyOnTargetUpdated=True}"
+                                                           TargetUpdated="QueueArtworkImage_TargetUpdated"
+                                                           Opacity="0" Stretch="UniformToFill"
                                                            RenderOptions.BitmapScalingMode="HighQuality" />
+                                                    <ui:ProgressRing Width="14" Height="14"
+                                                                     IsIndeterminate="True"
+                                                                     IsHitTestVisible="False"
+                                                                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                     Visibility="{Binding IsArtworkLoading, Converter={StaticResource QueueVisibility}}" />
                                                 </Grid>
                                             </Border>
                                             <StackPanel Grid.Column="2" Margin="0,0,8,0" VerticalAlignment="Center">

@@ -109,6 +109,7 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
             return;
 
         item.IsArtworkRequested = true;
+        item.IsArtworkLoading = true;
         try
         {
             var image = await _coverThumbnails.LoadAsync(item.Track, token);
@@ -122,12 +123,17 @@ public partial class PlayerQueueViewModel : ObservableObject, IDisposable
         {
             _log?.Warn("Nons", "queue cover thumbnail failed", exception);
         }
+        finally
+        {
+            item.IsArtworkLoading = false;
+        }
     }
 
     /// <summary>行被虚拟化回收/窗口关闭时释放该行封面，缓存仍保有有界缩略图供再次滚动回来使用。</summary>
     public void ReleaseArtwork(PlayerQueueItemViewModel item)
     {
         item.IsArtworkRequested = false;
+        item.IsArtworkLoading = false;
         item.Artwork = null;
     }
 

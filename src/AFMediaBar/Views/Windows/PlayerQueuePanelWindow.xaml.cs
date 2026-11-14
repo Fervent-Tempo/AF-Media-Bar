@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Data;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -224,6 +225,32 @@ public partial class PlayerQueuePanelWindow : FluentWindow, IDisposable
     }
 
     private void QueueItem_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e) => TryLoadArtwork(sender);
+
+    /// <summary>封面从占位图切换到实际图片时淡入；关闭装饰动效时直接显示。</summary>
+    private void QueueArtworkImage_TargetUpdated(object? sender, DataTransferEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Image image)
+            return;
+
+        image.BeginAnimation(OpacityProperty, null);
+        if (image.Source is null)
+        {
+            image.Opacity = 0;
+            return;
+        }
+
+        if (!MotionPolicy.ResolveCurrent().UseDecorativeEffects)
+        {
+            image.Opacity = 1;
+            return;
+        }
+
+        image.Opacity = 0;
+        image.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180))
+        {
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+        });
+    }
 
     private void TryLoadArtwork(object sender)
     {
