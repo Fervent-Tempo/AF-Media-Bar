@@ -613,6 +613,7 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         ShuffleButton.Visibility = matches ? Visibility.Visible : Visibility.Collapsed;
         if (!matches)
         {
+            ShuffleButton.Tag = null;
             _companionRequested = false;
             return;
         }
@@ -621,7 +622,8 @@ public partial class TaskbarFullPanelWindow : FluentWindow
         var isOn = state.Player?.Shuffle == true;
         var available = state.IsConnected && !state.IsStale && state.Capabilities.Shuffle && state.Player is not null;
         SetButtonAvailability(ShuffleButton, available && !_shufflePending);
-        ShuffleIcon.Symbol = isOn ? SymbolRegular.ArrowShuffleOff24 : SymbolRegular.ArrowShuffle24;
+        ShuffleIcon.Symbol = SymbolRegular.ArrowShuffle24;
+        ShuffleButton.Tag = isOn ? "On" : null;
         ShuffleButton.ToolTip = state.Error != PlayerCompanionError.None && !state.IsConnected
             ? Translations.Get(PlayerCompanionErrorPresentation.ResourceKey(state.Error))
             : !state.IsConnected || state.IsStale
