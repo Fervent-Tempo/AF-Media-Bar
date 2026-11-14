@@ -1,4 +1,4 @@
-<!-- owner: AF Media Bar maintainers | verified_at: 0aba7f96 | review_by: 2027-03-05 -->
+<!-- owner: AF Media Bar maintainers | verified_at: 1fd32e6f | review_by: 2027-03-05 -->
 
 # 设计约束
 
