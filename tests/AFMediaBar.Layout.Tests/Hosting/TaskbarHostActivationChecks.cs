@@ -256,7 +256,11 @@ internal static class TaskbarHostActivationChecks
             if (ObservedRect is { } observed) { rect = observed; return true; }
             return GetWindowRect(taskbar, out rect);
         }
-        public bool IsTaskbarVertical(nint taskbar) => _native.IsTaskbarVertical(taskbar);
+        public bool IsTaskbarVertical(nint taskbar) =>
+            // 测试父窗口不是 Shell 任务栏，原生查询会因类名不符按"不可用"处理；朝向按已声明的观察矩形判断。
+            ObservedRect is { } observed
+                ? observed.Bottom - observed.Top > observed.Right - observed.Left
+                : _native.IsTaskbarVertical(taskbar);
         public void DockWindow(nint window, nint taskbar) => _native.DockWindow(window, taskbar);
         public void UndockWindow(nint window) => _native.UndockWindow(window);
         public void SetWindowPosition(nint window, nint taskbar, int width, int height) => _native.SetWindowPosition(window, taskbar, width, height);

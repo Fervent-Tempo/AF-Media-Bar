@@ -161,13 +161,26 @@ public class TaskbarDockService : ITaskbarDockService
     }
 
     /// <summary>
-    /// 读取任务栏的物理像素矩形；句柄无效或 Win32 查询失败时返回 <see langword="false"/>。
-    /// Reads the taskbar rectangle in physical pixels; returns <see langword="false"/> for an invalid handle or failed Win32 query.
+    /// 读取任务栏的物理像素矩形；句柄已不是任务栏窗口或 Win32 查询失败时返回 <see langword="false"/>。
+    /// Reads the taskbar rectangle in physical pixels; returns <see langword="false"/> when the handle no longer names a taskbar
+    /// window or the Win32 query fails.
     /// </summary>
     public bool TryGetTaskbarRect(IntPtr taskbarHandle, out RECT rect)
     {
         rect = default;
-        return taskbarHandle != IntPtr.Zero && GetWindowRect(taskbarHandle, out rect);
+        return taskbarHandle != IntPtr.Zero && IsTaskbarWindow(taskbarHandle) && GetWindowRect(taskbarHandle, out rect);
+    }
+
+    /// <summary>
+    /// 窗口类是否仍是主任务栏或副任务栏：Explorer 重建任务栏后，旧句柄可能被回收给别的窗口，此时不能当作任务栏定位或探测。
+    /// Whether the window class is still a main or secondary taskbar: after Explorer rebuilds the taskbar an old handle can be
+    /// recycled to another window, and must not be used as a taskbar for placement or probing.
+    /// </summary>
+    private static bool IsTaskbarWindow(IntPtr taskbarHandle)
+    {
+        var className = new StringBuilder(64);
+        return GetClassName(taskbarHandle, className, className.Capacity) > 0 &&
+               className.ToString() is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd";
     }
 
     /// <summary>
