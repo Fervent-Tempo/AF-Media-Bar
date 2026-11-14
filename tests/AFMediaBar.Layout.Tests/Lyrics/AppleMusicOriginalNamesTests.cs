@@ -190,6 +190,29 @@ public sealed class AppleMusicOriginalNamesTests
     }
 
     [TestMethod]
+    public async Task DurationMatchingJpDecoyDoesNotHideTheTaiwanOriginal()
+    {
+        // JP 区的时长相合候选可能只是无关曲目；它校验失败时仍要补搜 TW，不能被“JP 已有候选”挡住。
+        var request = new LyricsRequest("Tie Hua Fei", "Mili & Monster Siren Records — Tie Hua Fei - Single", string.Empty, 200,
+            null, PlaybackSourceId: AppleMusic);
+        var catalog = Respond((path, country) => (path, country) switch
+        {
+            ("search", "jp") => [Song("Tie Hua Fei", "Wrong Artist", 9, "Tie Hua Fei - Single", 200)],
+            ("search", "tw") => [Song("鐵花飛", "Mili & 塞壬唱片-MSR", 1, "Tie Hua Fei - Single", 200)],
+            ("lookup", "us") => [Song("Tie Hua Fei", "Mili & Monster Siren Records", 1, "Tie Hua Fei - Single", 200)],
+            ("lookup", "cn") => [Song("铁花飞", "Mili & 塞壬唱片-MSR", 1, "Tie Hua Fei - Single", 200)],
+            _ => []
+        });
+        using var client = new HttpClient(catalog);
+        using var resolver = new AppleMusicOriginalMetadataResolver(null, client, new TestClock());
+
+        var original = await resolver.ResolveAsync(request, CancellationToken.None);
+
+        Assert.AreEqual("铁花飞", original?.Title);
+        Assert.AreEqual("CN", original?.Region);
+    }
+
+    [TestMethod]
     public async Task UnrelatedTrackMatchingTheStaleDurationDoesNotHideTheRealOne()
     {
         // 实机：切歌时还是上一首的 242 秒，JP 区搜索里恰好有一首 240 秒的无关曲目；它校验不通过后仍要找到 142 秒的《但》。
@@ -313,6 +336,7 @@ public sealed class AppleMusicOriginalNamesTests
     [DataRow("SwitchOff")]
     [DataRow("AllSourcesOff")]
     [DataRow("EmptyArtist")]
+    [DataRow("ManualRule")]
     public async Task NoCatalogRequestOutsideTheTrigger(string scenario)
     {
         // EmptyArtist：Apple Music 加载下一首时 SMTC 先报「Connecting…」且歌手为空。
@@ -326,6 +350,8 @@ public sealed class AppleMusicOriginalNamesTests
             SettingsManager.Current.LyricsSource = LyricsSourceSettings.Default with { AppleMusicOriginalNamesEnabled = false };
         if (scenario == "AllSourcesOff")
             SettingsManager.Current.LyricsSource = new LyricsSourceSettings([]);
+        if (scenario == "ManualRule")
+            SettingsManager.Current.LyricsSource = LyricsSourceSettings.Default with { Rule = LyricsSourceRule.Manual };
         var preferred = new Source(LyricsSourceCatalog.QQMusic,
             (_, _) => Task.FromResult<LyricsResult?>(scenario == "ReliableFirstRound" ? Online("QQ", 90) : null));
         var catalog = Matasaburo();

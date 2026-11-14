@@ -86,17 +86,20 @@ public sealed class AppleMusicOriginalMetadataResolver : IDisposable
     }
 
     /// <summary>
-    /// JP 区搜索（无候选时补搜 TW 区；组合搜索词两区都零结果时改用曲名），US/CN 区 lookup 校验，必要时补查 KR/TW/HK 后按文字选原名。
+    /// JP 区搜索；JP 无候选或候选校验失败时补搜 TW 区（组合搜索词两区都零结果时改用曲名），US/CN 区 lookup 校验，
+    /// 必要时补查 KR/TW/HK 后按文字选原名。
     /// </summary>
     private async Task<(Outcome Outcome, AppleMusicOriginal? Original)> LookUpAsync(LyricsRequest request, CancellationToken token)
     {
         IReadOnlyList<AppleMusicTrack> anchors = [];
         var searched = new List<AppleMusicTrack>();
+        var searchedRegions = new HashSet<string>(StringComparer.Ordinal);
         var terms = AppleMusicCatalogPolicy.SearchTerms(request);
         for (var index = 0; index < terms.Count && searched.Count == 0; index++)
         {
             var term = terms[index];
-            // 首个搜索词按 JP → TW 顺序，JP 区有时长对得上的候选就不再搜 TW；回退搜索词两区并发，避免超出解析预算。
+            // 首个搜索词先搜 JP；没有时长候选时再搜 TW。JP 候选校验失败时的补搜放在 lookup 之后，避免每首歌都多请求一次。
+            // 回退搜索词两区并发，避免超出解析预算。
             var batches = index == 0
                 ? AppleMusicCatalogPolicy.SearchRegions.Select(region => new[] { region }).ToArray()
                 : new[] { AppleMusicCatalogPolicy.SearchRegions };
@@ -108,6 +111,7 @@ public sealed class AppleMusicOriginalMetadataResolver : IDisposable
                 foreach (var region in regions)
                 {
                     searched.AddRange(found[region]);
+                    searchedRegions.Add(region);
                     if (anchors.Count == 0) anchors = AppleMusicCatalogPolicy.FilterByDuration(found[region], request.DurationSeconds);
                 }
                 if (anchors.Count > 0) break;
@@ -121,6 +125,26 @@ public sealed class AppleMusicOriginalMetadataResolver : IDisposable
             region => AppleMusicCatalogPolicy.LookupUri(ids, region), token).ConfigureAwait(false);
         if (lookups is null) return (lookupBlocked, null);
         var anchor = AppleMusicCatalogPolicy.SelectCandidate(request, anchors, lookups);
+        // JP 的时长相合候选可能只是无关曲目；校验失败时若还没搜过 TW，仍应补一次 TW，避免被它挡住真正的华语原曲。
+        if (anchor is null && !searchedRegions.Contains(AppleMusicCatalogPolicy.Taiwan) && terms.Count > 0)
+        {
+            var (taiwan, blocked) = await RequestAsync([AppleMusicCatalogPolicy.Taiwan],
+                region => AppleMusicCatalogPolicy.SearchUri(terms[0], region), token).ConfigureAwait(false);
+            if (taiwan is null) return (blocked, null);
+            var twTracks = taiwan[AppleMusicCatalogPolicy.Taiwan];
+            if (twTracks.Count > 0)
+            {
+                searched.AddRange(twTracks);
+                anchors = anchors.Concat(AppleMusicCatalogPolicy.FilterByDuration(twTracks, request.DurationSeconds))
+                    .DistinctBy(track => track.TrackId).ToArray();
+                var extraIds = twTracks.Select(track => track.TrackId).Distinct().Take(AppleMusicCatalogPolicy.ResultLimit).ToArray();
+                var (extraLookups, extraBlocked) = await RequestAsync(AppleMusicCatalogPolicy.LookupRegions,
+                    region => AppleMusicCatalogPolicy.LookupUri(extraIds, region), token).ConfigureAwait(false);
+                if (extraLookups is null) return (extraBlocked, null);
+                lookups = MergeLookups(lookups, extraLookups);
+                anchor = AppleMusicCatalogPolicy.SelectCandidate(request, anchors, lookups);
+            }
+        }
         // 切歌瞬间 SMTC 常沿用上一首的时长，可能筛掉正确曲目、只留下时长碰巧相同的无关曲目。时长对得上的候选都不通过时，
         // 对全部搜索结果按「没有时长」处理，曲名与歌手都一致才采用；这样仍未命中可能只是时长不可信，不写缓存。
         var durationDropped = anchor is null && request.DurationSeconds is > 0;
@@ -146,6 +170,21 @@ public sealed class AppleMusicOriginalMetadataResolver : IDisposable
 
         var original = AppleMusicCatalogPolicy.SelectOriginal(request, anchor, names);
         return (original is null ? Outcome.None : Outcome.Found, original);
+    }
+
+    private static IReadOnlyDictionary<string, IReadOnlyList<AppleMusicTrack>> MergeLookups(
+        IReadOnlyDictionary<string, IReadOnlyList<AppleMusicTrack>> first,
+        IReadOnlyDictionary<string, IReadOnlyList<AppleMusicTrack>> second)
+    {
+        var merged = new Dictionary<string, IReadOnlyList<AppleMusicTrack>>(StringComparer.Ordinal);
+        foreach (var (region, tracks) in first) merged[region] = tracks;
+        foreach (var (region, tracks) in second)
+        {
+            merged[region] = merged.TryGetValue(region, out var existing)
+                ? existing.Concat(tracks).DistinctBy(track => track.TrackId).ToArray()
+                : tracks;
+        }
+        return merged;
     }
 
     /// <summary>按地区并发请求；冷却期内或超出限流时一个都不发，返回阻断原因。</summary>
