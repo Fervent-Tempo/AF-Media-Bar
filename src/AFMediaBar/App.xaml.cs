@@ -72,6 +72,8 @@ namespace AFMediaBar
         private LyricsRecoveryNotificationCoordinator? _lyricsRecoveryNotifications;
         private MediaSessionService? _spectrumMediaSessions;
         private EventHandler<MediaSnapshot>? _spectrumSnapshotHandler;
+        private readonly long _processStartTimestamp = Stopwatch.GetTimestamp();
+        private int _renderChannelRestartRequested;
 
         // .NET Generic Host 提供依赖注入、配置、日志等服务。
         // The .NET Generic Host provides dependency injection, configuration, logging, and other services.
@@ -846,6 +848,14 @@ namespace AFMediaBar
         /// </summary>
         private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
+            // DWM 重启或显卡复位后渲染线程已退出：本进程的所有 WPF 窗口都没有合成通道，进程内无法恢复。
+            if (RenderChannelFailurePolicy.IsRenderChannelFailure(e.Exception))
+            {
+                e.Handled = true;
+                RecoverFromRenderChannelFailure(e.Exception);
+                return;
+            }
+
             // 原生图形故障没有应用调用点可包裹；仅在堆栈匹配且有效宿主接受处理时拦截。
             var recoveryAction = WebView2GraphicsFaultPolicy.Classify(e.Exception);
             if (recoveryAction != WebLyricsRecoveryAction.None &&
@@ -864,6 +874,57 @@ namespace AFMediaBar
             // to WPF's default handling, so a crash never leaves nothing behind.
             AppLogService.Current?.CaptureUnhandled("Dispatcher", e.Exception);
             AppLogService.Current?.Flush(TimeSpan.FromSeconds(1));
+        }
+
+        /// <summary>
+        /// 合成通道失效后的收尾：记录第一现场，按门禁请求受控重启；不满足门禁时直接退出，不留下无法绘制的进程。
+        /// Handles a dead composition channel: records the first scene, requests a controlled restart when allowed, otherwise exits
+        /// instead of leaving a process that can no longer paint.
+        /// </summary>
+        private void RecoverFromRenderChannelFailure(Exception exception)
+        {
+            // 重启已提交后继续涌入的同源异常不再重复记录，也不能再请求一次退出。
+            if (Volatile.Read(ref _renderChannelRestartRequested) != 0)
+                return;
+
+            AppLogService.Current?.CaptureUnhandled("Dispatcher", exception);
+            // 重启交接可能失败或被取消；第一现场先落盘，避免这次崩溃只留在内存队列里。
+            AppLogService.Current?.Flush(TimeSpan.FromSeconds(1));
+            var uptime = Stopwatch.GetElapsedTime(_processStartTimestamp);
+            var restart = _restartService;
+            if (restart is null || !RenderChannelFailurePolicy.CanRestart(uptime))
+            {
+                AppLogService.Current?.Error("Crash",
+                    $"合成通道失效：不自动重启（uptime={uptime.TotalSeconds:F0}s，重启服务{(restart is null ? "未就绪" : "就绪")}）");
+                _exitCoordinator.RequestExit(1);
+                return;
+            }
+
+            Volatile.Write(ref _renderChannelRestartRequested, 1);
+            AppLogService.Current?.Warn("Crash", $"合成通道失效：请求重启（uptime={uptime.TotalSeconds:F0}s）");
+            _ = RestartAfterRenderChannelFailureAsync(restart);
+        }
+
+        /// <summary>
+        /// 提交进程交接并退出；重启未能提交时按失败退出。异常必须在这里观察，不能留到 Dispatcher 之外。
+        /// Commits the process hand-off and exits; a restart that cannot be committed ends in a failed exit. Exceptions are observed
+        /// here so nothing escapes the dispatcher.
+        /// </summary>
+        private async Task RestartAfterRenderChannelFailureAsync(IApplicationRestartService restart)
+        {
+            try
+            {
+                var result = await restart.RequestRestartAsync(_startupCancellation.Token);
+                if (result == ApplicationRestartResult.Requested)
+                    return;
+                AppLogService.Current?.Error("Crash", $"合成通道失效：重启未提交（result={result}）");
+            }
+            catch (Exception exception)
+            {
+                AppLogService.Current?.Error("Crash", "合成通道失效：重启请求失败", exception);
+            }
+
+            _exitCoordinator.RequestExit(1);
         }
 
         /// <summary>
