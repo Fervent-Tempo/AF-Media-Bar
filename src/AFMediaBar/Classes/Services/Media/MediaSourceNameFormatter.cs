@@ -34,7 +34,8 @@ public static class MediaSourceNameFormatter
         (null, "PotPlayer", ["potplayer", "daum"]),
         (null, "Windows Media Player", ["zunemusic", "media.player", "wmplayer"]),
         (null, "mpv", ["mpv"]),
-        (null, "foobar2000", ["foobar"])
+        (null, "foobar2000", ["foobar"]),
+        (null, "Aurora", ["aurora"])
     ];
 
     /// <summary>

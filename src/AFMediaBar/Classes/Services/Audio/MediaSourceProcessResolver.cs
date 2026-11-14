@@ -22,7 +22,9 @@ public sealed class MediaSourceProcessResolver
         (["potplayer", "daum"], ["PotPlayerMini64", "PotPlayerMini"]),
         (["zunemusic", "media.player", "wmplayer"], ["Microsoft.Media.Player", "Music.UI", "wmplayer"]),
         (["mpv"], ["mpv"]),
-        (["foobar"], ["foobar2000"])
+        (["foobar"], ["foobar2000"]),
+        // SMTC 标识 com.aurora.player，音频会话在 Aurora.exe 上。
+        (["aurora"], ["Aurora"])
     ];
 
     /// <summary>返回可执行文件身份或登记别名；这些身份不允许显示名回退覆盖。</summary>

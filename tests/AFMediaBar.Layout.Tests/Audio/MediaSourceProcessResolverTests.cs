@@ -45,6 +45,7 @@ public sealed class MediaSourceProcessResolverTests
     [DataRow("kugou", "KuGouMusic")]
     [DataRow("top.izuna.foliamajor", "Folia")]
     [DataRow("Microsoft.ZuneMusic!App", "Music.UI")]
+    [DataRow("com.aurora.player", "Aurora")]
     public void RegisteredAliasesRemainAvailable(string sourceId, string processName)
     {
         var resolver = new MediaSourceProcessResolver();

@@ -14,17 +14,19 @@ public sealed class MediaSourceNameFormatterTests
     [DataRow("SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify", "Spotify")]
     [DataRow("vlc.exe", "VLC")]
     [DataRow("mpv", "mpv")]
+    [DataRow("com.aurora.player", "Aurora")]
     public void BrandNamesStayReadable(string sourceId, string expected)
     {
         Assert.AreEqual(expected, MediaSourceNameFormatter.GetDisplayName(sourceId, "未知来源"));
     }
 
     [TestMethod]
-    public void PackagedFoliaKeepsItsCategory()
+    public void PackagedSourcesKeepTheirCategory()
     {
-        // 首页按这个键分组并匹配「播放器支持」里的条目；漏掉映射会掉进 other，卡片显示成 top.izuna。
+        // 首页按这个键分组并匹配「播放器支持」里的条目；漏掉映射会掉进 other，卡片显示成标识本身。
         Assert.AreEqual("Folia", MediaSourceNameFormatter.GetKnownSourceKey("top.izuna.foliamajor"));
         Assert.AreEqual("Folia", MediaSourceNameFormatter.GetKnownSourceKey("Folia.exe"));
+        Assert.AreEqual("Aurora", MediaSourceNameFormatter.GetKnownSourceKey("com.aurora.player"));
         Assert.AreEqual("other", MediaSourceNameFormatter.GetKnownSourceKey("top.someoneelse.player"));
     }
 

@@ -46,7 +46,7 @@ public static class PlayerSupportCatalog
         Profile("Service.MediaSource.Kugou", "Home.Player.KuGou"),
         Profile("Service.MediaSource.QQMusic"), Profile("Spotify"), Profile("Folia"), Profile("Windows Media Player"),
         Profile("Google Chrome"), Profile("Microsoft Edge"), Profile("Firefox"), Profile("VLC"),
-        Profile("PotPlayer"), Profile("mpv", null, true), Profile("foobar2000", null, true)
+        Profile("PotPlayer"), Profile("Aurora"), Profile("mpv", null, true), Profile("foobar2000", null, true)
     };
     private static PlayerSupportProfile Profile(string key, string? note = null, bool plugin = false) =>
         new(key, key.StartsWith("Service.") ? Translations.Get(key) : key,
