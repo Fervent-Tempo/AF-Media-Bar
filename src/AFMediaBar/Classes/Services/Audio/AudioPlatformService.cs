@@ -44,7 +44,11 @@ public sealed class AudioPlatformService : IDisposable
             notifications.DeviceRemoved += (_, _) => Invalidate();
             notifications.DeviceStateChanged += (_, _) => Invalidate();
             notifications.DefaultDeviceChanged += (_, _) => Invalidate();
-            notifications.PropertyValueChanged += (_, _) => Invalidate();
+            notifications.PropertyValueChanged += (_, args) =>
+            {
+                // 环回采集启停本身会通知所有端点；把它转发回去会形成“重建采集 → 通知 → 再重建”的自激循环。
+                if (AudioEndpointNotificationPolicy.ShouldInvalidate(args.PropertyKey)) Invalidate();
+            };
             _ready.TrySetResult(dispatcher);
             if (Volatile.Read(ref _disposed) == 0) Dispatcher.Run();
         }

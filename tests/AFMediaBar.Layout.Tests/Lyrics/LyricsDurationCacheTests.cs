@@ -34,6 +34,21 @@ public sealed class LyricsDurationCacheTests
     }
 
     [TestMethod]
+    public void FirstSnapshotDurationIsStabilizedBeforeTheOnlyLyricRequest()
+    {
+        var provider = new Provider();
+        using var builder = new MediaSnapshotBuilder(new LyricsService(provider));
+
+        Assert.IsNull(builder.GetLyrics("session", "MSEdge", Request(250), deferUntilDurationSettles: true));
+        Assert.IsTrue(builder.IsSearchingLyrics(), "等待稳定时应显示正在检索歌词。");
+        Assert.IsNull(builder.GetLyrics("session", "MSEdge", Request(230), deferUntilDurationSettles: true));
+        Assert.IsNull(builder.GetLyrics("session", "MSEdge", Request(230), deferUntilDurationSettles: true));
+
+        Assert.AreEqual(1, provider.Requests.Count);
+        Assert.AreEqual(230, provider.Requests[0].DurationSeconds);
+    }
+
+    [TestMethod]
     public void DurationChangeReusesCompletedLyricsAndKeepsMatchingDuration()
     {
         var provider = new Provider();
