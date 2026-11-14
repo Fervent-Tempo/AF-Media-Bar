@@ -271,11 +271,35 @@ public partial class PlayerQueuePanelWindow : FluentWindow, IDisposable
         if (scrollViewer is null)
             return false;
 
+        // 虚拟化列表可能以“条目”而不是像素报告偏移；把两种单位分开处理，避免把条目偏移当像素再加一次。
+        if (VirtualizingPanel.GetScrollUnit(QueueList) == ScrollUnit.Item)
+        {
+            var index = IndexOfItem(current);
+            if (index < 0)
+                return false;
+            var viewportItems = Math.Max(1, (int)Math.Floor(scrollViewer.ViewportHeight));
+            var targetItem = index - (viewportItems - 1) / 2;
+            var maxOffset = Math.Max(0, _viewModel.Items.Count - viewportItems);
+            scrollViewer.ScrollToVerticalOffset(Math.Clamp((double)targetItem, 0, maxOffset));
+            return true;
+        }
+
         var point = container.TransformToAncestor(scrollViewer).Transform(new Point(0, 0));
         var target = scrollViewer.VerticalOffset + point.Y -
             Math.Max(0, (scrollViewer.ViewportHeight - container.ActualHeight) / 2);
         scrollViewer.ScrollToVerticalOffset(Math.Clamp(target, 0, scrollViewer.ScrollableHeight));
         return true;
+    }
+
+    private int IndexOfItem(PlayerQueueItemViewModel current)
+    {
+        for (var index = 0; index < _viewModel.Items.Count; index++)
+        {
+            if (ReferenceEquals(_viewModel.Items[index], current))
+                return index;
+        }
+
+        return -1;
     }
 
     private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject

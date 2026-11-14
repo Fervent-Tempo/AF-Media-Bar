@@ -59,7 +59,7 @@
             <Style x:Key="QueueItemStyle" TargetType="ListBoxItem">
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="Margin" Value="0,1" />
-                <Setter Property="Height" Value="46" />
+                <Setter Property="Height" Value="48" />
                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                 <Setter Property="Focusable" Value="False" />
                 <Setter Property="Background" Value="Transparent" />
@@ -136,13 +136,14 @@
                         <ListBox x:Name="QueueList" ItemsSource="{Binding Items}"
                                  ItemContainerStyle="{StaticResource QueueItemStyle}"
                                  SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
-                                 Height="240"
+                                 Height="250"
                                  Background="Transparent" BorderThickness="0" Padding="0"
                                  SelectionMode="Single"
                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                  ScrollViewer.VerticalScrollBarVisibility="Visible"
                                  VirtualizingPanel.IsVirtualizing="True"
                                  VirtualizingPanel.VirtualizationMode="Recycling"
+                                 VirtualizingPanel.ScrollUnit="Pixel"
                                  AutomationProperties.Name="{DynamicResource Loc.Panel.Queue.ListName}"
                                  PreviewMouseDown="QueueList_PreviewMouseDown">
                             <ListBox.ItemTemplate>
@@ -175,9 +176,10 @@
                                             </Border>
                                             <StackPanel Grid.Column="2" Margin="0,0,8,0" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Title}" FontSize="13"
-                                                           TextTrimming="CharacterEllipsis" />
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                                                 <TextBlock Text="{Binding Subtitle}" Style="{StaticResource PanelLabelStyle}"
-                                                           Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
+                                                           Margin="0,2,0,0" TextWrapping="NoWrap"
+                                                           TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
                                             <StackPanel Grid.Column="3" VerticalAlignment="Center"
                                                         HorizontalAlignment="Right">
