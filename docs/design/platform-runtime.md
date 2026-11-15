@@ -1,4 +1,4 @@
-<!-- owner: AF Media Bar maintainers | verified_at: da85e831 | review_by: 2027-03-05 -->
+<!-- owner: AF Media Bar maintainers | verified_at: 27152811 | review_by: 2027-03-05 -->
 
 # 平台运行：音频、指标、日志、更新、名单与剪枝
 
