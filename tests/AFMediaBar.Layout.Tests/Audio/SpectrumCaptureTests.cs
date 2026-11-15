@@ -337,6 +337,30 @@ public sealed class SpectrumCaptureTests
         });
     }
 
+    [TestMethod]
+    public void DeviceResolutionWithoutTargetChangeDoesNotRestartCapture()
+    {
+        WithSettingsDirectory(_ =>
+        {
+            SettingsManager.SetSpectrumComponentSettings(SpectrumComponentSettings.Default with
+            {
+                CaptureSource = SpectrumCaptureSource.CurrentDevice,
+                CaptureDeviceMode = SpectrumCaptureDeviceMode.FollowMediaSource
+            });
+            using var devices = new AudioCaptureDeviceResolver((_, _) => (true, "endpoint"));
+            using var monitor = new AudioMonitorService(devices, new SpectrumCaptureProcessResolver(new MediaSourceProcessResolver()));
+            var version = GetField<int>(monitor, "_captureVersion");
+
+            monitor.ApplyDeviceResolution(new("endpoint", false, 1, "device-notification"));
+            Assert.AreEqual(version, GetField<int>(monitor, "_captureVersion"), "目标未变化时通知不能重建采集。");
+            Assert.IsNull(GetField<string?>(monitor, "_pendingRestartReason"));
+
+            monitor.ApplyDeviceResolution(new("other", true, 2, "device-notification"));
+            Assert.AreEqual(version + 1, GetField<int>(monitor, "_captureVersion"));
+            Assert.AreEqual("target-changed", GetField<string?>(monitor, "_pendingRestartReason"));
+        });
+    }
+
     private static T GetField<T>(object instance, string name) =>
         (T)instance.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(instance)!;
 

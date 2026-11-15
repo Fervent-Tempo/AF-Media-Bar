@@ -13,8 +13,8 @@ namespace AFMediaBar.Classes.Services;
 ///
 /// Background: a fixed 512-point FFT on a 96 kHz device has 187.5 Hz bins, while the first five of twenty bands
 /// (45–206 Hz) all fall into one bin, which is why the leftmost columns never differ. Following Chromium's Web Audio
-/// <c>RealtimeAnalyser</c> (configurable size, 1/fftSize normalization, dB mapping, temporal smoothing) and the
-/// pink-noise slope of common spectrum analyzers, this turns three things into pure, unit-testable policies:
+/// <c>RealtimeAnalyser</c> (Blackman window, configurable size, 1/fftSize normalization, dB mapping, temporal smoothing) and
+/// the pink-noise slope of common spectrum analyzers, this turns three things into pure, unit-testable policies:
 /// (1) the FFT size follows the sample rate so bins stay narrow enough; (2) each band integrates energy with fractional-bin
 /// linear interpolation (RMS), so a band narrower than one bin no longer shares a value with its neighbour; (3) high
 /// frequencies are compensated by an octave slope so the display looks balanced.
@@ -24,8 +24,13 @@ public static class SpectrumAnalysisPolicy
     /// <summary>FFT 点数下限：再小的话低频段就分不开了。/ Lower bound of the FFT size; below it the low bands stop separating.</summary>
     public const int MinimumFftSize = 1_024;
 
-    /// <summary>FFT 点数上限：再大对 20 段显示的收益很小，只是白烧 CPU。/ Upper bound of the FFT size; beyond it a twenty-band display gains almost nothing while burning CPU.</summary>
-    public const int MaximumFftSize = 4_096;
+    /// <summary>
+    /// FFT 点数上限。192 kHz 设备用 8192 点可把 bin 宽压到约 23 Hz，前几根低频柱不再挤在同一个 bin；
+    /// 20 Hz 刷新下这点计算量仍远低于任务栏控件的预算。
+    /// Upper bound of the FFT size. On a 192 kHz device, 8192 points bring the bin width down to about 23 Hz so the first
+    /// few low bands no longer share one bin; at 20 Hz sampling the cost is still far below the taskbar control's budget.
+    /// </summary>
+    public const int MaximumFftSize = 8_192;
 
     /// <summary>目标 bin 宽（Hz）：点数按"采样率 ÷ 它"向上取到 2 的幂，低频段因此始终窄于一个 bin 的宽度。
     /// Target bin width in hertz: the size is the power of two above "sample rate ÷ this", so the lowest bands always stay narrower than one bin.</summary>
@@ -58,6 +63,33 @@ public static class SpectrumAnalysisPolicy
         }
 
         return Math.Min(size, MaximumFftSize);
+    }
+
+    /// <summary>
+    /// 生成 Blackman 窗。比 Hann 窗有更低的旁瓣，低频柱的“鬼影”更少；与 Web Audio 的分析器一致。
+    /// Builds a Blackman window. Its lower sidelobes than Hann reduce low-frequency ghosting, matching the Web Audio analyzer.
+    /// </summary>
+    /// <param name="fftSize">FFT 点数；非正数返回空数组。/ FFT size; a non-positive size returns an empty array.</param>
+    public static double[] CreateWindow(int fftSize)
+    {
+        if (fftSize <= 0)
+        {
+            return [];
+        }
+
+        if (fftSize == 1)
+        {
+            return [1d];
+        }
+
+        var window = new double[fftSize];
+        for (var index = 0; index < fftSize; index++)
+        {
+            var phase = 2 * Math.PI * index / (fftSize - 1);
+            window[index] = 0.42 - 0.5 * Math.Cos(phase) + 0.08 * Math.Cos(2 * phase);
+        }
+
+        return window;
     }
 
     /// <summary>

@@ -75,7 +75,7 @@ public sealed class AudioCaptureDeviceRefreshTests
             resolver.Refresh("same-device");
             var second = await Next(results);
             Assert.IsFalse(second.TargetChanged);
-            Assert.IsTrue(second.EnvironmentRefresh);
+            Assert.AreEqual("same-device", second.Reason);
             Assert.IsTrue(second.Generation > first.Generation);
         }
         finally

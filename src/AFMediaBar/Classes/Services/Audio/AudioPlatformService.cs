@@ -19,6 +19,8 @@ public sealed class AudioPlatformService : IDisposable
     private readonly List<Action> _cleanup = [];
     private int _disposed;
     private int _version;
+    private DispatcherTimer? _propertyCoalesceTimer;
+    private bool _propertyNotificationPending;
     public int Version => Volatile.Read(ref _version);
     public event EventHandler? Changed;
 
@@ -38,6 +40,12 @@ public sealed class AudioPlatformService : IDisposable
         try
         {
             var dispatcher = Dispatcher.CurrentDispatcher;
+            // 属性通知一次采集启停会来几十条；固定窗口合并成一次，设备增删/状态/默认变化仍立即发布。
+            _propertyCoalesceTimer = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
+            {
+                Interval = TimeSpan.FromMilliseconds(200)
+            };
+            _propertyCoalesceTimer.Tick += OnPropertyCoalesceTick;
             enumerator = new MMDeviceEnumerator();
             notifications = enumerator.CreateNotificationClient(false);
             notifications.DeviceAdded += (_, _) => Invalidate();
@@ -47,7 +55,8 @@ public sealed class AudioPlatformService : IDisposable
             notifications.PropertyValueChanged += (_, args) =>
             {
                 // 环回采集启停本身会通知所有端点；把它转发回去会形成“重建采集 → 通知 → 再重建”的自激循环。
-                if (AudioEndpointNotificationPolicy.ShouldInvalidate(args.PropertyKey)) Invalidate();
+                // 已知生命周期键先过滤，其余属性只作为“需要重新解析”的脏标记，并合并同一突发。
+                if (AudioEndpointNotificationPolicy.ShouldInvalidate(args.PropertyKey)) InvalidateCoalesced();
             };
             _ready.TrySetResult(dispatcher);
             if (Volatile.Read(ref _disposed) == 0) Dispatcher.Run();
@@ -55,6 +64,12 @@ public sealed class AudioPlatformService : IDisposable
         catch (Exception exception) { _ready.TrySetException(exception); Debug.WriteLine(exception); }
         finally
         {
+            if (_propertyCoalesceTimer is { } timer)
+            {
+                timer.Stop();
+                timer.Tick -= OnPropertyCoalesceTick;
+            }
+            _propertyCoalesceTimer = null;
             foreach (var cleanup in _cleanup)
                 try { cleanup(); } catch (Exception exception) { Debug.WriteLine(exception); }
             if (enumerator is not null)
@@ -82,14 +97,44 @@ public sealed class AudioPlatformService : IDisposable
     {
         if (Volatile.Read(ref _disposed) != 0) return;
         Interlocked.Increment(ref _version);
-        // 通知可能来自原生回调；只排队，业务刷新由订阅者异步处理。
+        // 显式失效（设备增删/状态/默认变化、用户切换）不合并；只排队，业务刷新由订阅者异步处理。
         if (_ready.Task.IsCompletedSuccessfully)
             _ready.Task.Result.BeginInvoke(() =>
             {
-                if (Volatile.Read(ref _disposed) != 0 || Changed is not { } handlers) return;
-                foreach (EventHandler handler in handlers.GetInvocationList())
-                    try { handler(this, new AudioDeviceInvalidationEventArgs(cancelPending)); } catch (Exception exception) { Debug.WriteLine(exception); }
+                if (Volatile.Read(ref _disposed) != 0) return;
+                _propertyNotificationPending = false;
+                _propertyCoalesceTimer?.Stop();
+                PublishChanged(cancelPending);
             });
+    }
+
+    /// <summary>合并同一轮属性通知突发；版本仍逐条递增，只有 Changed 的发布被合并。</summary>
+    private void InvalidateCoalesced()
+    {
+        if (Volatile.Read(ref _disposed) != 0) return;
+        Interlocked.Increment(ref _version);
+        if (!_ready.Task.IsCompletedSuccessfully) return;
+        _ready.Task.Result.BeginInvoke(() =>
+        {
+            if (Volatile.Read(ref _disposed) != 0) return;
+            _propertyNotificationPending = true;
+            if (_propertyCoalesceTimer is { IsEnabled: false } timer) timer.Start();
+        });
+    }
+
+    private void OnPropertyCoalesceTick(object? sender, EventArgs args)
+    {
+        _propertyCoalesceTimer?.Stop();
+        if (!_propertyNotificationPending || Volatile.Read(ref _disposed) != 0) return;
+        _propertyNotificationPending = false;
+        PublishChanged(cancelPending: false);
+    }
+
+    private void PublishChanged(bool cancelPending)
+    {
+        if (Volatile.Read(ref _disposed) != 0 || Changed is not { } handlers) return;
+        foreach (EventHandler handler in handlers.GetInvocationList())
+            try { handler(this, new AudioDeviceInvalidationEventArgs(cancelPending)); } catch (Exception exception) { Debug.WriteLine(exception); }
     }
 
     public void Dispose()

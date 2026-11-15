@@ -30,7 +30,7 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
     private string _refreshReason = "demand-resumed";
     private readonly Task _worker;
 
-    internal readonly record struct Resolution(string? DeviceId, bool TargetChanged, bool EnvironmentRefresh, int Generation, string Reason);
+    internal readonly record struct Resolution(string? DeviceId, bool TargetChanged, int Generation, string Reason);
     internal event Action<Resolution>? Resolved;
     internal Task Completion => _worker;
     private readonly object _sourceGate = new();
@@ -253,8 +253,7 @@ public sealed class AudioCaptureDeviceResolver : IDisposable, IMemoryPrunable
                     !AudioCaptureDevicePolicy.ShouldScan(_pruneLevel, HasRecentDemand())) return;
                 var changed = !string.Equals(current, result.Target, StringComparison.OrdinalIgnoreCase);
                 _targetDeviceId = result.Target;
-                update = new Resolution(result.Target, changed,
-                    pass == 0 && reason is not ("demand-resumed" or "media-source-changed"), generation, reason);
+                update = new Resolution(result.Target, changed, generation, reason);
             }
             if (pass == 0 || update.TargetChanged)
                 AppLogService.Current?.Info("Audio", $"频谱端点解析: generation={generation} reason={reason} pass={pass} target={result.Target ?? "none"} changed={update.TargetChanged}");

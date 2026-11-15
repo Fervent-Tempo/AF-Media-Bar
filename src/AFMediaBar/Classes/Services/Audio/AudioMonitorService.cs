@@ -198,12 +198,17 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         RestartForEnvironment("environment-refreshed");
     }
 
-    private void OnDeviceResolved(AudioCaptureDeviceResolver.Resolution result)
+    private void OnDeviceResolved(AudioCaptureDeviceResolver.Resolution result) => ApplyDeviceResolution(result);
+
+    /// <summary>
+    /// 端点通知只触发对账：目标端点未变化时不重建。测试直接调用这个入口，避免真实音频采集。
+    /// Endpoint notifications only reconcile: an unchanged target never rebuilds. Tests call this entry directly without real capture.
+    /// </summary>
+    internal void ApplyDeviceResolution(AudioCaptureDeviceResolver.Resolution result)
     {
-        if (_captureSource == SpectrumCaptureSource.CurrentDevice &&
-            _captureDeviceMode == SpectrumCaptureDeviceMode.FollowMediaSource &&
-            (result.TargetChanged || result.EnvironmentRefresh))
-            RestartForEnvironment(result.TargetChanged ? "target-changed" : "environment-refreshed");
+        if (SpectrumCaptureReconcilePolicy.ShouldRestartForResolution(
+                _captureSource, _captureDeviceMode, result.TargetChanged))
+            RestartForEnvironment("target-changed");
     }
 
     private void RestartForEnvironment(string reason)
@@ -362,6 +367,32 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
                 ? ProcessLoopbackMode.ExcludeTargetProcessTree : ProcessLoopbackMode.IncludeTargetProcessTree, token).ConfigureAwait(false)
             : new WasapiRecorderBuilder().WithDevice(device!).WithLoopbackCapture().Build();
         var format = capture.WaveFormat;
+        // 格式校验的权威基线是设备混音格式，而不是 NAudio 标准化后的 capture.WaveFormat。
+        // 基线读不到或与采集格式的核心字段不一致时，本次采集禁用格式校验，避免“格式永远不同 → 每秒重建”的循环。
+        // The authoritative baseline for the format watchdog is the device mix format, not NAudio's standardized capture.WaveFormat.
+        // When the baseline is unavailable or its core fields disagree with the capture format, the watchdog stays off for this
+        // capture so a wrapper difference cannot turn into a "formats never match -> rebuild every second" loop.
+        var formatCheckEnabled = false;
+        SpectrumCaptureReconcilePolicy.CaptureFormatSignature? baselineFormat = null;
+        if (device is not null)
+        {
+            if (TryReadMixFormat(device, out var baselineMixFormat, out var disconnected))
+            {
+                if (baselineMixFormat is not null && SpectrumCaptureReconcilePolicy.CoreFormatsMatch(format, baselineMixFormat))
+                {
+                    baselineFormat = SpectrumCaptureReconcilePolicy.CreateFormatSignature(baselineMixFormat);
+                    formatCheckEnabled = true;
+                }
+                else
+                {
+                    AppLogService.Current?.Info("Audio", $"频谱格式校验未启用: capture={format} mix={baselineMixFormat?.ToString() ?? "none"}");
+                }
+            }
+            else
+            {
+                AppLogService.Current?.Info("Audio", $"频谱格式校验未启用: 无法读取设备混音格式{(disconnected ? "（设备断开）" : string.Empty)}");
+            }
+        }
         var reader = new LoopbackSampleReader(format, PushSample);
         var stopped = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var deviceId = device?.ID;
@@ -398,11 +429,17 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
             var signature = $"{source}|{processId}|{deviceId}|{format}";
             var message = $"频谱采集已启动: source={source} pid={processId?.ToString() ?? "none"} device={deviceId ?? "none"} format={format} reason={restartReason}";
             var recovered = _captureFailures.Recover(AppLogService.Current, "Audio", "capture", $"频谱采集已恢复: {message}");
-            if (!recovered && (signature != _captureLogSignature || restartReason is "target-changed" or "environment-refreshed")) AppLogService.Current?.Info("Audio", message);
+            if (!recovered && (signature != _captureLogSignature || restartReason is "target-changed" or "format-changed" or
+                    "device-inactive" or "device-disconnected" or "device-state-query-failed" or "capture-stopped" or "environment-refreshed"))
+                AppLogService.Current?.Info("Audio", message);
             else AppLogService.Current?.Verbose("Audio", message);
             _captureLogSignature = signature;
             var lastProcessCheck = Environment.TickCount64;
             var lastDefaultCheck = Environment.TickCount64;
+            var lastDeviceCheck = Environment.TickCount64;
+            var deviceStateMismatchCount = 0;
+            var deviceStateQueryFailureCount = 0;
+            var formatMismatchCount = 0;
             while (HasDemand(version) && !token.IsCancellationRequested)
             {
                 if (source == SpectrumCaptureSource.CurrentDevice && deviceMode == SpectrumCaptureDeviceMode.FollowMediaSource)
@@ -427,8 +464,69 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
                     // 捕获的进程退出或重启时释放旧树；新来源/范围会由代际检查立即使本次采集失效。
                     if (_processResolver.ResolveProcessId(media, processId, token) != processId) { stopReason = "process-changed"; break; }
                 }
+                // 设备状态/格式校验必须独立于上面的模式分支：FollowMediaSource 和 SystemDefault 已经命中各自分支，
+                // 放进 else-if 链会让校验永远不执行。
+                // The device state/format check is independent of the mode branches above: FollowMediaSource and SystemDefault
+                // already take their own branches, so an else-if here would never run.
+                if (source == SpectrumCaptureSource.CurrentDevice && device is not null &&
+                    Environment.TickCount64 - lastDeviceCheck >= 1000)
+                {
+                    lastDeviceCheck = Environment.TickCount64;
+                    try
+                    {
+                        if (!SpectrumCaptureReconcilePolicy.IsDeviceActive(device.State))
+                        {
+                            deviceStateQueryFailureCount = 0;
+                            formatMismatchCount = 0;
+                            if (++deviceStateMismatchCount >= 2) { stopReason = "device-inactive"; break; }
+                        }
+                        else
+                        {
+                            deviceStateMismatchCount = 0;
+                            deviceStateQueryFailureCount = 0;
+                            if (formatCheckEnabled && baselineFormat is { } baseline)
+                            {
+                                if (TryReadMixFormat(device, out var currentMixFormat, out var disconnected))
+                                {
+                                    if (currentMixFormat is not null &&
+                                        SpectrumCaptureReconcilePolicy.HasFormatChanged(
+                                            baseline,
+                                            SpectrumCaptureReconcilePolicy.CreateFormatSignature(currentMixFormat)))
+                                    {
+                                        if (++formatMismatchCount >= 2) { stopReason = "format-changed"; break; }
+                                    }
+                                    else
+                                    {
+                                        formatMismatchCount = 0;
+                                    }
+                                }
+                                else if (disconnected)
+                                {
+                                    stopReason = "device-disconnected";
+                                    break;
+                                }
+                                else
+                                {
+                                    // 临时读不到格式不能算“连续两次格式变化”。
+                                    formatMismatchCount = 0;
+                                }
+                            }
+                        }
+                    }
+                    catch (COMException)
+                    {
+                        // 连续查询失败说明设备句柄已失效；短暂失败留给下一轮。
+                        if (++deviceStateQueryFailureCount >= 2) { stopReason = "device-state-query-failed"; break; }
+                    }
+                }
                 if (stopped.Task.IsCompleted)
                     throw await stopped.Task.ConfigureAwait(false) ?? new InvalidOperationException("Loopback capture stopped unexpectedly.");
+                // RecordingStopped 可能延迟；NAudio 3.1 已经暴露 CaptureState，停止后立即让循环退出。
+                if (capture.CaptureState == CaptureState.Stopped)
+                {
+                    stopReason = "capture-stopped";
+                    break;
+                }
                 await Task.Delay(50, token).ConfigureAwait(false);
             }
         }
@@ -501,6 +599,41 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         string.IsNullOrEmpty(resolverTargetId)
             ? enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia)
             : enumerator.GetDevice(resolverTargetId);
+
+    /// <summary>
+    /// 读取设备当前的混音格式。每次校验都新建并释放临时 AudioClient；不缓存 client，否则 MixFormat 会停在第一次的格式。
+    /// Reads the device's current mix format. Every check creates and disposes a temporary AudioClient; caching the client would pin
+    /// MixFormat to the first format it reported.
+    /// </summary>
+    private static bool TryReadMixFormat(MMDevice device, out WaveFormat? format, out bool disconnected)
+    {
+        format = null;
+        disconnected = false;
+        try
+        {
+            using var client = device.CreateAudioClient();
+            format = client.MixFormat;
+            return true;
+        }
+        catch (AudioDeviceDisconnectedException)
+        {
+            disconnected = true;
+            return false;
+        }
+        catch (AudioDeviceInUseException)
+        {
+            // 独占占用是临时状态，不应触发重建。
+            return false;
+        }
+        catch (CoreAudioException)
+        {
+            return false;
+        }
+        catch (COMException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>读取当前系统默认输出端点标识；读取失败（例如当前没有默认设备）时返回 false。</summary>
     private static bool TryReadDefaultEndpointId(MMDeviceEnumerator enumerator, out string? id)
@@ -600,7 +733,7 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
         _sampleRing = new float[_ringSize];
         _fftReal = new double[_fftSize];
         _fftImaginary = new double[_fftSize];
-        _fftWindow = CreateFftWindow(_fftSize);
+        _fftWindow = SpectrumAnalysisPolicy.CreateWindow(_fftSize);
         _powerSpectrum = new double[_fftSize / 2 + 1];
         if (_bandMagnitudes.Length == 0)
             _bandMagnitudes = new double[SpectrumComponentSettings.MaximumBandCount];
@@ -736,17 +869,6 @@ public sealed class AudioMonitorService : BackgroundService, IMemoryPrunable
                 }
             }
         }
-    }
-
-    private static double[] CreateFftWindow(int fftSize)
-    {
-        var window = new double[fftSize];
-        for (var index = 0; index < fftSize; index++)
-        {
-            window[index] = 0.5 - 0.5 * Math.Cos(2 * Math.PI * index / (fftSize - 1));
-        }
-
-        return window;
     }
 
 }

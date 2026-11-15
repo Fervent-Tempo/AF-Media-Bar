@@ -13,6 +13,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
 {
     private readonly IAudioDeviceCatalog _devices;
     private readonly ISettingsConfiguration _configuration;
+    private readonly System.Windows.Threading.Dispatcher? _uiDispatcher;
     private bool _disposed;
     private IReadOnlyList<AudioDeviceOption> _allDevices = [];
     public bool IsHotkeysEnabled => !_disposed && _configuration.IsActive;
@@ -23,7 +24,7 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
     public bool CanEdit => !_disposed && _configuration.IsActive;
     public void Reset() => _configuration.Reset(SettingsResetScope.DeviceManagement);
     public CancellationToken CancellationToken => _configuration.CancellationToken;
-    private bool _refreshQueued;
+    private int _refreshQueued;
     private int _version;
     public ObservableCollection<AudioDevicePermissionItemViewModel> OutputDevices { get; } = [];
     public ObservableCollection<AudioDevicePermissionItemViewModel> InputDevices { get; } = [];
@@ -48,6 +49,8 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
         ReorderDevicesCommand = new RelayCommand<SettingsReorderRequest>(Reorder);
         _devices = devices;
         _configuration = configuration;
+        // 设备通知来自音频 COM 线程；这里只认创建 ViewModel 时的 UI Dispatcher，不能回退到音频线程。
+        _uiDispatcher = Application.Current?.Dispatcher;
         devices.Changed += OnDevicesChanged;
         configuration.Activated += OnActivated;
         SettingsManager.SettingsChanged += OnSettingsChanged;
@@ -196,15 +199,16 @@ public sealed class AudioDeviceSettingsViewModel : ObservableObject, IDisposable
     }
     private void QueueRefresh()
     {
-        if (_disposed || _refreshQueued) return;
-        var dispatcher = Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.FromThread(Thread.CurrentThread);
-        if (dispatcher is null) return;
-        _refreshQueued = true;
-        dispatcher.BeginInvoke(() => { _refreshQueued = false; if (CanEdit) _ = RefreshAsync(); });
+        if (_disposed || _uiDispatcher is null) return;
+        if (Interlocked.Exchange(ref _refreshQueued, 1) != 0) return;
+        _uiDispatcher.BeginInvoke(() =>
+        {
+            Volatile.Write(ref _refreshQueued, 0);
+            if (CanEdit) _ = RefreshAsync();
+        });
     }
     private void OnActivated(object? sender, EventArgs args) => _ = RefreshAsync();
-    private void OnDevicesChanged(object? sender, EventArgs args) =>
-        Application.Current?.Dispatcher.BeginInvoke(() => { if (!_disposed && _configuration.IsActive) _ = RefreshAsync(); });
+    private void OnDevicesChanged(object? sender, EventArgs args) => QueueRefresh();
     public void Dispose()
     {
         if (_disposed) return;
