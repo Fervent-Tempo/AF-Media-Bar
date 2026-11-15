@@ -41,11 +41,28 @@ public sealed class LyricsDurationCacheTests
 
         Assert.IsNull(builder.GetLyrics("session", "MSEdge", Request(250), deferUntilDurationSettles: true));
         Assert.IsTrue(builder.IsSearchingLyrics(), "等待稳定时应显示正在检索歌词。");
+        Thread.Sleep(30);
         Assert.IsNull(builder.GetLyrics("session", "MSEdge", Request(230), deferUntilDurationSettles: true));
+        Thread.Sleep(220);
         Assert.IsNull(builder.GetLyrics("session", "MSEdge", Request(230), deferUntilDurationSettles: true));
 
         Assert.AreEqual(1, provider.Requests.Count);
         Assert.AreEqual(230, provider.Requests[0].DurationSeconds);
+    }
+
+    [TestMethod]
+    public void DeferredDurationGateSchedulesAOneShotRefresh()
+    {
+        var provider = new Provider();
+        using var builder = new MediaSnapshotBuilder(new LyricsService(provider));
+        using var completed = new ManualResetEventSlim();
+        builder.EnrichmentCompleted += completed.Set;
+
+        Assert.IsNull(builder.GetLyrics("session", "MSEdge", Request(250), deferUntilDurationSettles: true));
+        Assert.IsTrue(completed.Wait(TimeSpan.FromSeconds(2)), "没有新 SMTC 事件时也必须到期刷新。");
+        Assert.IsNull(builder.GetLyrics("session", "MSEdge", Request(250), deferUntilDurationSettles: true));
+
+        Assert.AreEqual(1, provider.Requests.Count);
     }
 
     [TestMethod]

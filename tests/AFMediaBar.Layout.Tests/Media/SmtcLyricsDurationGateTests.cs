@@ -43,6 +43,36 @@ public sealed class SmtcLyricsDurationGateTests
     }
 
     [TestMethod]
+    public void MatchingOldValueTwiceWithinTheStableWindowStillDefers()
+    {
+        var clock = new Clock();
+        var gate = new SmtcLyricsDurationGate(clock, TimeSpan.FromSeconds(1));
+
+        Assert.IsTrue(gate.ShouldDefer("track", 250));
+        clock.Advance(TimeSpan.FromMilliseconds(20));
+        Assert.IsTrue(gate.ShouldDefer("track", 250), "20 ms 内的旧值不能被当成稳定时长。");
+        clock.Advance(TimeSpan.FromMilliseconds(200));
+        Assert.IsFalse(gate.ShouldDefer("track", 250));
+    }
+
+    [TestMethod]
+    public void NewTrackMatchingPreviousDurationNeedsLongerConfirmation()
+    {
+        var clock = new Clock();
+        var gate = new SmtcLyricsDurationGate(clock, TimeSpan.FromSeconds(1));
+
+        Assert.IsTrue(gate.ShouldDefer("first", 250));
+        clock.Advance(TimeSpan.FromMilliseconds(200));
+        Assert.IsFalse(gate.ShouldDefer("first", 250));
+
+        Assert.IsTrue(gate.ShouldDefer("second", 250), "新曲目的首读等于上一首时长时不能直接放行。");
+        clock.Advance(TimeSpan.FromMilliseconds(300));
+        Assert.IsTrue(gate.ShouldDefer("second", 250));
+        clock.Advance(TimeSpan.FromMilliseconds(200));
+        Assert.IsFalse(gate.ShouldDefer("second", 250));
+    }
+
+    [TestMethod]
     public void MaximumWaitReleasesEvenWithoutAUsableDuration()
     {
         var clock = new Clock();

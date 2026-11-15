@@ -9,14 +9,19 @@ internal sealed class SmtcLyricsDurationGate
 {
     /// <summary>最长等待；超时后按当前时长取词，不能因为上游一直不给时长而永远不取词。</summary>
     internal static readonly TimeSpan MaximumWait = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan StableDuration = TimeSpan.FromMilliseconds(200);
+    private static readonly TimeSpan PreviousTrackDurationConfirmation = TimeSpan.FromMilliseconds(500);
     private const double DurationToleranceSeconds = 0.05;
 
     private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _maximumWait;
     private string? _trackKey;
     private double? _lastDuration;
-    private int _sameDurationObservations;
+    private double? _lastPositiveDuration;
+    private double? _previousTrackDuration;
     private long _startedAt;
+    private long _stableSince;
+    private bool _matchesPreviousTrack;
     private bool _released;
 
     internal SmtcLyricsDurationGate(TimeProvider timeProvider, TimeSpan? maximumWait = null)
@@ -25,16 +30,22 @@ internal sealed class SmtcLyricsDurationGate
         _maximumWait = maximumWait is { } value && value > TimeSpan.Zero ? value : MaximumWait;
     }
 
-    /// <summary>首读总是暂缓；同一曲目的后续读数变化或稳定后才放行。</summary>
+    /// <summary>当前跟踪的曲目键，供调用方判断是否需要重排到期刷新。</summary>
+    internal string? CurrentTrackKey => _trackKey;
+
+    /// <summary>首读总是暂缓；同一曲目的时长保持足够久或超时后才放行。</summary>
     internal bool ShouldDefer(string trackKey, double? durationSeconds)
     {
         var now = _timeProvider.GetTimestamp();
         if (!string.Equals(_trackKey, trackKey, StringComparison.Ordinal))
         {
+            _previousTrackDuration = _released ? _lastPositiveDuration : null;
             _trackKey = trackKey;
             _startedAt = now;
             _lastDuration = durationSeconds;
-            _sameDurationObservations = durationSeconds is > 0 ? 1 : 0;
+            _lastPositiveDuration = durationSeconds is > 0 ? durationSeconds : null;
+            _stableSince = now;
+            _matchesPreviousTrack = MatchesPreviousTrack(durationSeconds);
             _released = false;
             return true;
         }
@@ -48,35 +59,36 @@ internal sealed class SmtcLyricsDurationGate
 
         if (durationSeconds is > 0)
         {
-            // 0 → 正数是明确的“时长终于可用”，不需要再等第二次相同读数。
-            if (_lastDuration is not > 0)
+            var previous = _lastDuration;
+            var wasUnavailable = previous is not > 0;
+            if (wasUnavailable || Math.Abs(durationSeconds.Value - (previous ?? 0)) > DurationToleranceSeconds)
             {
                 _lastDuration = durationSeconds;
-                _released = true;
-                return false;
-            }
-
-            if (Math.Abs(durationSeconds.Value - _lastDuration.Value) <= DurationToleranceSeconds)
-            {
-                _sameDurationObservations++;
-                if (_sameDurationObservations >= 2)
+                _lastPositiveDuration = durationSeconds;
+                _stableSince = now;
+                _matchesPreviousTrack = MatchesPreviousTrack(durationSeconds);
+                // 0 -> 非旧值正数是明确的可用时长；但如果恰好等于上一首，仍要等确认。
+                if (wasUnavailable && !_matchesPreviousTrack)
                 {
                     _released = true;
                     return false;
                 }
             }
-            else
+
+            var stableFor = _timeProvider.GetElapsedTime(_stableSince, now);
+            var required = _matchesPreviousTrack ? PreviousTrackDurationConfirmation : StableDuration;
+            if (stableFor >= required)
             {
-                // 首读可能是上一首；换成新值后再等一次确认，避免另一个瞬时值继续误导评分。
-                _lastDuration = durationSeconds;
-                _sameDurationObservations = 1;
+                _released = true;
+                return false;
             }
         }
         else
         {
             // 时长为 0 时不能拿来评分；继续等下一次读数，超时后仍按无时长处理。
             _lastDuration = null;
-            _sameDurationObservations = 0;
+            _stableSince = now;
+            _matchesPreviousTrack = false;
         }
 
         return true;
@@ -87,7 +99,14 @@ internal sealed class SmtcLyricsDurationGate
     {
         _trackKey = null;
         _lastDuration = null;
-        _sameDurationObservations = 0;
+        _lastPositiveDuration = null;
+        _previousTrackDuration = null;
+        _stableSince = 0;
+        _matchesPreviousTrack = false;
         _released = false;
     }
+
+    private bool MatchesPreviousTrack(double? durationSeconds) =>
+        _previousTrackDuration is > 0 && durationSeconds is > 0 &&
+        Math.Abs(durationSeconds.Value - _previousTrackDuration.Value) <= DurationToleranceSeconds;
 }

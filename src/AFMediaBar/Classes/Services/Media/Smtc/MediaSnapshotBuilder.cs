@@ -40,6 +40,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
     private readonly RepeatedFailureReporter _readFailures = new();
     private readonly LyricsService _lyricsService;
     private readonly MediaSourceRegistry? _sources;
+    private readonly TimeProvider _timeProvider;
     private readonly LruCache<(string SessionId, LyricsRequest Request), LyricsResult?> _lyricsCache;
     private readonly LyricsRetryTracker<(string SessionId, LyricsRequest Request)> _lyricsRetries = new(LyricsCacheCapacity);
     private readonly Dictionary<(string SessionId, LyricsRequest Request), CancellationTokenSource> _pendingLyrics = [];
@@ -47,6 +48,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
     private readonly SmtcLyricsDurationGate _durationGate;
     private (string SessionId, LyricsRequest Request)? _lastLyricsKey;
     private bool _lyricsDeferred;
+    private CancellationTokenSource? _durationGateExpiry;
     private readonly CancellationTokenSource _lifetime = new();
     private bool _disposed;
 
@@ -84,6 +86,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         _lyricsCacheGeneration++;
         _lyricsDeferred = false;
         _durationGate.Reset();
+        CancelDurationGateExpiry();
         CancelPendingLyrics();
 
         // 封面缩略图与主色缓存也归本构建器管：它们是本类在构建快照时填进去的（见 Build），因此也由本类丢弃，
@@ -109,6 +112,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         _lyricsService = lyricsService;
         _sources = sources;
         _log = log;
+        _timeProvider = timeProvider;
         _durationGate = new SmtcLyricsDurationGate(timeProvider);
         _lyricsCache = new(LyricsCacheCapacity,
             result => LyricsCacheBudgetPolicy.EstimateBytes(result?.Document),
@@ -124,6 +128,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         SettingsManager.SettingsChanged -= OnSettingsChanged;
         CancelPendingLyrics();
         _lifetime.Cancel();
+        CancelDurationGateExpiry();
         _lifetime.Dispose();
         _lyricsCache.Clear();
         _lastLyricsKey = null;
@@ -148,6 +153,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         _lyricsCacheGeneration++;
         _lyricsDeferred = false;
         _durationGate.Reset();
+        CancelDurationGateExpiry();
         CancelPendingLyrics();
         EnrichmentCompleted?.Invoke();
     }
@@ -299,6 +305,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         {
             _lastLyricsKey = null;
             _lyricsDeferred = false;
+            CancelDurationGateExpiry();
             return null;
         }
         request = request with { PlaybackSourceId = sourceId };
@@ -312,28 +319,77 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         if (_lyricsCache.TryGetValue(key, out var cached))
         {
             _lyricsDeferred = false;
+            CancelDurationGateExpiry();
             return cached;
         }
         if (_sources?.ProvidesLyrics(sourceId) == true ||
             string.IsNullOrWhiteSpace(request.Title))
         {
             _lyricsDeferred = false;
+            CancelDurationGateExpiry();
             return null;
         }
 
         if (deferUntilDurationSettles)
         {
             var trackKey = $"{sessionId}\u001f{normalizedRequest.PlaybackSourceId}\u001f{normalizedRequest.Title}\u001f{normalizedRequest.Artist}\u001f{normalizedRequest.Album}";
+            if (!string.Equals(_durationGate.CurrentTrackKey, trackKey, StringComparison.Ordinal))
+                CancelDurationGateExpiry();
             if (_durationGate.ShouldDefer(trackKey, request.DurationSeconds))
             {
                 _lyricsDeferred = true;
+                ScheduleDurationGateExpiry();
                 return null;
             }
         }
 
         _lyricsDeferred = false;
+        CancelDurationGateExpiry();
         BeginLyricsRequest(key, request, isPlaying);
         return null;
+    }
+
+    /// <summary>在暂缓到期时安排一次快照刷新；SMTC 不再发事件时也必须放行。</summary>
+    private void ScheduleDurationGateExpiry()
+    {
+        if (_disposed) return;
+        CancellationTokenSource expiry;
+        try { expiry = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token); }
+        catch (ObjectDisposedException) { return; }
+
+        if (Interlocked.CompareExchange(ref _durationGateExpiry, expiry, null) is not null)
+        {
+            expiry.Dispose();
+            return;
+        }
+        _ = ExpireDurationGateAsync(expiry);
+    }
+
+    private async Task ExpireDurationGateAsync(CancellationTokenSource expiry)
+    {
+        try
+        {
+            await Task.Delay(SmtcLyricsDurationGate.MaximumWait, _timeProvider, expiry.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (!ReferenceEquals(Interlocked.CompareExchange(ref _durationGateExpiry, null, expiry), expiry))
+            return;
+        expiry.Dispose();
+        if (_disposed) return;
+        try { EnrichmentCompleted?.Invoke(); }
+        catch (Exception) { }
+    }
+
+    private void CancelDurationGateExpiry()
+    {
+        var expiry = Interlocked.Exchange(ref _durationGateExpiry, null);
+        if (expiry is null) return;
+        expiry.Cancel();
+        expiry.Dispose();
     }
 
     /// <summary>最近一次快照的歌词请求是否仍在途；用于快照的“正在检索歌词”状态。</summary>
