@@ -1825,6 +1825,12 @@
   <data name="Media.Spectrum.Style.Bars" xml:space="preserve">
     <value>Cột đơn</value>
   </data>
+  <data name="Media.Spectrum.Style.Area" xml:space="preserve">
+    <value>Vùng sóng</value>
+  </data>
+  <data name="Media.Spectrum.Style.Dots" xml:space="preserve">
+    <value>Chấm sáng</value>
+  </data>
   <data name="Media.Spectrum.Style.Description" xml:space="preserve">
     <value>Chọn kiểu sóng nhạc mà không thay đổi chiều rộng.</value>
   </data>

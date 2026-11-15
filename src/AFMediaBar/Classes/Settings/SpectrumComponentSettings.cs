@@ -18,7 +18,13 @@ public enum SpectrumStyle
     PixelBars = 2,
 
     /// <summary>从垂直中线向上下同时延伸的对称柱状图。 / Symmetric bars growing both up and down from the vertical centre.</summary>
-    MirroredBars = 3
+    MirroredBars = 3,
+
+    /// <summary>每个频段一个沿高度分布的光点，并用更小的点标记回落峰值。 / One dot per band, with a smaller falling peak dot.</summary>
+    Dots = 4,
+
+    /// <summary>从底部向上填充的平滑面积曲线，顶缘高亮。 / A smooth area filled from the bottom with a bright top edge.</summary>
+    Area = 5
 }
 
 /// <summary>频谱采集的音频范围；程序范围不依赖输出设备。</summary>
@@ -54,13 +60,22 @@ public enum SpectrumCaptureDeviceMode
 public readonly record struct SpectrumComponentSettings(int BandCount, int RefreshRateHz, int SensitivityPercent)
 {
     /// <summary>
-    /// 频谱呈现样式。该成员以 init 属性而不是位置参数存在：设置文件缺这个字段时反序列化落到声明处的默认值（柱状图），
+    /// 无参构造委托给内置默认值；JSON 反序列化缺字段时不会落到结构体的零值（Bars），而是新的默认面积曲线。
+    /// The parameterless constructor delegates to the built-in defaults so JSON deserialization of a missing field does not fall
+    /// back to the struct's zero value (Bars) but to the new default area style.
+    /// </summary>
+    public SpectrumComponentSettings() : this(DefaultBandCount, DefaultRefreshRateHz, DefaultSensitivityPercent)
+    {
+    }
+
+    /// <summary>
+    /// 频谱呈现样式。该成员以 init 属性而不是位置参数存在：设置文件缺这个字段时反序列化落到声明处的默认值（面积曲线），
     /// 既不需要改动既有的构造签名，也不会让"没写过这项"被读成别的样式。
     /// The presentation style. It is an init property rather than a positional parameter, so a settings file that lacks the field
-    /// deserializes to the default declared here (bars): the existing constructor signature stays intact, and "never written" is
+    /// deserializes to the default declared here (area): the existing constructor signature stays intact, and "never written" is
     /// never read as some other style.
     /// </summary>
-    public SpectrumStyle Style { get; init; } = SpectrumStyle.Bars;
+    public SpectrumStyle Style { get; init; } = SpectrumStyle.Area;
 
     /// <summary>缺少字段的旧设置继续采集当前设备；程序模式无法解析时不扩大采集范围。</summary>
     public SpectrumCaptureSource CaptureSource { get; init; } = SpectrumCaptureSource.CurrentDevice;
@@ -97,6 +112,12 @@ public readonly record struct SpectrumComponentSettings(int BandCount, int Refre
 
     /// <summary>柱数默认值。 / Default bar count.</summary>
     public const int DefaultBandCount = 14;
+
+    /// <summary>刷新率默认值（Hz）。 / Default refresh rate in hertz.</summary>
+    public const int DefaultRefreshRateHz = 20;
+
+    /// <summary>灵敏度默认值（百分比）。 / Default sensitivity in percent.</summary>
+    public const int DefaultSensitivityPercent = 100;
 
     /// <summary>刷新率下限（Hz）。 / Lower refresh-rate bound in hertz.</summary>
     public const int MinimumRefreshRateHz = 5;
@@ -158,14 +179,14 @@ public readonly record struct SpectrumComponentSettings(int BandCount, int Refre
     /// </summary>
     public const int SensitivityStepPercent = 10;
 
-    public static SpectrumComponentSettings Default { get; } = new(DefaultBandCount, 20, 100);
+    public static SpectrumComponentSettings Default { get; } = new(DefaultBandCount, DefaultRefreshRateHz, DefaultSensitivityPercent);
 
     public SpectrumComponentSettings Normalize() => new(
         Math.Clamp(BandCount, MinimumBandCount, MaximumBandCount),
         Math.Clamp(RefreshRateHz, MinimumRefreshRateHz, MaximumRefreshRateHz),
         SnapSensitivityPercent(SensitivityPercent))
     {
-        Style = Enum.IsDefined(Style) ? Style : SpectrumStyle.Bars,
+        Style = Enum.IsDefined(Style) ? Style : SpectrumStyle.Area,
         CaptureSource = Enum.IsDefined(CaptureSource) ? CaptureSource : SpectrumCaptureSource.CurrentDevice,
         CaptureDeviceMode = CaptureDeviceMode is { } mode && Enum.IsDefined(mode) ? mode : null,
         CaptureDeviceId = string.IsNullOrWhiteSpace(CaptureDeviceId) ? null : CaptureDeviceId.Trim(),

@@ -1046,6 +1046,14 @@
         "MirroredBars": {
           "value": 3,
           "release": "v1.2.0"
+        },
+        "Dots": {
+          "value": 4,
+          "release": "unreleased"
+        },
+        "Area": {
+          "value": 5,
+          "release": "unreleased"
         }
       }
     },

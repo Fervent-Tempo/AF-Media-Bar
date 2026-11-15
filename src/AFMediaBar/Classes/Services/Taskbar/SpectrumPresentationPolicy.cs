@@ -14,11 +14,26 @@ public readonly record struct SpectrumPoint(double X, double Y);
 /// </summary>
 public static class SpectrumPresentationPolicy
 {
-    /// <summary>单根柱子的宽度（DIP）。 / Width of one bar in DIP.</summary>
-    public const double BarWidthDip = 2;
+    /// <summary>单根柱子的宽度（DIP）；圆角后呈胶囊形。 / Width of one bar in DIP; the radius makes it a capsule.</summary>
+    public const double BarWidthDip = 3;
 
-    /// <summary>相邻柱子之间的净间距（DIP）。 / Clear gap between adjacent bars in DIP.</summary>
-    public const double BarGapDip = 2;
+    /// <summary>相邻柱子之间的净间距（DIP）；柱距仍为 4，竖向柱数计算不变。 / Clear gap between adjacent bars in DIP; the pitch stays 4, so vertical band counts do not change.</summary>
+    public const double BarGapDip = 1;
+
+    /// <summary>柱体圆角（DIP）。 / Corner radius of a bar in DIP.</summary>
+    public const double BarCornerRadiusDip = BarWidthDip / 2;
+
+    /// <summary>峰值帽高度（DIP）。 / Height of a peak cap in DIP.</summary>
+    public const double PeakCapHeightDip = 1.5;
+
+    /// <summary>峰值帽圆角（DIP）。 / Corner radius of a peak cap in DIP.</summary>
+    public const double PeakCapCornerRadiusDip = PeakCapHeightDip / 2;
+
+    /// <summary>光点直径（DIP）。 / Diameter of a level dot in DIP.</summary>
+    public const double DotDiameterDip = BarWidthDip;
+
+    /// <summary>峰值点直径（DIP）。 / Diameter of a peak dot in DIP.</summary>
+    public const double PeakDotDiameterDip = 1.5;
 
     /// <summary>柱距（柱宽加净间距，DIP）。 / Bar pitch: bar width plus clear gap, in DIP.</summary>
     public const double BarPitchDip = BarWidthDip + BarGapDip;
@@ -31,6 +46,9 @@ public static class SpectrumPresentationPolicy
 
     /// <summary>像素柱状图中相邻方块之间的净间距（DIP）。 / Clear gap between blocks in the pixel bar chart, in DIP.</summary>
     public const double PixelDotGapDip = 1;
+
+    /// <summary>像素柱状图未点亮方块的默认相对不透明度；主题策略会按高对比度覆盖。 / Default opacity of unlit pixel blocks; the visual theme overrides it for high contrast.</summary>
+    public const double DefaultUnlitPixelOpacity = 0.14;
 
     /// <summary>柱状图与对称柱状图的最小柱高（DIP）；静音时只剩这一小段，用于保留槽位。 / Minimum bar height in DIP for the bar styles; only this stub remains while silent, which keeps the slot visible.</summary>
     public const double MinimumBarHeightDip = 3;
@@ -60,9 +78,16 @@ public static class SpectrumPresentationPolicy
 
     /// <summary>频谱内容区的宽度（DIP）；柱数为一时没有柱距。 / Width of the spectrum content area in DIP; a single bar has no pitch to add.</summary>
     /// <param name="bandCount">柱数；越界时先被夹取。/ Bar count; clamped to the persisted range first.</param>
-    public static double CalculateContentWidthDip(int bandCount)
+    public static double CalculateContentWidthDip(int bandCount) =>
+        CalculateBandContentWidth(SpectrumBandPolicy.ClampBandCount(bandCount));
+
+    /// <summary>
+    /// 按实际柱数计算内容宽度，不套用持久化最小值；竖向紧凑预览可能只有一柱。
+    /// Calculates the content width from the actual band count without the persisted minimum; a compact vertical preview may have one band.
+    /// </summary>
+    public static double CalculateBandContentWidth(int bandCount)
     {
-        var count = SpectrumBandPolicy.ClampBandCount(bandCount);
+        var count = Math.Max(1, bandCount);
         return count * BarWidthDip + (count - 1) * BarGapDip;
     }
 
@@ -162,12 +187,88 @@ public static class SpectrumPresentationPolicy
         // 此处使用已聚合的显示频段数；不再套用持久化设置的最小柱数。
         var step = (count * BarWidthDip + (count - 1) * BarGapDip) / (count - 1);
         var segments = WaveformSegmentsPerGap * (count - 1);
+        WriteTopCurve(bands, sensitivityPercent, centre, maximumHalfHeight, step, destination[..(segments + 1)]);
+        for (var index = 0; index <= segments; index++)
+        {
+            var point = destination[index];
+            destination[length - 1 - index] = new SpectrumPoint(point.X, 2 * centre - point.Y);
+        }
+
+        return length;
+    }
+
+    /// <summary>
+    /// 生成面积样式的闭合轮廓：左基线 → 平滑上缘 → 右基线。单柱时退化为一个顶边水平的矩形区域。
+    /// Builds the closed area outline: left baseline, smooth top edge, right baseline. A single band degenerates into a rectangle
+    /// with a flat top.
+    /// </summary>
+    /// <param name="bands">采样器给出的频段值。/ Band values from the sampler.</param>
+    /// <param name="sensitivityPercent">灵敏度百分比。/ Sensitivity in percent.</param>
+    /// <param name="contentHeightDip">内容区高度（DIP）。/ Content height in DIP.</param>
+    /// <returns>轮廓点；没有频段时返回空数组。/ Outline points, or an empty array without bands.</returns>
+    public static SpectrumPoint[] CreateAreaOutline(ReadOnlySpan<float> bands, int sensitivityPercent, double contentHeightDip)
+    {
+        if (bands.Length == 0)
+            return [];
+        var outline = new SpectrumPoint[CalculateAreaPointCount(bands.Length)];
+        WriteAreaOutline(bands, sensitivityPercent, contentHeightDip, outline);
+        return outline;
+    }
+
+    /// <summary>把面积轮廓写入调用方缓冲，逐帧不分配新数组。/ Writes the area outline into caller-owned storage without per-frame arrays.</summary>
+    /// <param name="bands">采样器给出的频段值。/ Band values from the sampler.</param>
+    /// <param name="sensitivityPercent">灵敏度百分比。/ Sensitivity in percent.</param>
+    /// <param name="contentHeightDip">内容区高度（DIP）。/ Content height in DIP.</param>
+    /// <param name="destination">可复用输出缓冲。/ Reusable output buffer.</param>
+    /// <returns>写入点数。/ Number of written points.</returns>
+    public static int WriteAreaOutline(ReadOnlySpan<float> bands, int sensitivityPercent, double contentHeightDip,
+        Span<SpectrumPoint> destination)
+    {
+        if (bands.Length == 0)
+            return 0;
+        var length = CalculateAreaPointCount(bands.Length);
+        if (destination.Length < length)
+            throw new ArgumentException("The area destination is too small.", nameof(destination));
+
+        var count = bands.Length;
+        var height = double.IsFinite(contentHeightDip) ? Math.Max(0, contentHeightDip) : 0;
+        if (count == 1)
+        {
+            var top = height - ResolveLevel(bands[0], sensitivityPercent) * height;
+            destination[0] = new SpectrumPoint(0, height);
+            destination[1] = new SpectrumPoint(0, top);
+            destination[2] = new SpectrumPoint(BarWidthDip, top);
+            destination[3] = new SpectrumPoint(BarWidthDip, height);
+            return 4;
+        }
+
+        var step = (count * BarWidthDip + (count - 1) * BarGapDip) / (count - 1);
+        var segments = WaveformSegmentsPerGap * (count - 1);
+        destination[0] = new SpectrumPoint(0, height);
+        WriteTopCurve(bands, sensitivityPercent, height, height, step, destination.Slice(1, segments + 1));
+        destination[length - 1] = new SpectrumPoint((count - 1) * step, height);
+        return length;
+    }
+
+    /// <summary>面积轮廓的点数；单柱为四个角点。 / Number of area points; a single band uses four corners.</summary>
+    /// <param name="bandCount">柱数。/ Bar count.</param>
+    public static int CalculateAreaPointCount(int bandCount)
+    {
+        var count = Math.Max(1, bandCount);
+        return count == 1 ? 4 : WaveformSegmentsPerGap * (count - 1) + 3;
+    }
+
+    private static void WriteTopCurve(ReadOnlySpan<float> bands, int sensitivityPercent, double baseline,
+        double amplitudeRange, double step, Span<SpectrumPoint> destination)
+    {
+        var count = bands.Length;
+        var segments = WaveformSegmentsPerGap * (count - 1);
         for (var segment = 0; segment < count - 1; segment++)
         {
-            var p0 = ResolveHalfHeight(bands[Math.Max(0, segment - 1)], sensitivityPercent, maximumHalfHeight);
-            var p1 = ResolveHalfHeight(bands[segment], sensitivityPercent, maximumHalfHeight);
-            var p2 = ResolveHalfHeight(bands[segment + 1], sensitivityPercent, maximumHalfHeight);
-            var p3 = ResolveHalfHeight(bands[Math.Min(count - 1, segment + 2)], sensitivityPercent, maximumHalfHeight);
+            var p0 = ResolveLevel(bands[Math.Max(0, segment - 1)], sensitivityPercent) * amplitudeRange;
+            var p1 = ResolveLevel(bands[segment], sensitivityPercent) * amplitudeRange;
+            var p2 = ResolveLevel(bands[segment + 1], sensitivityPercent) * amplitudeRange;
+            var p3 = ResolveLevel(bands[Math.Min(count - 1, segment + 2)], sensitivityPercent) * amplitudeRange;
             for (var stepIndex = 0; stepIndex < WaveformSegmentsPerGap; stepIndex++)
             {
                 var t = stepIndex / (double)WaveformSegmentsPerGap;
@@ -176,96 +277,74 @@ public static class SpectrumPresentationPolicy
                                (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t +
                                (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
                 var index = segment * WaveformSegmentsPerGap + stepIndex;
-                var x = (segment + t) * step;
-                var amplitude = Math.Clamp(y, 0, maximumHalfHeight);
-                destination[index] = new SpectrumPoint(x, centre - amplitude);
-                destination[length - 1 - index] = new SpectrumPoint(x, centre + amplitude);
+                destination[index] = new SpectrumPoint((segment + t) * step, baseline - Math.Clamp(y, 0, amplitudeRange));
             }
         }
 
-        var finalHeight = ResolveHalfHeight(bands[count - 1], sensitivityPercent, maximumHalfHeight);
-        destination[segments] = new SpectrumPoint((count - 1) * step, centre - finalHeight);
-        destination[length - 1 - segments] = new SpectrumPoint((count - 1) * step, centre + finalHeight);
-        return length;
+        destination[segments] = new SpectrumPoint(
+            (count - 1) * step,
+            baseline - ResolveLevel(bands[count - 1], sensitivityPercent) * amplitudeRange);
     }
 
     private static int GetWaveformOutlineLength(int count) => checked(2 * (WaveformSegmentsPerGap * (count - 1) + 1));
 
-    private static double ResolveHalfHeight(float value, int sensitivityPercent, double maximumHalfHeight) =>
-        (float.IsFinite(value) ? Math.Clamp(value * sensitivityPercent / 100f, 0f, 1f) : 0f) * maximumHalfHeight;
+    private static double ResolveLevel(float value, int sensitivityPercent) =>
+        float.IsFinite(value) ? Math.Clamp(value * sensitivityPercent / 100f, 0f, 1f) : 0f;
 
     /// <summary>频谱样式是否以垂直中线为对称轴（波形与对称柱状图）。 / Whether a spectrum style is symmetric about the vertical centre line (waveform and mirrored bars).</summary>
     /// <param name="style">频谱样式。/ Spectrum style.</param>
     public static bool IsSymmetric(SpectrumStyle style) =>
         style is SpectrumStyle.Waveform or SpectrumStyle.MirroredBars;
 
-    /// <summary>
-    /// 时间跟随的时间常数相对于动效「快速时长」的比例。取 0.25 是为了让跟随响应对齐柱状图那条路径：
-    /// 柱子的 ScaleY 用 120 ms 的 PowerEase(3, EaseOut)，每隔一个采样周期（默认 20 Hz，即 50 ms）重设目标；
-    /// 指数跟随在 τ = 30 ms 时，一个采样周期后走完约 81%，缓出曲线在同一时刻约 80%，两者相差不到两个百分点，
-    /// 因此四种样式的响应速度一致，不会出现"柱状图跟得上、波形慢半拍"。
-    /// Time constant of the temporal follower, as a fraction of the motion profile's fast duration. 0.25 aligns the follower
-    /// with the bar path: bars animate ScaleY with a 120 ms PowerEase(3, EaseOut) retargeted once per sampling cycle (20 Hz by
-    /// default, so every 50 ms). With τ = 30 ms the exponential has covered about 81% after one cycle while the ease-out curve
-    /// has covered about 80% — under two points apart, so all four styles respond at the same speed instead of leaving the
-    /// waveform visibly half a beat behind the bars.
-    /// </summary>
-    public const double TemporalSmoothingTimeConstantFraction = 0.25;
+    /// <summary>指数跟随的吸附容差；没有它计时器会为 0.0001 的差距一直空转。/ Snap tolerance of the exponential follower; without it the timer spins for a 0.0001 gap.</summary>
+    public const float FollowerTolerance = 0.002f;
+
+    /// <summary>上升时间常数相对动效快速时长的比例；约 40 ms，打击乐不会拖慢。/ Rise time constant as a fraction of the motion fast duration; about 40 ms keeps percussion responsive.</summary>
+    public const double RiseTimeConstantFraction = 0.33;
+
+    /// <summary>下降时间常数相对动效快速时长的比例；约 140 ms，回落比上升慢。/ Fall time constant as a fraction of the motion fast duration; about 140 ms makes falling slower than rising.</summary>
+    public const double FallTimeConstantFraction = 1.17;
+
+    /// <summary>峰值保持时长（秒）。 / Peak hold duration in seconds.</summary>
+    public const float PeakHoldSeconds = 0.45f;
+
+    /// <summary>峰值下落速度（单位/秒）。 / Peak fall speed in level units per second.</summary>
+    public const float PeakFallPerSecond = 0.8f;
+
+    /// <summary>上升时间常数（秒）。 / Rise time constant in seconds.</summary>
+    public static double ResolveRiseTimeConstantSeconds(TimeSpan fastDuration) =>
+        Math.Max(0, fastDuration.TotalSeconds) * RiseTimeConstantFraction;
+
+    /// <summary>下降时间常数（秒）。 / Fall time constant in seconds.</summary>
+    public static double ResolveFallTimeConstantSeconds(TimeSpan fastDuration) =>
+        Math.Max(0, fastDuration.TotalSeconds) * FallTimeConstantFraction;
 
     /// <summary>
-    /// 显示值离目标值小于该距离时直接落到目标值。指数跟随永远只是逼近，没有这一步计时器会为了 0.0001 的差距一直空转。
-    /// Distance under which a displayed level snaps onto its target. An exponential follower only ever approaches, and without
-    /// this snap the frame timer would keep spinning for a remaining gap of 0.0001.
+    /// 光点中心相对内容区上边界的纵向位置。静音时仍保留一个离底的槽位。
+    /// Vertical centre of a level dot relative to the content's top edge; silence keeps a visible slot just above the bottom.
     /// </summary>
-    public const float DisplayedLevelTolerance = 0.002f;
-
-    /// <summary>
-    /// 该样式是否需要按帧推进显示值。柱状图与对称柱状图把跟随交给 WPF 的 ScaleY 动画（由合成线程插值），
-    /// 像素柱状图与波形的视觉来自量化取值和路径点，没有可交给动画引擎的属性，只能在时间维度自己推进。
-    /// Whether a style needs its displayed levels advanced per frame. The bar styles delegate the follower to the WPF ScaleY
-    /// animation, which interpolates on the composition thread, while the pixel chart and the waveform derive their visuals from
-    /// quantized levels and path points, leaving nothing for the animation engine to interpolate, so time is advanced here.
-    /// </summary>
-    /// <param name="style">频谱样式。/ Spectrum style.</param>
-    public static bool NeedsFrameDrivenSmoothing(SpectrumStyle style) =>
-        style is SpectrumStyle.Waveform or SpectrumStyle.PixelBars;
-
-    /// <summary>
-    /// 把显示值向采样目标推进一个时间步。帧率无关，因此同一段真实时间里无论跑了多少帧，结果都相同。
-    /// Advances one displayed level towards its sampled target. The step is frame-rate independent, so the same real elapsed
-    /// time produces the same result no matter how many frames were rendered.
-    /// </summary>
-    /// <param name="displayed">上一帧的显示值（0–1）。/ Displayed level of the previous frame, 0–1.</param>
-    /// <param name="target">采样目标值（0–1）。/ Sampled target level, 0–1.</param>
-    /// <param name="elapsed">距上一帧的真实经过时间。/ Real time elapsed since the previous frame.</param>
-    /// <param name="settleDuration">动效策略给出的跟随时长，通常取快速时长。/ Follow duration from the motion profile, normally its fast duration.</param>
-    /// <returns>本帧应显示的取值。/ Level to display for this frame.</returns>
-    public static float AdvanceDisplayedLevel(float displayed, float target, TimeSpan elapsed, TimeSpan settleDuration)
+    public static double ResolveDotCenterYDip(float value, int sensitivityPercent, double contentHeightDip, double dotDiameterDip)
     {
-        var goal = float.IsFinite(target) ? Math.Clamp(target, 0f, 1f) : 0f;
-        if (!float.IsFinite(displayed))
-            return goal;
-
-        // 没有时间可用（首帧、动效关闭或时长退化）时直接落到目标，而不是停在中间值上。
-        // With no usable time (first frame, motion disabled, or a degenerate duration) snap to the target instead of parking at
-        // an intermediate value.
-        if (elapsed <= TimeSpan.Zero || settleDuration <= TimeSpan.Zero)
-            return goal;
-
-        var timeConstant = settleDuration.TotalSeconds * TemporalSmoothingTimeConstantFraction;
-        if (timeConstant <= 0)
-            return goal;
-
-        var factor = 1 - Math.Exp(-elapsed.TotalSeconds / timeConstant);
-        var next = displayed + (goal - displayed) * factor;
-        return IsDisplayedLevelSettled((float)next, goal) ? goal : (float)next;
+        var level = float.IsFinite(value) ? Math.Clamp(value * sensitivityPercent / 100f, 0f, 1f) : 0f;
+        var height = double.IsFinite(contentHeightDip) ? Math.Max(0, contentHeightDip) : 0;
+        var radius = dotDiameterDip / 2;
+        var usable = Math.Max(0, height - dotDiameterDip);
+        return Math.Clamp(radius + (1 - level) * usable, Math.Min(radius, height / 2), Math.Max(height / 2, height - radius));
     }
 
-    /// <summary>显示值是否已经可以认为落在目标上。/ Whether a displayed level can be considered to have landed on its target.</summary>
-    /// <param name="displayed">显示值。/ Displayed level.</param>
-    /// <param name="target">目标值。/ Target level.</param>
-    public static bool IsDisplayedLevelSettled(float displayed, float target) =>
-        Math.Abs(target - displayed) <= DisplayedLevelTolerance;
+    /// <summary>
+    /// 峰值帽中心相对内容区上边界的纵向位置。对称样式上下各一个，普通柱状图只在顶部。
+    /// Vertical centre of a peak cap relative to the content's top edge; symmetric styles get top and bottom caps, plain bars only the top.
+    /// </summary>
+    public static double ResolvePeakCapCenterYDip(float value, int sensitivityPercent, double contentHeightDip,
+        double capHeightDip, bool symmetric, bool bottom)
+    {
+        var scale = ResolveBarScale(value, sensitivityPercent, contentHeightDip);
+        var center = symmetric
+            ? contentHeightDip * (bottom ? 1 + scale : 1 - scale) / 2
+            : contentHeightDip * (1 - scale);
+        return Math.Clamp(center - capHeightDip / 2, 0, Math.Max(0, contentHeightDip - capHeightDip));
+    }
 
     /// <summary>
     /// 波形轮廓的点数。轮廓长度只由柱数决定，因此控制端可以一次分配点集、之后逐帧原地改写，

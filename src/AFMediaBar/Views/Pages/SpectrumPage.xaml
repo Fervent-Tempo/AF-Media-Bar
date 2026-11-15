@@ -50,6 +50,8 @@
                             <ComboBoxItem Content="{DynamicResource Loc.Media.Spectrum.Style.Waveform}" Tag="{x:Static settings:SpectrumStyle.Waveform}"/>
                             <ComboBoxItem Content="{DynamicResource Loc.Media.Spectrum.Style.PixelBars}" Tag="{x:Static settings:SpectrumStyle.PixelBars}"/>
                             <ComboBoxItem Content="{DynamicResource Loc.Media.Spectrum.Style.MirroredBars}" Tag="{x:Static settings:SpectrumStyle.MirroredBars}"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.Media.Spectrum.Style.Dots}" Tag="{x:Static settings:SpectrumStyle.Dots}"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.Media.Spectrum.Style.Area}" Tag="{x:Static settings:SpectrumStyle.Area}"/>
                         </ComboBox>
                     </components:SettingsRow>
                     <components:SettingsRow Description="{DynamicResource Loc.Media.Spectrum.BandCount.Description}" Icon="{ui:SymbolIcon DataBarVertical24}" Style="{StaticResource SpectrumParameterRowStyle}" Title="{DynamicResource Loc.Media.Spectrum.BandCount.Title}">

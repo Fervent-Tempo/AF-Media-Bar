@@ -45,7 +45,33 @@ public sealed class SettingsEnvelopeLoadingTests
             Assert.IsNull(loaded.TaskbarTargetMonitorDeviceId);
             CollectionAssert.AreEqual(new[] { "显示器🌈" }, loaded.TaskbarTargetMonitorDeviceIds!.ToArray());
             Assert.AreEqual(SpectrumCaptureSource.AllApplications, loaded.SpectrumComponent.CaptureSource);
+            Assert.AreEqual(SpectrumStyle.Area, loaded.SpectrumComponent.Style, "缺 style 字段时落到新的内置默认面积曲线。");
+            Assert.AreEqual(SpectrumStyle.Area, new AppSettings().SpectrumComponent.Style, "内置默认样式应为面积曲线。");
             Assert.AreEqual(json, File.ReadAllText(path), "加载不应改写用户默认快照。");
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
+    [TestMethod]
+    [DataRow("\"Dots\"", SpectrumStyle.Dots)]
+    [DataRow("\"Area\"", SpectrumStyle.Area)]
+    [DataRow("\"Bars\"", SpectrumStyle.Bars)]
+    [DataRow("\"unknown\"", SpectrumStyle.Area)]
+    [DataRow("999", SpectrumStyle.Area)]
+    public void ExplicitOrInvalidStyleLoadsAsDeclared(string styleJson, SpectrumStyle expected)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "AFMediaBar-style-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var json = "{\"schemaVersion\":" + SettingsPersistenceService.CurrentSchemaVersion +
+                       ",\"settings\":{\"spectrumComponent\":{\"style\":" + styleJson + "}}}";
+            var path = Path.Combine(directory, "user-defaults.json");
+            File.WriteAllText(path, json);
+            using var persistence = new SettingsPersistenceService(directory);
+            var loaded = persistence.LoadUserDefaults();
+            Assert.IsNotNull(loaded);
+            Assert.AreEqual(expected, loaded.SpectrumComponent.Style);
         }
         finally { Directory.Delete(directory, true); }
     }

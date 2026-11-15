@@ -28,6 +28,6 @@ public sealed class VerticalTaskbarPresentationTests
         var values = VerticalTaskbarPresentationPolicy.AggregateSpectrum([0, 0.8f, 0.2f, float.NaN, 0.9f, 0.1f], 2);
         CollectionAssert.AreEqual(new[] { 0.8f, 0.9f }, values);
         var outline = SpectrumPresentationPolicy.CreateWaveformOutline(values, 100, 24);
-        Assert.IsTrue(outline.All(point => point.X <= 6 && point.Y >= 0 && point.Y <= 24));
+        Assert.IsTrue(outline.All(point => point.X <= 7 && point.Y >= 0 && point.Y <= 24));
     }
 }

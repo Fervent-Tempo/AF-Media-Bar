@@ -1847,6 +1847,12 @@
   <data name="Media.Spectrum.Style.Bars" xml:space="preserve">
     <value>Bars</value>
   </data>
+  <data name="Media.Spectrum.Style.Area" xml:space="preserve">
+    <value>Area</value>
+  </data>
+  <data name="Media.Spectrum.Style.Dots" xml:space="preserve">
+    <value>Dots</value>
+  </data>
   <data name="Media.Spectrum.Style.Description" xml:space="preserve">
     <value>Choose a spectrum style without changing its width.</value>
   </data>

@@ -141,34 +141,19 @@ public sealed class SettingsPreviewScene : ContentControl
         var settings = model.Spectrum;
         var height = Math.Min(SpectrumPresentationPolicy.ResolveContentHeightDip(settings), Math.Max(1, crossSize - 8));
         var count = model.IsVertical ? VerticalTaskbarPresentationPolicy.SpectrumBandCount(crossSize, Math.Min(16, settings.BandCount)) : settings.BandCount;
-        var width = count * SpectrumPresentationPolicy.BarPitchDip - SpectrumPresentationPolicy.BarGapDip;
-        var canvas = new Canvas { Width = width, Height = height, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
+        var width = SpectrumPresentationPolicy.CalculateBandContentWidth(count);
+        var canvas = new Canvas
+        {
+            Width = width,
+            Height = height,
+            VerticalAlignment = VerticalAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
         var bands = Enumerable.Range(0, count).Select(i => (float)(.2 + .65 * Math.Abs(Math.Sin((i + 1) * .8)))).ToArray();
-        if (settings.Style == SpectrumStyle.Waveform)
-        {
-            var outline = SpectrumPresentationPolicy.CreateWaveformOutline(bands, settings.SensitivityPercent, height);
-            var (geometry, _) = SpectrumVisualFactory.CreateWaveform(outline);
-            canvas.Children.Add(PlayerForeground(new System.Windows.Shapes.Path { Data = geometry }, System.Windows.Shapes.Path.FillProperty));
-        }
-        else for (var index = 0; index < count; index++)
-        {
-            if (settings.Style == SpectrumStyle.PixelBars)
-            {
-                var lit = SpectrumPresentationPolicy.ResolveLitPixelCount(bands[index], settings.SensitivityPercent, height);
-                for (var dotIndex = 0; dotIndex < SpectrumPresentationPolicy.ResolvePixelDotCount(height); dotIndex++)
-                {
-                    var dot = SpectrumVisualFactory.CreatePixel(index, dotIndex, height, Foreground);
-                    dot.Opacity = dotIndex < lit ? 1d : SpectrumVisualFactory.UnlitPixelOpacity;
-                    canvas.Children.Add(PlayerForeground(dot, Border.BackgroundProperty));
-                }
-            }
-            else
-            {
-                var scale = SpectrumPresentationPolicy.ResolveBarScale(bands[index], settings.SensitivityPercent, height);
-                var (bar, _) = SpectrumVisualFactory.CreateBar(index, height, settings.Style, Foreground, scale);
-                canvas.Children.Add(PlayerForeground(bar, Border.BackgroundProperty));
-            }
-        }
+        var theme = SpectrumVisualThemePolicy.Resolve(SystemParameters.HighContrast, useDecorativeEffects: true);
+        var visuals = new SpectrumVisualSet(canvas, settings.Style, count, height, Foreground, theme, settings.SensitivityPercent);
+        visuals.ApplyLevels(bands, animate: false);
+        visuals.ApplyPeaks(bands);
         return canvas;
     }
     private UIElement BuildMetadata(SettingsPreviewViewModel model)

@@ -57,7 +57,7 @@
         </Style>
         <Style x:Key="TaskbarSpectrumBar" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource TaskbarSpectrumBrush}" />
-            <Setter Property="CornerRadius" Value="1" />
+            <Setter Property="CornerRadius" Value="1.5" />
         </Style>
         <Style x:Key="TaskbarSpectrumPixel" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource TaskbarSpectrumBrush}" />

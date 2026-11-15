@@ -1847,6 +1847,12 @@
   <data name="Media.Spectrum.Style.Bars" xml:space="preserve">
     <value>柱状图</value>
   </data>
+  <data name="Media.Spectrum.Style.Area" xml:space="preserve">
+    <value>面积曲线</value>
+  </data>
+  <data name="Media.Spectrum.Style.Dots" xml:space="preserve">
+    <value>光点</value>
+  </data>
   <data name="Media.Spectrum.Style.Description" xml:space="preserve">
     <value>选择频谱的绘制样式，不改变占用宽度。</value>
   </data>

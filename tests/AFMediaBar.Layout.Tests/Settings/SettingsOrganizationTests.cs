@@ -309,6 +309,20 @@ public sealed class SettingsOrganizationTests
     }
 
     [TestMethod]
+    public void SpectrumResetKeepsPersonalDefaultStyle()
+    {
+        SettingsManager.SetUserDefaults(new AppSettings
+        {
+            SpectrumComponent = new SpectrumComponentSettings(14, 20, 100) { Style = SpectrumStyle.Bars }
+        });
+        SettingsManager.Current.SpectrumComponent = SettingsManager.Current.SpectrumComponent with { Style = SpectrumStyle.Area };
+        using var context = new SettingsPageContext();
+        new LegacySettingsConfiguration(context).Reset(SettingsResetScope.Spectrum);
+        Assert.AreEqual(SpectrumStyle.Bars, SettingsManager.Current.SpectrumComponent.Style,
+            "个人默认快照已保存 Bars 时，重置不能改成新的内置默认。");
+    }
+
+    [TestMethod]
     public void FloatingAppearanceResetUsesItsDefaultGeometryWithoutChangingTaskbarOrLyrics()
     {
         var defaults = new AppSettings { FloatingBar = new() { Profile = new() { FixedLengthDip = 640, LengthMode = TaskbarLengthMode.Fixed } } };

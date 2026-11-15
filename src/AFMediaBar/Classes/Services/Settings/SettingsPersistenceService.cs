@@ -372,6 +372,7 @@ public sealed class SettingsPersistenceService : IDisposable
                 typeof(TEnum) == typeof(PlayerForegroundMode) ? PlayerForegroundMode.Automatic :
                 typeof(TEnum) == typeof(ApplicationThemeMode) ? ApplicationThemeMode.Automatic :
                 typeof(TEnum) == typeof(ApplicationBackdropMode) ? ApplicationBackdropMode.Mica :
+                typeof(TEnum) == typeof(SpectrumStyle) ? SpectrumComponentSettings.Default.Style :
                 typeof(TEnum) == typeof(WheelAction) ? WheelAction.PreviousNext :
                 typeof(TEnum) == typeof(PlayerClickAction) ? PlayerClickAction.TogglePlayPause :
                 typeof(TEnum) == typeof(InteractionModifier) ? InteractionModifier.Shift :
