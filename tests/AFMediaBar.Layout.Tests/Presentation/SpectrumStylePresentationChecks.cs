@@ -108,13 +108,17 @@ public sealed class SpectrumStylePresentationChecks
                 Assert.AreEqual(36, maxSpectrum.Height, 0.01, "36 DIP 内容高度应能放进常见 44 DIP 媒体栏。");
                 AssertStyle(maxSpectrum, SpectrumStyle.Bars, 32, maxSpectrum.Height);
 
-                // 动效开启时面积样式应留下计时器；重建/卸载/隐藏必须把它停掉。
+                // 动效开启时面积样式应留下计时器；CI 等关闭连续动效的环境则不应启动。
                 SettingsManager.Current.SpectrumComponent = SettingsManager.Current.SpectrumComponent with
                 { Style = SpectrumStyle.Area, BandCount = 14, ContentHeightDip = 26 };
                 control.ApplyTaskbarExperienceSettings();
                 control.ApplySpectrum(Enumerable.Repeat(.5f, 14).ToArray());
                 var running = FrameTimer(control);
-                Assert.IsTrue(running?.IsEnabled ?? false, "面积样式在动效开启时应运行逐帧计时器。");
+                var continuousMotion = MotionPolicy.ResolveCurrent().UseContinuousMotion;
+                Assert.AreEqual(continuousMotion, running?.IsEnabled ?? false,
+                    continuousMotion
+                        ? "面积样式在动效开启时应运行逐帧计时器。"
+                        : "关闭连续动效时面积样式不应启动逐帧计时器。");
 
                 SettingsManager.Current.SpectrumComponent = SettingsManager.Current.SpectrumComponent with { Style = SpectrumStyle.Bars };
                 control.ApplyTaskbarExperienceSettings();
