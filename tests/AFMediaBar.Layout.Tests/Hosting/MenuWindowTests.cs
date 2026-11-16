@@ -188,14 +188,25 @@ public sealed class MenuWindowTests
                 window.ShowMenu(panel, new Point(20, 20));
                 await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
 
-                header.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount)
+                // 合成的 MouseEnter 不更新 IsMouseOver；捕获把指针状态固定在该项，避免依赖真实鼠标位置。
+                // Synthetic MouseEnter does not update IsMouseOver; capture holds the pointer state on the item so the test does not depend on the real cursor.
+                Assert.IsTrue(Mouse.Capture(header),
+                    "The submenu header must accept mouse capture for the hover check.");
+                try
                 {
-                    RoutedEvent = UIElement.MouseEnterEvent
-                });
-                await Task.Delay(350);
-                await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
-                Assert.IsTrue(header.IsSubmenuOpen, "Hovering a submenu header must open its submenu.");
-                Assert.IsTrue(child.IsVisible, "The submenu item must be visible after hover.");
+                    header.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount)
+                    {
+                        RoutedEvent = UIElement.MouseEnterEvent
+                    });
+                    await Task.Delay(350);
+                    await dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                    Assert.IsTrue(header.IsSubmenuOpen, "Hovering a submenu header must open its submenu.");
+                    Assert.IsTrue(child.IsVisible, "The submenu item must be visible after hover.");
+                }
+                finally
+                {
+                    Mouse.Capture(null);
+                }
             }
             finally { window?.Dispose(); app.Shutdown(); }
         });

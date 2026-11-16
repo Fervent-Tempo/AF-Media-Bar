@@ -51,7 +51,7 @@ internal static class FloatingBarHostChecks
             quickLaunch = new QuickLaunchService();
             // 未触发的命令与业务服务不构造；若布局错误地要求采样，本回归会失败。
             window = new FloatingBarWindow(battery, "test", display, null!, null!, audio, null!, null!, null!, mouse,
-                prune, zOrder, appearance, new ScreenBackgroundSampler(), log, limits, quickLaunch: quickLaunch)
+                prune, zOrder, appearance, new ScreenBackgroundSampler(), log, new FakePlayerCompanion(), limits, quickLaunch: quickLaunch)
             { Title = "AFMB floating verification" };
             window.ApplySnapshot(MediaSnapshot.Disconnected with
             {

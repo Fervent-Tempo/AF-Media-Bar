@@ -146,6 +146,7 @@ public sealed class LocalFileLyricsProviderTests
 
         Assert.IsNotNull(result);
         Assert.IsTrue(result.LowConfidence);
+        Assert.AreEqual(LyricsLowConfidenceReason.TitleOnly, result.LowConfidenceReason);
     }
 
     [TestMethod]
@@ -156,12 +157,14 @@ public sealed class LocalFileLyricsProviderTests
         var byArtist = await new LocalFileLyricsProvider().GetLyricsAsync(Request("晴天", "周杰伦"), CancellationToken.None);
         Assert.IsNotNull(byArtist);
         Assert.IsFalse(byArtist.LowConfidence, "歌手对得上就属于有独立佐证。");
+        Assert.AreEqual(LyricsLowConfidenceReason.None, byArtist.LowConfidenceReason);
 
         File.WriteAllText(Path.Combine(_folder, "晴天.lrc"), "[length:04:29]\n[00:01.00]故事的小黄花");
         var byDuration = await new LocalFileLyricsProvider().GetLyricsAsync(
             new LyricsRequest("晴天", string.Empty, string.Empty, 269.0, null), CancellationToken.None);
         Assert.IsNotNull(byDuration);
         Assert.IsFalse(byDuration.LowConfidence, "没有歌手时，时长对得上也算独立佐证。");
+        Assert.AreEqual(LyricsLowConfidenceReason.None, byDuration.LowConfidenceReason);
     }
 
     [TestMethod]
@@ -253,6 +256,7 @@ public sealed class LocalFileLyricsProviderTests
 
         Assert.IsNotNull(result);
         Assert.IsTrue(result.LowConfidence);
+        Assert.AreEqual(LyricsLowConfidenceReason.Contradicted, result.LowConfidenceReason);
     }
 
     [TestMethod]
@@ -266,6 +270,7 @@ public sealed class LocalFileLyricsProviderTests
 
         Assert.IsNotNull(result);
         Assert.IsFalse(result.LowConfidence);
+        Assert.AreEqual(LyricsLowConfidenceReason.None, result.LowConfidenceReason);
     }
 
     [TestMethod]
@@ -279,6 +284,7 @@ public sealed class LocalFileLyricsProviderTests
 
         Assert.IsNotNull(result);
         Assert.IsTrue(result.LowConfidence);
+        Assert.AreEqual(LyricsLowConfidenceReason.Contradicted, result.LowConfidenceReason);
     }
 
     [TestMethod]

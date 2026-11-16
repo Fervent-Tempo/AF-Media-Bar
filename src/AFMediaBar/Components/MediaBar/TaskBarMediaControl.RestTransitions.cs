@@ -77,6 +77,8 @@ public partial class TaskBarMediaControl
             return null;
 
         var experience = PresentationSettings.TaskbarExperience.Normalize();
+        var queueEnabled = ComponentLayoutPolicy.Resolve(PresentationSettings, RestLayoutState)
+            .Any(entry => entry.Component == TaskbarRestComponent.Queue && entry.IsVisible);
         var targetVisibility = new TaskbarRestLayoutPolicy.Visibility(
             targetConnected,
             experience.IdleComponents,
@@ -85,7 +87,8 @@ public partial class TaskBarMediaControl
             experience.OutputDeviceVisible,
             experience.VolumeVisible,
             experience.ArtworkVisible,
-            experience.InputDeviceVisible);
+            experience.InputDeviceVisible,
+            QueueEnabled: queueEnabled);
         var visuals = new Dictionary<TaskbarRestComponent, RestVisual>();
         foreach (var component in TaskbarRestLayoutPolicy.DefaultOrder.Concat(ComponentLayoutPolicy.TransportComponents))
         {
@@ -142,6 +145,7 @@ public partial class TaskBarMediaControl
         TaskbarRestComponent.OutputDevice => TaskbarOutputDeviceHoverSurface,
         TaskbarRestComponent.InputDevice => TaskbarInputDeviceHoverSurface,
         TaskbarRestComponent.Volume => TaskbarVolumeHoverSurface,
+        TaskbarRestComponent.Queue => TaskbarQueueHoverSurface,
         TaskbarRestComponent.PreviousTrack => ResidentPreviousSurface,
         TaskbarRestComponent.PlayPause => ResidentPlayPauseSurface,
         TaskbarRestComponent.NextTrack => ResidentNextSurface,

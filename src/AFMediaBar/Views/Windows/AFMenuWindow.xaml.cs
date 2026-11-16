@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -390,22 +391,23 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
 
     private void OnMenuItemMouseEnter(object sender, MouseEventArgs e)
     {
-        if (_isDisposed || _isHiding || !IsVisible || sender is not WpfMenuItem { HasItems: true } item)
+        if (_isDisposed || _isHiding || !IsVisible || sender is not WpfMenuItem item)
             return;
-        if (item.IsSubmenuOpen)
-        {
-            _pendingHoverItem = null;
-            _submenuHoverTimer.Stop();
+
+        _pendingHoverItem = null;
+        _submenuHoverTimer.Stop();
+        CloseOtherMenuBranches(item);
+        if (!item.HasItems || !item.IsEnabled || item.IsSubmenuOpen)
             return;
-        }
 
         _pendingHoverItem = item;
-        _submenuHoverTimer.Stop();
         _submenuHoverTimer.Start();
     }
 
     private void OnMenuItemMouseLeave(object sender, MouseEventArgs e)
     {
+        if (sender is WpfMenuItem { IsSubmenuOpen: false } item)
+            item.SetCurrentValue(Selector.IsSelectedProperty, false);
         if (!ReferenceEquals(_pendingHoverItem, sender))
             return;
         _pendingHoverItem = null;
@@ -417,7 +419,7 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
         _submenuHoverTimer.Stop();
         var item = _pendingHoverItem;
         _pendingHoverItem = null;
-        if (item is null || _isDisposed || _isHiding || !IsVisible)
+        if (item is not { IsMouseOver: true, IsEnabled: true, IsVisible: true } || _isDisposed || _isHiding || !IsVisible)
             return;
         OpenSubmenu(item, focusFirst: false);
     }
@@ -473,30 +475,53 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
         if (!item.HasItems)
             return;
 
-        foreach (var other in _wiredItems)
-        {
-            if (!ReferenceEquals(other, item) && other.HasItems && other.IsSubmenuOpen)
-                other.IsSubmenuOpen = false;
-        }
-
+        CloseOtherMenuBranches(item);
         _pendingHoverItem = null;
         _submenuHoverTimer.Stop();
         item.IsSubmenuOpen = true;
         if (focusFirst)
-            _ = Dispatcher.BeginInvoke(() => FocusFirstChild(item), DispatcherPriority.Loaded);
+        {
+            var version = _presentationVersion;
+            _ = Dispatcher.BeginInvoke(() =>
+            {
+                if (version == _presentationVersion)
+                    FocusFirstChild(item);
+            }, DispatcherPriority.Loaded);
+        }
+    }
+
+    private void OnMenuItemSubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        if (sender is WpfMenuItem item && ReferenceEquals(item, e.OriginalSource) && !_isHiding && !_isDisposed)
+            CloseOtherMenuBranches(item);
+    }
+
+    private void CloseOtherMenuBranches(WpfMenuItem item)
+    {
+        // StackPanel 不会像 MenuBase 一样撤销上一分支的选中状态。
+        var branch = new HashSet<WpfMenuItem>();
+        for (WpfMenuItem? ancestor = item; ancestor is not null;)
+        {
+            branch.Add(ancestor);
+            TryGetParentMenu(ancestor, out ancestor);
+        }
+
+        foreach (var other in _wiredItems)
+            if (!branch.Contains(other))
+                CloseMenuItem(other);
     }
 
     private void CloseSubmenuOrMoveOut(WpfMenuItem item)
     {
         if (TryGetParentMenu(item, out var parent) && parent is { HasItems: true })
         {
-            parent.IsSubmenuOpen = false;
+            CloseMenuItem(parent);
             Keyboard.Focus(parent);
             return;
         }
 
         if (item.IsSubmenuOpen)
-            item.IsSubmenuOpen = false;
+            CloseMenuItem(item);
     }
 
     private void MoveFocus(WpfMenuItem current, int delta)
@@ -511,6 +536,9 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
             var candidate = siblings[i];
             if (!candidate.IsVisible || !candidate.IsEnabled || candidate.Visibility != Visibility.Visible)
                 continue;
+            _pendingHoverItem = null;
+            _submenuHoverTimer.Stop();
+            CloseOtherMenuBranches(candidate);
             Keyboard.Focus(candidate);
             return;
         }
@@ -541,6 +569,9 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
         // item through the window handler.
         Keyboard.ClearFocus();
         FocusManager.SetFocusedElement(this, null);
+        foreach (var item in _wiredItems)
+            if (!item.IsMouseOver && !item.IsSubmenuOpen)
+                item.SetCurrentValue(Selector.IsSelectedProperty, false);
     }
 
     private void FocusFirstItem()
@@ -555,7 +586,7 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
 
     private void FocusFirstChild(WpfMenuItem parent)
     {
-        if (_isDisposed || !IsVisible || _isHiding)
+        if (_isDisposed || !IsVisible || _isHiding || !parent.IsSubmenuOpen)
             return;
         var first = parent.Items.OfType<WpfMenuItem>()
             .FirstOrDefault(item => item.IsVisible && item.IsEnabled && item.Visibility == Visibility.Visible);
@@ -571,6 +602,7 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
             item.PreviewKeyDown += _menuItemKeyHandler;
             item.MouseEnter += _menuItemMouseEnterHandler;
             item.MouseLeave += _menuItemMouseLeaveHandler;
+            item.SubmenuOpened += OnMenuItemSubmenuOpened;
             _wiredItems.Add(item);
         }
         content.AddHandler(WpfMenuItem.ClickEvent, _menuItemClickHandler, handledEventsToo: true);
@@ -586,6 +618,7 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
             item.PreviewKeyDown -= _menuItemKeyHandler;
             item.MouseEnter -= _menuItemMouseEnterHandler;
             item.MouseLeave -= _menuItemMouseLeaveHandler;
+            item.SubmenuOpened -= OnMenuItemSubmenuOpened;
         }
         _wiredItems.Clear();
         _menuContent?.RemoveHandler(WpfMenuItem.ClickEvent, _menuItemClickHandler);
@@ -613,7 +646,13 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
     private void CloseSubmenus()
     {
         foreach (var item in _wiredItems)
-            item.IsSubmenuOpen = false;
+            CloseMenuItem(item);
+    }
+
+    private static void CloseMenuItem(WpfMenuItem item)
+    {
+        item.IsSubmenuOpen = false;
+        item.SetCurrentValue(Selector.IsSelectedProperty, false);
     }
 
     private void RestorePreviousForeground()
@@ -647,8 +686,8 @@ public partial class AFMenuWindow : FluentWindow, IDisposable
         _windowPresentation.Dispose();
         if (_menuContent is not null)
             _appearanceService.DetachMenuSubmenus(_menuContent);
-        UnwireMenuContent();
         CloseSubmenus();
+        UnwireMenuContent();
         MenuRoot.BeginAnimation(UIElement.OpacityProperty, null);
         MenuScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
         MenuScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);

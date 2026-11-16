@@ -1,4 +1,4 @@
-# 从快捷控制字形生成对应矢量源，再导出深浅色多尺寸 ICO；支持 path、circle 和 rect。
+﻿# 从快捷控制字形生成对应矢量源，再导出深浅色多尺寸 ICO；支持 path、circle 和 rect。
 # 从 PowerShell 7 的 STA 进程运行：pwsh -NoProfile -STA -File tools/export-native-tray-icons.ps1。
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName PresentationCore, WindowsBase
@@ -44,10 +44,9 @@ foreach ($entry in $glyphs.GetEnumerator()) {
 }
 
 function Render-Frame($svg, [int]$size, $brush) {
-    $visual = [Windows.Media.DrawingVisual]::new()
-    $drawing = $visual.RenderOpen()
+    $artwork = [Windows.Media.DrawingGroup]::new()
+    $drawing = $artwork.Open()
     try {
-        $drawing.PushTransform([Windows.Media.ScaleTransform]::new($size / 20.0, $size / 20.0))
         $fill = if ($svg.fill -eq 'currentColor') { $brush } else { $null }
         $pen = $null
         if ($svg.HasAttribute('stroke-width')) {
@@ -75,6 +74,19 @@ function Render-Frame($svg, [int]$size, $brush) {
                 default { throw "不支持的矢量元素：$($element.LocalName)" }
             }
         }
+    } finally { $drawing.Close() }
+
+    # 按含描边的可见边界居中，长边占 ICO 画布的 90%。
+    $bounds = $artwork.Bounds
+    $scale = $size * 0.9 / [Math]::Max($bounds.Width, $bounds.Height)
+    $offsetX = ($size - $bounds.Width * $scale) / 2 - $bounds.X * $scale
+    $offsetY = ($size - $bounds.Height * $scale) / 2 - $bounds.Y * $scale
+    $visual = [Windows.Media.DrawingVisual]::new()
+    $drawing = $visual.RenderOpen()
+    try {
+        $matrix = [Windows.Media.Matrix]::new($scale, 0, 0, $scale, $offsetX, $offsetY)
+        $drawing.PushTransform([Windows.Media.MatrixTransform]::new($matrix))
+        $drawing.DrawDrawing($artwork)
         $drawing.Pop()
     } finally { $drawing.Close() }
     $bitmap = [Windows.Media.Imaging.RenderTargetBitmap]::new($size, $size, 96, 96, [Windows.Media.PixelFormats]::Pbgra32)

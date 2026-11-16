@@ -327,8 +327,12 @@ public sealed class SettingsPreviewScene : ContentControl
                 Padding = new Thickness(0), Margin = new Thickness(12, 0, 12, 0), Content = new PreviewSymbolIcon { Symbol = SymbolRegular.Pause24, FontSize = 24 } });
             controls.Children.Add(Transport(SymbolRegular.Next24));
             row.Children.Add(controls);
-            row.Children.Add(new Wpf.Ui.Controls.Button { Width = 36, Height = 36, Padding = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Right,
-                VerticalAlignment = VerticalAlignment.Center, Content = new PreviewSymbolIcon { Symbol = SymbolRegular.ArrowRepeatAll24, FontSize = 18 } });
+            var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+            actions.Children.Add(new Wpf.Ui.Controls.Button { Width = 36, Height = 36, Padding = new Thickness(0), Margin = new Thickness(0, 0, 4, 0),
+                Content = new PreviewSymbolIcon { Symbol = SymbolRegular.ArrowShuffle24, FontSize = 18 } });
+            actions.Children.Add(new Wpf.Ui.Controls.Button { Width = 36, Height = 36, Padding = new Thickness(0),
+                Content = new PreviewSymbolIcon { Symbol = SymbolRegular.ArrowRepeatAll24, FontSize = 18 } });
+            row.Children.Add(actions);
             section.Children.Add(row); content.Children.Add(section);
         }
         if (settings.AudioControlsVisible)

@@ -118,6 +118,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private int _artworkZoomExtensionPx;
     private readonly AudioMonitorService _audioMonitorService;
     private readonly NativeMouseInputMonitor _mouseInputMonitor;
+    private readonly IPlayerCompanion _playerCompanion;
     private readonly AdaptiveForegroundSamplingSession _foregroundSamplingSession;
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
     private AudioDeviceTarget? _deviceMenuTarget;
@@ -132,6 +133,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private TimeSpan? _subscribedMetricInterval;
 
     public event EventHandler<FullPanelOpenRequestEventArgs>? OpenFullPanelRequested;
+    public event EventHandler<PlayerQueuePanelRequestEventArgs>? QueuePanelRequested;
     public event EventHandler? InformationAutomaticallyHidden;
     public bool HasAutomaticallyHiddenInformation => !_isClosing && !_isEnvironmentSuspended && IsVisible &&
         MediaControl.HasAutomaticallyHiddenInformation;
@@ -164,6 +166,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         TaskbarHostSurfaceSessions surfaceSessions,
         TaskbarWindowViewModel viewModel,
         AFMediaBar.ViewModels.Components.AFContextMenuViewModel menuViewModel,
+        IPlayerCompanion playerCompanion,
         bool startImmediately = true,
         Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null,
         QuickLaunchService? quickLaunch = null,
@@ -181,6 +184,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _targetMonitorDeviceId = targetMonitorDeviceId;
         _surfaceSession = surfaceSessions.Get(targetMonitorDeviceId);
         _mouseInputMonitor = mouseInputMonitor;
+        _playerCompanion = playerCompanion;
+        _playerCompanion.Changed += PlayerCompanion_Changed;
         InitializeExternalFullPanelHandle(externalFullPanelHandleFactory);
         DataContext = ViewModel;
         MediaControl.BindBatterySource(batterySource);
@@ -205,6 +210,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         MediaControl.SkipNextRequested += MediaControl_SkipNextRequested;
         MediaControl.ActivateSourceRequested += MediaControl_ActivateSourceRequested;
         MediaControl.OpenFullPanelRequested += MediaControl_OpenFullPanelRequested;
+        MediaControl.QueuePanelRequested += MediaControl_QueuePanelRequested;
         MediaControl.OutputDeviceMenuRequested += MediaControl_OutputDeviceMenuRequested;
         MediaControl.InputDeviceMenuRequested += MediaControl_InputDeviceMenuRequested;
         MediaControl.InputDeviceWheelRequested += MediaControl_InputDeviceWheelRequested;
@@ -275,8 +281,11 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _taskbarHiddenTrimTimer.Tick += (_, _) =>
         {
             _taskbarHiddenTrimTimer.Stop();
-            if (!_isClosing && _taskbarMotionState.IsHidden && !_taskbarMotionState.IsMoving)
+            if (!_isClosing && !_isEnvironmentSuspended && _taskbarMotionState.IsHidden && !_taskbarMotionState.IsMoving)
+            {
+                MediaControl.SetTaskbarLyricsSuspension(true);
                 _memoryPruneCoordinator.RequestTrim(MemoryTrimTrigger.TaskbarHidden);
+            }
         };
 
         // 后台剪枝：宿主自己订阅档位变化，按档位停掉或恢复自己的计时器与指标订阅。
@@ -493,6 +502,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
     private void ApplyTaskbarPresentationState(TaskbarMotionState previous)
     {
         var suspended = IsTaskbarPresentationSuspended;
+        if (_taskbarMotionState.IsMoving || !_taskbarMotionState.IsHidden)
+            MediaControl.SetTaskbarLyricsSuspension(false);
         SuspendHostInput();
 
         if (suspended)
@@ -1040,6 +1051,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         MediaControl.AllowRestConnectionTransition = !_isDragging && !IsTaskbarPresentationSuspended &&
             !_hostActions.IsEnvironmentRecovering;
         MediaControl.UpdateSongInfo(snapshot, lyricsSettingsRefresh);
+        UpdateQueueAvailability();
         MediaControl.ApplyAppearanceSettings();
         SynchronizeSpectrumTimer();
         // 新宿主构造时仍是断开快照；若性能组件没有配置为“无媒体时保留”，构造阶段不会取得指标租约。
@@ -1281,6 +1293,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
                 taskbarHandle);
             ApplyExtraFeaturesSettings();
             MediaControl.UpdateSongInfo(_lastSnapshot);
+            UpdateQueueAvailability();
             SynchronizeSpectrumTimer();
             // 改设置就可能改变静置层还剩几个组件，因此"完全隐藏"的结论必须跟着重算一次：
             // 只在快照变化时同步会让"把无媒体保留组件全部取消"这一步要等下一首歌才生效。
@@ -1381,6 +1394,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         ClosePlayerMenu();
         _compactFlyout.Dismiss();
         MediaControl.ApplyHostVisibilitySuspension(true);
+        if (!_isClosing)
+            MediaControl.SetTaskbarLyricsSuspension(false);
         MediaControl.IsHitTestVisible = false;
         WindowHelper.SetInputTransparent(this, true);
     }
@@ -1527,6 +1542,26 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
 
     private void MediaControl_OpenFullPanelRequested(object? sender, EventArgs e) =>
         OpenFullPanelRequested?.Invoke(this, CreateFullPanelRequest(ensureOpen: false));
+
+    private void MediaControl_QueuePanelRequested(object? sender, EventArgs e) =>
+        QueuePanelRequested?.Invoke(this, new PlayerQueuePanelRequestEventArgs(MediaControl.GetQueueAnchor()));
+
+    private void PlayerCompanion_Changed(object? sender, PlayerCompanionSnapshot snapshot) => UpdateQueueAvailability();
+
+    /// <summary>
+    /// 队列入口只在 AFMB 当前显示的是受支持的播放器来源时进入布局；连接过 companion 但来源已切到不支持的播放器时必须隐藏。
+    /// The queue entry enters the layout only while the source AFMB currently displays is supported; a connected companion must not
+    /// keep it visible after the source switches to an unsupported player.
+    /// </summary>
+    private void UpdateQueueAvailability()
+    {
+        if (_isClosing)
+            return;
+
+        var hasSource = !string.IsNullOrEmpty(_lastSnapshot.SourceId) || !string.IsNullOrEmpty(_lastSnapshot.SourceName);
+        var available = hasSource && _playerCompanion.MatchesSource(_lastSnapshot.SourceId, _lastSnapshot.SourceName);
+        MediaControl.SetQueueAvailable(available);
+    }
 
     private async void MediaControl_WheelRequested(object? sender, PlayerSurfaceWheelEventArgs e)
     {
@@ -2553,6 +2588,8 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         MediaControl.SkipNextRequested -= MediaControl_SkipNextRequested;
         MediaControl.ActivateSourceRequested -= MediaControl_ActivateSourceRequested;
         MediaControl.OpenFullPanelRequested -= MediaControl_OpenFullPanelRequested;
+        MediaControl.QueuePanelRequested -= MediaControl_QueuePanelRequested;
+        _playerCompanion.Changed -= PlayerCompanion_Changed;
         MediaControl.OutputDeviceMenuRequested -= MediaControl_OutputDeviceMenuRequested;
         MediaControl.InputDeviceMenuRequested -= MediaControl_InputDeviceMenuRequested;
         MediaControl.InputDeviceWheelRequested -= MediaControl_InputDeviceWheelRequested;
@@ -2593,6 +2630,7 @@ public partial class TaskbarWindow : Window, IBarRuntimeHost
         _compactFlyout.Dispose();
         _playerMenuWindow.Dispose();
         PlayerMenuOpenRequested = null;
+        QueuePanelRequested = null;
         MediaControl.DisposePresentation();
         base.OnClosed(e);
     }

@@ -65,6 +65,13 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
 
     public bool LyricsEnabled { get => _configuration.Current.LyricsEnabled; set { _configuration.SetLyricsEnabled(value); RaiseAll(); } }
     public bool AllowBrowserAndVideoLyrics { get => _configuration.Current.AllowBrowserAndVideoLyrics; set { _configuration.SetAllowBrowserAndVideoLyrics(value); OnPropertyChanged(); } }
+
+    /// <summary>Apple Music 未取到可靠歌词时查询原名再取一轮；仅默认规则生效。</summary>
+    public bool AppleMusicOriginalNamesEnabled
+    {
+        get => _configuration.Current.LyricsSource.AppleMusicOriginalNamesEnabled;
+        set => _configuration.SetLyricsSourceSettings(_configuration.Current.LyricsSource with { AppleMusicOriginalNamesEnabled = value });
+    }
     public bool TwoLineLyricsEnabled { get => _configuration.Current.TwoLineLyricsEnabled; set { _configuration.SetTwoLineLyricsEnabled(value); RaiseAll(); } }
     /// <summary>第二行顺序的可读描述（"下一句 → 翻译 → 音译"），与列表内容同步更新。/ A readable description of the second-line order ("next line, translation, romanization"), kept in step with the list.</summary>
     public string SecondaryLineOrderText => string.Join(
@@ -313,6 +320,7 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(LocalLyricsEnabled));
         OnPropertyChanged(nameof(LocalLyricsFallbackOnly));
         OnPropertyChanged(nameof(LocalLyricsFolders));
+        OnPropertyChanged(nameof(AppleMusicOriginalNamesEnabled));
     }
 
     /// <summary>是否一个来源都没启用：此时不会请求任何歌词服务，页面用提示条说明后果。

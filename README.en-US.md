@@ -45,7 +45,7 @@ Open [GitHub Releases](https://github.com/Fervent-Tempo/AF-Media-Bar/releases) a
 ## Privacy and security
 
 - No telemetry, ads, or account system. Media controls and volume operations run locally.
-- Update checks and online lyric searches use the internet. Lyric searches use track and artist information; lyric sources can be disabled in Settings.
+- Update checks and online lyric searches use the internet. Lyric searches use track and artist information; lyric sources can be disabled in Settings. When Apple Music is playing and no reliable lyrics are found, the app also looks up original titles in Apple's catalog (itunes.apple.com). Turning off this option or all lyric sources stops these requests.
 - The app runs with the current user's rights. Report security issues privately as described in [SECURITY.md](SECURITY.md).
 
 ## Star history

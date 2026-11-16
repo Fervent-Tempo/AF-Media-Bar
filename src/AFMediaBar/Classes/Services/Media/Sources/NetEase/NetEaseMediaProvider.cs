@@ -5,6 +5,7 @@ using System.Windows.Threading;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services.Lyrics;
+using AFMediaBar.Classes.Services.Media.Sources.Shared;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
 using AFMediaBar.Resources;
@@ -59,7 +60,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
     // 每次运行独占读取器；取消后在后台释放，再允许下一次运行进入。
     // A run exclusively owns its reader and releases it off-thread before the next run enters.
     private readonly SemaphoreSlim _readerGate = new(1, 1);
-    private readonly NetEaseMemoryContinuity _continuity = new();
+    private readonly SourceContinuityBuffer _continuity = new(TimeSpan.FromSeconds(3));
     private MemoryPruneLevel _pruneLevel;
     private int _currentProcessId;
     private PlayerInfo? _currentInfo;
@@ -252,11 +253,10 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
             while (!token.IsCancellationRequested)
             {
                 var baseline = Volatile.Read(ref _sessionSnapshot);
-                var title = baseline.IsConnected ? baseline.Title : null;
                 var result = await Task.Run(() =>
                 {
                     reader ??= _createReader();
-                    var read = reader.Read(title);
+                    var read = reader.Read(baseline);
                     return (read.Info, read.ProcessId, ReadAt: DateTimeOffset.UtcNow);
                 }, token).ConfigureAwait(false);
                 token.ThrowIfCancellationRequested();

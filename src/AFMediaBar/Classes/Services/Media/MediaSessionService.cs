@@ -43,6 +43,8 @@ public sealed class MediaSessionService : IDisposable, IMediaSourceCatalog
     private MediaSnapshot _sessionSnapshot = MediaSnapshot.Disconnected;
     private readonly Dictionary<IMediaSourceProvider, MediaSnapshot?> _sourceSnapshots = new();
     private MediaSnapshot _lastSnapshot = MediaSnapshot.Disconnected;
+    // 播放进度的跨帧记录：报过进度的曲目、真正播过的曲目、正在观察的曲目。刚打开播放器时都是空的，不会误提示。
+    private PlaybackProgressMemory _progressMemory = PlaybackProgressMemory.Empty;
     private IReadOnlyList<MediaSession> _lastSessions = Array.Empty<MediaSession>();
     private IReadOnlyList<MediaSourceCandidate> _smtcCandidates = Array.Empty<MediaSourceCandidate>();
     private IReadOnlyList<MediaSourceCandidate> _candidates = Array.Empty<MediaSourceCandidate>();
@@ -400,9 +402,12 @@ public sealed class MediaSessionService : IDisposable, IMediaSourceCatalog
     {
         if (_isDisposed)
             return;
+        var previous = _sourceSnapshots.GetValueOrDefault(provider);
         _sourceSnapshots[provider] = snapshot;
         // 当前选择的播放状态先发布，不能等候选刷新或在途 SMTC 补全结束。
         PublishResolved(ResolveSnapshot(_sessionSnapshot));
+        if ((previous?.IsConnected == true) != (snapshot?.IsConnected == true))
+            PublishDiscoveredSources(_lastSessions);
         if (!_candidates.SequenceEqual(BuildCandidates()))
             RefreshSnapshot(_lastSessions);
 
@@ -711,7 +716,9 @@ public sealed class MediaSessionService : IDisposable, IMediaSourceCatalog
 
     private void PublishDiscoveredSources(IReadOnlyList<MediaSession> sessions)
     {
-        var sourceIds = _sources.DiscoverSourceIds(sessions.Select(MediaSessionGuard.GetSourceId))
+        var independentIds = _sourceSnapshots.Values.OfType<MediaSnapshot>()
+            .Where(snapshot => snapshot.IsConnected).Select(snapshot => snapshot.SourceId);
+        var sourceIds = _sources.DiscoverSourceIds(sessions.Select(MediaSessionGuard.GetSourceId).Concat(independentIds))
             .Order(StringComparer.OrdinalIgnoreCase).ToArray();
         if (!sourceIds.SequenceEqual(_discoverySourceIds, StringComparer.OrdinalIgnoreCase))
         {
@@ -728,10 +735,19 @@ public sealed class MediaSessionService : IDisposable, IMediaSourceCatalog
         try
         {
             // 启动路径解析会读取进程；与媒体快照分开在后台执行，同一时刻只保留一次解析。
-            var sources = await Task.Run(() => sourceIds.TakeWhile(_ => !_isDisposed)
-                .Select(_sourceActivator.Describe)
-                .OrderBy(source => source.DisplayName, StringComparer.CurrentCultureIgnoreCase)
-                .ToArray());
+            var sources = await Task.Run(() =>
+            {
+                var detected = sourceIds.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var descriptions = new List<MediaSourceDescriptor>();
+                foreach (var sourceId in sourceIds.Union(_sources.IndependentSourceIds, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (_isDisposed) break;
+                    var description = _sourceActivator.Describe(sourceId, out var isRunning);
+                    if (isRunning || detected.Contains(sourceId)) descriptions.Add(description);
+                }
+
+                return descriptions.OrderBy(source => source.DisplayName, StringComparer.CurrentCultureIgnoreCase).ToArray();
+            });
             if (_isDisposed || revision != _discoveryRevision || sources.SequenceEqual(_lastDiscoveredSources))
                 return;
             _lastDiscoveredSources = sources;
@@ -811,11 +827,16 @@ public sealed class MediaSessionService : IDisposable, IMediaSourceCatalog
 
         snapshot = _browserPresentation.Project(snapshot);
         // 来源身份在合并后已经规范过（cloudmusic.exe → cloudmusic），这里只标记它有没有专属通道；
-        // 界面在没有播放进度时据此区分“适配失效”和“该播放器本来就不上报”。值没变时不复制快照，避免每秒一次的多余分配。
+        // 界面在没有播放进度时据此区分“适配失效”和“该播放器本来就不上报”。
+        // 同时结合上一帧判断这一轮是不是真的在播一首没有进度的歌：刚打开播放器时没有播放动作，不能误报。
         var adaptedSource = _sources.IsAdapted(snapshot.SourceId);
-        if (snapshot.IsAdaptedSource != adaptedSource)
+        var (progressUnavailable, progressMemory) =
+            MediaPlaybackProgressPolicy.Resolve(snapshot, _progressMemory, Stopwatch.GetTimestamp());
+        _progressMemory = progressMemory;
+        // 两个标记都没变时不复制快照，避免每秒一次的多余分配。
+        if (snapshot.IsAdaptedSource != adaptedSource || snapshot.PlaybackProgressUnavailable != progressUnavailable)
         {
-            snapshot = snapshot with { IsAdaptedSource = adaptedSource };
+            snapshot = snapshot with { IsAdaptedSource = adaptedSource, PlaybackProgressUnavailable = progressUnavailable };
         }
         // 单项控制能力不代表 SMTC 会话缺失；同一来源连续缺少控制通道时只主动提示一次。
         var missingControlSourceId = snapshot.IsConnected && string.IsNullOrEmpty(_selectedSessionKey)

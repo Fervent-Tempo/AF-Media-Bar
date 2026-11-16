@@ -7,7 +7,7 @@ namespace AFMediaBar.Classes.Services.Media.Sources.KuGou;
 internal sealed record KuGouPlaybackInfo(string Title, string Artist, double Position, double Duration, bool IsPlaying,
     bool UsesSessionMetadata = false)
 {
-    // 内存时长为固定整秒值，可用于区分同名、同歌手但时长不同的版本。
+    // 曲目的原始内存时长可用于区分同名、同歌手的不同版本。
     internal string Identity => string.Join('\u001f', Title.Trim().ToUpperInvariant(), Artist.Trim().ToUpperInvariant(),
         Duration.ToString("R", CultureInfo.InvariantCulture));
 }

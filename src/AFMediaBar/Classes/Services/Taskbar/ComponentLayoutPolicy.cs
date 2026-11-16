@@ -25,7 +25,8 @@ public static class ComponentLayoutPolicy
     public static IReadOnlyList<TaskbarRestComponent> TransportComponents { get; } =
         [TaskbarRestComponent.PreviousTrack, TaskbarRestComponent.PlayPause, TaskbarRestComponent.NextTrack];
     public static IReadOnlyList<TaskbarRestComponent> HoverComponents { get; } =
-        [.. TransportComponents, TaskbarRestComponent.OutputDevice, TaskbarRestComponent.InputDevice, TaskbarRestComponent.Volume];
+        [.. TransportComponents, TaskbarRestComponent.OutputDevice, TaskbarRestComponent.InputDevice, TaskbarRestComponent.Volume, TaskbarRestComponent.Queue];
+
     public static bool IsMetric(TaskbarRestComponent component) => MetricComponents.Contains(component);
     public static MetricKind Metric(TaskbarRestComponent component) => component switch
     {
@@ -54,7 +55,13 @@ public static class ComponentLayoutPolicy
         var entries = configured.Where(entry => entry is not null && allowed.Contains(entry.Component))
             .DistinctBy(entry => entry.Component).Select(entry => entry with { }).ToList();
         foreach (var entry in legacy)
-            if (!entries.Any(existing => existing.Component == entry.Component)) entries.Add(entry with { IsVisible = false });
+            if (!entries.Any(existing => existing.Component == entry.Component))
+            {
+                // 新增的队列入口对旧布局采用“悬浮层默认开启、驻留/空闲层默认关闭”，
+                // 用户显式关闭后仍由配置中的 false 保留。
+                var visible = state == BarLayoutState.Hover && entry.Component == TaskbarRestComponent.Queue;
+                entries.Add(entry with { IsVisible = visible });
+            }
         var fixedItems = legacy.Where(entry => !CanMove(entry.Component)).Select(entry => entry.Component).ToArray();
         var ordered = fixedItems.Select(component => entries.Single(entry => entry.Component == component))
             .Concat(entries.Where(entry => CanMove(entry.Component))).ToArray();
@@ -106,7 +113,8 @@ public static class ComponentLayoutPolicy
             PlayPauseVisible = Visible(TaskbarRestComponent.PlayPause),
             OutputDeviceVisible = Visible(TaskbarRestComponent.OutputDevice),
             InputDeviceVisible = Visible(TaskbarRestComponent.InputDevice),
-            AudioControlVisible = Visible(TaskbarRestComponent.Volume)
+            AudioControlVisible = Visible(TaskbarRestComponent.Volume),
+            QueueVisible = Visible(TaskbarRestComponent.Queue)
         };
     }
 
@@ -122,6 +130,7 @@ public static class ComponentLayoutPolicy
                 TaskbarRestComponent.PlayPause => controls.PlayPauseVisible,
                 TaskbarRestComponent.OutputDevice => controls.OutputDeviceVisible,
                 TaskbarRestComponent.InputDevice => controls.InputDeviceVisible,
+                TaskbarRestComponent.Queue => controls.QueueVisible,
                 _ => controls.AudioControlVisible
             })).ToArray();
         }
@@ -136,6 +145,7 @@ public static class ComponentLayoutPolicy
             TaskbarRestComponent.OutputDevice => experience.OutputDeviceVisible,
             TaskbarRestComponent.InputDevice => experience.InputDeviceVisible,
             TaskbarRestComponent.Volume => experience.VolumeVisible,
+            TaskbarRestComponent.Queue => false,
             TaskbarRestComponent.BluetoothBattery => settings.BluetoothBatteryWidget.Enabled,
             _ => false
         };

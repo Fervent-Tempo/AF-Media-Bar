@@ -1,4 +1,4 @@
-// 原生竖排呈现。与横向引擎共用消息、字体和 WebView 生命周期，独立管理列布局与滚动。
+// 竖向 Web 歌词与横向引擎共用消息、字体和生命周期，独立管理列布局与滚动。
 (() => {
   const stage = document.createElement("div");
   stage.className = "vertical-stage";
@@ -29,8 +29,6 @@
   let style = {};
   let frame = {};
   let identity = "";
-  let changedAt = 0;
-  let animationFrame = 0;
   let columns = [];
   let motion = [];
   let ghosts = [];
@@ -45,11 +43,7 @@
   }
   const clamp = (x, max = 1) => Math.max(0, Math.min(max, Number(x) || 0));
   const reduced = () => style.reduceMotion || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  function cancel() {
-    cancelAnimationFrame(animationFrame);
-    animationFrame = 0;
-  }
-  function makeColumn(text, index, metadata) {
+  function makeColumn(text, index) {
     const column = document.createElement("div");
     column.className = "v-column" + (index ? " v-secondary" : "") +
       (index && frame.currentTranslation ? " v-translation" : "");
@@ -67,45 +61,31 @@
     const size = index ? Number(style.secondaryFontSize) || 14 : Number(style.fontSize) || 18;
     column.style.fontSize = size + "px";
     column.style.width = Math.ceil(size) + "px";
-    if (!metadata) column.style.letterSpacing = (Number(style.characterSpacingPercent) || 0) / 100 + "em";
+    column.style.letterSpacing = (Number(style.characterSpacingPercent) || 0) / 100 + "em";
     stage.append(column);
     return { column, track, base, scan, size };
   }
-  function render(now = performance.now()) {
-    animationFrame = 0;
+  function render() {
     if (!enabled || document.hidden) return;
-    const metadata = frame.scene === "metadata";
-    let needsClock = false;
     for (let i = 0; i < columns.length; i++) {
       const { column, track, base, scan } = columns[i];
       const viewport = column.clientHeight;
       const length = base.scrollHeight;
       const overflow = Math.max(0, length - viewport);
       let offset = 0;
-      const hasScan = !metadata && i === 0 && frame.wordScanProgress != null;
+      const hasScan = i === 0 && frame.wordScanProgress != null;
       column.classList.toggle("v-scanning", hasScan);
       scan.hidden = !hasScan;
       scan.style.clipPath = `inset(0 0 ${100 - clamp(frame.wordScanProgress) * 100}% 0)`;
       if (overflow > 0 && !reduced()) {
-        if (metadata) {
-          const travel = overflow / 28 * 1000;
-          const period = 2000 + travel + 800 + travel;
-          const elapsed = (now - changedAt) % period;
-          offset = elapsed < 2000 ? 0 : elapsed < 2000 + travel
-            ? (elapsed - 2000) / travel * overflow : elapsed < 2800 + travel
-              ? overflow : overflow * (1 - (elapsed - 2800 - travel) / travel);
-          needsClock = true;
-        } else {
-          const progress = clamp(hasScan ? frame.wordScanProgress : frame.progress);
-          offset = clamp(progress * length - viewport * 0.65, overflow);
-        }
+        const progress = clamp(hasScan ? frame.wordScanProgress : frame.progress);
+        offset = clamp(progress * length - viewport * 0.65, overflow);
       }
-      const alignment = metadata ? style.metadataAlignment : style.textAlignment;
+      const alignment = style.textAlignment;
       const start = overflow > 0 ? 0 : alignment === "Right" ? viewport - length
         : alignment === "Center" ? (viewport - length) / 2 : 0;
       track.style.transform = `translateY(${Math.round(start - offset)}px)`;
     }
-    if (needsClock) animationFrame = requestAnimationFrame(render);
   }
   function present(payload) {
     const previousFrame = frame;
@@ -127,18 +107,17 @@
       }));
       stopMotion();
       identity = nextIdentity;
-      changedAt = performance.now();
       stage.replaceChildren();
       columns = [];
-      if (frame.current) columns.push(makeColumn(String(frame.current), 0, frame.scene === "metadata"));
+      if (frame.current) columns.push(makeColumn(String(frame.current), 0));
       const secondary = frame.currentTranslation || frame.next;
-      if (secondary) columns.push(makeColumn(String(secondary), 1, frame.scene === "metadata"));
+      if (secondary) columns.push(makeColumn(String(secondary), 1));
       render();
       const plan = planner.plan(previousFrame, frame, {
         animateTransition: frame.animateTransition !== false,
         reducedMotion: reduced()
       });
-      if (previousIdentity && frame.scene !== "metadata" && previousFrame.scene !== "metadata" &&
+      if (previousIdentity &&
           presentation.resolveTransitionPrimitive(plan.kind) === presentation.TRANSITION_PRIMITIVES.ROLL) {
         const gap = parseFloat(getComputedStyle(stage).gap) || 2;
         const pitch = (columns[0]?.size || 18) + gap;
@@ -172,7 +151,6 @@
         });
       }
     }
-    cancel();
     render();
   }
   window.taskbarVerticalText = {
@@ -182,7 +160,6 @@
       style = payload || {};
       stage.hidden = !enabled;
       document.getElementById("layout").style.display = enabled ? "none" : "";
-      cancel();
       if (enabled) {
         stage.style.gap = 2 + (Number(style.lineGapPercent) || 0) / 100 * (Number(style.fontSize) || 18) + "px";
         if (!wasEnabled) {
@@ -194,8 +171,7 @@
             item.size = size;
             item.column.style.fontSize = size + "px";
             item.column.style.width = Math.ceil(size) + "px";
-            item.column.style.letterSpacing = frame.scene === "metadata" ? "0em" :
-              (Number(style.characterSpacingPercent) || 0) / 100 + "em";
+            item.column.style.letterSpacing = (Number(style.characterSpacingPercent) || 0) / 100 + "em";
           });
           if (reduced()) stopMotion();
           render();
@@ -213,9 +189,8 @@
       return true;
     }
   };
-  new ResizeObserver(() => { cancel(); render(); }).observe(stage);
+  new ResizeObserver(render).observe(stage);
   document.addEventListener("visibilitychange", () => {
-    cancel();
     if (document.hidden) stopMotion();
     render();
   });

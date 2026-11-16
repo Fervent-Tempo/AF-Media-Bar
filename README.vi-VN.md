@@ -45,7 +45,7 @@ Truy cập [GitHub Releases](https://github.com/Fervent-Tempo/AF-Media-Bar/relea
 ## Quyền riêng tư và bảo mật
 
 - Không có telemetry, quảng cáo hay tài khoản. Điều khiển media và âm lượng được xử lý trên máy.
-- Kiểm tra cập nhật và tìm lời bài hát trực tuyến sử dụng mạng. Tìm lời sử dụng tên bài hát và nghệ sĩ; có thể tắt các nguồn lời trong Cài đặt.
+- Kiểm tra cập nhật và tìm lời bài hát trực tuyến sử dụng mạng. Tìm lời sử dụng tên bài hát và nghệ sĩ; có thể tắt các nguồn lời trong Cài đặt. Khi phát bằng Apple Music mà không tìm được lời phù hợp, ứng dụng còn tra tên gốc trong kho nhạc của Apple (itunes.apple.com); tắt tùy chọn này hoặc tắt mọi nguồn lời sẽ dừng các yêu cầu này.
 - Ứng dụng chạy với quyền của người dùng hiện tại. Báo cáo vấn đề bảo mật riêng tư theo [SECURITY.md](SECURITY.md).
 
 ## Lịch sử Star

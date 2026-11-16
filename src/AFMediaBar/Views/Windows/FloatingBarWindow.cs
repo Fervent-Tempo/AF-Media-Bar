@@ -37,6 +37,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     private readonly MemoryPruneCoordinator _prune;
     private readonly DesktopWidgetZOrderService _zOrder;
     private readonly AppLogService _log;
+    private readonly IPlayerCompanion _playerCompanion;
     private readonly FloatingBarLengthConstraints _lengthConstraints;
     private readonly AdaptiveForegroundSamplingSession _foregroundSamplingSession;
     private readonly TaskbarCompactFlyoutWindow _compactFlyout;
@@ -102,6 +103,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     public bool IsVerticalPresentation => _orientation == LayoutOrientation.Vertical;
     public AppSettings EffectiveSettings => PresentationSettings;
     public event EventHandler<FullPanelOpenRequestEventArgs>? OpenFullPanelRequested;
+    public event EventHandler<PlayerQueuePanelRequestEventArgs>? QueuePanelRequested;
     public event EventHandler? PlacementTransitionStarted;
     public event Action<FloatingBarWindow, Point?>? PlayerMenuOpenRequested;
     internal bool IsPerformanceMenuRequested { get; private set; }
@@ -113,7 +115,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         AudioInteractionService audioInteractionService, AudioMonitorService audioMonitor,
         MediaSourceActivationService sourceActivationService, SystemMetricsMonitorService metricsMonitor,
         NativeMouseInputMonitor mouse, MemoryPruneCoordinator prune, DesktopWidgetZOrderService zOrder,
-        WindowAppearanceService appearance, ScreenBackgroundSampler sampler, AppLogService log, FloatingBarLengthConstraints lengthConstraints,
+        WindowAppearanceService appearance, ScreenBackgroundSampler sampler, AppLogService log,
+        IPlayerCompanion playerCompanion, FloatingBarLengthConstraints lengthConstraints,
         Func<ExternalFullPanelHandleWindow>? externalFullPanelHandleFactory = null,
         QuickLaunchService? quickLaunch = null,
         QuickLaunchIconService? quickLaunchIcons = null)
@@ -132,6 +135,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _prune = prune;
         _zOrder = zOrder;
         _log = log;
+        _playerCompanion = playerCompanion;
+        _playerCompanion.Changed += PlayerCompanion_Changed;
         _lengthConstraints = lengthConstraints;
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
@@ -222,6 +227,8 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _mediaControl.SkipNextRequested += (_, _) => Execute(_commands.SkipNextCommand);
         _mediaControl.ActivateSourceRequested += (_, _) => Execute(_commands.ActivateMediaSourceCommand);
         _mediaControl.OpenFullPanelRequested += (_, _) => RequestFullPanel();
+        _mediaControl.QueuePanelRequested += (_, _) =>
+            QueuePanelRequested?.Invoke(this, new PlayerQueuePanelRequestEventArgs(_mediaControl.GetQueueAnchor()));
         _mediaControl.OutputDeviceMenuRequested += MediaControl_OutputDeviceMenuRequested;
         _mediaControl.InputDeviceMenuRequested += MediaControl_InputDeviceMenuRequested;
         _mediaControl.InputDeviceWheelRequested += MediaControl_InputDeviceWheelRequested;
@@ -388,6 +395,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             _mediaControl.ApplyTaskbarExperienceSettings();
             _mediaControl.ApplyQuickLaunchEntries(PresentationSettings.QuickLaunch.Entries ?? []);
             _mediaControl.UpdateSongInfo(_lastSnapshot);
+            UpdateQueueAvailability();
             _mediaControl.RefreshDesiredSize();
             if (environmentChanged)
             {
@@ -417,8 +425,22 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
             if (_compactFlyout.IsShowing(TaskbarCompactFlyoutMode.QuickLaunch)) _compactFlyout.Dismiss();
         }
         _mediaControl.UpdateSongInfo(snapshot);
+        UpdateQueueAvailability();
         SynchronizeResources();
         ApplyVisibility();
+    }
+
+    private void PlayerCompanion_Changed(object? sender, PlayerCompanionSnapshot snapshot) => UpdateQueueAvailability();
+
+    /// <summary>队列入口只跟随当前受支持的播放器来源；已连接 companion 不能覆盖“当前来源不支持”的状态。</summary>
+    private void UpdateQueueAvailability()
+    {
+        if (_isClosing)
+            return;
+
+        var hasSource = !string.IsNullOrEmpty(_lastSnapshot.SourceId) || !string.IsNullOrEmpty(_lastSnapshot.SourceName);
+        var available = hasSource && _playerCompanion.MatchesSource(_lastSnapshot.SourceId, _lastSnapshot.SourceName);
+        _mediaControl.SetQueueAvailable(available);
     }
 
     private void ResizeContent(MediaBarSizeRequest request)
@@ -686,9 +708,10 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
     {
         if (_isClosing) return;
         if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(() => PruneChanged(sender, args)); return; }
+        if (args.Level != _prune.CurrentLevel) return;
         _mediaControl.ApplyBackgroundPruneLevel(args.Level);
         if (IsBackgroundPruned) { StopEdgeCollapse(); ClearInteraction(); _backgroundTimer.Stop(); _sizeTimer.Stop(); }
-        else if (!_suspended) { _mediaControl.ApplyHostVisibilitySuspension(false); _backgroundTimer.Start(); ApplySnapshot(_lastSnapshot); }
+        else if (!_suspended) { _backgroundTimer.Start(); ApplySnapshot(_lastSnapshot); }
         SynchronizeResources();
         UpdateEdgeObservation();
     }
@@ -730,6 +753,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         cancellationToken.ThrowIfCancellationRequested();
         _handle = new WindowInteropHelper(this).EnsureHandle();
         if (_handle == nint.Zero) throw new InvalidOperationException("Floating window creation failed.");
+        if (IsBackgroundPruned) _mediaControl.ApplyBackgroundPruneLevel(_prune.CurrentLevel);
         _suspended = false;
         Show();
         await Dispatcher.Yield(DispatcherPriority.Loaded);
@@ -795,6 +819,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _mouse.LeftButtonReleased -= LeftReleased;
         _audioInteractionService.DeviceSwitches.Updated -= OnAudioDeviceSwitchUpdated;
         _audioInteractionService.DeviceSwitches.Invalidated -= OnAudioDeviceInvalidated;
+        _playerCompanion.Changed -= PlayerCompanion_Changed;
         DisposeMetricsSubscription();
         DisposeExternalFullPanelHandle();
         _foregroundSamplingSession.Dispose();
@@ -802,6 +827,7 @@ public sealed partial class FloatingBarWindow : Window, IBarRuntimeHost
         _compactFlyout.Dispose();
         _mediaControl.ApplyHostVisibilitySuspension(true);
         _mediaControl.DisposePresentation();
+        QueuePanelRequested = null;
         if (!_windowClosed) Close();
     }
 }

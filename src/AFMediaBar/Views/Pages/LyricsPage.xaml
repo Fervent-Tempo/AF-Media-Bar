@@ -349,6 +349,9 @@
                     <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Description}" Icon="{ui:SymbolIcon Video24}" Title="{DynamicResource Loc.Lyrics.Row.BrowserVideo.Title}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.AllowBrowserAndVideoLyrics, Mode=TwoWay}"/>
                     </components:SettingsRow>
+                    <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.AppleMusicOriginalNames.Description}" Icon="{ui:SymbolIcon Translate24}" Title="{DynamicResource Loc.Lyrics.Row.AppleMusicOriginalNames.Title}" KeepControlInline="True">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.AppleMusicOriginalNamesEnabled, Mode=TwoWay}"/>
+                    </components:SettingsRow>
                     <components:SettingsRow Description="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Description}" Icon="{ui:SymbolIcon TextFont24}" Title="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Title}">
                         <ui:Button Click="ManageArtistSeparators_Click" Icon="{ui:SymbolIcon Edit24}" Content="{DynamicResource Loc.Lyrics.Row.ArtistSeparators.Manage}" Style="{StaticResource AfSettingsButtonStyle}"/>
                     </components:SettingsRow>

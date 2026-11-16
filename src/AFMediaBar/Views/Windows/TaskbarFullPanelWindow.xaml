@@ -26,6 +26,56 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <!-- 随机开关用背景表示状态；开启时与播放按钮共用强调色，而不是换成“关闭随机”的图标。 -->
+        <Style x:Key="ShuffleToggleButtonStyle" TargetType="{x:Type ui:Button}" BasedOn="{StaticResource {x:Type ui:Button}}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource AfFocusVisualStyle}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ui:Button}">
+                        <Border x:Name="ButtonSurface" CornerRadius="8"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}" />
+                </Trigger>
+                <Trigger Property="Tag" Value="On">
+                    <Setter Property="Background" Value="{DynamicResource AfAccentBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource AfOnAccentBrush}" />
+                    <Setter Property="BorderBrush" Value="Transparent" />
+                </Trigger>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="Tag" Value="On" />
+                        <Condition Property="IsMouseOver" Value="True" />
+                    </MultiTrigger.Conditions>
+                    <Setter Property="Background" Value="{DynamicResource AfAccentHoverBrush}" />
+                </MultiTrigger>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="Tag" Value="On" />
+                        <Condition Property="IsPressed" Value="True" />
+                    </MultiTrigger.Conditions>
+                    <Setter Property="Background" Value="{DynamicResource AfAccentPressedBrush}" />
+                </MultiTrigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.32" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </ResourceDictionary></ui:FluentWindow.Resources>
     <Grid>
     <Grid x:Name="PanelSizingRoot" Width="424" Margin="8" HorizontalAlignment="Left">
@@ -73,8 +123,16 @@
                                        ToolTip="{DynamicResource Loc.Common.PlayPause}" Click="PlayButton_Click"><ui:SymbolIcon x:Name="PlayIcon" Symbol="Play24" FontSize="24"/></ui:Button>
                             <ui:Button x:Name="NextButton" Width="40" Height="40" Padding="0" ToolTip="{DynamicResource Loc.Common.NextTrack}" Click="NextButton_Click"><ui:SymbolIcon Symbol="Next24" FontSize="20"/></ui:Button>
                         </StackPanel>
-                        <ui:Button x:Name="RepeatButton" Grid.Column="2" Width="36" Height="36" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                   ToolTip="{DynamicResource Loc.Panel.FullPanel.RepeatMode}" Click="RepeatButton_Click"><ui:SymbolIcon Symbol="ArrowRepeatAll24" FontSize="18"/></ui:Button>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <ui:Button x:Name="ShuffleButton" Width="36" Height="36" Padding="0" Margin="0,0,4,0"
+                                       Style="{StaticResource ShuffleToggleButtonStyle}"
+                                       Visibility="Collapsed"
+                                       ToolTip="{DynamicResource Loc.Panel.FullPanel.ShuffleMode}"
+                                       AutomationProperties.Name="{DynamicResource Loc.Panel.FullPanel.ShuffleMode}"
+                                       Click="ShuffleButton_Click"><ui:SymbolIcon x:Name="ShuffleIcon" Symbol="ArrowShuffle24" FontSize="18"/></ui:Button>
+                            <ui:Button x:Name="RepeatButton" Width="36" Height="36" Padding="0"
+                                       ToolTip="{DynamicResource Loc.Panel.FullPanel.RepeatMode}" Click="RepeatButton_Click"><ui:SymbolIcon Symbol="ArrowRepeatAll24" FontSize="18"/></ui:Button>
+                        </StackPanel>
                     </Grid>
                 </StackPanel>
 

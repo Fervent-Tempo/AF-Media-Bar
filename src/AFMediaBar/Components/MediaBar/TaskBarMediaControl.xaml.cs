@@ -223,6 +223,7 @@ namespace AFMediaBar.Components
             _batterySource = null;
             _artworkHover.Dispose();
             _lyrics.Dispose();
+            VerticalMetadata.StopAnimations();
         }
 
         /// <summary>
@@ -400,6 +401,19 @@ namespace AFMediaBar.Components
         public event EventHandler? SkipNextRequested;
         public event EventHandler? ActivateSourceRequested;
         public event EventHandler? OpenFullPanelRequested;
+
+        /// <summary>请求宿主打开播放器 companion 的播放队列面板；控件不直接联网或持有窗口。</summary>
+        public event EventHandler? QueuePanelRequested;
+
+        /// <summary>设置队列入口本次是否可用；不可用时不进入静置层布局，整块不占宽度。</summary>
+        public void SetQueueAvailable(bool available)
+        {
+            if (_queueAvailable == available)
+                return;
+
+            _queueAvailable = available;
+            ApplyTaskbarExperienceSettings();
+        }
 
         /// <summary>
         /// 宿主提供的"这次点击应当被吞掉"查询。组合滚轮（按住鼠标左键或右键再滚动）松键时会合成一次点击，
@@ -878,6 +892,14 @@ namespace AFMediaBar.Components
         /// <summary>返回音量菜单的物理屏幕锚点，取自最近交互的那个音量入口。 / Returns the physical screen anchor for the volume menu, taken from the volume entry last interacted with.</summary>
         public TrayIconBounds GetVolumeAnchor() => GetScreenBounds(_volumeSurface);
 
+        /// <summary>返回播放队列面板的物理屏幕锚点。 / Returns the physical screen anchor for the playback-queue panel.</summary>
+        public TrayIconBounds GetQueueAnchor() => GetScreenBounds(
+            TaskbarQueueHoverSurface.Visibility == Visibility.Visible
+                ? TaskbarQueueHoverSurface
+                : TaskbarQueueHoverButton.Visibility == Visibility.Visible
+                    ? TaskbarQueueHoverButton
+                    : TaskbarQueueHoverSurface);
+
         private static TrayIconBounds GetScreenBounds(FrameworkElement element)
         {
             var point = element.PointToScreen(new Point(0, 0));
@@ -1103,15 +1125,19 @@ namespace AFMediaBar.Components
             TaskbarInputDeviceSurface.Height = metrics.ButtonSize;
             TaskbarVolumeSurface.Width = metrics.ButtonSize;
             TaskbarVolumeSurface.Height = metrics.ButtonSize;
+            TaskbarQueueButton.Width = metrics.ButtonSize;
+            TaskbarQueueButton.Height = metrics.ButtonSize;
             TaskbarOutputDeviceGlyph.FontSize = metrics.IconSize;
             TaskbarInputDeviceGlyph.FontSize = metrics.IconSize;
             TaskbarVolumeGlyph.FontSize = metrics.IconSize;
+            TaskbarQueueIcon.FontSize = metrics.IconSize;
             TaskbarPreviousIcon.FontSize = metrics.IconSize;
             TaskbarPlayPauseIcon.FontSize = metrics.IconSize;
             TaskbarNextIcon.FontSize = metrics.IconSize;
             TaskbarHoverDeviceGlyph.FontSize = metrics.IconSize;
             TaskbarHoverInputDeviceGlyph.FontSize = metrics.IconSize;
             TaskbarHoverVolumeGlyph.FontSize = metrics.IconSize;
+            TaskbarQueueHoverIcon.FontSize = metrics.IconSize;
             // 静置层进度条只在媒体报告了时长、且开关打开时显示；开关是用户对"静置层要不要这条进度"的回答。
             // The rest-layer progress bar appears only while the session reports a duration and the switch is on; the switch is the
             // user's answer to "should the rest layer carry this progress line at all".
@@ -1160,7 +1186,6 @@ namespace AFMediaBar.Components
             if (!IsSpectrumComponentVisible)
                 ApplySpectrum(ReadOnlySpan<float>.Empty);
 
-            SongMetadataPanel.Orientation = Orientation.Vertical;
             SongArtistContainer.Margin = new Thickness(0, -1.5, 0, 0);
             var metadataAlignment = experience.MediaTextAlignment switch
             {
@@ -1320,6 +1345,7 @@ namespace AFMediaBar.Components
             PlaceRestWidget(TaskbarOutputDeviceHoverSurface, layout.Find(TaskbarRestComponent.OutputDevice), hoverHeight);
             PlaceRestWidget(TaskbarInputDeviceHoverSurface, layout.Find(TaskbarRestComponent.InputDevice), hoverHeight);
             PlaceRestWidget(TaskbarVolumeHoverSurface, layout.Find(TaskbarRestComponent.Volume), hoverHeight);
+            PlaceRestWidget(TaskbarQueueHoverSurface, layout.Find(TaskbarRestComponent.Queue), hoverHeight);
             PlaceRestWidget(ResidentPreviousSurface, layout.Find(TaskbarRestComponent.PreviousTrack), hoverHeight);
             PlaceRestWidget(ResidentPlayPauseSurface, layout.Find(TaskbarRestComponent.PlayPause), hoverHeight);
             PlaceRestWidget(ResidentNextSurface, layout.Find(TaskbarRestComponent.NextTrack), hoverHeight);
@@ -1327,7 +1353,7 @@ namespace AFMediaBar.Components
                 Math.Min(metrics.ButtonSize, Math.Max(1, hoverHeight - RestWidgetVerticalInset(ResidentPreviousSurface))));
             PlaceMetricSurfaces(layout, hoverHeight);
             PlaceBarMoveHandle(layout, hoverHeight);
-            foreach (var surface in new[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface })
+            foreach (var surface in new FrameworkElement[] { TaskbarOutputDeviceSurface, TaskbarInputDeviceSurface, TaskbarVolumeSurface, TaskbarQueueButton })
                 surface.Height = Math.Min(metrics.ButtonSize, Math.Max(1, hoverHeight - RestWidgetVerticalInset(TaskbarOutputDeviceHoverSurface)));
 
             TaskbarRestProgress.Margin = new Thickness(
@@ -1371,6 +1397,7 @@ namespace AFMediaBar.Components
             var wasInputDeviceVisible = TaskbarInputDeviceHoverSurface.Visibility == Visibility.Visible;
             var wasOutputDeviceVisible = TaskbarOutputDeviceHoverSurface.Visibility == Visibility.Visible;
             var wasVolumeVisible = TaskbarVolumeHoverSurface.Visibility == Visibility.Visible;
+            var wasQueueVisible = TaskbarQueueHoverSurface.Visibility == Visibility.Visible;
             var wasArtworkVisible = SongImageBorder.Visibility == Visibility.Visible;
             var spectrumVisible = Visible(TaskbarRestComponent.Spectrum);
             IsSpectrumComponentVisible = spectrumVisible;
@@ -1384,6 +1411,7 @@ namespace AFMediaBar.Components
             var outputDeviceVisible = Visible(TaskbarRestComponent.OutputDevice);
             var inputDeviceVisible = Visible(TaskbarRestComponent.InputDevice);
             var volumeVisible = Visible(TaskbarRestComponent.Volume);
+            var queueVisible = Visible(TaskbarRestComponent.Queue);
 
             SetRestComponentVisible(TaskbarSpectrumHoverSurface, spectrumVisible);
             SetRestComponentVisible(TaskbarPerformanceHoverSurface, performanceVisible);
@@ -1398,6 +1426,8 @@ namespace AFMediaBar.Components
             SetRestComponentVisible(TaskbarInputDeviceSurface, inputDeviceVisible);
             SetRestComponentVisible(TaskbarVolumeHoverSurface, volumeVisible);
             SetRestComponentVisible(TaskbarVolumeSurface, volumeVisible);
+            SetRestComponentVisible(TaskbarQueueHoverSurface, queueVisible);
+            SetRestComponentVisible(TaskbarQueueButton, queueVisible);
 
             // hover 高亮只收外层悬停表面：内层外观（性能块与两个圆形芯片）自己就带底色，对它跑一次 hover 动画会把底色
             // 淡成透明，再次显示时那一块就空了。
@@ -1414,6 +1444,8 @@ namespace AFMediaBar.Components
                 AnimateComponentHover(TaskbarOutputDeviceHoverSurface, false);
             if (wasVolumeVisible && !volumeVisible)
                 AnimateComponentHover(TaskbarVolumeHoverSurface, false);
+            if (wasQueueVisible && !queueVisible)
+                AnimateComponentHover(TaskbarQueueHoverSurface, false);
 
             // 封面与媒体文字按布局里的那一项决定；"没有媒体时显示"列表里没有勾音符时，封面框整块收起（不留空白框）。
             // The artwork and the media text follow their entry in the layout; with the note unchecked in the "shown without media" list the whole
@@ -1469,8 +1501,11 @@ namespace AFMediaBar.Components
         }
 
         /// <summary>把当前设置与快照解析成静置层显隐判定所需的输入。/ Resolves the current settings and snapshot into the rest-layer visibility inputs.</summary>
-        private TaskbarRestLayoutPolicy.Visibility ResolveRestVisibility(in TaskbarExperienceSettings experience) =>
-            new(
+        private TaskbarRestLayoutPolicy.Visibility ResolveRestVisibility(in TaskbarExperienceSettings experience)
+        {
+            var queueEnabled = ComponentLayoutPolicy.Resolve(PresentationSettings, RestLayoutState)
+                .Any(entry => entry.Component == TaskbarRestComponent.Queue && entry.IsVisible);
+            return new(
                 _isConnected,
                 experience.IdleComponents,
                 // 频谱只看它自己的开关：它采的是"当前输出设备的全部声音"（WASAPI 回环），与前台 SMTC 会话是否在播无关，
@@ -1481,7 +1516,8 @@ namespace AFMediaBar.Components
                 experience.PerformanceVisible,
                 experience.OutputDeviceVisible,
                 experience.VolumeVisible,
-                experience.ArtworkVisible, experience.InputDeviceVisible, _batteryCanShow);
+                experience.ArtworkVisible, experience.InputDeviceVisible, _batteryCanShow, queueEnabled);
+        }
 
         /// <summary>
         /// 一个静置层组件占用的固定宽度；媒体文字不吃固定宽度，它取剩余长度。
@@ -1497,6 +1533,7 @@ namespace AFMediaBar.Components
             TaskbarRestComponent.OutputDevice => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.InputDevice => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.Volume => metrics.ButtonSize + TaskbarWidgetPadding * 2,
+            TaskbarRestComponent.Queue => metrics.ButtonSize + TaskbarWidgetPadding * 2,
             TaskbarRestComponent.PreviousTrack or TaskbarRestComponent.PlayPause or TaskbarRestComponent.NextTrack =>
                 metrics.ButtonSize + TaskbarWidgetPadding * 2,
             _ => 0
@@ -1607,9 +1644,10 @@ namespace AFMediaBar.Components
                 _artworkHover.AnimateArtworkHover(false, immediate: true);
             }
             ApplyTimerSuspensionState();
-            _lyrics.UpdateWebLyricsPowerState();
             _lyrics.UpdateWebLyricsPresentation(allowTransition: false);
         }
+
+        internal void SetTaskbarLyricsSuspension(bool requested) => _lyrics.SetTaskbarSuspension(requested);
 
         /// <summary>宿主挂起时立即收回悬停层和封面 Popup；恢复后按指针状态重新排入悬停。</summary>
         public void ApplyHostVisibilitySuspension(bool suspended)
@@ -1792,6 +1830,8 @@ namespace AFMediaBar.Components
             var displayedForeground = TransitionColor("PlayerForeground", foreground, colorDuration);
             SongTitle.Foreground = displayedForeground;
             SongArtist.Foreground = displayedForeground;
+            if (_isVertical && SongMetadataPanel.Visibility == Visibility.Visible)
+                RefreshVerticalMetadata();
             System.Windows.Documents.TextElement.SetForeground(TaskbarPerformanceItems, displayedForeground);
             foreach (var presenter in _metricPresenters.Values) System.Windows.Documents.TextElement.SetForeground(presenter, displayedForeground);
             // 静置层的设备与音量图标和媒体文字取同一支自动前景：它们铺在同一块任务栏表面上。
@@ -2158,14 +2198,16 @@ namespace AFMediaBar.Components
 
             var effectiveLyrics = VisibleLyricsFrame(_lyrics._lyricsFrame);
             var lyricsVisible = effectiveLyrics.IsVisible;
-            var metadataTitle = IsBarPresentation && orientation == LayoutOrientation.Horizontal
+            var metadataTitle = IsBarPresentation
                 ? VisibleMetadataTitle(PresentationSettings.TaskbarExperience)
                 : _actualTitle;
             var visibleText = !_isConnected ? string.Empty : lyricsVisible ? effectiveLyrics.Current : metadataTitle;
             var secondaryText = _isConnected && lyricsVisible
                 ? string.IsNullOrEmpty(effectiveLyrics.CurrentTranslation) ? effectiveLyrics.Next : effectiveLyrics.CurrentTranslation
                 : string.Empty;
-            var artist = _isConnected && !lyricsVisible && SongArtistContainer.Visibility == Visibility.Visible ? DisplayedArtist : string.Empty;
+            var artist = !_isConnected || lyricsVisible ? string.Empty : orientation == LayoutOrientation.Vertical
+                ? VerticalMetadataArtist(PresentationSettings.TaskbarExperience)
+                : SongArtistContainer.Visibility == Visibility.Visible ? DisplayedArtist : string.Empty;
             // Spectrum tuning and metric selection never change their reserved widths. Keeping
             // those values (or play/pause) in the fingerprint causes redundant host size
             // animations and visibly nudges title/artist/lyrics while sliders are adjusted.
@@ -2411,6 +2453,12 @@ namespace AFMediaBar.Components
 
         private void TaskbarNextButton_Click(object sender, RoutedEventArgs e) =>
             SkipNextRequested?.Invoke(this, EventArgs.Empty);
+
+        private void TaskbarQueueButton_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            QueuePanelRequested?.Invoke(this, EventArgs.Empty);
+        }
 
         private void TaskbarDeviceButton_Click(object sender, RoutedEventArgs e)
         {

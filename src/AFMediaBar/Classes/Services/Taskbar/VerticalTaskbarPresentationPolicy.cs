@@ -18,30 +18,37 @@ public static class VerticalTaskbarPresentationPolicy
     public static double MeasureText(string text, double fontSize, double spacingPercent, Func<string, double> measureSideways)
     {
         var advance = 0d;
-        var count = 0;
-        var sideways = new StringBuilder();
-        void Flush()
-        {
-            if (sideways.Length == 0) return;
-            advance += measureSideways(sideways.ToString());
-            sideways.Clear();
-        }
+        var spacing = fontSize * Math.Max(0, spacingPercent) / 100;
+        foreach (var run in TextRuns(text))
+            advance += (run.IsSideways ? measureSideways(run.Text) : fontSize) + run.GraphemeCount * spacing;
+        return Math.Ceiling(advance + 2 * InsetDip);
+    }
+
+    internal static IEnumerable<(string Text, bool IsSideways, int GraphemeCount)> TextRuns(string text)
+    {
+        var start = 0;
+        var sidewaysCount = 0;
         var elements = StringInfo.GetTextElementEnumerator(text);
         while (elements.MoveNext())
         {
-            var element = elements.GetTextElement();
-            count++;
-            var rune = Rune.GetRuneAt(element, 0).Value;
-            if (rune < 0x2E80 && rune != 0x2026)
-                sideways.Append(element);
-            else
+            var grapheme = elements.GetTextElement();
+            if (Rune.TryGetRuneAt(grapheme, 0, out var rune) && rune.Value < 0x2E80 &&
+                rune.Value is not (0x2026 or >= 0x2600 and <= 0x27BF) &&
+                !grapheme.Contains('\uFE0F') && !grapheme.Contains('\u20E3'))
             {
-                Flush();
-                advance += fontSize;
+                if (sidewaysCount == 0) start = elements.ElementIndex;
+                sidewaysCount++;
+                continue;
             }
+
+            if (sidewaysCount > 0)
+                yield return (text[start..elements.ElementIndex], true, sidewaysCount);
+            sidewaysCount = 0;
+            yield return (grapheme, false, 1);
         }
-        Flush();
-        return Math.Ceiling(advance + count * fontSize * Math.Max(0, spacingPercent) / 100 + 4);
+
+        if (sidewaysCount > 0)
+            yield return (text[start..], true, sidewaysCount);
     }
 
     public static float[] AggregateSpectrum(ReadOnlySpan<float> source, int count)

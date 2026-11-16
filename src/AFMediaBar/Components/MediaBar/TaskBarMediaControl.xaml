@@ -27,6 +27,34 @@
             styles share one brush, so a colour change cannot leave a style behind.
         -->
         <SolidColorBrush x:Key="TaskbarSpectrumBrush" Color="#DFFFFFFF" />
+        <!--
+            播放队列静置层按钮只保留外层 hover 动画；内层不再叠一层 TaskbarHoverButton 背景，
+            否则同一个小组件会出现两层高亮。
+            The rest-layer queue button keeps only the outer hover animation; the inner button no longer adds a
+            TaskbarHoverButton background, so one widget does not show two highlight layers.
+        -->
+        <Style x:Key="TaskbarQueueButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="1,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Tag" Value="MediaAction" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.32" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
         <Style x:Key="TaskbarSpectrumBar" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource TaskbarSpectrumBrush}" />
             <Setter Property="CornerRadius" Value="1" />
@@ -201,44 +229,51 @@
                         <Grid x:Name="SongInfoSurface"
                               Width="{Binding ElementName=SongInfoStackPanel, Path=Width}"
                               Height="{Binding ElementName=SongInfoStackPanel, Path=Height}">
-                            <StackPanel x:Name="SongMetadataPanel"
+                            <Grid x:Name="SongMetadataPanel"
                                         RenderOptions.ClearTypeHint="Enabled"
                                         TextOptions.TextRenderingMode="ClearType"
                                         TextOptions.TextFormattingMode="Display">
-                                <!-- 标题同样可点（打开播放器菜单）也可拖：原理同封面，不挂 MediaAction。 -->
-                                <!-- The title is clickable (player menu) and draggable as well: same as the artwork, no MediaAction tag. -->
-                                <Canvas x:Name="SongTitleContainer" Height="19" ClipToBounds="True" Cursor="Hand"
+                                <StackPanel x:Name="HorizontalMetadataPanel">
+                                    <!-- 标题同样可点（打开播放器菜单）也可拖：原理同封面，不挂 MediaAction。 -->
+                                    <!-- The title is clickable (player menu) and draggable as well: same as the artwork, no MediaAction tag. -->
+                                    <Canvas x:Name="SongTitleContainer" Height="19" ClipToBounds="True" Cursor="Hand"
+                                            MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
+                                        <TextBlock x:Name="SongTitle" Text=""
+                                                   TextTrimming="CharacterEllipsis"
+                                                   FontFamily="{DynamicResource AppTextFontFamily}"
+                                                   FontWeight="{DynamicResource AppTextFontWeight}" />
+                                        <TextBlock x:Name="SongTitleDuplicate" Visibility="Collapsed" IsHitTestVisible="False"
+                                                   FontFamily="{Binding FontFamily, ElementName=SongTitle}"
+                                                   FontSize="{Binding FontSize, ElementName=SongTitle}"
+                                                   FontWeight="{Binding FontWeight, ElementName=SongTitle}"
+                                                   FontStyle="{Binding FontStyle, ElementName=SongTitle}"
+                                                   FontStretch="{Binding FontStretch, ElementName=SongTitle}"
+                                                   Foreground="{Binding Foreground, ElementName=SongTitle}"
+                                                   Opacity="{Binding Opacity, ElementName=SongTitle}"
+                                                   FlowDirection="{Binding FlowDirection, ElementName=SongTitle}" />
+                                    </Canvas>
+                                    <Canvas x:Name="SongArtistContainer" Margin="0,-1.5,0,0" Height="19" ClipToBounds="True">
+                                        <TextBlock x:Name="SongArtist" Text="" Opacity="0.5"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   FontFamily="{DynamicResource AppTextFontFamily}"
+                                                   FontWeight="{DynamicResource AppTextFontWeight}" />
+                                        <TextBlock x:Name="SongArtistDuplicate" Visibility="Collapsed" IsHitTestVisible="False"
+                                                   FontFamily="{Binding FontFamily, ElementName=SongArtist}"
+                                                   FontSize="{Binding FontSize, ElementName=SongArtist}"
+                                                   FontWeight="{Binding FontWeight, ElementName=SongArtist}"
+                                                   FontStyle="{Binding FontStyle, ElementName=SongArtist}"
+                                                   FontStretch="{Binding FontStretch, ElementName=SongArtist}"
+                                                   Foreground="{Binding Foreground, ElementName=SongArtist}"
+                                                   Opacity="{Binding Opacity, ElementName=SongArtist}"
+                                                   FlowDirection="{Binding FlowDirection, ElementName=SongArtist}" />
+                                    </Canvas>
+                                </StackPanel>
+                                <Border x:Name="VerticalMetadataSurface" Visibility="Collapsed" ClipToBounds="True"
+                                        Background="Transparent" Cursor="Hand"
                                         MouseLeftButtonUp="SongTitleContainer_MouseLeftButtonUp">
-                                    <TextBlock x:Name="SongTitle" Text=""
-                                               TextTrimming="CharacterEllipsis"
-                                               FontFamily="{DynamicResource AppTextFontFamily}"
-                                               FontWeight="{DynamicResource AppTextFontWeight}" />
-                                    <TextBlock x:Name="SongTitleDuplicate" Visibility="Collapsed" IsHitTestVisible="False"
-                                               FontFamily="{Binding FontFamily, ElementName=SongTitle}"
-                                               FontSize="{Binding FontSize, ElementName=SongTitle}"
-                                               FontWeight="{Binding FontWeight, ElementName=SongTitle}"
-                                               FontStyle="{Binding FontStyle, ElementName=SongTitle}"
-                                               FontStretch="{Binding FontStretch, ElementName=SongTitle}"
-                                               Foreground="{Binding Foreground, ElementName=SongTitle}"
-                                               Opacity="{Binding Opacity, ElementName=SongTitle}"
-                                               FlowDirection="{Binding FlowDirection, ElementName=SongTitle}" />
-                                </Canvas>
-                                <Canvas x:Name="SongArtistContainer" Margin="0,-1.5,0,0" Height="19" ClipToBounds="True">
-                                    <TextBlock x:Name="SongArtist" Text="" Opacity="0.5"
-                                               TextTrimming="CharacterEllipsis"
-                                               FontFamily="{DynamicResource AppTextFontFamily}"
-                                               FontWeight="{DynamicResource AppTextFontWeight}" />
-                                    <TextBlock x:Name="SongArtistDuplicate" Visibility="Collapsed" IsHitTestVisible="False"
-                                               FontFamily="{Binding FontFamily, ElementName=SongArtist}"
-                                               FontSize="{Binding FontSize, ElementName=SongArtist}"
-                                               FontWeight="{Binding FontWeight, ElementName=SongArtist}"
-                                               FontStyle="{Binding FontStyle, ElementName=SongArtist}"
-                                               FontStretch="{Binding FontStretch, ElementName=SongArtist}"
-                                               Foreground="{Binding Foreground, ElementName=SongArtist}"
-                                               Opacity="{Binding Opacity, ElementName=SongArtist}"
-                                               FlowDirection="{Binding FlowDirection, ElementName=SongArtist}" />
-                                </Canvas>
-                            </StackPanel>
+                                    <local:VerticalMetadataText x:Name="VerticalMetadata" IsHitTestVisible="False" />
+                                </Border>
+                            </Grid>
 
                             <Grid x:Name="SongLyricsPanel" Opacity="0" IsHitTestVisible="False" ClipToBounds="True">
                                 <!--
@@ -402,6 +437,26 @@
                         ToolTip="{DynamicResource Loc.Common.NextTrack}" Click="TaskbarNextButton_Click">
                     <ui:SymbolIcon Symbol="{Binding Symbol, ElementName=TaskbarNextIcon}"
                                    FontSize="{Binding FontSize, ElementName=TaskbarNextIcon}" />
+                </Button>
+            </Border>
+            <!--
+                播放队列入口与音量/设备小组件同构：外层负责 hover、命中和几何，内层按钮复用现有 TaskbarHoverButton。
+                运行时的 companion 可用性由宿主写入；设置关闭或没有可用播放器时整块不进入布局。
+                The queue entry follows the same outer-hover/inner-button shape as the audio widgets. The host supplies runtime companion
+                availability; a disabled setting or unavailable player keeps the whole block out of the layout.
+            -->
+            <Border x:Name="TaskbarQueueHoverSurface" Panel.ZIndex="4" Width="26" Height="32"
+                    Padding="1,1,1,2.25" BorderThickness="0,1.25,0,0"
+                    HorizontalAlignment="Left" VerticalAlignment="Center" Background="Transparent"
+                    Visibility="Collapsed" Tag="MediaAction"
+                    MouseEnter="TaskbarSpectrumHoverSurface_MouseEnter"
+                    MouseLeave="TaskbarSpectrumHoverSurface_MouseLeave">
+                <Button x:Name="TaskbarQueueButton" Style="{StaticResource TaskbarQueueButtonStyle}" Margin="0"
+                        Foreground="{Binding Foreground, ElementName=SongTitle}"
+                        ToolTip="{DynamicResource Loc.Common.PlaybackQueue}"
+                        AutomationProperties.Name="{DynamicResource Loc.Common.PlaybackQueue}"
+                        Click="TaskbarQueueButton_Click">
+                    <ui:SymbolIcon x:Name="TaskbarQueueIcon" Symbol="DocumentQueue24" FontSize="14" />
                 </Button>
             </Border>
             <Border x:Name="TaskbarBatterySurface" Panel.ZIndex="4" Width="66" Height="32" Padding="4" CornerRadius="5"
@@ -584,6 +639,15 @@
                                         MouseEnter="TaskbarVolumeButton_MouseEnter"
                                         PreviewMouseWheel="TaskbarVolumeButton_PreviewMouseWheel">
                                     <TextBlock x:Name="TaskbarHoverVolumeGlyph" Text="{x:Static local:MediaControlGlyphs.Volume}" FontFamily="{DynamicResource AppIconFontFamily}" FontSize="14" />
+                                </Button>
+                                <Button x:Name="TaskbarQueueHoverButton"
+                                        Style="{StaticResource TaskbarHoverButton}"
+                                        Margin="4,0,1,0"
+                                        Visibility="Collapsed"
+                                        ToolTip="{DynamicResource Loc.Common.PlaybackQueue}"
+                                        AutomationProperties.Name="{DynamicResource Loc.Common.PlaybackQueue}"
+                                        Click="TaskbarQueueButton_Click">
+                                    <ui:SymbolIcon x:Name="TaskbarQueueHoverIcon" Symbol="DocumentQueue24" FontSize="14" />
                                 </Button>
                             </StackPanel>
                         </Grid>

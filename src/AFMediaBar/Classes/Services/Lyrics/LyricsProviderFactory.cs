@@ -43,4 +43,9 @@ public static class LyricsProviderFactory
     /// </summary>
     public static LyricsService CreateDefaultService() =>
         new(LyricsService.DefaultPerSourceBudget, LyricsService.DefaultTotalBudget, new LocalFileLyricsProvider(), [.. CreateDefault()]);
+
+    /// <summary>同上，并为 Apple Music 接入原名解析器；解析器由组合根持有和释放。</summary>
+    public static LyricsService CreateDefaultService(AppleMusicOriginalMetadataResolver originalNames) =>
+        new(LyricsService.DefaultPerSourceBudget, LyricsService.DefaultTotalBudget, LyricsService.DefaultOriginalNameBudget,
+            new LocalFileLyricsProvider(), originalNames, [.. CreateDefault()]);
 }

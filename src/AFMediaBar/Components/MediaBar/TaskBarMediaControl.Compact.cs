@@ -66,7 +66,8 @@ public partial class TaskBarMediaControl
         }
         if (!_restTransitionKeepsOutgoingText)
         {
-            var fallbackLyrics = raw.IsVisible && (SongLyricsPanel.Opacity <= 0 || _lyrics._webLyricsGraphicsDisabled);
+            var fallbackLyrics = raw.IsVisible && !_lyrics.ShowMetadataDuringPruneRecovery &&
+                (SongLyricsPanel.Opacity <= 0 || _lyrics._webLyricsGraphicsDisabled);
             SongTitle.Text = fallbackLyrics ? raw.Current : VisibleMetadataTitle(PresentationSettings.TaskbarExperience);
             if (fallbackLyrics) SongTitle.FontSize = EffectiveLyricFontSize;
             SongArtistContainer.Visibility = !fallbackLyrics && !_isSmallTaskbar && !string.IsNullOrEmpty(DisplayedArtist) &&

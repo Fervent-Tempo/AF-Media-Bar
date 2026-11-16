@@ -1,6 +1,7 @@
 // 酷狗独立来源的身份与双通道仲裁，不读取进程、窗口或文件。
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
+using AFMediaBar.Classes.Services.Media.Sources.Shared;
 
 namespace AFMediaBar.Classes.Services.Media.Sources.KuGou;
 
@@ -9,6 +10,15 @@ public sealed class KuGouSourcePolicy : IMediaSourcePolicy
 {
     public const string SourceId = "kugou";
     public const string SelectionKey = "source:kugou";
+    private readonly SmtcFirstMergeState _merge;
+
+    public KuGouSourcePolicy() : this(TimeProvider.System) { }
+
+    internal KuGouSourcePolicy(TimeProvider timeProvider)
+    {
+        _merge = new SmtcFirstMergeState(snapshot => Matches(snapshot.SourceId), SameTrack, timeProvider);
+    }
+
     string IMediaSourcePolicy.SourceId => SourceId;
     string IMediaSourcePolicy.SelectionKey => SelectionKey;
 
@@ -22,31 +32,18 @@ public sealed class KuGouSourcePolicy : IMediaSourcePolicy
         var result = sessions.Where(session => !Matches(session.SourceId)).ToList();
         var smtc = sessions.Where(session => Matches(session.SourceId)).OrderByDescending(session => session.IsPlaying).FirstOrDefault();
         if (smtc is not null || memory is { IsConnected: true })
-            result.Add(new(SelectionKey, SourceId, memory is { IsConnected: true } ? memory.IsPlaying : smtc!.IsPlaying, smtc?.SessionKey));
+            result.Add(new(SelectionKey, SourceId,
+                memory is { IsConnected: true, IsStale: false } ? memory.IsPlaying : smtc?.IsPlaying ?? memory!.IsPlaying,
+                smtc?.SessionKey, smtc is null && memory is { IsStale: true }));
         return result;
     }
 
-    public MediaSnapshot Merge(MediaSnapshot? memory, MediaSnapshot smtc)
-    {
-        var baseline = smtc.IsConnected && Matches(smtc.SourceId) ? smtc : MediaSnapshot.Disconnected;
-        if (memory is not { IsConnected: true })
-            return baseline.IsConnected ? baseline with { SourceId = SourceId } : MediaSnapshot.Disconnected;
-        var sameTrack = baseline.IsConnected && !string.IsNullOrWhiteSpace(memory.Title) &&
-            string.Equals(memory.Title.Trim(), baseline.Title.Trim(), StringComparison.OrdinalIgnoreCase) &&
-            ArtistsDescribeTheSameTrack(memory.Artist, baseline.Artist);
-        return memory with
-        {
-            SourceId = SourceId,
-            Artwork = sameTrack ? baseline.Artwork : null,
-            Lyrics = memory.Lyrics ?? (sameTrack ? baseline.Lyrics : null),
-            CanPlayPause = baseline.CanPlayPause,
-            CanSkipPrevious = baseline.CanSkipPrevious,
-            CanSkipNext = baseline.CanSkipNext,
-            CanSeek = baseline.CanSeek && memory.Duration > 0,
-            CanChangeRepeat = baseline.CanChangeRepeat,
-            RepeatMode = baseline.RepeatMode
-        };
-    }
+    public MediaSnapshot Merge(MediaSnapshot? memory, MediaSnapshot smtc) => _merge.Merge(memory, smtc, SourceId);
+
+    private static bool SameTrack(MediaSnapshot memory, MediaSnapshot smtc) =>
+        !string.IsNullOrWhiteSpace(memory.Title) &&
+        string.Equals(memory.Title.Trim(), smtc.Title.Trim(), StringComparison.OrdinalIgnoreCase) &&
+        ArtistsDescribeTheSameTrack(memory.Artist, smtc.Artist);
 
     private static bool ArtistsDescribeTheSameTrack(string memoryArtist, string smtcArtist)
     {

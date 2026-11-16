@@ -62,6 +62,13 @@ public sealed record MediaSnapshot(
     public bool IsAdaptedSource { get; init; }
 
     /// <summary>
+    /// 这一首曲目还没有拿到过任何播放进度（时长和位置都是 0），但歌词已经有了。适配过的来源代表内存通道读不到，
+    /// 其它播放器代表本来就不报；两种情况界面分别给不同文案。只供稳定期后的「不提供进度」提示使用；
+    /// 歌词的立即隐藏由 <see cref="MediaPlaybackProgressPolicy.ShouldHideLyrics"/> 判定，不看这个标记。
+    /// </summary>
+    public bool PlaybackProgressUnavailable { get; init; }
+
+    /// <summary>
     /// 断开状态的快照：表示没有可用的媒体会话。
     /// Disconnected snapshot: indicates no available media session.
     ///

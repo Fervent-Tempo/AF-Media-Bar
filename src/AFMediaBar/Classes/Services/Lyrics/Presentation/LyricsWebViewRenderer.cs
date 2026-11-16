@@ -26,7 +26,6 @@ public sealed record LyricsWebStyle(
     string TextShadow,
     bool IsVertical = false,
     double SecondaryFontSize = 14,
-    string MetadataAlignment = "Left",
     bool ReduceMotion = false,
     bool Compact = false);
 
@@ -172,7 +171,6 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView, Ap
             style.TextShadow,
             style.IsVertical,
             style.SecondaryFontSize,
-            style.MetadataAlignment,
             style.ReduceMotion,
             style.Compact,
             colorTransitionMilliseconds = IsReady ? Math.Clamp(colorDuration.TotalMilliseconds, 0, 220) : 0
@@ -180,7 +178,7 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView, Ap
         StartDrain();
     }
 
-    public void Present(LyricsPresentationFrame frame, bool animateTransition, bool isMetadata = false)
+    public void Present(LyricsPresentationFrame frame, bool animateTransition)
     {
         ArgumentNullException.ThrowIfNull(frame);
         if (_disposed || _failed) return;
@@ -199,7 +197,7 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView, Ap
             nextTranslation = frame.IsVisible ? frame.NextTranslation : string.Empty,
             translationMode = frame.IsVisible && frame.TranslationMode,
             animateTransition = frame.IsVisible && animateTransition,
-            scene = isMetadata ? "metadata" : "lyrics"
+            scene = "lyrics"
         });
         StartDrain();
     }
@@ -214,7 +212,7 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView, Ap
     /// <summary>Resume delivery, sending style before the latest lyrics frame. / 恢复消息投递，先发送样式再发送最新歌词帧。</summary>
     public void ResumeDelivery()
     {
-        if (_disposed || _failed)
+        if (_disposed || _failed || !_deliveryPaused)
             return;
         _deliveryPaused = false;
         StartDrain();
@@ -223,17 +221,32 @@ public sealed class LyricsWebViewRenderer(WebView2CompositionControl webView, Ap
     /// <summary>Best-effort renderer suspension after WPF has made the WebView invisible. / WPF 已隐藏视图后的尽力挂起。</summary>
     public async Task<bool> TrySuspendAsync()
     {
-        if (!IsReady || _webView.IsVisible || _core is null)
+        if (!IsReady || _core is not { } core)
             return false;
+        if (_webView.IsVisible)
+        {
+            log?.Warn("Lyrics", $"phase=suspend-skipped renderer={_instanceId} host={hostId} generation={generation} reason=visible");
+            return false;
+        }
 
         try
         {
-            var suspended = await _core.TrySuspendAsync();
-            return !_disposed && !_failed && suspended;
+            var suspended = await core.TrySuspendAsync();
+            if (_disposed || _failed)
+                return false;
+
+            var isSuspended = core.IsSuspended;
+            var message = $"phase=suspend-result renderer={_instanceId} host={hostId} generation={generation} browserPid={_browserProcessId} result={suspended} isSuspended={isSuspended}";
+            if (suspended && isSuspended)
+                log?.Info("Lyrics", message);
+            else
+                log?.Warn("Lyrics", message);
+            return suspended || isSuspended;
         }
         catch (Exception ex)
         {
-            AppLogService.Current?.Warn("Lyrics", $"Web lyrics suspension failed: {ex.Message}");
+            if (!_disposed && !_failed)
+                log?.Warn("Lyrics", $"phase=suspend-failed renderer={_instanceId} host={hostId} generation={generation} hresult=0x{ex.HResult:X8}", ex);
             return false;
         }
     }

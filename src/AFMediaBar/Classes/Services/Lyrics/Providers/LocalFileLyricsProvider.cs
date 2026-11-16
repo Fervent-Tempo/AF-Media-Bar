@@ -62,29 +62,53 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         var settings = SettingsManager.Current.LyricsSource.Normalize();
         if (!settings.LocalEnabled || settings.LocalFolders is not { Count: > 0 } folders || string.IsNullOrWhiteSpace(request.Title))
             return Task.FromResult<LyricsResult?>(null);
-        return Task.Run(() => Search(request, folders, cancellationToken), cancellationToken);
+        return Task.Run(() => Match(request, Scan(folders, cancellationToken), cancellationToken), cancellationToken);
     }
 
-    private static LyricsResult? Search(LyricsRequest request, IReadOnlyList<string> folders, CancellationToken cancellationToken)
+    /// <summary>
+    /// 枚举已添加目录里的歌词文件；同一次取词要按多个名称匹配时复用这份清单，不重复扫描目录。关闭或未添加目录时为 null。
+    /// </summary>
+    internal Task<LocalLyricsScan?> ScanAsync(CancellationToken cancellationToken)
+    {
+        var settings = SettingsManager.Current.LyricsSource.Normalize();
+        if (!settings.LocalEnabled || settings.LocalFolders is not { Count: > 0 } folders)
+            return Task.FromResult<LocalLyricsScan?>(null);
+        return Task.Run<LocalLyricsScan?>(() => Scan(folders, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>在已有清单里按请求匹配，采纳规则与 <see cref="GetLyricsAsync"/> 相同。</summary>
+    internal static Task<LyricsResult?> MatchAsync(LocalLyricsScan scan, LyricsRequest request, CancellationToken cancellationToken) =>
+        string.IsNullOrWhiteSpace(request.Title)
+            ? Task.FromResult<LyricsResult?>(null)
+            : Task.Run(() => Match(request, scan, cancellationToken), cancellationToken);
+
+    private static LocalLyricsScan Scan(IReadOnlyList<string> folders, CancellationToken cancellationToken)
+    {
+        var files = new List<string>();
+        foreach (var folder in folders)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            files.AddRange(ListLyricFiles(folder, cancellationToken));
+        }
+        return new LocalLyricsScan(files);
+    }
+
+    private static LyricsResult? Match(LyricsRequest request, LocalLyricsScan scan, CancellationToken cancellationToken)
     {
         // 请求侧的派生值对每个候选都一样，算一次即可；候选侧的每份仍各自解析。
         var key = new RequestKey(VersionKeys(request.Title), SingleCharTitle(request.Title));
         Candidate? best = null;
-        foreach (var folder in folders)
+        foreach (var path in scan.Files)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            foreach (var path in ListLyricFiles(folder, cancellationToken))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var (baseName, role) = Classify(path);
-                // 翻译和罗马音只是主歌词的附件，不单独参与评分。
-                if (role != LyricRole.Main) continue;
-                if (!LooksRelated(baseName, request)) continue;
-                var candidate = Evaluate(request, path, baseName, key);
-                // 没有歌词的候选直接跳过：本地文件没内容就等于没找到，不能被它顶掉带词的那一份。
-                if (candidate is null || candidate.Document.Lines.Count == 0) continue;
-                if (best is null || Better(candidate, best)) best = candidate;
-            }
+            var (baseName, role) = Classify(path);
+            // 翻译和罗马音只是主歌词的附件，不单独参与评分。
+            if (role != LyricRole.Main) continue;
+            if (!LooksRelated(baseName, request)) continue;
+            var candidate = Evaluate(request, path, baseName, key);
+            // 没有歌词的候选直接跳过：本地文件没内容就等于没找到，不能被它顶掉带词的那一份。
+            if (candidate is null || candidate.Document.Lines.Count == 0) continue;
+            if (best is null || Better(candidate, best)) best = candidate;
         }
 
         // 一条都没命中就当没找到，继续原有链路。
@@ -92,7 +116,8 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         return new LyricsResult(LyricsSourceCatalog.LocalFile, best.Document)
         {
             MatchScore = best.Score,
-            LowConfidence = best.LowConfidence
+            LowConfidence = best.Confidence != LyricsLowConfidenceReason.None,
+            LowConfidenceReason = best.Confidence
         };
     }
 
@@ -214,14 +239,14 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         var assessment = Stronger(fromMetadata, fromFileName);
         if (assessment.Score < MinimumScore) return null;
         // 文件名与内部标签给出相反的歌手证据、或版本描述对不上时，都不能当成确定匹配。
-        var lowConfidence = IsLowConfidence(titleEvidence, artistEvidence, durationEvidence) ||
-                            HasArtistContradiction(fromMetadata.ArtistScore, fromFileName.ArtistScore) ||
-                            metadataConflict == VersionConflict.Soft || fileConflict == VersionConflict.Soft;
+        var confidence = ConfidenceOf(titleEvidence, artistEvidence, durationEvidence,
+            HasArtistContradiction(fromMetadata.ArtistScore, fromFileName.ArtistScore),
+            metadataConflict, fileConflict);
 
         var (translation, romanization) = ReadCompanions(path, baseName);
         var document = LyricsTextParser.Parse(text, translation, romanization, request,
             request.DurationSeconds ?? duration, request.FilterInfoLines);
-        return new Candidate(path, assessment.Score, lowConfidence, document);
+        return new Candidate(path, assessment.Score, confidence, document);
     }
 
     /// <summary>按扩展名取文本：QRC/KRC 先解密，字幕先归一化成 LRC，其余按编码探测。</summary>
@@ -416,6 +441,23 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
         Math.Max(first, second) >= ConfidenceArtistFloor && Math.Min(first, second) < ArtistMismatchFloor;
 
     /// <summary>
+    /// 判定低置信的成因：反证优先于无佐证。两类结果在仲裁阶段待遇不同——只有「无佐证」能被分差挽留，
+    /// 「有反证」必须继续让位给在线，所以不能只用一个布尔值表示。
+    /// </summary>
+    private static LyricsLowConfidenceReason ConfidenceOf(
+        double titleScore, double? artistScore, double? durationScore,
+        bool artistContradiction, VersionConflict metadataConflict, VersionConflict fileConflict)
+    {
+        if (artistContradiction || metadataConflict == VersionConflict.Soft || fileConflict == VersionConflict.Soft)
+            return LyricsLowConfidenceReason.Contradicted;
+        // 标题本身就不够像，等于证据指向「不是这一首」，同样不该被分差捞回来。
+        if (titleScore < ConfidenceTitleFloor) return LyricsLowConfidenceReason.Contradicted;
+        return IsLowConfidence(titleScore, artistScore, durationScore)
+            ? LyricsLowConfidenceReason.TitleOnly
+            : LyricsLowConfidenceReason.None;
+    }
+
+    /// <summary>
     /// 只有标题一条线索时判为低置信度：同名翻唱、Live、同名片看起来都一样，得先让在线查一轮。
     /// 标题、歌手、时长的证据都已按两条线索合并，这里只做判定。
     /// </summary>
@@ -523,7 +565,9 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     private static bool Better(Candidate candidate, Candidate current)
     {
         // 有歌手或时长佐证的一方优先：只靠标题拿满分的同名翻唱，不该压过标题略差但歌手对得上的那份。
-        if (candidate.LowConfidence != current.LowConfidence) return !candidate.LowConfidence;
+        var candidateLowConfidence = candidate.Confidence != LyricsLowConfidenceReason.None;
+        var currentLowConfidence = current.Confidence != LyricsLowConfidenceReason.None;
+        if (candidateLowConfidence != currentLowConfidence) return !candidateLowConfidence;
         if (candidate.Score != current.Score) return candidate.Score > current.Score;
         if (candidate.Document.Lines.Count != current.Document.Lines.Count) return candidate.Document.Lines.Count > current.Document.Lines.Count;
         return string.CompareOrdinal(candidate.Path, current.Path) < 0;
@@ -597,5 +641,8 @@ public sealed partial class LocalFileLyricsProvider : ILyricsProvider
     [GeneratedRegex(@"^\[(?<key>ti|ar|al|length):(?<value>[^\]]*)\]", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
     private static partial Regex MetadataLine();
 
-    private sealed record Candidate(string Path, int Score, bool LowConfidence, LyricDocument Document);
+    private sealed record Candidate(string Path, int Score, LyricsLowConfidenceReason Confidence, LyricDocument Document);
 }
+
+/// <summary>一次取词内的本地歌词文件清单；只在该次取词内复用，不跨请求缓存。</summary>
+internal sealed record LocalLyricsScan(IReadOnlyList<string> Files);
