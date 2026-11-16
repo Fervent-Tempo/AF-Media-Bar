@@ -47,6 +47,7 @@ public sealed class SettingsEnvelopeLoadingTests
             Assert.AreEqual(SpectrumCaptureSource.AllApplications, loaded.SpectrumComponent.CaptureSource);
             Assert.AreEqual(SpectrumStyle.Area, loaded.SpectrumComponent.Style, "缺 style 字段时落到新的内置默认面积曲线。");
             Assert.AreEqual(SpectrumStyle.Area, new AppSettings().SpectrumComponent.Style, "内置默认样式应为面积曲线。");
+            Assert.IsFalse(loaded.SpectrumComponent.ShowPeakMarkers, "缺 showPeakMarkers 字段时默认关闭峰值标记。");
             Assert.AreEqual(json, File.ReadAllText(path), "加载不应改写用户默认快照。");
         }
         finally { Directory.Delete(directory, true); }

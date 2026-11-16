@@ -54,6 +54,9 @@
                             <ComboBoxItem Content="{DynamicResource Loc.Media.Spectrum.Style.Area}" Tag="{x:Static settings:SpectrumStyle.Area}"/>
                         </ComboBox>
                     </components:SettingsRow>
+                    <components:SettingsRow Description="{DynamicResource Loc.Media.Spectrum.PeakMarkers.Description}" Icon="{ui:SymbolIcon TopSpeed24}" Style="{StaticResource SpectrumParameterRowStyle}" Title="{DynamicResource Loc.Media.Spectrum.PeakMarkers.Title}">
+                        <ui:ToggleSwitch IsChecked="{Binding ViewModel.Components.SpectrumShowPeakMarkers, Mode=TwoWay}"/>
+                    </components:SettingsRow>
                     <components:SettingsRow Description="{DynamicResource Loc.Media.Spectrum.BandCount.Description}" Icon="{ui:SymbolIcon DataBarVertical24}" Style="{StaticResource SpectrumParameterRowStyle}" Title="{DynamicResource Loc.Media.Spectrum.BandCount.Title}">
                         <components:SettingsNumericEditor Value="{Binding ViewModel.Components.SpectrumBandCount, Mode=TwoWay}" Minimum="{Binding ViewModel.Components.MinimumSpectrumBandCount}" Maximum="{Binding ViewModel.Components.MaximumSpectrumBandCount}" Step="1"/>
                     </components:SettingsRow>

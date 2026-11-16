@@ -70,6 +70,17 @@ public sealed partial class ComponentsSettingsViewModel : ObservableObject, IDis
         set { _configuration.SetSpectrum(_configuration.Current.SpectrumComponent with { Style = value }); OnPropertyChanged(); }
     }
 
+    /// <summary>是否显示回落峰值标记；默认关闭。 / Whether falling peak markers are shown; off by default.</summary>
+    public bool SpectrumShowPeakMarkers
+    {
+        get => _configuration.Current.SpectrumComponent.ShowPeakMarkers;
+        set
+        {
+            _configuration.SetSpectrum(_configuration.Current.SpectrumComponent with { ShowPeakMarkers = value });
+            OnPropertyChanged();
+        }
+    }
+
     public SpectrumCaptureSource SpectrumCaptureSource
     {
         get => _configuration.Current.SpectrumComponent.CaptureSource;

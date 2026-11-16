@@ -34,7 +34,7 @@ public static class SpectrumVisualThemePolicy
             return new SpectrumVisualTheme(false, false, 1, 1, 0);
 
         return useDecorativeEffects
-            ? new SpectrumVisualTheme(true, true, 0.55, 0.85, 0.14)
-            : new SpectrumVisualTheme(false, false, 1, 1, 0.14);
+            ? new SpectrumVisualTheme(true, true, 0.55, 0.85, 0)
+            : new SpectrumVisualTheme(false, false, 1, 1, 0);
     }
 }

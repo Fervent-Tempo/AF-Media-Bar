@@ -28,6 +28,7 @@ public partial class TaskBarMediaControl
     private bool _spectrumUnloadHooked;
     private int _appliedSpectrumBandCount = -1;
     private int _appliedSpectrumSensitivity;
+    private bool _appliedSpectrumShowPeakMarkers;
     private double _appliedSpectrumContentHeight;
     private SpectrumStyle? _appliedSpectrumStyle;
     private Color? _spectrumForegroundColor;
@@ -115,6 +116,7 @@ public partial class TaskBarMediaControl
         var sameShape = _appliedSpectrumStyle == settings.Style &&
                         _appliedSpectrumBandCount == settings.BandCount &&
                         _appliedSpectrumSensitivity == settings.SensitivityPercent &&
+                        _appliedSpectrumShowPeakMarkers == settings.ShowPeakMarkers &&
                         Math.Abs(_appliedSpectrumContentHeight - contentHeight) < 0.01;
         if (sameShape && theme == _spectrumTheme)
         {
@@ -132,6 +134,7 @@ public partial class TaskBarMediaControl
         _appliedSpectrumStyle = settings.Style;
         _appliedSpectrumBandCount = settings.BandCount;
         _appliedSpectrumSensitivity = settings.SensitivityPercent;
+        _appliedSpectrumShowPeakMarkers = settings.ShowPeakMarkers;
         _appliedSpectrumContentHeight = contentHeight;
         StopSpectrumFrameTimer();
         Array.Clear(_targetSpectrum);
@@ -151,6 +154,7 @@ public partial class TaskBarMediaControl
             ResolveSpectrumBrush(),
             _spectrumTheme,
             settings.SensitivityPercent,
+            settings.ShowPeakMarkers,
             (Style?)FindResource("TaskbarSpectrumBar"),
             (Style?)FindResource("TaskbarSpectrumPixel"));
         _spectrumVisuals.Clear();

@@ -1844,6 +1844,12 @@
   <data name="Media.Spectrum.Sensitivity.Title" xml:space="preserve">
     <value>灵敏度</value>
   </data>
+  <data name="Media.Spectrum.PeakMarkers.Title" xml:space="preserve">
+    <value>峰值标记</value>
+  </data>
+  <data name="Media.Spectrum.PeakMarkers.Description" xml:space="preserve">
+    <value>在柱状图、像素柱状图和光点上显示回落峰值；小任务栏建议关闭。</value>
+  </data>
   <data name="Media.Spectrum.Style.Bars" xml:space="preserve">
     <value>柱状图</value>
   </data>

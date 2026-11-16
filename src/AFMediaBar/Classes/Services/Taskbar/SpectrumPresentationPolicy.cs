@@ -47,14 +47,22 @@ public static class SpectrumPresentationPolicy
     /// <summary>像素柱状图中相邻方块之间的净间距（DIP）。 / Clear gap between blocks in the pixel bar chart, in DIP.</summary>
     public const double PixelDotGapDip = 1;
 
-    /// <summary>像素柱状图未点亮方块的默认相对不透明度；主题策略会按高对比度覆盖。 / Default opacity of unlit pixel blocks; the visual theme overrides it for high contrast.</summary>
-    public const double DefaultUnlitPixelOpacity = 0.14;
+    /// <summary>像素柱状图未点亮方块的默认不透明度。像素样式不画背景分隔块，只显示点亮的方块。 / Default opacity of unlit pixel blocks. The pixel style draws no background grid, only lit blocks.</summary>
+    public const double DefaultUnlitPixelOpacity = 0;
 
     /// <summary>柱状图与对称柱状图的最小柱高（DIP）；静音时只剩这一小段，用于保留槽位。 / Minimum bar height in DIP for the bar styles; only this stub remains while silent, which keeps the slot visible.</summary>
     public const double MinimumBarHeightDip = 3;
 
     /// <summary>波形每两个控制点之间插入的细分段数；频段很少时它决定曲线是否平滑。 / Interpolation segments per control-point gap; with few bands this is what makes the curve read as a waveform.</summary>
     public const int WaveformSegmentsPerGap = 6;
+
+    /// <summary>
+    /// 面积曲线每个频段之间只保留直线段，峰值不会被 Catmull-Rom 抹圆；这是与 audioMotion 一类分析器
+    /// “尖锐峰值”观感对齐的关键。波形仍保留细分曲线。
+    /// The area curve keeps straight segments between bands so Catmull-Rom cannot round peaks away; this is what aligns the
+    /// sharp-peak look of analyzers such as audioMotion. The waveform keeps its subdivided curve.
+    /// </summary>
+    public const int AreaSegmentsPerGap = 1;
 
     /// <summary>设置里配置的频谱内容区横轴尺寸（DIP），也就是柱子能达到的最大高度。/ The spectrum content area's cross-axis size from the settings, in DIP, which is the tallest a bar can be.</summary>
     /// <param name="settings">频谱组件设置。/ Spectrum component settings.</param>
@@ -187,7 +195,8 @@ public static class SpectrumPresentationPolicy
         // 此处使用已聚合的显示频段数；不再套用持久化设置的最小柱数。
         var step = (count * BarWidthDip + (count - 1) * BarGapDip) / (count - 1);
         var segments = WaveformSegmentsPerGap * (count - 1);
-        WriteTopCurve(bands, sensitivityPercent, centre, maximumHalfHeight, step, destination[..(segments + 1)]);
+        WriteTopCurve(bands, sensitivityPercent, centre, maximumHalfHeight, step, WaveformSegmentsPerGap,
+            destination[..(segments + 1)]);
         for (var index = 0; index <= segments; index++)
         {
             var point = destination[index];
@@ -243,9 +252,10 @@ public static class SpectrumPresentationPolicy
         }
 
         var step = (count * BarWidthDip + (count - 1) * BarGapDip) / (count - 1);
-        var segments = WaveformSegmentsPerGap * (count - 1);
+        var segments = AreaSegmentsPerGap * (count - 1);
         destination[0] = new SpectrumPoint(0, height);
-        WriteTopCurve(bands, sensitivityPercent, height, height, step, destination.Slice(1, segments + 1));
+        WriteTopCurve(bands, sensitivityPercent, height, height, step, AreaSegmentsPerGap,
+            destination.Slice(1, segments + 1));
         destination[length - 1] = new SpectrumPoint((count - 1) * step, height);
         return length;
     }
@@ -255,28 +265,28 @@ public static class SpectrumPresentationPolicy
     public static int CalculateAreaPointCount(int bandCount)
     {
         var count = Math.Max(1, bandCount);
-        return count == 1 ? 4 : WaveformSegmentsPerGap * (count - 1) + 3;
+        return count == 1 ? 4 : AreaSegmentsPerGap * (count - 1) + 3;
     }
 
     private static void WriteTopCurve(ReadOnlySpan<float> bands, int sensitivityPercent, double baseline,
-        double amplitudeRange, double step, Span<SpectrumPoint> destination)
+        double amplitudeRange, double step, int segmentsPerGap, Span<SpectrumPoint> destination)
     {
         var count = bands.Length;
-        var segments = WaveformSegmentsPerGap * (count - 1);
+        var segments = segmentsPerGap * (count - 1);
         for (var segment = 0; segment < count - 1; segment++)
         {
             var p0 = ResolveLevel(bands[Math.Max(0, segment - 1)], sensitivityPercent) * amplitudeRange;
             var p1 = ResolveLevel(bands[segment], sensitivityPercent) * amplitudeRange;
             var p2 = ResolveLevel(bands[segment + 1], sensitivityPercent) * amplitudeRange;
             var p3 = ResolveLevel(bands[Math.Min(count - 1, segment + 2)], sensitivityPercent) * amplitudeRange;
-            for (var stepIndex = 0; stepIndex < WaveformSegmentsPerGap; stepIndex++)
+            for (var stepIndex = 0; stepIndex < segmentsPerGap; stepIndex++)
             {
-                var t = stepIndex / (double)WaveformSegmentsPerGap;
+                var t = stepIndex / (double)segmentsPerGap;
                 var y = 0.5 * ((2 * p1) +
                                (-p0 + p2) * t +
                                (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t +
                                (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
-                var index = segment * WaveformSegmentsPerGap + stepIndex;
+                var index = segment * segmentsPerGap + stepIndex;
                 destination[index] = new SpectrumPoint((segment + t) * step, baseline - Math.Clamp(y, 0, amplitudeRange));
             }
         }

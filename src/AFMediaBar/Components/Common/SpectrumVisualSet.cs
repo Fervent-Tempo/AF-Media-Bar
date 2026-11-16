@@ -21,6 +21,7 @@ internal sealed class SpectrumVisualSet
     private readonly int _bandCount;
     private readonly double _height;
     private readonly int _sensitivityPercent;
+    private readonly bool _showPeakMarkers;
     private readonly List<BarVisual> _bars = [];
     private readonly List<PixelVisual> _pixels = [];
     private readonly List<DotVisual> _dots = [];
@@ -33,7 +34,7 @@ internal sealed class SpectrumVisualSet
     private SpectrumVisualTheme _theme;
 
     internal SpectrumVisualSet(Canvas host, SpectrumStyle style, int bandCount, double height,
-        Brush foreground, SpectrumVisualTheme theme, int sensitivityPercent,
+        Brush foreground, SpectrumVisualTheme theme, int sensitivityPercent, bool showPeakMarkers,
         System.Windows.Style? barStyle = null, System.Windows.Style? pixelStyle = null)
     {
         _host = host;
@@ -41,6 +42,7 @@ internal sealed class SpectrumVisualSet
         _bandCount = Math.Max(1, bandCount);
         _height = Math.Max(0, height);
         _sensitivityPercent = sensitivityPercent;
+        _showPeakMarkers = showPeakMarkers;
         _theme = theme;
         _lastLevels = new float[_bandCount];
         _lastPeaks = new float[_bandCount];
@@ -72,13 +74,9 @@ internal sealed class SpectrumVisualSet
                     var level = ResolveLevel(levels, index);
                     var lit = SpectrumPresentationPolicy.ResolveLitPixelCount(level, _sensitivityPercent, _height);
                     var column = _pixels[index];
+                    var opacity = _theme.ResolveBarOpacity(level);
                     for (var dotIndex = 0; dotIndex < column.Blocks.Count; dotIndex++)
-                    {
-                        var isLit = dotIndex < lit;
-                        column.Blocks[dotIndex].Opacity = isLit
-                            ? (_theme.UseMasks ? 0.55 + 0.45 * dotIndex / Math.Max(1, column.Blocks.Count - 1) : 1)
-                            : _theme.UnlitPixelOpacity;
-                    }
+                        column.Blocks[dotIndex].Opacity = dotIndex < lit ? opacity : _theme.UnlitPixelOpacity;
                 }
                 break;
             case SpectrumStyle.Waveform:
@@ -106,7 +104,7 @@ internal sealed class SpectrumVisualSet
     {
         Array.Clear(_lastPeaks);
         peaks[..Math.Min(peaks.Length, _bandCount)].CopyTo(_lastPeaks);
-        var show = _theme.ShowPeakMarkers;
+        var show = _theme.ShowPeakMarkers && _showPeakMarkers;
         switch (_style)
         {
             case SpectrumStyle.Bars:
@@ -177,14 +175,11 @@ internal sealed class SpectrumVisualSet
             var column = _pixels[index];
             foreach (var block in column.Blocks) block.Background = foreground;
             column.Peak.Background = foreground;
-            var lit = SpectrumPresentationPolicy.ResolveLitPixelCount(
-                ResolveLevel(_lastLevels, index), _sensitivityPercent, _height);
+            var level = ResolveLevel(_lastLevels, index);
+            var lit = SpectrumPresentationPolicy.ResolveLitPixelCount(level, _sensitivityPercent, _height);
+            var opacity = theme.ResolveBarOpacity(level);
             for (var dotIndex = 0; dotIndex < column.Blocks.Count; dotIndex++)
-            {
-                column.Blocks[dotIndex].Opacity = dotIndex < lit
-                    ? (theme.UseMasks ? 0.55 + 0.45 * dotIndex / Math.Max(1, column.Blocks.Count - 1) : 1)
-                    : theme.UnlitPixelOpacity;
-            }
+                column.Blocks[dotIndex].Opacity = dotIndex < lit ? opacity : theme.UnlitPixelOpacity;
         }
         foreach (var dot in _dots)
         {
@@ -197,9 +192,12 @@ internal sealed class SpectrumVisualSet
             _curve.Fill = foreground;
             _curve.Stroke = foreground;
             _curve.StrokeThickness = _style == SpectrumStyle.Area ? 0.8 : 0.5;
+            // 面积与波形统一遵循“幅度越高越不透明”：面积顶部更实，波形上下缘更实、基线更淡。
+            // Area and waveform share one rule: higher amplitude is more opaque. The area's top edge is stronger; the
+            // waveform's upper and lower edges are stronger while its centre baseline is lighter.
             _curve.OpacityMask = theme.UseMasks
                 ? _style == SpectrumStyle.Area
-                    ? SpectrumVisualFactory.CreateAlphaMask(0.85, 0.12)
+                    ? SpectrumVisualFactory.CreateAlphaMask(0.92, 0.25)
                     : CreateRibbonMask()
                 : null;
         }
@@ -360,9 +358,9 @@ internal sealed class SpectrumVisualSet
     private LinearGradientBrush CreateRibbonMask()
     {
         var mask = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
-        mask.GradientStops.Add(new GradientStop(Color.FromArgb(140, 0, 0, 0), 0));
-        mask.GradientStops.Add(new GradientStop(Colors.Black, 0.5));
-        mask.GradientStops.Add(new GradientStop(Color.FromArgb(140, 0, 0, 0), 1));
+        mask.GradientStops.Add(new GradientStop(Color.FromArgb(235, 0, 0, 0), 0));
+        mask.GradientStops.Add(new GradientStop(Color.FromArgb(102, 0, 0, 0), 0.5));
+        mask.GradientStops.Add(new GradientStop(Color.FromArgb(235, 0, 0, 0), 1));
         return mask;
     }
 

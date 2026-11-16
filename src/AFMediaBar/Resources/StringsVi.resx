@@ -1822,6 +1822,12 @@
   <data name="Media.Spectrum.Sensitivity.Title" xml:space="preserve">
     <value>Độ nhạy</value>
   </data>
+  <data name="Media.Spectrum.PeakMarkers.Title" xml:space="preserve">
+    <value>Điểm đánh dấu đỉnh</value>
+  </data>
+  <data name="Media.Spectrum.PeakMarkers.Description" xml:space="preserve">
+    <value>Hiển thị điểm đánh dấu đỉnh đang rơi trên cột, cột pixel và chấm sáng; nên tắt trên thanh tác vụ nhỏ.</value>
+  </data>
   <data name="Media.Spectrum.Style.Bars" xml:space="preserve">
     <value>Cột đơn</value>
   </data>

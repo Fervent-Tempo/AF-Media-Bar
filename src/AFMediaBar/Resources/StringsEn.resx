@@ -1844,6 +1844,12 @@
   <data name="Media.Spectrum.Sensitivity.Title" xml:space="preserve">
     <value>Sensitivity</value>
   </data>
+  <data name="Media.Spectrum.PeakMarkers.Title" xml:space="preserve">
+    <value>Peak markers</value>
+  </data>
+  <data name="Media.Spectrum.PeakMarkers.Description" xml:space="preserve">
+    <value>Show falling peak markers on bars, pixel bars and dots; keep it off on compact taskbars.</value>
+  </data>
   <data name="Media.Spectrum.Style.Bars" xml:space="preserve">
     <value>Bars</value>
   </data>

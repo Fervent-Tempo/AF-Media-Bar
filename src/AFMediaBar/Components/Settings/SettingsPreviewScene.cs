@@ -151,7 +151,8 @@ public sealed class SettingsPreviewScene : ContentControl
         };
         var bands = Enumerable.Range(0, count).Select(i => (float)(.2 + .65 * Math.Abs(Math.Sin((i + 1) * .8)))).ToArray();
         var theme = SpectrumVisualThemePolicy.Resolve(SystemParameters.HighContrast, useDecorativeEffects: true);
-        var visuals = new SpectrumVisualSet(canvas, settings.Style, count, height, Foreground, theme, settings.SensitivityPercent);
+        var visuals = new SpectrumVisualSet(canvas, settings.Style, count, height, Foreground, theme,
+            settings.SensitivityPercent, settings.ShowPeakMarkers);
         visuals.ApplyLevels(bands, animate: false);
         visuals.ApplyPeaks(bands);
         return canvas;

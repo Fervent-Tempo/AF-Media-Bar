@@ -70,7 +70,8 @@ public sealed class SpectrumStylePresentationChecks
                                 Style = style,
                                 BandCount = requestedCount,
                                 ContentHeightDip = 26,
-                                SensitivityPercent = 100
+                                SensitivityPercent = 100,
+                                ShowPeakMarkers = true
                             };
                             control.ApplyTaskbarExperienceSettings();
                             var timer = FrameTimer(control);
@@ -130,21 +131,24 @@ public sealed class SpectrumStylePresentationChecks
             var lowPerformance = SpectrumVisualThemePolicy.Resolve(highContrast: false, useDecorativeEffects: false);
 
             var areaCanvas = new Canvas();
-            var area = new SpectrumVisualSet(areaCanvas, SpectrumStyle.Area, 14, 26, Brushes.White, highContrast, 100);
+            var area = new SpectrumVisualSet(areaCanvas, SpectrumStyle.Area, 14, 26, Brushes.White, highContrast, 100,
+                showPeakMarkers: true);
             area.ApplyLevels(bands, animate: false);
             area.ApplyPeaks(bands);
             var areaPath = areaCanvas.Children.OfType<Path>().Single();
             Assert.IsNull(areaPath.OpacityMask, "高对比度面积曲线不能使用透明度遮罩。");
 
             var waveformCanvas = new Canvas();
-            var waveform = new SpectrumVisualSet(waveformCanvas, SpectrumStyle.Waveform, 14, 26, Brushes.White, lowPerformance, 100);
+            var waveform = new SpectrumVisualSet(waveformCanvas, SpectrumStyle.Waveform, 14, 26, Brushes.White, lowPerformance, 100,
+                showPeakMarkers: true);
             waveform.ApplyLevels(bands, animate: false);
             waveform.ApplyPeaks(bands);
             Assert.IsNull(waveformCanvas.Children.OfType<Path>().Single().OpacityMask,
                 "低性能波形不能使用透明度遮罩。");
 
             var barsCanvas = new Canvas();
-            var bars = new SpectrumVisualSet(barsCanvas, SpectrumStyle.Bars, 14, 26, Brushes.White, highContrast, 100);
+            var bars = new SpectrumVisualSet(barsCanvas, SpectrumStyle.Bars, 14, 26, Brushes.White, highContrast, 100,
+                showPeakMarkers: true);
             bars.ApplyLevels(bands, animate: false);
             bars.ApplyPeaks(bands);
             var barVisuals = barsCanvas.Children.OfType<Border>().Where(border => border.RenderTransform is ScaleTransform).ToArray();
@@ -154,8 +158,18 @@ public sealed class SpectrumStylePresentationChecks
                 .Where(border => border.RenderTransform is TranslateTransform)
                 .All(cap => cap.Opacity == 0), "高对比度不能显示峰值帽。");
 
+            var mutedCanvas = new Canvas();
+            var mutedBars = new SpectrumVisualSet(mutedCanvas, SpectrumStyle.Bars, 14, 26, Brushes.White,
+                SpectrumVisualThemePolicy.Resolve(false, true), 100, showPeakMarkers: false);
+            mutedBars.ApplyLevels(bands, animate: false);
+            mutedBars.ApplyPeaks(bands);
+            Assert.IsTrue(mutedCanvas.Children.OfType<Border>()
+                .Where(border => border.RenderTransform is TranslateTransform)
+                .All(cap => cap.Opacity == 0), "默认关闭时不能显示峰值帽。");
+
             var pixelsCanvas = new Canvas();
-            var pixels = new SpectrumVisualSet(pixelsCanvas, SpectrumStyle.PixelBars, 14, 26, Brushes.White, highContrast, 100);
+            var pixels = new SpectrumVisualSet(pixelsCanvas, SpectrumStyle.PixelBars, 14, 26, Brushes.White, highContrast, 100,
+                showPeakMarkers: true);
             pixels.ApplyLevels(new float[14], animate: false);
             var pixelBorders = pixelsCanvas.Children.OfType<Border>().ToArray();
             var dotCount = SpectrumPresentationPolicy.ResolvePixelDotCount(26);

@@ -77,6 +77,12 @@ public readonly record struct SpectrumComponentSettings(int BandCount, int Refre
     /// </summary>
     public SpectrumStyle Style { get; init; } = SpectrumStyle.Area;
 
+    /// <summary>
+    /// 是否显示回落峰值帽/峰值点。默认关闭：小任务栏里额外的悬浮标记会干扰主要频谱柱。
+    /// Whether falling peak caps/dots are shown. Off by default: the extra floating markers disturb the main bars on a compact taskbar.
+    /// </summary>
+    public bool ShowPeakMarkers { get; init; }
+
     /// <summary>缺少字段的旧设置继续采集当前设备；程序模式无法解析时不扩大采集范围。</summary>
     public SpectrumCaptureSource CaptureSource { get; init; } = SpectrumCaptureSource.CurrentDevice;
 
@@ -187,6 +193,7 @@ public readonly record struct SpectrumComponentSettings(int BandCount, int Refre
         SnapSensitivityPercent(SensitivityPercent))
     {
         Style = Enum.IsDefined(Style) ? Style : SpectrumStyle.Area,
+        ShowPeakMarkers = ShowPeakMarkers,
         CaptureSource = Enum.IsDefined(CaptureSource) ? CaptureSource : SpectrumCaptureSource.CurrentDevice,
         CaptureDeviceMode = CaptureDeviceMode is { } mode && Enum.IsDefined(mode) ? mode : null,
         CaptureDeviceId = string.IsNullOrWhiteSpace(CaptureDeviceId) ? null : CaptureDeviceId.Trim(),

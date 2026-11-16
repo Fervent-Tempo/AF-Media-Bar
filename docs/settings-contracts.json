@@ -186,6 +186,7 @@
       "contentHeightDip": "v1.2.0",
       "refreshRateHz": "v1.2.0",
       "sensitivityPercent": "v1.2.0",
+      "showPeakMarkers": "unreleased",
       "style": "v1.2.0"
     },
     "taskbarBarAvoidIcons": "v1.2.0",
