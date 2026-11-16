@@ -65,7 +65,23 @@ public enum MediaCardColorTheme
     Light = 1,
 
     /// <summary>深色底，强调色从封面提取主色。/ Dark surface with the accent taken from the artwork.</summary>
-    FromCover = 2
+    FromCover = 2,
+
+    /// <summary>纯透明底，只保留封面、文字与频谱。/ Fully transparent surface; only artwork, text and spectrum remain.</summary>
+    Transparent = 3
+}
+
+/// <summary>媒体卡片的层级方式，对应设置页的「置顶方式」三选一。</summary>
+public enum MediaCardPinMode
+{
+    /// <summary>不置顶，可被其它窗口覆盖，可拖动。</summary>
+    Normal = 0,
+
+    /// <summary>始终置于顶端，可拖动。</summary>
+    Topmost = 1,
+
+    /// <summary>固定到桌面层，不可拖动，与置顶互斥。</summary>
+    FixedToDesktop = 2
 }
 
 /// <summary>媒体卡片频谱的参数来源。成员值参与序列化，只能追加。</summary>

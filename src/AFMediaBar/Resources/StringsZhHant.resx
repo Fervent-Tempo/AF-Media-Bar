@@ -3934,19 +3934,40 @@
     <value>啟用媒體卡片</value>
   </data>
   <data name="Settings.MediaCard.Enabled.Description" xml:space="preserve">
-    <value>關閉後立即隱藏，重新開啟此開關即可恢復</value>
+    <value>關掉就收起卡片，想用時再打開這個開關</value>
   </data>
-  <data name="Settings.MediaCard.Topmost" xml:space="preserve">
-    <value>始終置頂</value>
+  <data name="Settings.MediaCard.PinMode" xml:space="preserve">
+    <value>置頂方式</value>
   </data>
-  <data name="Settings.MediaCard.Topmost.Description" xml:space="preserve">
-    <value>關閉後會被其它視窗覆蓋</value>
+  <data name="Settings.MediaCard.PinMode.Description" xml:space="preserve">
+    <value>決定卡片浮在最上面、正常顯示，還是固定在桌面裡；卡片上的圖釘也能切這三個檔</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode.Normal" xml:space="preserve">
+    <value>不置頂</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode.Topmost" xml:space="preserve">
+    <value>置於頂端</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode.FixedToDesktop" xml:space="preserve">
+    <value>固定到桌面</value>
+  </data>
+  <data name="Settings.MediaCard.TransparentClickThrough" xml:space="preserve">
+    <value>透明時滑鼠穿透</value>
+  </data>
+  <data name="Settings.MediaCard.TransparentClickThrough.Description" xml:space="preserve">
+    <value>選全透明配色時，點卡片空白處會直接點到下面的桌面；封面、歌詞和按鈕照樣能點</value>
+  </data>
+  <data name="Settings.MediaCard.AccentFromCover" xml:space="preserve">
+    <value>主色取自封面</value>
+  </data>
+  <data name="Settings.MediaCard.AccentFromCover.Description" xml:space="preserve">
+    <value>卡片的進度條、頻譜等顏色跟著封面走，不管選哪種配色，背景與文字不變</value>
   </data>
   <data name="Settings.MediaCard.ColorTheme" xml:space="preserve">
     <value>卡片配色</value>
   </data>
   <data name="Settings.MediaCard.ColorTheme.Description" xml:space="preserve">
-    <value>深色、淺色，或跟著封面顏色變化</value>
+    <value>深色、淺色、全透明，或跟著封面顏色變化</value>
   </data>
   <data name="Settings.MediaCard.ColorTheme.Dark" xml:space="preserve">
     <value>深色</value>
@@ -3994,7 +4015,7 @@
     <value>頻譜參數</value>
   </data>
   <data name="Settings.MediaCard.SpectrumMode.Description" xml:space="preserve">
-    <value>直接用狀態列的頻譜設定，或替卡片單獨調整</value>
+    <value>可選擇跟隨主程式參數，或自訂</value>
   </data>
   <data name="Settings.MediaCard.SpectrumMode.FollowMain" xml:space="preserve">
     <value>跟隨主程式</value>
@@ -4027,7 +4048,7 @@
     <value>僅顯示媒體卡片</value>
   </data>
   <data name="Settings.MediaCard.OnlyCard.Description" xml:space="preserve">
-    <value>開啟後不再顯示工作列媒體欄，減少背景繪製；關閉卡片時媒體欄會自動回來</value>
+    <value>開啟後工作列媒體列會收起來，更省資源；關掉卡片時它會自動回來</value>
   </data>
   <data name="Settings.MediaCard.Fonts" xml:space="preserve">
     <value>卡片字體</value>
@@ -4039,19 +4060,19 @@
     <value>中文字體</value>
   </data>
   <data name="Settings.MediaCard.FontChinese.Description" xml:space="preserve">
-    <value>卡片上的中文歌詞與曲目</value>
+    <value>卡片上的中文歌詞和歌名</value>
   </data>
   <data name="Settings.MediaCard.FontJapanese" xml:space="preserve">
     <value>日文字體</value>
   </data>
   <data name="Settings.MediaCard.FontJapanese.Description" xml:space="preserve">
-    <value>日文歌詞，包含其中的漢字</value>
+    <value>日文歌詞，包括裡面的漢字</value>
   </data>
   <data name="Settings.MediaCard.FontEnglish" xml:space="preserve">
     <value>英文字體</value>
   </data>
   <data name="Settings.MediaCard.FontEnglish.Description" xml:space="preserve">
-    <value>英文、數字與羅馬音</value>
+    <value>英文、數字和羅馬拼音</value>
   </data>
   <data name="Settings.MediaCard.Font.FollowSystem" xml:space="preserve">
     <value>跟隨系統字體</value>
@@ -4069,7 +4090,7 @@
     <value>歌詞來源</value>
   </data>
   <data name="Settings.MediaCard.LyricsSource.Description" xml:space="preserve">
-    <value>歌詞跟隨主程式的歌詞設定，本機歌詞檔案命中時會優先顯示</value>
+    <value>卡片跟著主程式的歌詞設定顯示；本機有歌詞檔時優先顯示</value>
   </data>
   <data name="Settings.MediaCard.OpenLyrics" xml:space="preserve">
     <value>開啟歌詞設定</value>
@@ -4078,7 +4099,7 @@
     <value>副行留白時顯示曲目資訊</value>
   </data>
   <data name="Settings.MediaCard.TrackInfoOnEmptyLines.Description" xml:space="preserve">
-    <value>沒有羅馬音與譯文時，用歌曲名與歌手填補副行；關閉後保持留白，純音樂只在歌詞行顯示歌曲名。</value>
+    <value>沒有羅馬拼音和翻譯時，用歌名和歌手填上面空著的兩行；關掉就保持空白，純音樂只在歌詞行顯示歌名</value>
   </data>
   <data name="Common.PlaybackQueue" xml:space="preserve"><value>播放佇列</value></data>
   <data name="DisplayModes.Rest.Component.Queue" xml:space="preserve"><value>播放佇列</value></data>
@@ -4122,4 +4143,31 @@
   <data name="Panel.Shuffle.Unavailable" xml:space="preserve"><value>隨機播放不可用</value></data>
   <data name="Panel.Shuffle.Connecting" xml:space="preserve"><value>正在連線 Nons…</value></data>
   <data name="Panel.Shuffle.Pending" xml:space="preserve"><value>隨機狀態未確認，正在重新整理…</value></data>
+  <data name="Settings.MediaCard.ColorTheme.Transparent" xml:space="preserve">
+    <value>全透明</value>
+  </data>
+  <data name="Settings.MediaCard.InvertOnLightWallpaper" xml:space="preserve">
+    <value>淺色桌布自動反色</value>
+  </data>
+  <data name="Settings.MediaCard.InvertOnLightWallpaper.Description" xml:space="preserve">
+    <value>透明配色下，桌布偏亮時文字自動變深、偏暗時變淺，始終看得清楚</value>
+  </data>
+  <data name="Settings.MediaCard.AdvancedAppearance" xml:space="preserve">
+    <value>外觀細節</value>
+  </data>
+  <data name="Settings.MediaCard.AdvancedAppearance.Description" xml:space="preserve">
+    <value>透明、主色與桌布對比相關設定</value>
+  </data>
+  <data name="Settings.MediaCard.LyricsDetails" xml:space="preserve">
+    <value>歌詞細節</value>
+  </data>
+  <data name="Settings.MediaCard.LyricsDetails.Description" xml:space="preserve">
+    <value>羅馬拼音、空白行與進度條的顯示方式</value>
+  </data>
+  <data name="Settings.MediaCard.FontDetails" xml:space="preserve">
+    <value>字型細節</value>
+  </data>
+  <data name="Settings.MediaCard.FontDetails.Description" xml:space="preserve">
+    <value>為中、日、英文分別挑選字型</value>
+  </data>
 </root>

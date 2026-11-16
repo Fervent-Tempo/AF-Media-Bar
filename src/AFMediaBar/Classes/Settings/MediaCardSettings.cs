@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace AFMediaBar.Classes.Settings;
 
 /// <summary>桌面媒体卡片的显示设置；不参与任务栏栏位的布局计算。</summary>
@@ -24,10 +26,28 @@ public sealed record MediaCardSettings
     /// <summary>英文、数字与拉丁文字使用的字体族名；空表示跟随系统。</summary>
     public string EnglishFontFamily { get; init; } = string.Empty;
 
-    /// <summary>是否始终置顶；关闭后会被其它窗口覆盖。</summary>
+    /// <summary>是否始终置顶；持久化字段，与 FixedToDesktop 共同派生 PinMode。</summary>
     public bool Topmost { get; init; } = true;
 
-    /// <summary>卡片配色：深色、浅色或从封面取主色作为强调色。</summary>
+    /// <summary>固定到桌面：卡片沉到桌面层、不可拖动；持久化字段，与 Topmost 共同派生 PinMode。</summary>
+    public bool FixedToDesktop { get; init; }
+
+    /// <summary>置顶方式：不置顶 / 置于顶端 / 固定到桌面。由两个持久化 bool 派生，不单独落盘。</summary>
+    [JsonIgnore]
+    public MediaCardPinMode PinMode => FixedToDesktop
+        ? MediaCardPinMode.FixedToDesktop
+        : Topmost ? MediaCardPinMode.Topmost : MediaCardPinMode.Normal;
+
+    /// <summary>透明配色下让鼠标点击穿透卡片，直接操作下面的窗口；仅配色为纯透明时有意义。</summary>
+    public bool TransparentClickThrough { get; init; }
+
+    /// <summary>主色始终取封面：无论配色方案如何，强调色都用封面主色；背景与文字配色不变。</summary>
+    public bool AccentFromCover { get; init; }
+
+    /// <summary>透明配色下按壁纸亮度自动反色：壁纸偏亮时文字转深色，偏暗时转回浅色。</summary>
+    public bool InvertOnLightWallpaper { get; init; }
+
+    /// <summary>卡片配色：深色、浅色或从封面取主色。</summary>
     public MediaCardColorTheme ColorTheme { get; init; } = MediaCardColorTheme.Dark;
 
     /// <summary>是否显示罗马音；关闭后只显示译文（若有）。罗马音文本仍走主程序同一套歌词处理。</summary>
@@ -70,6 +90,14 @@ public sealed record MediaCardSettings
     public bool ShowNetwork { get; init; } = true;
 
     public static MediaCardSettings Default { get; } = new();
+
+    /// <summary>把「置顶方式」写回两个持久化开关，保证固定与置顶始终互斥。</summary>
+    public MediaCardSettings WithPinMode(MediaCardPinMode mode) => mode switch
+    {
+        MediaCardPinMode.Topmost => this with { Topmost = true, FixedToDesktop = false },
+        MediaCardPinMode.FixedToDesktop => this with { Topmost = false, FixedToDesktop = true },
+        _ => this with { Topmost = false, FixedToDesktop = false }
+    };
 
     public MediaCardSettings Normalize() => this with
     {

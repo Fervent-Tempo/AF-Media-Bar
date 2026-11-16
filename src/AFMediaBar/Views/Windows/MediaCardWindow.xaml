@@ -109,7 +109,8 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="96" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="82" />
+                    <!-- 网速形如「↑ 100.5 KiB/s」比其它指标长，按主程序 MetricPresenter 的 104px 预留，避免尾部被裁。 -->
+                    <ColumnDefinition Width="104" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="96" />
@@ -255,7 +256,12 @@
                             <Button x:Name="PinButton" Style="{StaticResource KeyButton}"
                                     Click="PinButton_OnClick" ToolTip="置顶">
                                 <ui:SymbolIcon x:Name="PinIcon" Symbol="Pin24" FontSize="14"
-                                               Foreground="{DynamicResource CardChipForeground}" />
+                                               RenderTransformOrigin="0.5,0.5"
+                                               Foreground="{DynamicResource CardChipForeground}">
+                                    <ui:SymbolIcon.RenderTransform>
+                                        <RotateTransform x:Name="PinRotation" Angle="0" />
+                                    </ui:SymbolIcon.RenderTransform>
+                                </ui:SymbolIcon>
                             </Button>
                             <Button x:Name="ThemeButton" Style="{StaticResource KeyButton}"
                                     Margin="6,0,0,0" Click="ThemeButton_OnClick" ToolTip="切换配色">

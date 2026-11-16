@@ -3934,19 +3934,40 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
     <value>Enable media card</value>
   </data>
   <data name="Settings.MediaCard.Enabled.Description" xml:space="preserve">
-    <value>Hidden immediately when turned off; turn it back on here to restore</value>
+    <value>Turn it off to hide the card; switch it back on any time</value>
   </data>
-  <data name="Settings.MediaCard.Topmost" xml:space="preserve">
+  <data name="Settings.MediaCard.PinMode" xml:space="preserve">
+    <value>Layer behaviour</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode.Description" xml:space="preserve">
+    <value>Choose whether the card stays on top, sits normally, or is pinned to the desktop; the pin on the card does the same</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode.Normal" xml:space="preserve">
+    <value>Normal</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode.Topmost" xml:space="preserve">
     <value>Always on top</value>
   </data>
-  <data name="Settings.MediaCard.Topmost.Description" xml:space="preserve">
-    <value>Can be covered by other windows when turned off</value>
+  <data name="Settings.MediaCard.PinMode.FixedToDesktop" xml:space="preserve">
+    <value>Fix to desktop</value>
+  </data>
+  <data name="Settings.MediaCard.TransparentClickThrough" xml:space="preserve">
+    <value>Click through when transparent</value>
+  </data>
+  <data name="Settings.MediaCard.TransparentClickThrough.Description" xml:space="preserve">
+    <value>With the transparent colour, clicking empty parts of the card reaches the desktop below; artwork, lyrics and buttons still respond</value>
+  </data>
+  <data name="Settings.MediaCard.AccentFromCover" xml:space="preserve">
+    <value>Accent colour from artwork</value>
+  </data>
+  <data name="Settings.MediaCard.AccentFromCover.Description" xml:space="preserve">
+    <value>The card's colours follow the artwork, whichever colour scheme you pick</value>
   </data>
   <data name="Settings.MediaCard.ColorTheme" xml:space="preserve">
     <value>Card colour</value>
   </data>
   <data name="Settings.MediaCard.ColorTheme.Description" xml:space="preserve">
-    <value>Dark, light, or colours taken from the artwork</value>
+    <value>Dark, light, transparent, or colours taken from the artwork</value>
   </data>
   <data name="Settings.MediaCard.ColorTheme.Dark" xml:space="preserve">
     <value>Dark</value>
@@ -3994,7 +4015,7 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
     <value>Spectrum parameters</value>
   </data>
   <data name="Settings.MediaCard.SpectrumMode.Description" xml:space="preserve">
-    <value>Use the taskbar's spectrum settings, or adjust the card separately</value>
+    <value>Choose to follow the main program's parameters, or customise them</value>
   </data>
   <data name="Settings.MediaCard.SpectrumMode.FollowMain" xml:space="preserve">
     <value>Follow the main bar</value>
@@ -4027,7 +4048,7 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
     <value>Only show the media card</value>
   </data>
   <data name="Settings.MediaCard.OnlyCard.Description" xml:space="preserve">
-    <value>Hide the taskbar media bar to save resources. It comes back when you close the card.</value>
+    <value>Hides the taskbar media bar to save resources; it comes back on its own when you close the card</value>
   </data>
   <data name="Settings.MediaCard.Fonts" xml:space="preserve">
     <value>Card fonts</value>
@@ -4039,19 +4060,19 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
     <value>Chinese font</value>
   </data>
   <data name="Settings.MediaCard.FontChinese.Description" xml:space="preserve">
-    <value>Chinese lyrics and track names</value>
+    <value>Chinese lyrics and song titles on the card</value>
   </data>
   <data name="Settings.MediaCard.FontJapanese" xml:space="preserve">
     <value>Japanese font</value>
   </data>
   <data name="Settings.MediaCard.FontJapanese.Description" xml:space="preserve">
-    <value>Japanese lyrics, including kanji</value>
+    <value>Japanese lyrics, including the kanji</value>
   </data>
   <data name="Settings.MediaCard.FontEnglish" xml:space="preserve">
     <value>Latin font</value>
   </data>
   <data name="Settings.MediaCard.FontEnglish.Description" xml:space="preserve">
-    <value>English, numbers and romanization</value>
+    <value>English text, numbers and romanisation</value>
   </data>
   <data name="Settings.MediaCard.Font.FollowSystem" xml:space="preserve">
     <value>Follow system font</value>
@@ -4069,7 +4090,7 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
     <value>Lyrics source</value>
   </data>
   <data name="Settings.MediaCard.LyricsSource.Description" xml:space="preserve">
-    <value>The card uses the app's lyric settings, including local lyric files, which take priority when found.</value>
+    <value>The card uses the main lyrics settings; local lyric files are shown first when available</value>
   </data>
   <data name="Settings.MediaCard.OpenLyrics" xml:space="preserve">
     <value>Open lyric settings</value>
@@ -4078,7 +4099,7 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
     <value>Show track info on empty lines</value>
   </data>
   <data name="Settings.MediaCard.TrackInfoOnEmptyLines.Description" xml:space="preserve">
-    <value>Fill the empty lines with the song title and artist when there is no romanization or translation. Turn this off to keep them blank; instrumental tracks then show the title on the lyric line only.</value>
+    <value>Fills the empty lines with the song title and artist when there is no romanisation or translation; turn it off to leave them blank</value>
   </data>
   <data name="Common.PlaybackQueue" xml:space="preserve"><value>Playback queue</value></data>
   <data name="DisplayModes.Rest.Component.Queue" xml:space="preserve"><value>Playback queue</value></data>
@@ -4122,4 +4143,31 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
   <data name="Panel.Shuffle.Unavailable" xml:space="preserve"><value>Shuffle unavailable</value></data>
   <data name="Panel.Shuffle.Connecting" xml:space="preserve"><value>Connecting to Nons…</value></data>
   <data name="Panel.Shuffle.Pending" xml:space="preserve"><value>Shuffle state not confirmed; refreshing…</value></data>
+  <data name="Settings.MediaCard.ColorTheme.Transparent" xml:space="preserve">
+    <value>Transparent</value>
+  </data>
+  <data name="Settings.MediaCard.InvertOnLightWallpaper" xml:space="preserve">
+    <value>Auto-invert on light wallpaper</value>
+  </data>
+  <data name="Settings.MediaCard.InvertOnLightWallpaper.Description" xml:space="preserve">
+    <value>With the transparent colour, text turns dark on a bright wallpaper and light on a dark one, so it stays readable</value>
+  </data>
+  <data name="Settings.MediaCard.AdvancedAppearance" xml:space="preserve">
+    <value>Fine-tune appearance</value>
+  </data>
+  <data name="Settings.MediaCard.AdvancedAppearance.Description" xml:space="preserve">
+    <value>Transparency, accent colour and wallpaper contrast</value>
+  </data>
+  <data name="Settings.MediaCard.LyricsDetails" xml:space="preserve">
+    <value>Lyrics details</value>
+  </data>
+  <data name="Settings.MediaCard.LyricsDetails.Description" xml:space="preserve">
+    <value>Romanisation, blank lines and the progress bar</value>
+  </data>
+  <data name="Settings.MediaCard.FontDetails" xml:space="preserve">
+    <value>Font details</value>
+  </data>
+  <data name="Settings.MediaCard.FontDetails.Description" xml:space="preserve">
+    <value>Pick a separate font for Chinese, Japanese and English</value>
+  </data>
 </root>

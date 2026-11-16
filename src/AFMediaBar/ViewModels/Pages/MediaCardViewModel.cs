@@ -124,16 +124,38 @@ public sealed class MediaCardViewModel : ObservableObject, IDisposable
         set => Update(Current with { OnlyCard = value });
     }
 
-    public bool Topmost
+    /// <summary>置顶方式：不置顶 / 置于顶端 / 固定到桌面，写入两个互斥的持久化开关。</summary>
+    public MediaCardPinMode PinMode
     {
-        get => Current.Topmost;
-        set => Update(Current with { Topmost = value });
+        get => Current.PinMode;
+        set => Update(Current.WithPinMode(value));
     }
 
     public MediaCardColorTheme ColorTheme
     {
         get => Current.ColorTheme;
         set => Update(Current with { ColorTheme = value });
+    }
+
+    /// <summary>透明配色下让鼠标穿透卡片，直接操作下方窗口；仅纯透明配色时生效。</summary>
+    public bool TransparentClickThrough
+    {
+        get => Current.TransparentClickThrough;
+        set => Update(Current with { TransparentClickThrough = value });
+    }
+
+    /// <summary>主色始终取封面：无论配色方案如何，强调色都用封面主色。</summary>
+    public bool AccentFromCover
+    {
+        get => Current.AccentFromCover;
+        set => Update(Current with { AccentFromCover = value });
+    }
+
+    /// <summary>透明配色下按壁纸亮度自动反色，保证浅色壁纸上文字仍清楚。</summary>
+    public bool InvertOnLightWallpaper
+    {
+        get => Current.InvertOnLightWallpaper;
+        set => Update(Current with { InvertOnLightWallpaper = value });
     }
 
     public bool ShowRomanization

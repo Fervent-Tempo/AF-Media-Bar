@@ -4,12 +4,14 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using AFMediaBar.Classes.Interop;
 using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Lyrics;
@@ -45,6 +47,10 @@ public partial class MediaCardWindow : Window
     private const string CardKanaRanges = "3040-30FF, 31F0-31FF, FF61-FF9F";
     private const string CardAllCharacters = InstalledFontCatalog.AllCharacters;
 
+    // 透明配色的背板（穿透开关关闭时）：alpha=1 肉眼不可见，但 WPF 命中测试仍认为它可点，
+    // 空白区照常能拖动/呼出右键；开启穿透才改用 alpha=0，让空白区落到下层窗口。
+    private static readonly Color TransparentHitTestBackground = Color.FromArgb(0x01, 0x00, 0x00, 0x00);
+
     // 深色主题调色板（默认）。
     private static readonly Color DarkBackground = Color.FromArgb(0xE6, 0x14, 0x14, 0x18);
     private static readonly Color DarkBorder = Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF);
@@ -74,6 +80,17 @@ public partial class MediaCardWindow : Window
     private static readonly Color LightProgressTrack = Color.FromArgb(0x26, 0x00, 0x00, 0x00);
     private static readonly Color LightArtFrame = Color.FromArgb(0x14, 0x00, 0x00, 0x00);
     private static readonly Color LightChipForeground = Color.FromArgb(0x99, 0x00, 0x00, 0x00);
+
+    // 反色到深色字时专供的加重色：透明卡片贴在浅色壁纸上，普通浅色主题的淡字会发灰看不清，
+    // 这里把次要文字、图标与进度轨道的 alpha 提上来，保证在任意浅色背景上都够清楚。
+    private static readonly Color InvertedTextSecondary = Color.FromArgb(0xD9, 0x1A, 0x1A, 0x1A);
+    private static readonly Color InvertedTextDim = Color.FromArgb(0x99, 0x28, 0x28, 0x28);
+    private static readonly Color InvertedTextRomanization = Color.FromArgb(0xB8, 0x1C, 0x1C, 0x1C);
+    private static readonly Color InvertedTextTranslation = Color.FromArgb(0xA6, 0x22, 0x22, 0x22);
+    private static readonly Color InvertedChromeBorder = Color.FromArgb(0x59, 0x00, 0x00, 0x00);
+    private static readonly Color InvertedProgressTrack = Color.FromArgb(0x4D, 0x00, 0x00, 0x00);
+    private static readonly Color InvertedArtFrame = Color.FromArgb(0x40, 0x00, 0x00, 0x00);
+    private static readonly Color InvertedChipForeground = Color.FromArgb(0xE6, 0x00, 0x00, 0x00);
 
     // 两种主题共用的蓝色强调色；封面取色主题从封面主色派生。
     private static readonly Color DarkAccent = Color.FromRgb(0x37, 0x8A, 0xDD);
@@ -141,15 +158,31 @@ public partial class MediaCardWindow : Window
     {
         Interval = TimeSpan.FromMilliseconds(600)
     };
+    // 壁纸会变化，反色需要周期性重新采样；与主程序前景采样同频（2 秒）。
+    private readonly DispatcherTimer _wallpaperTimer = new(DispatcherPriority.Background)
+    {
+        Interval = TimeSpan.FromSeconds(2)
+    };
+    // 固定到桌面时由共享层级服务接管 Z 序；斜图钉旋转成横置表示已锁定。
+    private readonly DesktopWidgetZOrderService _zOrder;
+    private IDisposable? _zOrderRegistration;
+    // 透明配色下按壁纸亮度自动反色：复用主程序的后台采样与滞回判定，不另开采集通道。
+    private readonly AdaptiveForegroundSamplingSession? _wallpaperSampling;
+    private PlayerForegroundDecision? _wallpaperForeground;
 
     public MediaCardWindow(
         MediaSessionService media,
         AudioMonitorService audio,
-        SystemMetricsMonitorService metrics)
+        SystemMetricsMonitorService metrics,
+        DesktopWidgetZOrderService zOrder,
+        ScreenBackgroundSampler sampler)
     {
         _media = media;
         _audio = audio;
         _metrics = metrics;
+        _zOrder = zOrder;
+        _wallpaperSampling = new AdaptiveForegroundSamplingSession(sampler, Dispatcher,
+            GetWallpaperSampleBounds, ApplyWallpaperForeground);
 
         InitializeComponent();
         _highlightMask.GradientStops.Add(new GradientStop(Colors.White, 0));
@@ -187,6 +220,11 @@ public partial class MediaCardWindow : Window
         };
         _spectrumTimer.Tick += (_, _) => AdvanceFrame();
         _progressTimer.Tick += (_, _) => AdvanceProgress();
+        _wallpaperTimer.Tick += (_, _) =>
+        {
+            if (IsWallpaperInvertActive)
+                _wallpaperSampling?.RequestRefresh();
+        };
 
         _media.SnapshotChanged += OnSnapshotChanged;
         _snapshot = _media.CurrentSnapshot ?? MediaSnapshot.Disconnected;
@@ -201,6 +239,9 @@ public partial class MediaCardWindow : Window
                 return;
             _positionSaveTimer.Stop();
             _positionSaveTimer.Start();
+            // 卡片移动后下面的壁纸变了，重新判断是否需要反色。
+            if (IsWallpaperInvertActive)
+                _wallpaperSampling?.RequestRefresh();
         };
         _positionSaveTimer.Tick += (_, _) =>
         {
@@ -362,6 +403,10 @@ public partial class MediaCardWindow : Window
     {
         RestorePosition();
         _positionReady = true;
+        ApplyDesktopLayer();
+        RefreshWallpaperSampling();
+        if (IsWallpaperInvertActive)
+            _wallpaperTimer.Start();
 
         // 定位后统一落回静息态；指针真的进入时再由 MouseEnter 点亮。
         _isLit = true;
@@ -381,9 +426,13 @@ public partial class MediaCardWindow : Window
         _idleTimer.Stop();
         _spectrumTimer.Stop();
         _progressTimer.Stop();
+        _wallpaperTimer.Stop();
         _media.SnapshotChanged -= OnSnapshotChanged;
         _metricsSubscription?.Dispose();
         _metricsSubscription = null;
+        _zOrderRegistration?.Dispose();
+        _zOrderRegistration = null;
+        _wallpaperSampling?.Dispose();
     }
 
     private void OnSnapshotChanged(object? sender, MediaSnapshot snapshot)
@@ -417,8 +466,8 @@ public partial class MediaCardWindow : Window
                 ? (Brush)Resources["CardArtFrame"]
                 : new ImageBrush(snapshot.Artwork) { Stretch = Stretch.UniformToFill };
 
-            // 封面变化时，封面取色主题需要重新提取强调色。
-            if (_settings.ColorTheme == MediaCardColorTheme.FromCover)
+            // 封面变化时，封面取色主题或「主色取封面」开关都要重新提取强调色。
+            if (_settings.ColorTheme == MediaCardColorTheme.FromCover || _settings.AccentFromCover)
                 ApplyColorTheme();
         }
 
@@ -1110,7 +1159,8 @@ public partial class MediaCardWindow : Window
 
     private void Card_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (FindButton(e.OriginalSource as DependencyObject) is not null)
+        // 固定到桌面后位置锁定，连同按钮区一起不再响应拖动。
+        if (_settings.FixedToDesktop || FindButton(e.OriginalSource as DependencyObject) is not null)
             return;
 
         try
@@ -1143,14 +1193,19 @@ public partial class MediaCardWindow : Window
     /// <summary>应用设置页里的显示选项；应用层在窗口可见期间也会调用。</summary>
     public void ApplySettings(MediaCardSettings settings)
     {
-        var themeChanged = settings.ColorTheme != _settings.ColorTheme;
+        var themeChanged = settings.ColorTheme != _settings.ColorTheme
+            || settings.TransparentClickThrough != _settings.TransparentClickThrough
+            || settings.AccentFromCover != _settings.AccentFromCover
+            || settings.InvertOnLightWallpaper != _settings.InvertOnLightWallpaper;
         var romanizationChanged = settings.ShowRomanization != _showRomanization;
         var trackInfoChanged = settings.ShowTrackInfoOnEmptyLines != _settings.ShowTrackInfoOnEmptyLines;
         var immersiveChanged = settings.ImmersiveSpectrum != _settings.ImmersiveSpectrum;
         var wavyChanged = settings.WavyProgressBar != _settings.WavyProgressBar;
+        var fixedChanged = settings.FixedToDesktop != _settings.FixedToDesktop;
         _settings = settings;
         _showRomanization = settings.ShowRomanization;
-        Topmost = settings.Topmost;
+        // 固定到桌面与置顶互斥：固定时下沉到桌面层，置顶设置暂不生效。
+        Topmost = settings.Topmost && !settings.FixedToDesktop;
 
         var fontSignature = string.Join('\u001F', settings.ChineseFontFamily, settings.JapaneseFontFamily, settings.EnglishFontFamily);
         if (fontSignature != _cardFontSignature)
@@ -1172,6 +1227,113 @@ public partial class MediaCardWindow : Window
             RefreshSecondary();
         if (immersiveChanged || wavyChanged)
             ApplyRestingPlacement(_isLit, TimeSpan.Zero);
+        if (fixedChanged)
+            ApplyDesktopLayer();
+        if (themeChanged)
+            RefreshWallpaperSampling();
+    }
+
+    /// <summary>
+    /// 采样卡片外侧紧邻的壁纸窄带，而不是卡片自身——卡片里是封面和文字，采进去会把亮度判反。
+    /// 用主程序同一套亮度判定决定文字要不要反色；卡片贴屏幕边时只取还留在屏内的那一侧。
+    /// </summary>
+    private IReadOnlyList<Int32Rect> GetWallpaperSampleBounds()
+    {
+        if (_disposed || !IsLoaded || !IsVisible || !IsWallpaperInvertActive)
+            return [];
+        try
+        {
+            if (!TryGetPhysicalBounds(Card, out var card))
+                return [];
+            var dpi = VisualTreeHelper.GetDpi(Card);
+            var thickness = Math.Max(1, (int)Math.Ceiling(2 * dpi.DpiScaleY));
+            var gap = Math.Max(1, (int)Math.Ceiling(2 * dpi.DpiScaleY));
+
+            var virtualLeft = NativeMethods.GetSystemMetrics(NativeMethods.SM_XVIRTUALSCREEN);
+            var virtualTop = NativeMethods.GetSystemMetrics(NativeMethods.SM_YVIRTUALSCREEN);
+            var virtualWidth = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXVIRTUALSCREEN);
+            var virtualHeight = NativeMethods.GetSystemMetrics(NativeMethods.SM_CYVIRTUALSCREEN);
+            var virtualRight = (long)virtualLeft + virtualWidth;
+            var virtualBottom = (long)virtualTop + virtualHeight;
+
+            var regions = new List<Int32Rect>(2);
+            // 上方留白带：在卡片上边缘之外 gap 处，宽度与卡片一致。
+            var aboveY = card.Y - gap - thickness;
+            if (aboveY >= virtualTop && card.X >= virtualLeft && card.X + card.Width <= virtualRight)
+                regions.Add(new Int32Rect(card.X, aboveY, card.Width, thickness));
+            // 下方留白带：在卡片下边缘之外 gap 处。
+            var belowY = (long)card.Y + card.Height + gap;
+            if (belowY + thickness <= virtualBottom && card.X >= virtualLeft && card.X + card.Width <= virtualRight)
+                regions.Add(new Int32Rect(card.X, (int)belowY, card.Width, thickness));
+            return regions;
+        }
+        catch (InvalidOperationException)
+        {
+            return [];
+        }
+    }
+
+    private static bool TryGetPhysicalBounds(FrameworkElement element, out Int32Rect bounds)
+    {
+        bounds = Int32Rect.Empty;
+        if (!element.IsVisible || element.ActualWidth <= 1 || element.ActualHeight <= 1 || PresentationSource.FromVisual(element) is null)
+            return false;
+        var origin = element.PointToScreen(new Point(0, 0));
+        var dpi = VisualTreeHelper.GetDpi(element);
+        if (!double.IsFinite(origin.X) || !double.IsFinite(origin.Y))
+            return false;
+        bounds = new Int32Rect((int)Math.Round(origin.X), (int)Math.Round(origin.Y),
+            (int)Math.Round(element.ActualWidth * dpi.DpiScaleX),
+            (int)Math.Round(element.ActualHeight * dpi.DpiScaleY));
+        return bounds.Width > 1 && bounds.Height > 1;
+    }
+
+    private bool IsWallpaperInvertActive =>
+        _settings.ColorTheme == MediaCardColorTheme.Transparent && _settings.InvertOnLightWallpaper;
+
+    private void ApplyWallpaperForeground(PlayerForegroundDecision? decision)
+    {
+        if (_wallpaperForeground == decision)
+            return;
+        _wallpaperForeground = decision;
+        ApplyColorTheme();
+    }
+
+    /// <summary>开关或配色变化时请求重采样；不再生效时清掉上次决策，回到主题色。</summary>
+    private void RefreshWallpaperSampling()
+    {
+        if (!IsWallpaperInvertActive)
+        {
+            _wallpaperTimer.Stop();
+            if (_wallpaperForeground is not null)
+            {
+                _wallpaperForeground = null;
+                ApplyColorTheme();
+            }
+            _wallpaperSampling?.Invalidate(clearDecision: true);
+            return;
+        }
+        _wallpaperSampling?.RequestRefresh();
+        if (IsLoaded)
+            _wallpaperTimer.Start();
+    }
+
+    /// <summary>
+    /// 固定到桌面时把窗口交给共享层级服务下沉到桌面层；解除时交还，由 Topmost 决定层级。
+    /// 复用悬浮条的同一套 z-order 服务，避免第二套沉底逻辑把卡片沉到桌面图标之下。
+    /// </summary>
+    private void ApplyDesktopLayer()
+    {
+        _zOrderRegistration?.Dispose();
+        _zOrderRegistration = null;
+        if (_disposed || !_settings.FixedToDesktop || !IsLoaded)
+            return;
+
+        var handle = new WindowInteropHelper(this).Handle;
+        if (handle == nint.Zero)
+            return;
+        _zOrderRegistration = _zOrder.Attach(handle, FloatingBarLayer.Desktop,
+            () => !_disposed && IsLoaded, overlayTaskbar: false);
     }
 
     /// <summary>
@@ -1292,24 +1454,40 @@ public partial class MediaCardWindow : Window
     private void ApplyColorTheme()
     {
         var light = _settings.ColorTheme == MediaCardColorTheme.Light;
-        var accent = _settings.ColorTheme == MediaCardColorTheme.FromCover
-            ? ResolveCoverAccent()
-            : light ? LightAccent : DarkAccent;
+        var transparent = _settings.ColorTheme == MediaCardColorTheme.Transparent;
+        // 透明配色按壁纸亮度反色：决策说该用浅字就用深色方案的字，反之用浅色方案的字。
+        var usesLightText = IsWallpaperInvertActive && _wallpaperForeground is { } foreground
+            ? foreground.UsesLightText
+            : !light;
+        // 强调色来源与配色方案解耦：封面取色主题或「主色取封面」开关命中时，都用封面主色。
+        // 否则随最终字色走：深色字配深强调色，浅色字配亮强调色，透明壁纸上才都看得清。
+        var accentFromCover = _settings.ColorTheme == MediaCardColorTheme.FromCover || _settings.AccentFromCover;
+        var accent = accentFromCover ? ResolveCoverAccent() : usesLightText ? DarkAccent : LightAccent;
 
-        SetResource("CardBackground", light ? LightBackground : DarkBackground);
-        SetResource("CardBorder", light ? LightBorder : DarkBorder);
-        SetResource("CardTextPrimary", light ? LightTextPrimary : DarkTextPrimary);
-        SetResource("CardTextSecondary", light ? LightTextSecondary : DarkTextSecondary);
-        SetResource("CardTextDim", light ? LightTextDim : DarkTextDim);
-        SetResource("CardTextRomanization", light ? LightTextRomanization : DarkTextRomanization);
-        SetResource("CardTextTranslation", light ? LightTextTranslation : DarkTextTranslation);
+        // 透明配色：默认用 alpha=1 背板，空白区照常可拖动/右键；开启穿透开关后才用 alpha=0，
+        // 让空白区落到下层窗口，而封面、歌词、按钮等控件仍各自可命中（IsHitTestVisible 只在背板这层变化）。
+        var transparentBackdrop = transparent
+            ? (_settings.TransparentClickThrough ? Colors.Transparent : TransparentHitTestBackground)
+            : light ? LightBackground : DarkBackground;
+        var transparentBorder = transparent
+            ? (_settings.TransparentClickThrough ? Colors.Transparent : TransparentHitTestBackground)
+            : light ? LightBorder : DarkBorder;
+        // inverted：反色生效且切成深色字贴在浅色壁纸上，次要色改用加重版，避免发灰。
+        var inverted = IsWallpaperInvertActive && !usesLightText;
+        SetResource("CardBackground", transparentBackdrop);
+        SetResource("CardBorder", transparentBorder);
+        SetResource("CardTextPrimary", usesLightText ? DarkTextPrimary : LightTextPrimary);
+        SetResource("CardTextSecondary", inverted ? InvertedTextSecondary : usesLightText ? DarkTextSecondary : LightTextSecondary);
+        SetResource("CardTextDim", inverted ? InvertedTextDim : usesLightText ? DarkTextDim : LightTextDim);
+        SetResource("CardTextRomanization", inverted ? InvertedTextRomanization : usesLightText ? DarkTextRomanization : LightTextRomanization);
+        SetResource("CardTextTranslation", inverted ? InvertedTextTranslation : usesLightText ? DarkTextTranslation : LightTextTranslation);
         SetResource("CardAccent", accent);
-        SetResource("CardChromeBorder", light ? LightChromeBorder : DarkChromeBorder);
-        SetResource("CardChromeHover", light ? LightChromeHover : DarkChromeHover);
-        SetResource("CardChromePressed", light ? LightChromePressed : DarkChromePressed);
-        SetResource("CardProgressTrack", light ? LightProgressTrack : DarkProgressTrack);
-        SetResource("CardArtFrame", light ? LightArtFrame : DarkArtFrame);
-        SetResource("CardChipForeground", light ? LightChipForeground : DarkChipForeground);
+        SetResource("CardChromeBorder", inverted ? InvertedChromeBorder : usesLightText ? DarkChromeBorder : LightChromeBorder);
+        SetResource("CardChromeHover", usesLightText ? DarkChromeHover : LightChromeHover);
+        SetResource("CardChromePressed", usesLightText ? DarkChromePressed : LightChromePressed);
+        SetResource("CardProgressTrack", inverted ? InvertedProgressTrack : usesLightText ? DarkProgressTrack : LightProgressTrack);
+        SetResource("CardArtFrame", inverted ? InvertedArtFrame : usesLightText ? DarkArtFrame : LightArtFrame);
+        SetResource("CardChipForeground", inverted ? InvertedChipForeground : usesLightText ? DarkChipForeground : LightChipForeground);
 
         _accentBrush = Freeze(new SolidColorBrush(accent));
 
@@ -1332,8 +1510,11 @@ public partial class MediaCardWindow : Window
     private void UpdateCoverBackdrop()
     {
         var fromCover = _settings.ColorTheme == MediaCardColorTheme.FromCover;
+        var hasBackdrop = fromCover && _artwork is not null;
         CoverBackdrop.Source = fromCover ? _artwork : null;
-        CoverBackdropLayer.Opacity = fromCover && _artwork is not null ? 1 : 0;
+        CoverBackdropLayer.Opacity = hasBackdrop ? 1 : 0;
+        // 隐藏层的遮罩 Border 仍会参与命中；透明配色穿透时让它让开，不能挡住背板下方的点击。
+        CoverBackdropLayer.IsHitTestVisible = hasBackdrop;
     }
 
     private void SetResource(string key, Color color) => Resources[key] = Freeze(new SolidColorBrush(color));
@@ -1394,12 +1575,34 @@ public partial class MediaCardWindow : Window
         return transformed;
     }
 
-    private void RefreshPinVisual() =>
-        PinIcon.Foreground = Topmost ? _accentBrush : (Brush)Resources["CardChipForeground"];
+    /// <summary>
+    /// 图钉三态：斜亮=置于顶端、斜暗=不置顶、横暗=固定到桌面。
+    /// </summary>
+    private void RefreshPinVisual()
+    {
+        PinIcon.Foreground = _settings.PinMode == MediaCardPinMode.Topmost
+            ? _accentBrush
+            : (Brush)Resources["CardChipForeground"];
+        PinRotation.Angle = _settings.PinMode == MediaCardPinMode.FixedToDesktop ? 45 : 0;
+        PinButton.ToolTip = _settings.PinMode switch
+        {
+            MediaCardPinMode.Topmost => "置于顶端 · 点击切换为不置顶",
+            MediaCardPinMode.FixedToDesktop => "固定到桌面 · 点击切换为不置顶",
+            _ => "不置顶 · 点击切换为置于顶端"
+        };
+    }
 
-    private void PinButton_OnClick(object sender, RoutedEventArgs e) =>
-        SettingsManager.Current.MediaCard =
-            SettingsManager.Current.MediaCard with { Topmost = !Topmost };
+    private void PinButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        // 三态循环：不置顶 → 置于顶端 → 固定到桌面 → 不置顶。
+        var next = _settings.PinMode switch
+        {
+            MediaCardPinMode.Normal => MediaCardPinMode.Topmost,
+            MediaCardPinMode.Topmost => MediaCardPinMode.FixedToDesktop,
+            _ => MediaCardPinMode.Normal
+        };
+        SettingsManager.Current.MediaCard = SettingsManager.Current.MediaCard.WithPinMode(next);
+    }
 
     private void ThemeButton_OnClick(object sender, RoutedEventArgs e)
     {
@@ -1407,6 +1610,7 @@ public partial class MediaCardWindow : Window
         {
             MediaCardColorTheme.Dark => MediaCardColorTheme.Light,
             MediaCardColorTheme.Light => MediaCardColorTheme.FromCover,
+            MediaCardColorTheme.FromCover => MediaCardColorTheme.Transparent,
             _ => MediaCardColorTheme.Dark
         };
         SettingsManager.Current.MediaCard =
