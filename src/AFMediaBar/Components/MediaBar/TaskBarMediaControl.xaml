@@ -342,7 +342,7 @@
                     Width="36"
                     Height="32"
                     Margin="0"
-                    Padding="1,1,1,2.25"
+                    Padding="1,1,1,1.25"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
                     CornerRadius="5"

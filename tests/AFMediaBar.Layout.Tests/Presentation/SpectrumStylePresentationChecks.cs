@@ -91,6 +91,23 @@ public sealed class SpectrumStylePresentationChecks
                         }
                 }
 
+                control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal, 100, 100, 44);
+                control.ApplyPrimaryLength(600);
+                SettingsManager.Current.SpectrumComponent = SettingsManager.Current.SpectrumComponent with
+                {
+                    Style = SpectrumStyle.Bars,
+                    BandCount = 32,
+                    ContentHeightDip = 36,
+                    ShowPeakMarkers = true
+                };
+                control.ApplyTaskbarExperienceSettings();
+                control.ApplySpectrum(Enumerable.Repeat(.5f, 32).ToArray());
+                Layout(control, horizontal: true);
+                var maxSpectrum = (Canvas)control.FindName("TaskbarSpectrum");
+                Assert.AreEqual(127, maxSpectrum.Width, 0.01, "32 柱应使用 127 DIP 内容宽度。");
+                Assert.AreEqual(36, maxSpectrum.Height, 0.01, "36 DIP 内容高度应能放进常见 44 DIP 媒体栏。");
+                AssertStyle(maxSpectrum, SpectrumStyle.Bars, 32, maxSpectrum.Height);
+
                 // 动效开启时面积样式应留下计时器；重建/卸载/隐藏必须把它停掉。
                 SettingsManager.Current.SpectrumComponent = SettingsManager.Current.SpectrumComponent with
                 { Style = SpectrumStyle.Area, BandCount = 14, ContentHeightDip = 26 };

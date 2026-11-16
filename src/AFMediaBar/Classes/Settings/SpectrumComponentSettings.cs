@@ -113,8 +113,12 @@ public readonly record struct SpectrumComponentSettings(int BandCount, int Refre
     /// </summary>
     public const int MinimumBandCount = 9;
 
-    /// <summary>柱数上限；受默认 FFT 分辨率与任务栏可用长度限制。 / Upper bound, limited by FFT resolution and available taskbar length.</summary>
-    public const int MaximumBandCount = 24;
+    /// <summary>
+    /// 柱数上限；32 柱在 4 DIP 柱距下约占 127 DIP，仍能放进常见任务栏，同时比 24 柱多出一档高频细节。
+    /// Upper bound. At a 4 DIP pitch, 32 bars occupy about 127 DIP, still fitting common taskbars while adding one more
+    /// step of high-frequency detail over 24.
+    /// </summary>
+    public const int MaximumBandCount = 32;
 
     /// <summary>柱数默认值。 / Default bar count.</summary>
     public const int DefaultBandCount = 14;
@@ -153,8 +157,11 @@ public readonly record struct SpectrumComponentSettings(int BandCount, int Refre
     /// <summary>频谱内容区横轴尺寸的下限（DIP）；再矮就只剩几个像素方块，读不出高低。 / Lower bound of the spectrum's cross-axis size in DIP; anything shorter leaves a couple of pixel blocks with no readable level.</summary>
     public const double MinimumContentHeightDip = 14;
 
-    /// <summary>频谱内容区横轴尺寸的上限（DIP）；再高就会顶到悬停表面与媒体栏的内边界。 / Upper bound in DIP; anything taller would run into the hover surface and the bar's inner edge.</summary>
-    public const double MaximumContentHeightDip = 34;
+    /// <summary>
+    /// 频谱内容区横轴尺寸的上限（DIP）；36 是常见 44 DIP 媒体栏在调整悬停表面留白后仍能容纳的高度。
+    /// Upper bound in DIP; 36 is what a common 44 DIP media bar can still hold after trimming the hover surface's padding.
+    /// </summary>
+    public const double MaximumContentHeightDip = 36;
 
     /// <summary>频谱内容区横轴尺寸的滑杆步进（DIP）。 / Slider step of the spectrum's cross-axis size in DIP.</summary>
     public const double ContentHeightStepDip = 2;
