@@ -18,11 +18,18 @@ internal static partial class LyricsSearchQueryPolicy
     {
         var title = WithoutTranslation(request.Title);
         var artist = string.Join(" ", LyricsArtistPolicy.Split(request).Select(WithoutTranslation));
-        return new[] { $"{title} {artist}".Trim(), $"{request.Title} {request.Artist}".Trim() }
+        var queries = new[] { $"{title} {artist}".Trim(), $"{request.Title} {request.Artist}".Trim() }
             .Concat(string.IsNullOrWhiteSpace(request.ArtistSeparators) ? [] :
                 LyricsArtistPolicy.Split(request).Select(value => $"{title} {WithoutTranslation(value)}".Trim()))
             .Append(title)
-            .Where(query => query.Length > 0).Distinct(StringComparer.Ordinal).ToArray();
+            .Where(query => query.Length > 0)
+            .ToArray();
+
+        // 请求侧归一化：半角中点 ･/全角空格等写法差异折叠成在线曲库常用写法，
+        // 解决「ふ･れ･ん･ど･し･た･い」这类 SMTC 标题搜不到候选的问题。保留原写法兜底。
+        var normalized = queries.Select(LyricsMetadataNormalizer.Normalize)
+            .Where(query => query.Length > 0);
+        return queries.Concat(normalized).Distinct(StringComparer.Ordinal).ToArray();
     }
 
     internal static IReadOnlyList<string> BuildArtists(LyricsRequest request)
