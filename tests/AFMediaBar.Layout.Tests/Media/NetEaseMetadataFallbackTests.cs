@@ -97,6 +97,27 @@ public sealed class NetEaseMetadataFallbackTests
     }
 
     [TestMethod]
+    public void TimelineOnlySourceSnapshotTriggersFallbackEvaluation()
+    {
+        var timelineOnly = MediaSnapshot.Disconnected with
+        {
+            IsConnected = true,
+            IsPlaying = true,
+            Title = string.Empty,
+            SourceId = "cloudmusic",
+            Position = 42,
+            Duration = 200
+        };
+
+        Assert.IsTrue(MediaSessionService.ShouldRequestLyricsFallbackOnSourceSnapshot(null),
+            "空快照仍要评估兜底。");
+        Assert.IsTrue(MediaSessionService.ShouldRequestLyricsFallbackOnSourceSnapshot(timelineOnly),
+            "非空但没有曲名的时间轴快照也必须重新评估，否则后续切歌不会取词。");
+        Assert.IsFalse(MediaSessionService.ShouldRequestLyricsFallbackOnSourceSnapshot(SmtcSnapshot("标题", "歌手")),
+            "带曲名的快照不触发兜底评估。");
+    }
+
+    [TestMethod]
     public void TimelineOnlySnapshotKeepsPositionAndDuration()
     {
         StaTest.Run(dispatcher =>

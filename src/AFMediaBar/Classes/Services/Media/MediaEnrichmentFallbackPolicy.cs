@@ -1,6 +1,6 @@
-namespace AFMediaBar.Classes.Services;
-
 using AFMediaBar.Classes.Models;
+
+namespace AFMediaBar.Classes.Services;
 
 /// <summary>
 /// 判定"这次会话要不要走在线取词兜底"的纯策略。

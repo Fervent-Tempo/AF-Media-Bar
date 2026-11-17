@@ -412,21 +412,35 @@ public sealed class MediaSessionService : IDisposable, IMediaSourceCatalog
             RefreshSnapshot(_lastSessions);
 
         // 提供器会持续报告读取失败；快照构建器负责在途去重、失败冷却、暂停门控和次数限制。
-        if (snapshot is null)
+        // 专区漫游会持续发布“非空但没有曲名”的时间轴快照，不能只等 null 才评估兜底，否则后续切歌不会重新取词。
+        // The provider keeps reporting read failures; the snapshot builder owns in-flight dedupe, failure cooldown, pause gating,
+        // and attempt limits. Zone roaming keeps publishing a non-null timeline without a title, so the fallback cannot be
+        // evaluated only on null snapshots — later track switches would otherwise never request lyrics again.
+        if (ShouldRequestLyricsFallbackOnSourceSnapshot(snapshot))
         {
             TryRequestFallbackLyrics();
         }
-        else if (snapshot.IsConnected && provider.CanHandle(_sessionSnapshot.SourceId) &&
-                 !MediaEnrichmentFallbackPolicy.ProviderCannotProvideLyrics(snapshot) &&
+        else if (snapshot is { IsConnected: true } publishedSnapshot &&
+                 provider.CanHandle(_sessionSnapshot.SourceId) &&
+                 !MediaEnrichmentFallbackPolicy.ProviderCannotProvideLyrics(publishedSnapshot) &&
                  _fallbackLogKey?.StartsWith(_sessionSnapshot.SourceId + "\u001f", StringComparison.Ordinal) == true)
         {
             // 恢复日志只观察通道：只有带曲名的快照才算真的能供词，只发时间轴时仍处于在线兜底。
             // The recovery log only observes the channel: only a snapshot carrying a title can serve lyrics again; a bare timeline is
             // still the fallback state.
-            _log?.Info("Media", $"已恢复专用媒体通道: source={_sessionSnapshot.SourceId} title=\"{snapshot.Title}\"");
+            _log?.Info("Media", $"已恢复专用媒体通道: source={_sessionSnapshot.SourceId} title=\"{publishedSnapshot.Title}\"");
             _fallbackLogKey = null;
         }
     }
+
+    /// <summary>
+    /// 来源快照变化时是否值得重新评估在线取词兜底：提供器没有可读媒体，或只剩一条没有曲名的时间轴。
+    /// Whether a source-snapshot change should re-evaluate the online-lyrics fallback: no readable media, or a bare timeline
+    /// without a title.
+    /// </summary>
+    /// <param name="snapshot">提供器刚发布的快照。/ The snapshot the provider just published.</param>
+    internal static bool ShouldRequestLyricsFallbackOnSourceSnapshot(MediaSnapshot? snapshot) =>
+        snapshot is null || MediaEnrichmentFallbackPolicy.ProviderCannotProvideLyrics(snapshot);
 
     /// <summary>
     /// 在来源提供器读不出媒体时为当前 SMTC 会话发起一次在线取词兜底。
