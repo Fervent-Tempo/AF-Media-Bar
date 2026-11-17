@@ -46,19 +46,23 @@ public static class AccentColorPolicy
     ];
 
     /// <summary>
-    /// 解析本次要用的原始强调色：选"自定义"且文本可解析时用用户色，其余情况一律跟随系统。
-    /// 无法解析自选色时 MUST 回退系统色而不是让调色板变成空值——那会把每一个强调色画刷变成透明。
-    /// Resolves the raw accent for this pass: the user's colour when "custom" is selected and its text parses, the system accent
-    /// otherwise. An unparsable custom colour MUST fall back to the system one instead of feeding an empty value into the palette,
-    /// which would turn every accent brush transparent.
+    /// 解析本次要用的原始强调色：选"自定义"且文本可解析时用用户色，"从封面取色"且有封面主色时用封面色，其余情况一律跟随系统。
+    /// 无法解析自选色、或当前没有封面时 MUST 回退系统色而不是让调色板变成空值——那会把每一个强调色画刷变成透明。
+    /// Resolves the raw accent for this pass: the user's colour when "custom" is selected and its text parses, the cover colour when
+    /// "from artwork" is selected and one was extracted, the system accent otherwise. An unparsable custom colour, or a missing cover,
+    /// MUST fall back to the system one instead of feeding an empty value into the palette, which would turn every accent brush transparent.
     /// </summary>
     /// <param name="systemAccent">系统原始强调色。/ Raw system accent.</param>
     /// <param name="mode">设置里的强调色来源。/ Accent source from the settings.</param>
     /// <param name="customHex">设置里保存的自选色文本。/ Custom colour text stored in the settings.</param>
-    public static Color ResolveRequested(Color systemAccent, AccentColorMode mode, string? customHex)
+    /// <param name="coverAccent">当前封面提取出的强调色；没有封面时为 null。/ Accent extracted from the current artwork, null without one.</param>
+    public static Color ResolveRequested(Color systemAccent, AccentColorMode mode, string? customHex, Color? coverAccent = null)
     {
         if (mode == AccentColorMode.Custom && ColorHex.TryParse(customHex, out var custom))
             return custom;
+
+        if (mode == AccentColorMode.FromCover && coverAccent is { } fromCover)
+            return fromCover;
 
         return systemAccent;
     }

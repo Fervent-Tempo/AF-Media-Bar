@@ -97,6 +97,9 @@
                                     Content="{DynamicResource Loc.Appearance.Accent.FollowSystem}"
                                     Tag="{x:Static settings:AccentColorMode.System}" />
                                 <ComboBoxItem
+                                    Content="{DynamicResource Loc.Appearance.Accent.FromCover}"
+                                    Tag="{x:Static settings:AccentColorMode.FromCover}" />
+                                <ComboBoxItem
                                     Content="{DynamicResource Loc.Appearance.Accent.Custom}"
                                     Tag="{x:Static settings:AccentColorMode.Custom}" />
                             </ComboBox>

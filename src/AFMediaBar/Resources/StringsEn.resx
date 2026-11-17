@@ -238,6 +238,9 @@
   <data name="Appearance.Accent.Custom" xml:space="preserve">
     <value>Custom</value>
   </data>
+  <data name="Appearance.Accent.FromCover" xml:space="preserve">
+    <value>From the album artwork</value>
+  </data>
   <data name="Appearance.Accent.FollowSystem" xml:space="preserve">
     <value>Follow the system</value>
   </data>
