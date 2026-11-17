@@ -417,9 +417,12 @@ public sealed class MediaSessionService : IDisposable, IMediaSourceCatalog
             TryRequestFallbackLyrics();
         }
         else if (snapshot.IsConnected && provider.CanHandle(_sessionSnapshot.SourceId) &&
+                 !MediaEnrichmentFallbackPolicy.ProviderCannotProvideLyrics(snapshot) &&
                  _fallbackLogKey?.StartsWith(_sessionSnapshot.SourceId + "\u001f", StringComparison.Ordinal) == true)
         {
-            // 恢复日志只观察通道，不借由诊断再次触发取词调度。
+            // 恢复日志只观察通道：只有带曲名的快照才算真的能供词，只发时间轴时仍处于在线兜底。
+            // The recovery log only observes the channel: only a snapshot carrying a title can serve lyrics again; a bare timeline is
+            // still the fallback state.
             _log?.Info("Media", $"已恢复专用媒体通道: source={_sessionSnapshot.SourceId} title=\"{snapshot.Title}\"");
             _fallbackLogKey = null;
         }
@@ -443,18 +446,22 @@ public sealed class MediaSessionService : IDisposable, IMediaSourceCatalog
         var provider = baseline.IsConnected
             ? _sourceProviders.FirstOrDefault(candidate => candidate.CanHandle(baseline.SourceId))
             : null;
-        var providerPublishedNothing = provider is not null &&
-                                       _sourceSnapshots.TryGetValue(provider, out var published) &&
-                                       published is null;
+        // 提供器发布非空快照但缺曲名时同样取不到词：专区漫游不写元数据文件，它只剩一条时间轴。
+        // A non-null snapshot without a title cannot serve lyrics either: the zone-roaming mode writes no metadata files, leaving the
+        // provider with a bare timeline.
+        var providerCannotProvideLyrics = provider is not null &&
+                                          _sourceSnapshots.TryGetValue(provider, out var published) &&
+                                          MediaEnrichmentFallbackPolicy.ProviderCannotProvideLyrics(published);
         var fallbackKey = $"{baseline.SourceId}\u001f{baseline.Title}\u001f{baseline.Artist}";
         if (!MediaEnrichmentFallbackPolicy.ShouldRequestOnlineLyrics(
                 baseline.IsConnected,
                 provider is not null,
-                providerPublishedNothing,
+                providerCannotProvideLyrics,
                 baseline.Title))
         {
             if (_fallbackLogKey?.StartsWith(baseline.SourceId + "\u001f", StringComparison.Ordinal) == true && provider is not null &&
-                _sourceSnapshots.GetValueOrDefault(provider) is { IsConnected: true })
+                _sourceSnapshots.GetValueOrDefault(provider) is { IsConnected: true } publishedSnapshot &&
+                !string.IsNullOrWhiteSpace(publishedSnapshot.Title))
                 _log?.Info("Media", $"已恢复专用媒体通道: source={baseline.SourceId} title=\"{baseline.Title}\"");
             _fallbackLogKey = null;
             return;

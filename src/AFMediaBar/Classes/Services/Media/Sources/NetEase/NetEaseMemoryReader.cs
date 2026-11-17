@@ -40,7 +40,7 @@ internal sealed class NetEaseMemoryReader : INetEaseMemoryReader
         }
 
         var candidates = ProcessIdentity.Find("cloudmusic.exe", MaximumCandidates);
-        var valid = new List<(NetEase Reader, PlayerInfo Info, int ProcessId)>();
+        var collected = new List<(NetEase Reader, PlayerInfo Info, int ProcessId)>();
         foreach (var candidate in candidates)
         {
             NetEase? reader = null;
@@ -55,8 +55,9 @@ internal sealed class NetEaseMemoryReader : INetEaseMemoryReader
                     continue;
                 }
 
-                valid.Add((reader, info, candidate.ProcessId));
-                if (valid.Count > 1)
+                collected.Add((reader, info, candidate.ProcessId));
+                // 两个候选都能给出曲目身份才算歧义；只有时间轴的候选不构成"另一个播放器"。
+                if (collected.Count > 1 && SelectCandidate(collected.Select(item => item.Info.Title).ToList()) < 0)
                     break;
             }
             catch (Exception exception)
@@ -67,18 +68,49 @@ internal sealed class NetEaseMemoryReader : INetEaseMemoryReader
             }
         }
 
-        if (valid.Count != 1)
+        var chosen = SelectCandidate(collected.Select(item => item.Info.Title).ToList());
+        if (chosen < 0)
         {
-            foreach (var item in valid)
+            foreach (var item in collected)
                 item.Reader.Dispose();
-            MediaReadDiagnostics.Report("netease", "attach", $"有效候选数={valid.Count}", 0, "cloudmusic.exe");
+            MediaReadDiagnostics.Report("netease", "attach",
+                $"有效候选数={collected.Count} 带元数据={collected.Count(item => !string.IsNullOrWhiteSpace(item.Info.Title))}",
+                0, "cloudmusic.exe");
             return (null, 0);
         }
 
-        _reader = valid[0].Reader;
-        _processId = valid[0].ProcessId;
-        MediaReadDiagnostics.Info("netease", $"已附加 pid={_processId} title=\"{valid[0].Info.Title}\"");
-        return (valid[0].Info, _processId);
+        foreach (var (item, index) in collected.Select((item, index) => (item, index)))
+        {
+            if (index != chosen)
+                item.Reader.Dispose();
+        }
+
+        _reader = collected[chosen].Reader;
+        _processId = collected[chosen].ProcessId;
+        MediaReadDiagnostics.Info("netease", $"已附加 pid={_processId} title=\"{collected[chosen].Info.Title}\"");
+        return (collected[chosen].Info, _processId);
+    }
+
+    /// <summary>
+    /// 从候选中选出唯一的播放器：优先带元数据的候选（它更能证明这是正在播放的客户端），
+    /// 都只有时间轴时必须恰好一个，其余情况一律判为歧义而不发布。
+    /// Picks the single player out of the candidates: a candidate carrying metadata wins because only it proves this is the client
+    /// actually playing, and when every candidate has a bare timeline exactly one of them is required; anything else is ambiguous.
+    /// </summary>
+    /// <param name="titles">各候选读到的曲名。/ Title read from each candidate.</param>
+    /// <returns>选中的下标；无法唯一确定时为 -1。/ Index of the pick, or -1 when it cannot be determined uniquely.</returns>
+    internal static int SelectCandidate(IReadOnlyList<string> titles)
+    {
+        var withMetadata = new List<int>();
+        for (var index = 0; index < titles.Count; index++)
+        {
+            if (!string.IsNullOrWhiteSpace(titles[index]))
+                withMetadata.Add(index);
+        }
+
+        if (withMetadata.Count == 1)
+            return withMetadata[0];
+        return withMetadata.Count == 0 && titles.Count == 1 ? 0 : -1;
     }
 
     private static PlayerInfo? Read(NetEase reader, string? expectedTitle, string? expectedArtist,

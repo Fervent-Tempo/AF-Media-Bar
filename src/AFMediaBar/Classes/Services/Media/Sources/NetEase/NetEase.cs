@@ -139,15 +139,31 @@ public sealed class NetEase : IDisposable
             first.Pause != second.Pause)
             return null;
 
-        if (!string.IsNullOrWhiteSpace(expectedTitle) &&
-            !NetEaseTrackMetadataReader.TitlesDescribeTheSameTrack(expectedTitle, second.Title))
-            return null;
-        if (!string.IsNullOrWhiteSpace(expectedArtist) &&
-            !ArtistsOverlap(expectedArtist, second.Artists))
-            return null;
-        if (expectedDuration is > 0 && Math.Abs(second.Duration - expectedDuration.Value) > 2)
-            return null;
-        return second;
+        return MatchesExpectedMetadata(second, expectedTitle, expectedArtist, expectedDuration) ? second : null;
+    }
+
+    /// <summary>
+    /// 校验内存读取与 SMTC 报出的元数据是否指向同一曲目。内存侧元数据未解析（专区漫游不写
+    /// playingList/fmPlay）时标题与歌手无从比较，只保留时长校验，时间轴照常可信。
+    /// Verifies that a memory reading and the metadata SMTC reports describe the same track. When the memory side has no
+    /// metadata (the roaming mode writes neither playingList nor fmPlay) there is nothing to compare, so only the duration
+    /// is checked and the timeline stays usable.
+    /// </summary>
+    /// <param name="info">内存读取结果。/ Memory reading.</param>
+    /// <param name="expectedTitle">SMTC 报出的曲名。/ Title SMTC reports.</param>
+    /// <param name="expectedArtist">SMTC 报出的歌手。/ Artist SMTC reports.</param>
+    /// <param name="expectedDuration">SMTC 报出的时长，未知时为 <see langword="null"/>。/ Duration SMTC reports, or null when unknown.</param>
+    internal static bool MatchesExpectedMetadata(PlayerInfo info, string? expectedTitle, string? expectedArtist,
+        double? expectedDuration)
+    {
+        var hasMetadata = !string.IsNullOrWhiteSpace(info.Title);
+        if (hasMetadata && !string.IsNullOrWhiteSpace(expectedTitle) &&
+            !NetEaseTrackMetadataReader.TitlesDescribeTheSameTrack(expectedTitle, info.Title))
+            return false;
+        if (hasMetadata && !string.IsNullOrWhiteSpace(expectedArtist) &&
+            !ArtistsOverlap(expectedArtist, info.Artists))
+            return false;
+        return expectedDuration is not > 0 || Math.Abs(info.Duration - expectedDuration.Value) <= 2;
     }
 
     private static bool ArtistsOverlap(string expected, string actual)
@@ -169,19 +185,23 @@ public sealed class NetEase : IDisposable
         if (string.IsNullOrEmpty(identity))
             return null;
 
-        if (!string.Equals(identity, _cachedIdentity, StringComparison.Ordinal) &&
-            ((string.Equals(identity, _rejectedIdentity, StringComparison.Ordinal) &&
-              string.Equals(expectedTitle, _rejectedTitle, StringComparison.Ordinal) &&
-              Stopwatch.GetElapsedTime(_rejectedAt) < TimeSpan.FromSeconds(1)) ||
-             !TryLoadTrackMetadata(identity, expectedTitle)))
+        // 元数据解析失败不再丢弃整条读取：songId、进度、时长和播放状态彼此独立可校验，
+        // 标题与歌手缺失时由合并层的 SMTC 通道提供。
+        // Metadata resolution no longer discards the whole reading: song id, position, duration, and play state are
+        // validated independently, and the merge layer takes the title and artist from the SMTC channel.
+        var metadataResolved = string.Equals(identity, _cachedIdentity, StringComparison.Ordinal);
+        if (!metadataResolved)
         {
-            // the player rewrites playingList asynchronously, so right after a song
-            // switch the new id may not be in the file yet; the caller's debounce
-            // absorbs this and we retry on the next loop.
-            return null;
+            // 客户端异步重写这两个文件，切歌瞬间新 id 可能还没写入；1 秒内的退避只跳过重读文件。
+            // The player rewrites both files asynchronously, so the new id may be missing right after a song switch; the
+            // one-second backoff skips the file reads only.
+            var backoff = string.Equals(identity, _rejectedIdentity, StringComparison.Ordinal) &&
+                          string.Equals(expectedTitle, _rejectedTitle, StringComparison.Ordinal) &&
+                          Stopwatch.GetElapsedTime(_rejectedAt) < TimeSpan.FromSeconds(1);
+            metadataResolved = !backoff && TryLoadTrackMetadata(identity, expectedTitle);
         }
 
-        if (GetSchedule() is not { } schedule || GetSongDuration() is not { } duration ||
+        if (GetSchedule() is not { } schedule || GetSongDuration(identity) is not { } duration ||
             !double.IsFinite(schedule) || !double.IsFinite(duration) ||
             schedule < 0 || duration <= 0 || duration > 86_400 || schedule > duration + 2)
             return null;
@@ -189,10 +209,10 @@ public sealed class NetEase : IDisposable
         return new PlayerInfo
         {
             Identity = identity,
-            Title = _cachedTitle,
-            Artists = _cachedArtists,
-            Album = _cachedAlbum,
-            Cover = _cachedCover,
+            Title = metadataResolved ? _cachedTitle : string.Empty,
+            Artists = metadataResolved ? _cachedArtists : string.Empty,
+            Album = metadataResolved ? _cachedAlbum : string.Empty,
+            Cover = metadataResolved ? _cachedCover : string.Empty,
             Duration = duration,
             Schedule = Math.Clamp(schedule, 0, duration),
             Pause = status == PlayStatus.Paused,
@@ -335,7 +355,7 @@ public sealed class NetEase : IDisposable
     private float GetCurrentVolume()
         => _process.ReadFloat(_audioPlayerPointer, 0x68);
 
-    private double? GetSongDuration()
+    private double? GetSongDuration(string identity)
     {
         var value = _process.TryReadDouble(_audioPlayerPointer + 0xa8, out var memory) &&
                     double.IsFinite(memory) && memory > 0 && memory < 86_400
@@ -343,7 +363,13 @@ public sealed class NetEase : IDisposable
             : 0;
         if (value > 0)
             return value;
-        return _cachedDuration > 0 ? _cachedDuration : null;
+
+        // 元数据里的时长只属于它自己那一首：元数据未解析时沿用会把上一首的时长带过来。
+        // The duration from the metadata belongs to that track only; reusing it while the metadata is unresolved carries the previous
+        // track's length over.
+        return string.Equals(identity, _cachedIdentity, StringComparison.Ordinal) && _cachedDuration > 0
+            ? _cachedDuration
+            : null;
     }
 
     private string GetCurrentSongId()

@@ -272,7 +272,7 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
                         CancelPendingLyrics();
                         _continuity.Clear();
                     }
-                    if (result.Info is { } info)
+                    if (result.Info is { } info && CanPublishTimelineOnly(info, Volatile.Read(ref _sessionSnapshot)))
                         PublishPlayerInfo(info, result.ReadAt, token);
                     else
                     {
@@ -327,6 +327,19 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         }
     }
 
+    /// <summary>
+    /// 内存元数据未解析时是否可以只发布时间轴：必须有曲名可用，否则界面只剩空标题的进度条，按失败关闭处理。
+    /// 只凭歌手不算数——SMTC 有时只报歌手，那种情况下既没有可显示的标题，也没有可取词的曲目身份。
+    /// Whether a reading without metadata may publish only its timeline: a title has to be available, otherwise the bar would show
+    /// a position under an empty title and failing closed is preferable. An artist alone is not enough: SMTC sometimes reports only
+    /// that, and then there is neither a label to show nor an identity to search lyrics by.
+    /// </summary>
+    /// <param name="info">内存读取结果。/ Memory reading.</param>
+    /// <param name="baseline">同一来源的 SMTC 基线快照。/ SMTC baseline snapshot of the same source.</param>
+    internal static bool CanPublishTimelineOnly(PlayerInfo info, MediaSnapshot baseline) =>
+        !string.IsNullOrWhiteSpace(info.Title) ||
+        !string.IsNullOrWhiteSpace(baseline.Title);
+
     private void PublishPlayerInfo(PlayerInfo info, DateTimeOffset readAt, CancellationToken token)
     {
         if (_currentInfo is not { } current ||
@@ -339,7 +352,10 @@ public sealed class NetEaseMediaProvider : IIndependentMediaSourceProvider, IMem
         _currentInfoReadAt = readAt;
 
         var hasCachedLyrics = _lyricsCache.TryGetValue(info.Identity, out var lyrics);
-        var canRequestLyrics = !hasCachedLyrics && _lyricsRetries.CanRequest(info.Identity, !info.Pause);
+        // 元数据未解析时没有可用的曲名，取词只会消耗重试预算，等元数据到达后再请求。
+        // Without resolved metadata there is no title to search by, so the request waits for the metadata.
+        var canRequestLyrics = !hasCachedLyrics && !string.IsNullOrWhiteSpace(info.Title) &&
+                               _lyricsRetries.CanRequest(info.Identity, !info.Pause);
         bool lyricsRequestPending;
         lock (_lyricsRequestGate)
         {
