@@ -305,7 +305,8 @@ public static class SettingsSearchIndex
             ["交互按钮大小", "按钮尺寸", "小", "中", "大", "hover button size", "button spacing", "悬停层间距", "静置层按钮", "图标大小"]),
 
         Create(SettingsPageKey.ApplicationAppearance, "Settings.Personalization.Accent", "Appearance.Accent.Hint", language,
-            ["强调色", "強調色", "accent", "取色", "色板", "hex", "调色", "picker"]),
+            ["强调色", "強調色", "accent", "取色", "色板", "hex", "调色", "picker",
+                "从封面取色", "封面取色", "专辑封面", "from artwork", "cover colour", "album art"]),
         Create(SettingsPageKey.ApplicationAppearance, "Common.Group.Fonts", "Search.Appearance.Fonts.Description", language,
             ["字体", "font", "字重", "weight", "西文", "中文", "预览", "segoe", "雅黑"]),
         // ---- 应用 / Application ----

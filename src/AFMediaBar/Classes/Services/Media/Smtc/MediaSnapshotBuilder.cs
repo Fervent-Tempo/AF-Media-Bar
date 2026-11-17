@@ -89,12 +89,11 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         CancelDurationGateExpiry();
         CancelPendingLyrics();
 
-        // 封面缩略图与主色缓存也归本构建器管：它们是本类在构建快照时填进去的（见 Build），因此也由本类丢弃，
+        // 封面缩略图缓存也归本构建器管：它是本类在构建快照时填进去的（见 Build），因此也由本类丢弃，
         // 而不是让某个"清理服务"隔着模块去动别人的静态缓存。
-        // The thumbnail and dominant-color caches belong to this builder as well: this class fills them while building a snapshot (see Build), so it
-        // drops them too, instead of some cleanup service reaching into another module's static cache.
+        // The thumbnail cache belongs to this builder as well: this class fills it while building a snapshot (see Build), so it
+        // drops it too, instead of some cleanup service reaching into another module's static cache.
         ArtworkLoader.ClearCache();
-        BitmapHelper.ClearCache();
     }
 
     /// <summary>
@@ -209,7 +208,6 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
                     playbackInfo.PlaybackType == Windows.Media.MediaPlaybackType.Video ||
                     songInfo.PlaybackType == Windows.Media.MediaPlaybackType.Video,
                     artwork,
-                    artwork is null ? 0 : ArtworkLoader.CurrentThumbnailHash,
                     playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
                     playbackInfo.Controls?.IsPlayPauseToggleEnabled ?? false,
                     playbackInfo.Controls?.IsPreviousEnabled ?? false,
@@ -240,7 +238,6 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
         _readFailures.Recover(_log, "Media", $"smtc:{session.Id}", "SMTC 媒体读取已恢复");
         var duration = Math.Max(0, read.Duration);
         var position = Math.Clamp(read.Position - read.TimelineStart, 0, duration > 0 ? duration : double.MaxValue);
-        BitmapHelper.GetDominantColors(1, read.ArtworkHash);
         var sourceId = read.SourceId;
         var title = read.Title;
         var artist = read.Artist;
@@ -275,7 +272,7 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
 
     private sealed record SmtcMediaRead(
         string Title, string Artist, string Album, string SourceId, bool IsVideo, System.Windows.Media.Imaging.BitmapImage? Artwork,
-        int ArtworkHash, bool IsPlaying, bool CanPlayPause, bool CanSkipPrevious, bool CanSkipNext,
+        bool IsPlaying, bool CanPlayPause, bool CanSkipPrevious, bool CanSkipNext,
         bool CanSeek, bool CanChangeRepeat, MediaRepeatMode RepeatMode, double PlaybackRate,
         double TimelineStart, double Duration, double Position, DateTimeOffset TimelineUpdatedAt);
 

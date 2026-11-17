@@ -65,7 +65,13 @@ public enum AccentColorMode
     System = 0,
 
     /// <summary>使用用户选定的强调色。 / Use the accent the user picked.</summary>
-    Custom = 1
+    Custom = 1,
+
+    /// <summary>
+    /// 从当前播放的专辑封面取色；没有封面时回退到系统强调色。
+    /// Take the accent from the playing artwork, falling back to the system accent when there is no cover.
+    /// </summary>
+    FromCover = 2
 }
 
 /// <summary>西文字体预设。 / Latin font preset.</summary>

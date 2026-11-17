@@ -17,15 +17,6 @@ internal static class ArtworkLoader
     private const int MaxThumbnailSize = 256;
     private const int CacheEntryLimit = 5;
     private static readonly LruCache<int, BitmapImage> ThumbnailCache = new(CacheEntryLimit);
-    private static readonly AsyncLocal<int> CurrentHashCodeContext = new();
-    private static int _currentHashCode;
-
-    /// <summary>
-    /// 获取当前异步上下文最近加载的缩略图哈希；上下文没有值时使用进程内最近值。
-    /// Gets the most recently loaded thumbnail hash for the current async context, falling back to the process-wide latest value.
-    /// </summary>
-    internal static int CurrentThumbnailHash =>
-        CurrentHashCodeContext.Value != 0 ? CurrentHashCodeContext.Value : _currentHashCode;
 
     /// <summary>
     /// 读取缩略图内容并计算稳定哈希，用于缓存键。
@@ -70,10 +61,7 @@ internal static class ArtworkLoader
             return null;
 
         if (ThumbnailCache.TryGetValue(hashCode, out var cachedImage) && cachedImage != null)
-        {
-            SetCurrentHash(hashCode);
             return cachedImage;
-        }
 
         BitmapImage image;
         try
@@ -97,7 +85,6 @@ internal static class ArtworkLoader
         }
 
         ThumbnailCache.Set(hashCode, image);
-        SetCurrentHash(hashCode);
         return image;
     }
 
@@ -140,18 +127,5 @@ internal static class ArtworkLoader
         var croppedBitmap = new CroppedBitmap(sourceImage, new Int32Rect(x, y, size, size));
         croppedBitmap.Freeze();
         return croppedBitmap;
-    }
-
-    /// <summary>
-    /// 尝试读取指定哈希对应的缓存缩略图。
-    /// Attempts to read the cached thumbnail associated with the specified hash.
-    /// </summary>
-    internal static bool TryGetCachedThumbnail(int hashCode, out BitmapImage? image) =>
-        ThumbnailCache.TryGetValue(hashCode, out image);
-
-    private static void SetCurrentHash(int hashCode)
-    {
-        _currentHashCode = hashCode;
-        CurrentHashCodeContext.Value = hashCode;
     }
 }

@@ -238,6 +238,9 @@
   <data name="Appearance.Accent.Custom" xml:space="preserve">
     <value>自訂</value>
   </data>
+  <data name="Appearance.Accent.FromCover" xml:space="preserve">
+    <value>從專輯封面取色</value>
+  </data>
   <data name="Appearance.Accent.FollowSystem" xml:space="preserve">
     <value>跟隨系統</value>
   </data>

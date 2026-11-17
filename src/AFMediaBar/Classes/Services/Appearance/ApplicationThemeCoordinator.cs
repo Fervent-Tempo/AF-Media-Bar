@@ -16,6 +16,7 @@ public sealed class ApplicationThemeCoordinator : IDisposable
 {
     private readonly Dispatcher _dispatcher;
     private readonly Action<AppearanceSettings, ApplicationTheme, AccentPalette> _updateResources;
+    private readonly CoverAccentColorService? _coverAccent;
     private DispatcherTimer? _systemThemeRefreshTimer;
     private AccentPalette? _publishedAccent;
     private ApplicationTheme? _publishedTheme;
@@ -44,12 +45,18 @@ public sealed class ApplicationThemeCoordinator : IDisposable
     /// 资源更新回调，接收外观设置、当前主题与派生好的强调色调色板。
     /// Resource update callback receiving the appearance settings, the current theme, and the derived accent palette.
     /// </param>
+    /// <param name="coverAccent">
+    /// 封面强调色来源；传入后"从封面取色"模式可用，且封面变化会触发重新发布。
+    /// Source of the artwork accent; when supplied, the "from artwork" mode works and a cover change re-publishes the accent.
+    /// </param>
     public ApplicationThemeCoordinator(
         Dispatcher dispatcher,
-        Action<AppearanceSettings, ApplicationTheme, AccentPalette> updateResources)
+        Action<AppearanceSettings, ApplicationTheme, AccentPalette> updateResources,
+        CoverAccentColorService? coverAccent = null)
     {
         _dispatcher = dispatcher;
         _updateResources = updateResources;
+        _coverAccent = coverAccent;
     }
 
     /// <summary>
@@ -65,6 +72,10 @@ public sealed class ApplicationThemeCoordinator : IDisposable
         SettingsManager.AppearanceSettingsChanged += OnAppearanceSettingsChanged;
         ApplicationThemeManager.Changed += OnApplicationThemeChanged;
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
+        // 封面变化只在"从封面取色"时需要重发布，订阅由 OnCoverAccentChanged 自行判断模式。
+        // A cover change only needs a re-publish in "from artwork" mode; OnCoverAccentChanged gates on the mode itself.
+        if (_coverAccent is not null)
+            _coverAccent.Changed += OnCoverAccentChanged;
     }
 
     /// <summary>
@@ -133,17 +144,36 @@ public sealed class ApplicationThemeCoordinator : IDisposable
 
     private void PublishAccentCore(AppearanceSettings appearance, ApplicationTheme theme, Color systemAccent)
     {
-        // 原始强调色有两种来源：跟随系统，或用户在设置里选定的自选色。自选色无法从系统读到，因此 HERE 就是它的唯一入口。
-        // The raw accent has two sources: the system, or the colour the user picked in the settings. A custom colour cannot be
-        // read from the system, so this is its one and only entry point.
-        var requestedAccent = AccentColorPolicy.ResolveRequested(systemAccent, appearance.AccentColorMode, appearance.AccentColor);
-        var customAccent = appearance.AccentColorMode == AccentColorMode.Custom;
+        // 强调色现在有三支来源：跟随系统、用户自选色、从当前封面取色。后两者都无法从系统读到，HERE 是它们的唯一入口。
+        // The accent now has three sources: the system, the user's own colour, and the current artwork. Neither of the latter two can be
+        // read from the system, so this is their one and only entry point.
+        var highContrast = SystemParameters.HighContrast;
+        var dark = theme == ApplicationTheme.Dark ||
+                   (theme == ApplicationTheme.HighContrast && highContrast);
+
+        // 从封面取色按明暗选对应的提取结果；没有封面（或取色失败）时留空，下面会回退到系统强调色。
+        // 高对比度必须让系统颜色接管，封面强调色只用于普通浅色/深色主题。
+        // "From artwork" takes the variant matching the theme; without a usable cover it stays null and falls back to the system accent below.
+        // High contrast must hand control to the system colours, so the artwork accent only applies to ordinary light/dark themes.
+        var coverAccent = !highContrast && appearance.AccentColorMode == AccentColorMode.FromCover
+            ? _coverAccent?.Resolve(dark)
+            : null;
+
+        var requestedAccent = AccentColorPolicy.ResolveRequested(
+            systemAccent, appearance.AccentColorMode, appearance.AccentColor, coverAccent);
+        // 自选色与"确实取到封面色"的从封面取色都要写给 WPF-UI：库内控件必须和我们的画刷同色，不能停在系统色上。
+        // 高对比度例外：此时不写自选色/封面色，交给系统高亮色，避免库内控件和应用画刷分成两套颜色。
+        // Both the custom colour and a resolved artwork accent must be pushed to WPF-UI, or its controls stay on the system colour.
+        // High contrast is the exception: neither is pushed, so the system highlight keeps the library and our brushes on one palette.
+        var explicitAccent = !highContrast &&
+            (appearance.AccentColorMode == AccentColorMode.Custom ||
+             (appearance.AccentColorMode == AccentColorMode.FromCover && coverAccent is not null));
 
         // 先让 WPF-UI 按本次的原始强调色重刷它自己的资源，再读取结果：这样"我们的画刷"和"库内控件"必然同色，
         // 也不会再出现库内控件是新色、我们的滑杆还是旧色（或反过来）的分裂。
         // Let WPF-UI refresh its own resources from this pass's raw accent first and then read its result: our brushes and the
         // library's controls are then guaranteed to be the same color instead of one being fresh and the other stale.
-        if (customAccent)
+        if (explicitAccent)
         {
             ApplyCustomAccent(requestedAccent, theme);
         }
@@ -154,9 +184,7 @@ public sealed class ApplicationThemeCoordinator : IDisposable
             requestedAccent = systemAccent;
         }
 
-        var dark = theme == ApplicationTheme.Dark ||
-                   (theme == ApplicationTheme.HighContrast && SystemParameters.HighContrast);
-        var palette = AccentColorPolicy.Build(requestedAccent, dark, SystemParameters.HighContrast);
+        var palette = AccentColorPolicy.Build(requestedAccent, dark, highContrast);
 
         // 强调色、主题与外观设置都没变时不做任何重应用：DWM 与系统偏好消息会出现成串重复事件。
         // 外观设置参与判断是必须的：字体只通过这一条资源回调生效。
@@ -290,7 +318,27 @@ public sealed class ApplicationThemeCoordinator : IDisposable
         SettingsManager.AppearanceSettingsChanged -= OnAppearanceSettingsChanged;
         ApplicationThemeManager.Changed -= OnApplicationThemeChanged;
         SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
+        if (_coverAccent is not null)
+            _coverAccent.Changed -= OnCoverAccentChanged;
         _systemThemeRefreshTimer?.Stop();
         _systemThemeRefreshTimer = null;
+    }
+
+    /// <summary>
+    /// 封面变化后重新发布强调色：只有选中"从封面取色"时才响应，其它模式的强调色与封面无关。
+    /// Re-publishes the accent after a cover change: only "from artwork" mode responds, since every other mode ignores the cover.
+    /// </summary>
+    private void OnCoverAccentChanged()
+    {
+        if (_disposed || SettingsManager.Current.Appearance.AccentColorMode != AccentColorMode.FromCover)
+            return;
+
+        if (_dispatcher.CheckAccess())
+        {
+            Apply(SettingsManager.Current.Appearance);
+            return;
+        }
+
+        _dispatcher.BeginInvoke(() => Apply(SettingsManager.Current.Appearance));
     }
 }

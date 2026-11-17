@@ -395,6 +395,8 @@ namespace AFMediaBar
             }).Build();
 
         private ApplicationThemeCoordinator? _themeCoordinator;
+        private CoverAccentColorService? _coverAccentColors;
+        private EventHandler<MediaSnapshot>? _coverAccentSnapshotHandler;
 #if DEBUG
         private DebugLyricsDiagnostics? _debugLyricsDiagnostics;
 #endif
@@ -581,7 +583,9 @@ namespace AFMediaBar
                 SettingsManager.Current.TranslucentTbCompatibilityPromptShown = true;
                 settingsPersistenceService.Flush();
             }
-            _themeCoordinator = new ApplicationThemeCoordinator(Dispatcher, new ApplicationAppearanceResources(Resources).Apply);
+            _coverAccentColors = CoverAccentColorService.Shared;
+            _themeCoordinator = new ApplicationThemeCoordinator(
+                Dispatcher, new ApplicationAppearanceResources(Resources).Apply, _coverAccentColors);
             _themeCoordinator.Start();
             _themeCoordinator.Apply(SettingsManager.Current.Appearance);
 
@@ -605,6 +609,7 @@ namespace AFMediaBar
                 return;
 
             AttachSpectrumMediaSource();
+            AttachCoverAccentSource();
 
             if (translucentTbDecision.ShowPrompt)
             {
@@ -661,6 +666,27 @@ namespace AFMediaBar
             _spectrumSnapshotHandler = null;
         }
 
+        private void AttachCoverAccentSource()
+        {
+            // 封面强调色只有一处来源：媒体快照里的封面。主题协调器与封面控件都读这个服务，避免各算各的。
+            // The artwork accent has one source: the cover in the media snapshot. Both the theme coordinator and the artwork control
+            // read that service instead of extracting their own copy.
+            if (_coverAccentColors is null)
+                return;
+
+            var media = Services.GetRequiredService<MediaSessionService>();
+            _coverAccentSnapshotHandler = (_, snapshot) => _coverAccentColors.Update(snapshot.Artwork);
+            media.SnapshotChanged += _coverAccentSnapshotHandler;
+            _coverAccentColors.Update(media.CurrentSnapshot?.Artwork);
+        }
+
+        private void DetachCoverAccentSource()
+        {
+            if (_coverAccentSnapshotHandler is not null)
+                Services.GetRequiredService<MediaSessionService>().SnapshotChanged -= _coverAccentSnapshotHandler;
+            _coverAccentSnapshotHandler = null;
+        }
+
         /// <summary>
         /// 应用退出事件：停止 Host 并释放资源。
         /// Application exit event: stops the Host and disposes resources.
@@ -679,6 +705,7 @@ namespace AFMediaBar
             _exitCoordinator.ArmExitProtection();
             _startupCancellation.Cancel();
             DetachSpectrumMediaSource();
+            DetachCoverAccentSource();
             _developerToolsHost?.Dispose();
             _developerMode?.Dispose();
             _lyricsRecoveryNotifications?.Dispose();

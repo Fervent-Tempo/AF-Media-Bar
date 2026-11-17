@@ -2046,16 +2046,17 @@ namespace AFMediaBar.Components
                 // swaps the artwork's tooltip back to the wheel hint.
                 ApplyArtworkTooltipOwner();
 
-                // 根据主色调改变图标颜色（从封面提取）；没有封面主色时回退到应用统一强调色，再退回系统高亮色。
-                // 旧实现回退到 MicaWPF 的强调色键，而该键在本项目中不解析，会得到一个空画刷。
-                // Change icon color based on dominant color (extracted from artwork); without an artwork dominant color it
-                // falls back to the application accent and then to the system highlight color. The previous fallback used a
-                // MicaWPF accent key that does not resolve in this project and produced a null brush.
-                SolidColorBrush brush = BitmapHelper.SavedDominantColors.Count > 0
-                    ? BitmapHelper.SavedDominantColors.Last()
-                    : Application.Current.TryFindResource("AfAccentBrush") as SolidColorBrush
-                      ?? new SolidColorBrush(SystemColors.HighlightColor);
-                SongImagePlaceholder.Foreground = brush;
+                // 封面占位图标跟随封面主色（与"强调色从封面取色"共用同一份提取结果）；没有封面主色时回退到应用统一强调色，
+                // 再退回系统高亮色。
+                // The artwork placeholder follows the cover's dominant colour, sharing the extraction behind "accent from artwork";
+                // without one it falls back to the application accent and then to the system highlight colour.
+                var darkTheme = ApplicationThemeCoordinator.ResolveApplicationTheme(
+                    SettingsManager.Current.Appearance.ApplicationThemeMode) == ApplicationTheme.Dark;
+                SongImagePlaceholder.Foreground =
+                    CoverAccentColorService.Shared.Resolve(darkTheme) is { } accentColor
+                        ? new SolidColorBrush(accentColor)
+                        : Application.Current.TryFindResource("AfAccentBrush") as SolidColorBrush
+                          ?? new SolidColorBrush(SystemColors.HighlightColor);
 
                 if (snapshot.Artwork is not null)
                 {

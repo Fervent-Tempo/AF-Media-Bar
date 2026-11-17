@@ -178,6 +178,9 @@
   <data name="Appearance.Accent.Custom" xml:space="preserve">
     <value>Tùy chỉnh</value>
   </data>
+  <data name="Appearance.Accent.FromCover" xml:space="preserve">
+    <value>Lấy từ ảnh bìa</value>
+  </data>
   <data name="Appearance.Accent.FollowSystem" xml:space="preserve">
     <value>Theo hệ thống</value>
   </data>
