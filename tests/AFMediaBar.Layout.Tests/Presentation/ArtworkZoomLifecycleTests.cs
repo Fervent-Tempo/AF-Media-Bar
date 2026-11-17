@@ -354,9 +354,15 @@ public sealed class ArtworkZoomLifecycleTests
     [TestMethod]
     public void ZoomSubstituteCarriesTheEdgeProgressRing() => RunIsolated(nameof(ZoomSubstituteCarriesTheEdgeProgressRing), (control, dispatcher) =>
     {
+        // 控件每 250ms 按快照重算真环的进度与显隐：不先停掉，下面写入的值可能被下一拍覆盖，结果取决于时序。
+        // The control recomputes the real ring's progress and visibility from the snapshot every 250 ms; stop it first, or a tick
+        // can overwrite the values written below and the result depends on timing.
+        ((DispatcherTimer)MediaBarTestAccess
+            .GetField("_progressTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!).Stop();
         var ring = (ArtworkProgress)control.FindName("SongImageProgress");
         var previousVisibility = ring.Visibility;
         var previousProgress = ring.Progress;
+        var previousStroke = ring.Stroke;
         try
         {
             ring.Progress = 0.42;
@@ -368,8 +374,12 @@ public sealed class ArtworkZoomLifecycleTests
                 .GetField("_artworkZoomSubstitute", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
             var mirror = FindDescendant<ArtworkProgress>(substitute);
             Assert.IsNotNull(mirror, "替身必须带上边缘进度环，否则换树那一帧边缘会闪一下。");
-            Assert.AreEqual(0.42, mirror!.Progress, 0.001, "替身的进度必须与真环一致。");
+            Assert.AreSame(ring.Stroke, mirror!.Stroke, "替身的描边必须与真环是同一把画刷。");
+            Assert.AreEqual(0.42, mirror.Progress, 0.001, "替身的进度必须与真环一致。");
             Assert.AreEqual(Visibility.Visible, mirror.Visibility, "替身的显隐必须与真环一致。");
+
+            ring.Stroke = Brushes.Red;
+            Assert.AreSame(Brushes.Red, mirror.Stroke, "主题色或设置切换描边时，替身的描边必须跟着真环更新。");
 
             ring.Progress = 0.73;
             Assert.AreEqual(0.73, mirror.Progress, 0.001, "放大期间播放推进时，替身的进度必须跟着真环更新。");
@@ -381,6 +391,7 @@ public sealed class ArtworkZoomLifecycleTests
         {
             ring.Progress = previousProgress;
             ring.Visibility = previousVisibility;
+            ring.Stroke = previousStroke;
         }
         return Task.CompletedTask;
     });
