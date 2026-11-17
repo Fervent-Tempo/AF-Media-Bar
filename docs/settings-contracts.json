@@ -532,6 +532,10 @@
         "Custom": {
           "value": 1,
           "release": "v1.2.0"
+        },
+        "FromCover": {
+          "value": 2,
+          "release": "unreleased"
         }
       }
     },

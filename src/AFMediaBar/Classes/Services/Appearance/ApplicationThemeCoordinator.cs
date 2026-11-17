@@ -147,21 +147,27 @@ public sealed class ApplicationThemeCoordinator : IDisposable
         // 强调色现在有三支来源：跟随系统、用户自选色、从当前封面取色。后两者都无法从系统读到，HERE 是它们的唯一入口。
         // The accent now has three sources: the system, the user's own colour, and the current artwork. Neither of the latter two can be
         // read from the system, so this is their one and only entry point.
+        var highContrast = SystemParameters.HighContrast;
         var dark = theme == ApplicationTheme.Dark ||
-                   (theme == ApplicationTheme.HighContrast && SystemParameters.HighContrast);
+                   (theme == ApplicationTheme.HighContrast && highContrast);
 
         // 从封面取色按明暗选对应的提取结果；没有封面（或取色失败）时留空，下面会回退到系统强调色。
+        // 高对比度必须让系统颜色接管，封面强调色只用于普通浅色/深色主题。
         // "From artwork" takes the variant matching the theme; without a usable cover it stays null and falls back to the system accent below.
-        var coverAccent = appearance.AccentColorMode == AccentColorMode.FromCover
+        // High contrast must hand control to the system colours, so the artwork accent only applies to ordinary light/dark themes.
+        var coverAccent = !highContrast && appearance.AccentColorMode == AccentColorMode.FromCover
             ? _coverAccent?.Resolve(dark)
             : null;
 
         var requestedAccent = AccentColorPolicy.ResolveRequested(
             systemAccent, appearance.AccentColorMode, appearance.AccentColor, coverAccent);
         // 自选色与"确实取到封面色"的从封面取色都要写给 WPF-UI：库内控件必须和我们的画刷同色，不能停在系统色上。
+        // 高对比度例外：此时不写自选色/封面色，交给系统高亮色，避免库内控件和应用画刷分成两套颜色。
         // Both the custom colour and a resolved artwork accent must be pushed to WPF-UI, or its controls stay on the system colour.
-        var explicitAccent = appearance.AccentColorMode == AccentColorMode.Custom
-            || (appearance.AccentColorMode == AccentColorMode.FromCover && coverAccent is not null);
+        // High contrast is the exception: neither is pushed, so the system highlight keeps the library and our brushes on one palette.
+        var explicitAccent = !highContrast &&
+            (appearance.AccentColorMode == AccentColorMode.Custom ||
+             (appearance.AccentColorMode == AccentColorMode.FromCover && coverAccent is not null));
 
         // 先让 WPF-UI 按本次的原始强调色重刷它自己的资源，再读取结果：这样"我们的画刷"和"库内控件"必然同色，
         // 也不会再出现库内控件是新色、我们的滑杆还是旧色（或反过来）的分裂。
@@ -178,7 +184,7 @@ public sealed class ApplicationThemeCoordinator : IDisposable
             requestedAccent = systemAccent;
         }
 
-        var palette = AccentColorPolicy.Build(requestedAccent, dark, SystemParameters.HighContrast);
+        var palette = AccentColorPolicy.Build(requestedAccent, dark, highContrast);
 
         // 强调色、主题与外观设置都没变时不做任何重应用：DWM 与系统偏好消息会出现成串重复事件。
         // 外观设置参与判断是必须的：字体只通过这一条资源回调生效。
