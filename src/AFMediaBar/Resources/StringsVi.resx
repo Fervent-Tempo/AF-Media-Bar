@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--StringsVi stores one UI language; Translations owns lookup and runtime WPF publication.-->
 <root>
   <resheader name="resmimetype">
@@ -3970,6 +3970,189 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Interaction.Row.NativeTrayIcon.Description" xml:space="preserve">
     <value>Tự động dùng biểu tượng tương ứng cho điều khiển âm thanh, thiết bị đầu ra, thiết bị đầu vào hoặc âm lượng ứng dụng hiện tại theo thao tác nhấp.</value>
   </data>
+  <data name="Settings.Page.MediaCard" xml:space="preserve">
+    <value>Thẻ media</value>
+  </data>
+  <data name="Settings.Page.MediaCard.Description" xml:space="preserve">
+    <value>Đặt một thẻ media trên màn hình, thay đổi theo bài đang phát</value>
+  </data>
+  <data name="Settings.MediaCard.Group" xml:space="preserve">
+    <value>Thẻ media</value>
+  </data>
+  <data name="Settings.MediaCard.Group.Description" xml:space="preserve">
+    <value>Hiện ảnh bìa và lời bài hát; hiện điều khiển khi đưa chuột vào</value>
+  </data>
+  <data name="Settings.MediaCard.Enabled" xml:space="preserve">
+    <value>Bật thẻ media</value>
+  </data>
+  <data name="Settings.MediaCard.Enabled.Description" xml:space="preserve">
+    <value>Tắt để ẩn thẻ; bật lại bất cứ lúc nào</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode" xml:space="preserve">
+    <value>Chế độ xếp tầng</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode.Description" xml:space="preserve">
+    <value>Chọn để thẻ nổi trên cùng, hiển thị bình thường, hoặc cố định vào màn hình nền; nút ghim trên thẻ cũng đổi được</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode.Normal" xml:space="preserve">
+    <value>Bình thường</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode.Topmost" xml:space="preserve">
+    <value>Luôn trên cùng</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode.FixedToDesktop" xml:space="preserve">
+    <value>Cố định vào màn hình nền</value>
+  </data>
+  <data name="Settings.MediaCard.TransparentClickThrough" xml:space="preserve">
+    <value>Cho click xuyên khi trong suốt</value>
+  </data>
+  <data name="Settings.MediaCard.TransparentClickThrough.Description" xml:space="preserve">
+    <value>Khi dùng màu trong suốt, click vào chỗ trống của thẻ sẽ xuyên xuống màn hình nền; ảnh bìa, lời bài hát và nút vẫn bấm được</value>
+  </data>
+  <data name="Settings.MediaCard.AccentFromCover" xml:space="preserve">
+    <value>Màu nhấn từ ảnh bìa</value>
+  </data>
+  <data name="Settings.MediaCard.AccentFromCover.Description" xml:space="preserve">
+    <value>Màu thanh tiến trình và phổ của thẻ luôn theo ảnh bìa, dù bạn chọn bảng màu nào; nền và chữ giữ nguyên</value>
+  </data>
+  <data name="Settings.MediaCard.ColorTheme" xml:space="preserve">
+    <value>Màu thẻ</value>
+  </data>
+  <data name="Settings.MediaCard.ColorTheme.Description" xml:space="preserve">
+    <value>Tối, sáng, trong suốt, hoặc màu lấy từ ảnh bìa</value>
+  </data>
+  <data name="Settings.MediaCard.ColorTheme.Dark" xml:space="preserve">
+    <value>Tối</value>
+  </data>
+  <data name="Settings.MediaCard.ColorTheme.Light" xml:space="preserve">
+    <value>Sáng</value>
+  </data>
+  <data name="Settings.MediaCard.ColorTheme.FromCover" xml:space="preserve">
+    <value>Từ ảnh bìa</value>
+  </data>
+  <data name="Settings.MediaCard.Romanization" xml:space="preserve">
+    <value>Hiển thị phiên âm</value>
+  </data>
+  <data name="Settings.MediaCard.Romanization.Description" xml:space="preserve">
+    <value>Hiện hàng phát âm phía trên bản dịch khi có</value>
+  </data>
+  <data name="Settings.MediaCard.Components" xml:space="preserve">
+    <value>Phổ và chỉ số</value>
+  </data>
+  <data name="Settings.MediaCard.Components.Description" xml:space="preserve">
+    <value>Chọn có hiện phổ âm và các số liệu như CPU, GPU trên thẻ hay không</value>
+  </data>
+  <data name="Settings.MediaCard.Spectrum.Group" xml:space="preserve">
+    <value>Phổ</value>
+  </data>
+  <data name="Settings.MediaCard.Spectrum" xml:space="preserve">
+    <value>Hiển thị phổ</value>
+  </data>
+  <data name="Settings.MediaCard.Spectrum.Description" xml:space="preserve">
+    <value>Hiện phổ âm nhảy theo nhạc trên thẻ</value>
+  </data>
+  <data name="Settings.MediaCard.ImmersiveSpectrum" xml:space="preserve">
+    <value>Phổ đắm chìm</value>
+  </data>
+  <data name="Settings.MediaCard.ImmersiveSpectrum.Description" xml:space="preserve">
+    <value>Khi rời chuột, phổ âm chuyển xuống mép dưới và nhảy theo nhạc phía trên thanh tiến trình</value>
+  </data>
+  <data name="Settings.MediaCard.WavyProgressBar" xml:space="preserve">
+    <value>Thanh tiến trình dạng sóng</value>
+  </data>
+  <data name="Settings.MediaCard.WavyProgressBar.Description" xml:space="preserve">
+    <value>Khi di chuột vào thẻ, tiến trình phát nhạc hiển thị thành đường sóng nhấp nhô nhẹ theo nhạc</value>
+  </data>
+  <data name="Settings.MediaCard.SpectrumMode" xml:space="preserve">
+    <value>Tham số phổ</value>
+  </data>
+  <data name="Settings.MediaCard.SpectrumMode.Description" xml:space="preserve">
+    <value>Chọn dùng theo thông số của chương trình chính, hoặc tự tuỳ chỉnh</value>
+  </data>
+  <data name="Settings.MediaCard.SpectrumMode.FollowMain" xml:space="preserve">
+    <value>Theo thanh chính</value>
+  </data>
+  <data name="Settings.MediaCard.SpectrumMode.Custom" xml:space="preserve">
+    <value>Tùy chỉnh</value>
+  </data>
+  <data name="Settings.MediaCard.Metrics" xml:space="preserve">
+    <value>Chỉ số hiệu năng</value>
+  </data>
+  <data name="Settings.MediaCard.Metrics.Description" xml:space="preserve">
+    <value>Chọn số liệu muốn hiện trên thẻ. Đổi tốc độ cập nhật và cách hiển thị trong thiết lập Hiệu năng</value>
+  </data>
+  <data name="Settings.MediaCard.MetricCpu.Description" xml:space="preserve">
+    <value>Hiện mức dùng CPU trên thẻ</value>
+  </data>
+  <data name="Settings.MediaCard.MetricGpu.Description" xml:space="preserve">
+    <value>Hiện mức dùng GPU trên thẻ</value>
+  </data>
+  <data name="Settings.MediaCard.MetricMemory.Description" xml:space="preserve">
+    <value>Hiện mức dùng bộ nhớ hệ thống trên thẻ</value>
+  </data>
+  <data name="Settings.MediaCard.MetricNetwork.Description" xml:space="preserve">
+    <value>Hiện tốc độ mạng trên thẻ</value>
+  </data>
+  <data name="Settings.MediaCard.OpenPerformance" xml:space="preserve">
+    <value>Mở thiết lập Hiệu năng</value>
+  </data>
+  <data name="Settings.MediaCard.OnlyCard" xml:space="preserve">
+    <value>Chỉ hiện thẻ media</value>
+  </data>
+  <data name="Settings.MediaCard.OnlyCard.Description" xml:space="preserve">
+    <value>Ẩn thanh phương tiện trên thanh tác vụ để tiết kiệm tài nguyên; thanh này tự trở lại khi bạn đóng thẻ</value>
+  </data>
+  <data name="Settings.MediaCard.Fonts" xml:space="preserve">
+    <value>Phông chữ thẻ</value>
+  </data>
+  <data name="Settings.MediaCard.Fonts.Description" xml:space="preserve">
+    <value>Chọn phông chữ cho từng ngôn ngữ. Chỉ thẻ media thay đổi.</value>
+  </data>
+  <data name="Settings.MediaCard.FontChinese" xml:space="preserve">
+    <value>Phông chữ tiếng Trung</value>
+  </data>
+  <data name="Settings.MediaCard.FontChinese.Description" xml:space="preserve">
+    <value>Lời bài hát và tên bài tiếng Trung trên thẻ</value>
+  </data>
+  <data name="Settings.MediaCard.FontJapanese" xml:space="preserve">
+    <value>Phông chữ tiếng Nhật</value>
+  </data>
+  <data name="Settings.MediaCard.FontJapanese.Description" xml:space="preserve">
+    <value>Lời bài hát tiếng Nhật, kể cả chữ kanji bên trong</value>
+  </data>
+  <data name="Settings.MediaCard.FontEnglish" xml:space="preserve">
+    <value>Phông chữ Latinh</value>
+  </data>
+  <data name="Settings.MediaCard.FontEnglish.Description" xml:space="preserve">
+    <value>Chữ tiếng Anh, số và phiên âm</value>
+  </data>
+  <data name="Settings.MediaCard.Font.FollowSystem" xml:space="preserve">
+    <value>Theo phông chữ hệ thống</value>
+  </data>
+  <data name="Settings.MediaCard.FontReset" xml:space="preserve">
+    <value>Khôi phục phông mặc định</value>
+  </data>
+  <data name="Settings.MediaCard.FontReset.Description" xml:space="preserve">
+    <value>Nếu chữ hiển thị bất thường, hãy khôi phục phông hệ thống cho cả ba ngôn ngữ</value>
+  </data>
+  <data name="Settings.MediaCard.FontReset.Action" xml:space="preserve">
+    <value>Khôi phục</value>
+  </data>
+  <data name="Settings.MediaCard.LyricsSource" xml:space="preserve">
+    <value>Nguồn lời bài hát</value>
+  </data>
+  <data name="Settings.MediaCard.LyricsSource.Description" xml:space="preserve">
+    <value>Thẻ hiển thị theo thiết lập lời bài hát của chương trình chính; file lời bài hát có sẵn trên máy được ưu tiên</value>
+  </data>
+  <data name="Settings.MediaCard.OpenLyrics" xml:space="preserve">
+    <value>Mở cài đặt lời bài hát</value>
+  </data>
+  <data name="Settings.MediaCard.TrackInfoOnEmptyLines" xml:space="preserve">
+    <value>Hiện thông tin bài hát khi dòng phụ trống</value>
+  </data>
+  <data name="Settings.MediaCard.TrackInfoOnEmptyLines.Description" xml:space="preserve">
+    <value>Điền tên bài và ca sĩ vào hai dòng trống khi không có phiên âm hay bản dịch; tắt để các dòng trống giữ nguyên</value>
+  </data>
   <data name="Common.PlaybackQueue" xml:space="preserve"><value>Hàng đợi phát</value></data>
   <data name="DisplayModes.Rest.Component.Queue" xml:space="preserve"><value>Hàng đợi phát</value></data>
   <data name="DisplayModes.Rest.Component.Queue.Description" xml:space="preserve"><value>Hiển thị mục hàng đợi phát của trình phát bên ngoài như Nons; trình phát phải cung cấp API hàng đợi cục bộ.</value></data>
@@ -4012,4 +4195,31 @@ Bảng đầy đủ mở bằng nhấp hoặc di chuột. Pin Bluetooth vẫn l�
   <data name="Panel.Shuffle.Unavailable" xml:space="preserve"><value>Phát ngẫu nhiên không khả dụng</value></data>
   <data name="Panel.Shuffle.Connecting" xml:space="preserve"><value>Đang kết nối Nons…</value></data>
   <data name="Panel.Shuffle.Pending" xml:space="preserve"><value>Chưa xác nhận trạng thái phát ngẫu nhiên; đang làm mới…</value></data>
+  <data name="Settings.MediaCard.ColorTheme.Transparent" xml:space="preserve">
+    <value>Trong suốt</value>
+  </data>
+  <data name="Settings.MediaCard.InvertOnLightWallpaper" xml:space="preserve">
+    <value>Tự đảo màu trên nền sáng</value>
+  </data>
+  <data name="Settings.MediaCard.InvertOnLightWallpaper.Description" xml:space="preserve">
+    <value>Khi dùng màu trong suốt, chữ tự tối lại trên nền sáng và sáng lên trên nền tối để luôn dễ đọc</value>
+  </data>
+  <data name="Settings.MediaCard.AdvancedAppearance" xml:space="preserve">
+    <value>Tinh chỉnh giao diện</value>
+  </data>
+  <data name="Settings.MediaCard.AdvancedAppearance.Description" xml:space="preserve">
+    <value>Trong suốt, màu nhấn và độ tương phản với nền</value>
+  </data>
+  <data name="Settings.MediaCard.LyricsDetails" xml:space="preserve">
+    <value>Chi tiết lời bài hát</value>
+  </data>
+  <data name="Settings.MediaCard.LyricsDetails.Description" xml:space="preserve">
+    <value>Phiên âm, dòng trống và thanh tiến trình</value>
+  </data>
+  <data name="Settings.MediaCard.FontDetails" xml:space="preserve">
+    <value>Chi tiết phông chữ</value>
+  </data>
+  <data name="Settings.MediaCard.FontDetails.Description" xml:space="preserve">
+    <value>Chọn phông riêng cho tiếng Trung, Nhật và Anh</value>
+  </data>
 </root>

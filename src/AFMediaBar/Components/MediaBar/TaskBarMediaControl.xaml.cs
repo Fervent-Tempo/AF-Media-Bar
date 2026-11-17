@@ -226,6 +226,24 @@ namespace AFMediaBar.Components
             VerticalMetadata.StopAnimations();
         }
 
+        /// <summary>
+        /// 「仅显示媒体卡片」：宿主挂起期间彻底释放 WebView2，退出时清挂起标志并让生命周期策略重建歌词视图。
+        /// 不用 DisposePresentation，那是窗口最终关闭用的，释放后无法重建。
+        /// </summary>
+        internal void SetMediaCardOnlyMode(bool active)
+        {
+            if (active)
+            {
+                // Suspend 已置 _isHostVisibilitySuspended，Create 分支被挡住，释放后不会被在途帧重新建回来。
+                _lyrics.StopWebLyrics();
+                return;
+            }
+
+            // Resume 可能因布局未就绪跳过清挂起；显式清一次，再补一次生命周期判定作为兜底。
+            ApplyHostVisibilitySuspension(false);
+            _lyrics.UpdateWebLyricsPresentation(allowTransition: false);
+        }
+
         // === 内部状态缓存 Internal State Cache ===
         // These immutable foregrounds are shared; hover surfaces own separate animatable brushes.
         private static readonly SolidColorBrush DarkPlayerForeground = CreateFrozenBrush(Color.FromRgb(0x1C, 0x1C, 0x1C));

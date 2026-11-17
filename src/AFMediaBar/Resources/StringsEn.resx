@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--StringsEn stores one UI language; Translations owns lookup and runtime WPF publication.-->
 <root>
   <resheader name="resmimetype">
@@ -3933,6 +3933,189 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
   <data name="Interaction.Row.NativeTrayIcon.Description" xml:space="preserve">
     <value>Automatically use the matching icon for audio controls, output devices, input devices, or current app volume based on the click action.</value>
   </data>
+  <data name="Settings.Page.MediaCard" xml:space="preserve">
+    <value>Media card</value>
+  </data>
+  <data name="Settings.Page.MediaCard.Description" xml:space="preserve">
+    <value>Put a media card on your desktop that follows what's playing</value>
+  </data>
+  <data name="Settings.MediaCard.Group" xml:space="preserve">
+    <value>Media card</value>
+  </data>
+  <data name="Settings.MediaCard.Group.Description" xml:space="preserve">
+    <value>Shows artwork and lyrics; playback controls appear when you hover</value>
+  </data>
+  <data name="Settings.MediaCard.Enabled" xml:space="preserve">
+    <value>Enable media card</value>
+  </data>
+  <data name="Settings.MediaCard.Enabled.Description" xml:space="preserve">
+    <value>Turn it off to hide the card; switch it back on any time</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode" xml:space="preserve">
+    <value>Layer behaviour</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode.Description" xml:space="preserve">
+    <value>Choose whether the card stays on top, sits normally, or is pinned to the desktop; the pin on the card does the same</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode.Normal" xml:space="preserve">
+    <value>Normal</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode.Topmost" xml:space="preserve">
+    <value>Always on top</value>
+  </data>
+  <data name="Settings.MediaCard.PinMode.FixedToDesktop" xml:space="preserve">
+    <value>Fix to desktop</value>
+  </data>
+  <data name="Settings.MediaCard.TransparentClickThrough" xml:space="preserve">
+    <value>Click through when transparent</value>
+  </data>
+  <data name="Settings.MediaCard.TransparentClickThrough.Description" xml:space="preserve">
+    <value>With the transparent colour, clicking empty parts of the card reaches the desktop below; artwork, lyrics and buttons still respond</value>
+  </data>
+  <data name="Settings.MediaCard.AccentFromCover" xml:space="preserve">
+    <value>Accent colour from artwork</value>
+  </data>
+  <data name="Settings.MediaCard.AccentFromCover.Description" xml:space="preserve">
+    <value>The card's colours follow the artwork, whichever colour scheme you pick</value>
+  </data>
+  <data name="Settings.MediaCard.ColorTheme" xml:space="preserve">
+    <value>Card colour</value>
+  </data>
+  <data name="Settings.MediaCard.ColorTheme.Description" xml:space="preserve">
+    <value>Dark, light, transparent, or colours taken from the artwork</value>
+  </data>
+  <data name="Settings.MediaCard.ColorTheme.Dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="Settings.MediaCard.ColorTheme.Light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Settings.MediaCard.ColorTheme.FromCover" xml:space="preserve">
+    <value>From artwork</value>
+  </data>
+  <data name="Settings.MediaCard.Romanization" xml:space="preserve">
+    <value>Show romanization</value>
+  </data>
+  <data name="Settings.MediaCard.Romanization.Description" xml:space="preserve">
+    <value>Shows the pronunciation row above the translation when available</value>
+  </data>
+  <data name="Settings.MediaCard.Components" xml:space="preserve">
+    <value>Spectrum and metrics</value>
+  </data>
+  <data name="Settings.MediaCard.Components.Description" xml:space="preserve">
+    <value>Choose whether the card shows a spectrum and readings such as CPU and GPU</value>
+  </data>
+  <data name="Settings.MediaCard.Spectrum.Group" xml:space="preserve">
+    <value>Spectrum</value>
+  </data>
+  <data name="Settings.MediaCard.Spectrum" xml:space="preserve">
+    <value>Show spectrum</value>
+  </data>
+  <data name="Settings.MediaCard.Spectrum.Description" xml:space="preserve">
+    <value>Show a spectrum that moves with the music</value>
+  </data>
+  <data name="Settings.MediaCard.ImmersiveSpectrum" xml:space="preserve">
+    <value>Immersive spectrum</value>
+  </data>
+  <data name="Settings.MediaCard.ImmersiveSpectrum.Description" xml:space="preserve">
+    <value>When the pointer leaves, the spectrum moves to the bottom edge and dances above the progress line</value>
+  </data>
+  <data name="Settings.MediaCard.WavyProgressBar" xml:space="preserve">
+    <value>Wavy progress bar</value>
+  </data>
+  <data name="Settings.MediaCard.WavyProgressBar.Description" xml:space="preserve">
+    <value>When you hover over the card, playback progress is drawn as a gently waving line that reacts to the music</value>
+  </data>
+  <data name="Settings.MediaCard.SpectrumMode" xml:space="preserve">
+    <value>Spectrum parameters</value>
+  </data>
+  <data name="Settings.MediaCard.SpectrumMode.Description" xml:space="preserve">
+    <value>Choose to follow the main program's parameters, or customise them</value>
+  </data>
+  <data name="Settings.MediaCard.SpectrumMode.FollowMain" xml:space="preserve">
+    <value>Follow the main bar</value>
+  </data>
+  <data name="Settings.MediaCard.SpectrumMode.Custom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="Settings.MediaCard.Metrics" xml:space="preserve">
+    <value>Performance metrics</value>
+  </data>
+  <data name="Settings.MediaCard.Metrics.Description" xml:space="preserve">
+    <value>Choose which readings appear on the card. Change how often they update and how they're shown in Performance settings</value>
+  </data>
+  <data name="Settings.MediaCard.MetricCpu.Description" xml:space="preserve">
+    <value>Show CPU usage on the card</value>
+  </data>
+  <data name="Settings.MediaCard.MetricGpu.Description" xml:space="preserve">
+    <value>Show GPU usage on the card</value>
+  </data>
+  <data name="Settings.MediaCard.MetricMemory.Description" xml:space="preserve">
+    <value>Show system memory usage on the card</value>
+  </data>
+  <data name="Settings.MediaCard.MetricNetwork.Description" xml:space="preserve">
+    <value>Show network rate on the card</value>
+  </data>
+  <data name="Settings.MediaCard.OpenPerformance" xml:space="preserve">
+    <value>Open performance settings</value>
+  </data>
+  <data name="Settings.MediaCard.OnlyCard" xml:space="preserve">
+    <value>Only show the media card</value>
+  </data>
+  <data name="Settings.MediaCard.OnlyCard.Description" xml:space="preserve">
+    <value>Hides the taskbar media bar to save resources; it comes back on its own when you close the card</value>
+  </data>
+  <data name="Settings.MediaCard.Fonts" xml:space="preserve">
+    <value>Card fonts</value>
+  </data>
+  <data name="Settings.MediaCard.Fonts.Description" xml:space="preserve">
+    <value>Pick a font for each language. Only the media card is affected.</value>
+  </data>
+  <data name="Settings.MediaCard.FontChinese" xml:space="preserve">
+    <value>Chinese font</value>
+  </data>
+  <data name="Settings.MediaCard.FontChinese.Description" xml:space="preserve">
+    <value>Chinese lyrics and song titles on the card</value>
+  </data>
+  <data name="Settings.MediaCard.FontJapanese" xml:space="preserve">
+    <value>Japanese font</value>
+  </data>
+  <data name="Settings.MediaCard.FontJapanese.Description" xml:space="preserve">
+    <value>Japanese lyrics, including the kanji</value>
+  </data>
+  <data name="Settings.MediaCard.FontEnglish" xml:space="preserve">
+    <value>Latin font</value>
+  </data>
+  <data name="Settings.MediaCard.FontEnglish.Description" xml:space="preserve">
+    <value>English text, numbers and romanisation</value>
+  </data>
+  <data name="Settings.MediaCard.Font.FollowSystem" xml:space="preserve">
+    <value>Follow system font</value>
+  </data>
+  <data name="Settings.MediaCard.FontReset" xml:space="preserve">
+    <value>Restore default fonts</value>
+  </data>
+  <data name="Settings.MediaCard.FontReset.Description" xml:space="preserve">
+    <value>If text looks wrong, restore the system default fonts for all three languages.</value>
+  </data>
+  <data name="Settings.MediaCard.FontReset.Action" xml:space="preserve">
+    <value>Restore defaults</value>
+  </data>
+  <data name="Settings.MediaCard.LyricsSource" xml:space="preserve">
+    <value>Lyrics source</value>
+  </data>
+  <data name="Settings.MediaCard.LyricsSource.Description" xml:space="preserve">
+    <value>The card uses the main lyrics settings; local lyric files are shown first when available</value>
+  </data>
+  <data name="Settings.MediaCard.OpenLyrics" xml:space="preserve">
+    <value>Open lyric settings</value>
+  </data>
+  <data name="Settings.MediaCard.TrackInfoOnEmptyLines" xml:space="preserve">
+    <value>Show track info on empty lines</value>
+  </data>
+  <data name="Settings.MediaCard.TrackInfoOnEmptyLines.Description" xml:space="preserve">
+    <value>Fills the empty lines with the song title and artist when there is no romanisation or translation; turn it off to leave them blank</value>
+  </data>
   <data name="Common.PlaybackQueue" xml:space="preserve"><value>Playback queue</value></data>
   <data name="DisplayModes.Rest.Component.Queue" xml:space="preserve"><value>Playback queue</value></data>
   <data name="DisplayModes.Rest.Component.Queue.Description" xml:space="preserve"><value>Show the playback queue of an external player such as Nons; the player must expose a local queue API.</value></data>
@@ -3975,4 +4158,31 @@ The full-panel entry opens on click or hover. Bluetooth battery remains an exper
   <data name="Panel.Shuffle.Unavailable" xml:space="preserve"><value>Shuffle unavailable</value></data>
   <data name="Panel.Shuffle.Connecting" xml:space="preserve"><value>Connecting to Nons…</value></data>
   <data name="Panel.Shuffle.Pending" xml:space="preserve"><value>Shuffle state not confirmed; refreshing…</value></data>
+  <data name="Settings.MediaCard.ColorTheme.Transparent" xml:space="preserve">
+    <value>Transparent</value>
+  </data>
+  <data name="Settings.MediaCard.InvertOnLightWallpaper" xml:space="preserve">
+    <value>Auto-invert on light wallpaper</value>
+  </data>
+  <data name="Settings.MediaCard.InvertOnLightWallpaper.Description" xml:space="preserve">
+    <value>With the transparent colour, text turns dark on a bright wallpaper and light on a dark one, so it stays readable</value>
+  </data>
+  <data name="Settings.MediaCard.AdvancedAppearance" xml:space="preserve">
+    <value>Fine-tune appearance</value>
+  </data>
+  <data name="Settings.MediaCard.AdvancedAppearance.Description" xml:space="preserve">
+    <value>Transparency, accent colour and wallpaper contrast</value>
+  </data>
+  <data name="Settings.MediaCard.LyricsDetails" xml:space="preserve">
+    <value>Lyrics details</value>
+  </data>
+  <data name="Settings.MediaCard.LyricsDetails.Description" xml:space="preserve">
+    <value>Romanisation, blank lines and the progress bar</value>
+  </data>
+  <data name="Settings.MediaCard.FontDetails" xml:space="preserve">
+    <value>Font details</value>
+  </data>
+  <data name="Settings.MediaCard.FontDetails.Description" xml:space="preserve">
+    <value>Pick a separate font for Chinese, Japanese and English</value>
+  </data>
 </root>

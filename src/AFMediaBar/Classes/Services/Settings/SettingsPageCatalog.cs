@@ -13,6 +13,7 @@ public static class SettingsPageCatalog
     {
         new SettingsPageDefinition(SettingsPageKey.QuickStart, "Settings.Section.Start", "Sparkle24", true, DescriptionKey: "Home.Description"),
         new SettingsPageDefinition(SettingsPageKey.ScreenAndPlacement, "Common.Page.ScreenAndPlacement", "Desktop24", true, HasModeContent: true, DescriptionKey: "Settings.Page.ScreenAndPlacement.Description"),
+        new SettingsPageDefinition(SettingsPageKey.MediaCard, "Settings.Page.MediaCard", "Desktop24", true, DescriptionKey: "Settings.Page.MediaCard.Description"),
         new SettingsPageDefinition(SettingsPageKey.RestState, "Common.Page.RestState", "Layer24", false, DescriptionKey: "Settings.RestState.Description"),
         new SettingsPageDefinition(SettingsPageKey.Appearance, "Settings.Page.BarAppearance", "PaintBrush24", false, DescriptionKey: "Settings.Page.Appearance.Description"),
         new SettingsPageDefinition(SettingsPageKey.Components, "Settings.Page.QuickControls", "HandDraw24", false, DescriptionKey: "Settings.Page.QuickControls.Description"),

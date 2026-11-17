@@ -23,11 +23,20 @@ public static class InstalledFontCatalog
 {
     // Han ranges are placed before the catch-all map so a Latin font with Han glyphs cannot hide the CJK choice.
     // 汉字范围先于兜底映射，避免西文字体自带汉字时遮住用户选的中文字体。
-    private const string HanRanges = "2E80-2FFF, 3000-303F, 31C0-31EF, 3400-4DBF, 4E00-9FFF, F900-FAFF, 20000-2FA1F";
-    private const string AllCharacters = "0000-10FFFF";
+    public const string HanRanges = "2E80-2FFF, 3000-303F, 31C0-31EF, 3400-4DBF, 4E00-9FFF, F900-FAFF, 20000-2FA1F";
+    public const string AllCharacters = "0000-10FFFF";
+    /// <summary>多脚本字体选择器的预览字样：拉丁、汉字、假名各取一个。</summary>
+    public const string MultilingualFontSample = "Aa 中文 あア";
     private static readonly ConcurrentDictionary<string, (bool Latin, bool Cjk)> CoverageCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly object _refreshGate = new();
     private static Task<(IReadOnlyList<FontFamilyChoice> Latin, IReadOnlyList<FontFamilyChoice> Cjk)>? _inFlightRefresh;
+    private static FontChoiceSet? _cachedFontChoices;
+
+    /// <summary>一次扫描产出的三份视图：外观页按脚本分开用，媒体卡片用合并后的全量清单。</summary>
+    private sealed record FontChoiceSet(
+        IReadOnlyList<FontFamilyChoice> Latin,
+        IReadOnlyList<FontFamilyChoice> Cjk,
+        IReadOnlyList<FontFamilyChoice> All);
     private static readonly Dictionary<string, string> CommonChineseNames = new(StringComparer.OrdinalIgnoreCase)
     {
         ["YouYuan"] = "幼圆",
@@ -78,32 +87,81 @@ public static class InstalledFontCatalog
             : [system, new FontFamilyChoice(provisionalName, provisionalName, sample, new FontFamily(provisionalName))];
     }
 
+    /// <summary>外观页的拉丁／汉字字体选项。</summary>
+    public static async Task<(IReadOnlyList<FontFamilyChoice> Latin, IReadOnlyList<FontFamilyChoice> Cjk)> RefreshChoicesAsync(
+        CancellationToken cancellationToken)
+    {
+        var choices = await EnsureFontChoicesAsync(cancellationToken);
+        return (choices.Latin, choices.Cjk);
+    }
+
+    /// <summary>媒体卡片三语选择器用的全量字体清单，与外观页共用同一次后台扫描和缓存。</summary>
+    public static async Task<IReadOnlyList<FontFamilyChoice>> RefreshAllFontChoicesAsync(CancellationToken cancellationToken)
+    {
+        var choices = await EnsureFontChoicesAsync(cancellationToken);
+        return choices.All;
+    }
+
     /// <summary>
-    /// 在后台扫描字体；重复导航共享进行中的扫描，取消只停止当前等待。
+    /// 进程内只枚举一次字体：重复导航共享进行中的扫描，完成后缓存三份视图；取消只停止当前等待。
+    /// 新安装的字体在下次启动时可见。
     /// </summary>
-    public static Task<(IReadOnlyList<FontFamilyChoice> Latin, IReadOnlyList<FontFamilyChoice> Cjk)> RefreshChoicesAsync(CancellationToken cancellationToken)
+    private static async Task<FontChoiceSet> EnsureFontChoicesAsync(CancellationToken cancellationToken)
     {
         Task<(IReadOnlyList<FontFamilyChoice> Latin, IReadOnlyList<FontFamilyChoice> Cjk)> refresh;
         lock (_refreshGate)
         {
-            if (_inFlightRefresh is null || _inFlightRefresh.IsCompleted)
+            if (_cachedFontChoices is { } cached)
+                return cached;
+
+            if (_inFlightRefresh is null || _inFlightRefresh.IsFaulted || _inFlightRefresh.IsCanceled)
             {
                 _inFlightRefresh = Task.Run(() => (
                     GetChoices("Appearance.LatinFont.FollowSystem", cjk: false),
                     GetChoices("Appearance.CjkFont.FollowSystem", cjk: true)));
-                // 离页可能提前取消等待，仍需观察共享扫描的异常。
+                // 等待方提前取消时，共享扫描仍要把结果收进缓存，异常也必须被观察到。
                 _ = _inFlightRefresh.ContinueWith(
-                    static completed => _ = completed.Exception,
+                    static completed =>
+                    {
+                        if (completed.IsCompletedSuccessfully)
+                        {
+                            var (latin, cjk) = completed.Result;
+                            lock (_refreshGate)
+                                _cachedFontChoices = new FontChoiceSet(latin, cjk, MergeAllFontChoices(latin, cjk));
+                        }
+                        else
+                        {
+                            _ = completed.Exception;
+                        }
+                    },
                     CancellationToken.None,
-                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                    TaskContinuationOptions.ExecuteSynchronously,
                     TaskScheduler.Default);
             }
 
             refresh = _inFlightRefresh;
         }
 
-        return refresh.WaitAsync(cancellationToken);
+        var (scannedLatin, scannedCjk) = await refresh.WaitAsync(cancellationToken);
+        lock (_refreshGate)
+        {
+            if (_cachedFontChoices is { } cached && ReferenceEquals(cached.Latin, scannedLatin))
+                return cached;
+        }
+        return new FontChoiceSet(scannedLatin, scannedCjk, MergeAllFontChoices(scannedLatin, scannedCjk));
     }
+
+    private static IReadOnlyList<FontFamilyChoice> MergeAllFontChoices(
+        IReadOnlyList<FontFamilyChoice> latin, IReadOnlyList<FontFamilyChoice> cjk) =>
+        // 跳过两份列表各自的「跟随系统」占位，统一用字体源名和三语字样，方便挑日文字体。
+        latin.Concat(cjk)
+            .Where(choice => choice.Name.Length > 0)
+            .GroupBy(choice => choice.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .OrderBy(choice => choice.Name, StringComparer.CurrentCultureIgnoreCase)
+            .Select(choice => new FontFamilyChoice(
+                choice.Name, choice.Name, MultilingualFontSample, choice.PreviewFontFamily))
+            .ToArray();
 
     /// <summary>在 UI 线程更新字样和系统选项；刷新目录时复用同名选项，保留控件选择。</summary>
     public static IReadOnlyList<FontFamilyChoice> RelocalizeChoices(

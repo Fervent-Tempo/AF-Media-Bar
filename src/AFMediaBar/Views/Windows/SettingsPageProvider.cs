@@ -17,6 +17,7 @@ public sealed class SettingsPageProvider(SettingsPageScopeCache cache, SettingsC
     {
         [SettingsPageKey.QuickStart] = typeof(QuickStartPage),
         [SettingsPageKey.ScreenAndPlacement] = typeof(ScreenAndPlacementPage),
+        [SettingsPageKey.MediaCard] = typeof(MediaCardPage),
         [SettingsPageKey.Appearance] = typeof(AppearancePage),
         [SettingsPageKey.ApplicationAppearance] = typeof(ApplicationAppearancePage),
         [SettingsPageKey.RestState] = typeof(RestStatePage),

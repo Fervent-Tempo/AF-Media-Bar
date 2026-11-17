@@ -4,6 +4,7 @@ using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace AFMediaBar.Classes.Settings;
 
@@ -74,6 +75,7 @@ public sealed class AppSettings : INotifyPropertyChanged
     private BluetoothBatteryWidgetSettings _bluetoothBatteryWidget = new();
     private SystemMemoryOptimizationSettings _systemMemoryOptimization = new();
     private PerformanceComponentSettings _performanceComponent = PerformanceComponentSettings.Default;
+    private MediaCardSettings _mediaCard = new();
     private UpdateSettings _update = UpdateSettings.Default;
     private bool _launchAtStartup = true;
     private bool _developerModeEnabled;
@@ -210,6 +212,9 @@ public sealed class AppSettings : INotifyPropertyChanged
     public BluetoothBatteryWidgetSettings BluetoothBatteryWidget { get => _bluetoothBatteryWidget; set => Set(ref _bluetoothBatteryWidget, (value ?? new()).Normalize()); }
     public SystemMemoryOptimizationSettings SystemMemoryOptimization { get => _systemMemoryOptimization; set => Set(ref _systemMemoryOptimization, (value ?? new()).Normalize()); }
     public PerformanceComponentSettings PerformanceComponent { get => _performanceComponent; set => Set(ref _performanceComponent, value.Normalize()); }
+    // 旧配置文件仍用 desktopCard 键；属性改名后显式保留，避免用户已有卡片设置被重置。
+    [JsonPropertyName("desktopCard")]
+    public MediaCardSettings MediaCard { get => _mediaCard; set => Set(ref _mediaCard, (value ?? new()).Normalize()); }
 
     /// <summary>更新下载器设置：自动检查、自动下载安装、已跳过版本与上次检查结果。/ Update-downloader settings: automatic checking, automatic download and install, skipped version, and the last check result.</summary>
     public UpdateSettings Update { get => _update; set => Set(ref _update, value.Normalize()); }
@@ -282,6 +287,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         result.BluetoothBatteryWidget = result.BluetoothBatteryWidget.Normalize();
         result.SystemMemoryOptimization = result.SystemMemoryOptimization.Normalize();
         result.PerformanceComponent = result.PerformanceComponent.Normalize();
+        result.MediaCard = result.MediaCard.Normalize();
         result.Update = result.Update.Normalize();
         if (!Enum.IsDefined(result.InterfaceLanguage)) result.InterfaceLanguage = defaults.InterfaceLanguage;
         result.TaskbarTargetMonitorDeviceId = string.IsNullOrWhiteSpace(result.TaskbarTargetMonitorDeviceId)
@@ -364,6 +370,7 @@ public sealed class AppSettings : INotifyPropertyChanged
         BluetoothBatteryWidget = BluetoothBatteryWidget,
         SystemMemoryOptimization = SystemMemoryOptimization,
         PerformanceComponent = PerformanceComponent,
+        MediaCard = MediaCard,
         Update = Update,
         DeveloperModeEnabled = DeveloperModeEnabled,
         LaunchAtStartup = LaunchAtStartup,

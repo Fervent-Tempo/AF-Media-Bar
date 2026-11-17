@@ -94,6 +94,12 @@ public partial class MainWindow
             _taskbarWindows.AddRange(_runtime.Hosts.OfType<TaskbarWindow>());
             _floatingWindows.Clear();
             _floatingWindows.AddRange(_runtime.Hosts.OfType<FloatingBarWindow>());
+            // 多屏或显示模式切换会换掉宿主列表；新宿主也要停掉 WebView2，否则 OnlyCard 状态会漏掉它们。
+            if (_mediaCardOnlyApplied)
+            {
+                _mediaCardOnlyApplied = false;
+                SetMediaCardOnlyMode(true);
+            }
             if (success)
             {
                 _runtimeSignature = signature;
