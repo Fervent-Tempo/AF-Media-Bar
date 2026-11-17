@@ -215,6 +215,12 @@ public partial class TaskBarMediaControl
     private void RefreshBarMoveHandle()
     {
         if (_barMoveHandle is null) return;
+        // 位置锁定后没有可执行的移动操作，不再显示拖动手柄；解锁时由设置变更重新评估。
+        if (PresentationSettings.TaskbarBarPositionLocked)
+        {
+            ResetBarMoveHandle();
+            return;
+        }
         var canShow = !_barMoveDisposed && IsLoaded && IsVisible && IsHitTestVisible && IsBarPresentation &&
             !_isHostVisibilitySuspended && (!_isPlacementMotionActive || _barDragActive) &&
             _backgroundPruneLevel < MemoryPruneLevel.DisplayOff && _barMoveHandle.Visibility == Visibility.Visible;
@@ -258,11 +264,10 @@ public partial class TaskBarMediaControl
                     FillBehavior = FillBehavior.Stop
                 }, HandoffBehavior.SnapshotAndReplace);
         }
-        var locked = PresentationSettings.TaskbarBarPositionLocked;
         if (_barDragActive) _barMoveHandle.SetResourceReference(Border.BackgroundProperty, "BarMoveHandlePressedBrush");
         else _barMoveHandle.ClearValue(Border.BackgroundProperty);
-        _barMoveHandle.Cursor = locked ? Cursors.No : Cursors.SizeAll;
-        _barMoveHandle.ToolTip = Translations.Get(locked ? "ComponentLayout.Locked" : "ComponentLayout.Move");
+        _barMoveHandle.Cursor = Cursors.SizeAll;
+        _barMoveHandle.ToolTip = Translations.Get("ComponentLayout.Move");
         System.Windows.Automation.AutomationProperties.SetName(_barMoveHandle, _barMoveHandle.ToolTip.ToString());
         RefreshBarMoveContrast();
     }

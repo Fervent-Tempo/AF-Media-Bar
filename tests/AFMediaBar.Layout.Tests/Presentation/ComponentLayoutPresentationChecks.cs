@@ -132,6 +132,41 @@ internal static class ComponentLayoutPresentationChecks
                 Assert.IsTrue(popup.IsOpen);
                 Assert.IsTrue(timer.IsEnabled);
                 timer.Stop();
+
+                void VerifyLockHidesHandle(WindowMode mode, LayoutOrientation orientation)
+                {
+                    settings.TaskbarBarPositionLocked = false;
+                    control.ApplyLayout(mode, orientation, 100, 100, 44);
+                    control.ApplyPrimaryLength(300);
+                    control.Width = orientation == LayoutOrientation.Vertical ? 44 : 300;
+                    control.Height = orientation == LayoutOrientation.Vertical ? 300 : 44;
+                    host.UpdateLayout();
+                    control.SetBarDragActive(true);
+                    Assert.IsTrue(popup.IsOpen, $"{mode}/{orientation} 解锁时显示拖动手柄。");
+                    timer.Stop();
+
+                    settings.TaskbarBarPositionLocked = true;
+                    SettingsLiveVisualChecks.Pump(TimeSpan.FromMilliseconds(10));
+                    Assert.IsFalse(popup.IsOpen, $"{mode}/{orientation} 锁定后不能继续显示拖动手柄。");
+                    Assert.IsFalse(timer.IsEnabled);
+
+                    settings.TaskbarBarPositionLocked = false;
+                    control.SetBarDragActive(true);
+                    Assert.IsTrue(popup.IsOpen, $"{mode}/{orientation} 解锁后应恢复拖动手柄。");
+                    timer.Stop();
+                }
+
+                foreach (var mode in new[] { WindowMode.Taskbar, WindowMode.FloatingBar })
+                    foreach (var orientation in new[] { LayoutOrientation.Horizontal, LayoutOrientation.Vertical })
+                        VerifyLockHidesHandle(mode, orientation);
+
+                control.ApplyLayout(WindowMode.Taskbar, LayoutOrientation.Horizontal, 100, 100, 44);
+                control.ApplyPrimaryLength(300);
+                control.Width = 300;
+                control.Height = 44;
+                host.UpdateLayout();
+                control.SetBarDragActive(true);
+                timer.Stop();
                 var body = (FrameworkElement)control.FindName("MainBorder");
                 var relative = popup.Child.PointToScreen(new Point()) - body.PointToScreen(new Point());
                 foreach (var position in new[] { 80d, 5d, 120d, 0d })
