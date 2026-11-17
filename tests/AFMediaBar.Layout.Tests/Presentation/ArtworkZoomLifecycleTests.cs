@@ -352,6 +352,40 @@ public sealed class ArtworkZoomLifecycleTests
     });
 
     [TestMethod]
+    public void ZoomSubstituteCarriesTheEdgeProgressRing() => RunIsolated(nameof(ZoomSubstituteCarriesTheEdgeProgressRing), (control, dispatcher) =>
+    {
+        var ring = (ArtworkProgress)control.FindName("SongImageProgress");
+        var previousVisibility = ring.Visibility;
+        var previousProgress = ring.Progress;
+        try
+        {
+            ring.Progress = 0.42;
+            ring.Visibility = Visibility.Visible;
+            Invoke(control, "ShowArtworkHoverZoom");
+            Assert.IsTrue(GetPopup(control).IsOpen, "必须真的进入原地放大。");
+
+            var substitute = (Border)MediaBarTestAccess
+                .GetField("_artworkZoomSubstitute", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control)!;
+            var mirror = FindDescendant<ArtworkProgress>(substitute);
+            Assert.IsNotNull(mirror, "替身必须带上边缘进度环，否则换树那一帧边缘会闪一下。");
+            Assert.AreEqual(0.42, mirror!.Progress, 0.001, "替身的进度必须与真环一致。");
+            Assert.AreEqual(Visibility.Visible, mirror.Visibility, "替身的显隐必须与真环一致。");
+
+            ring.Progress = 0.73;
+            Assert.AreEqual(0.73, mirror.Progress, 0.001, "放大期间播放推进时，替身的进度必须跟着真环更新。");
+
+            Invoke(control, "HideArtworkHoverZoom", true);
+            AssertRestored(control);
+        }
+        finally
+        {
+            ring.Progress = previousProgress;
+            ring.Visibility = previousVisibility;
+        }
+        return Task.CompletedTask;
+    });
+
+    [TestMethod]
     public void HostSuspensionSettlesConnectionTransitionsAndRejectsHiddenTransitions() => RunIsolated(nameof(HostSuspensionSettlesConnectionTransitionsAndRejectsHiddenTransitions), (control, dispatcher) =>
     {
         control.AllowRestConnectionTransition = true;
@@ -607,6 +641,20 @@ public sealed class ArtworkZoomLifecycleTests
         for (DependencyObject? current = artwork; current is not null; current = VisualTreeHelper.GetParent(current))
             if (current is FrameworkElement element && element.ToolTip is not null)
                 return element;
+        return null;
+    }
+
+    private static T? FindDescendant<T>(DependencyObject root) where T : DependencyObject
+    {
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+        {
+            var child = VisualTreeHelper.GetChild(root, index);
+            if (child is T match)
+                return match;
+            if (FindDescendant<T>(child) is { } nested)
+                return nested;
+        }
+
         return null;
     }
 

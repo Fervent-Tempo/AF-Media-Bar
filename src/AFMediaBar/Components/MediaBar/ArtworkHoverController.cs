@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -908,16 +909,19 @@ public partial class TaskBarMediaControl
 
         /// <summary>
         /// 在主画布原格位置放一份替身封面（见 <see cref="_artworkZoomSubstitute"/>）：与真封面<b>同构</b>——同一把封面画刷、同一把暂停遮罩
-        /// （<see cref="SongImagePauseScrimBrush"/>，故换歌与暂停遮罩都自动跟随）、按当前显隐与字形复制的占位符号。层级压在封面（ZIndex 2）
-        /// 之下，且放大轮廓始终把原格包住，故真封面在场时它完全被遮住、缩到 1× 也不会露边；已存在时先撤旧，连续放大不叠加。
+        /// （<see cref="SongImagePauseScrimBrush"/>，故换歌与暂停遮罩都自动跟随）、按当前显隐与字形复制的占位符号，以及一条绑定跟随的
+        /// 边缘进度环。层级压在封面（ZIndex 2）之下，且放大轮廓始终把原格包住，故真封面在场时它完全被遮住、缩到 1× 也不会露边；
+        /// 已存在时先撤旧，连续放大不叠加。
         /// "同构"是刻意的：替身要在真封面离开主树的那几帧里充当"这一格"，合成必须与静态、与放大态一模一样，否则换树处就是一次可见的跳变。
+        /// 进度环尤其如此：它贴着封面外沿描边，一旦缺席，换树那一帧就是"边缘闪一下"。
         /// Places a stand-in cover at the original slot in the main canvas (see <see cref="_artworkZoomSubstitute"/>), <b>isomorphic</b> to the
         /// real cover: the same cover brush, the same paused scrim (<see cref="SongImagePauseScrimBrush"/>, so track changes and the paused
-        /// dimming both follow by themselves), and the placeholder glyph mirrored with its current visibility and glyph. It sits under the
-        /// artwork (ZIndex 2) and the enlarged outline encloses the original slot, so the real cover hides it whole and it never peeks out even
-        /// at 1×. An existing one is dismissed first, so consecutive zooms never stack. The isomorphism is deliberate: the stand-in stands in
-        /// for the slot during the frames the real cover spends outside the main tree, and its composite has to match the static slot and the
-        /// zoomed cover exactly, or the hand-off becomes a visible jump.
+        /// dimming both follow by themselves), the placeholder glyph mirrored with its current visibility and glyph, and a bound copy of the
+        /// edge progress ring. It sits under the artwork (ZIndex 2) and the enlarged outline encloses the original slot, so the real cover hides
+        /// it whole and it never peeks out even at 1×. An existing one is dismissed first, so consecutive zooms never stack. The isomorphism is
+        /// deliberate: the stand-in stands in for the slot during the frames the real cover spends outside the main tree, and its composite has
+        /// to match the static slot and the zoomed cover exactly, or the hand-off becomes a visible jump. The ring matters most here: it hugs the
+        /// cover's outline, so a frame without it reads as the edge blinking.
         /// </summary>
         internal void ShowArtworkZoomSubstitute()
         {
@@ -940,6 +944,17 @@ public partial class TaskBarMediaControl
                 CornerRadius = _owner.SongImageBorder.CornerRadius,
                 Background = _owner.SongImagePauseScrimBrush
             };
+            // 边缘进度环跟随真环：进度、描边与显隐全部用绑定挂在真元素上，播放推进与设置切换都自动同步，替身不需要任何人来刷新。
+            // The edge progress ring mirrors the real one: progress, stroke, and visibility are bound straight to the real element, so
+            // playback advance and setting changes follow by themselves with no one refreshing the stand-in.
+            var progress = new ArtworkProgress { IsHitTestVisible = false };
+            Panel.SetZIndex(progress, 1);
+            BindingOperations.SetBinding(progress, ArtworkProgress.ProgressProperty,
+                new Binding(nameof(ArtworkProgress.Progress)) { Source = _owner.SongImageProgress });
+            BindingOperations.SetBinding(progress, ArtworkProgress.StrokeProperty,
+                new Binding(nameof(ArtworkProgress.Stroke)) { Source = _owner.SongImageProgress });
+            BindingOperations.SetBinding(progress, UIElement.VisibilityProperty,
+                new Binding(nameof(UIElement.Visibility)) { Source = _owner.SongImageProgress });
             var substitute = new Border
             {
                 Width = _owner.SongImageBorder.ActualWidth,
@@ -948,7 +963,7 @@ public partial class TaskBarMediaControl
                 ClipToBounds = true,
                 Background = _owner.SongImage,
                 IsHitTestVisible = false,
-                Child = new System.Windows.Controls.Grid { Children = { scrim, icon } }
+                Child = new System.Windows.Controls.Grid { Children = { scrim, icon, progress } }
             };
             Canvas.SetLeft(substitute, Canvas.GetLeft(_owner.SongImageBorder));
             Canvas.SetTop(substitute, Canvas.GetTop(_owner.SongImageBorder));
