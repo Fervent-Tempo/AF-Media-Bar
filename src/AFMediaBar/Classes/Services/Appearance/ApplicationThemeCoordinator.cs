@@ -170,22 +170,16 @@ public sealed class ApplicationThemeCoordinator : IDisposable
         var explicitAccent = !highContrast &&
             (appearance.AccentColorMode == AccentColorMode.Custom || accentFromArtwork);
 
-        // 先让 WPF-UI 按本次的原始强调色重刷它自己的资源，再读取结果：这样"我们的画刷"和"库内控件"必然同色，
-        // 也不会再出现库内控件是新色、我们的滑杆还是旧色（或反过来）的分裂。
-        // Let WPF-UI refresh its own resources from this pass's raw accent first and then read its result: our brushes and the
-        // library's controls are then guaranteed to be the same color instead of one being fresh and the other stale.
-        if (explicitAccent)
-        {
-            ApplyCustomAccent(requestedAccent, theme);
-        }
-        else
+        if (!explicitAccent)
         {
             ApplicationAccentColorManager.ApplySystemAccent();
-            systemAccent = ResolveSystemAccent();
-            requestedAccent = systemAccent;
+            requestedAccent = ResolveSystemAccent();
         }
 
         var palette = AccentColorPolicy.Build(requestedAccent, dark, highContrast, accentFromArtwork);
+        // 从封面取色时，两套应用资源使用同一个修正后的基础色。
+        if (explicitAccent)
+            ApplyCustomAccent(accentFromArtwork ? palette.Accent : requestedAccent, theme);
 
         // 强调色、主题与外观设置都没变时不做任何重应用：DWM 与系统偏好消息会出现成串重复事件。
         // 外观设置参与判断是必须的：字体只通过这一条资源回调生效。
