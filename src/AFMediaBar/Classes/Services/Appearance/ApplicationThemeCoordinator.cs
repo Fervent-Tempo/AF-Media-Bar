@@ -165,9 +165,10 @@ public sealed class ApplicationThemeCoordinator : IDisposable
         // 高对比度例外：此时不写自选色/封面色，交给系统高亮色，避免库内控件和应用画刷分成两套颜色。
         // Both the custom colour and a resolved artwork accent must be pushed to WPF-UI, or its controls stay on the system colour.
         // High contrast is the exception: neither is pushed, so the system highlight keeps the library and our brushes on one palette.
+        var accentFromArtwork = !highContrast &&
+            appearance.AccentColorMode == AccentColorMode.FromCover && coverAccent is not null;
         var explicitAccent = !highContrast &&
-            (appearance.AccentColorMode == AccentColorMode.Custom ||
-             (appearance.AccentColorMode == AccentColorMode.FromCover && coverAccent is not null));
+            (appearance.AccentColorMode == AccentColorMode.Custom || accentFromArtwork);
 
         // 先让 WPF-UI 按本次的原始强调色重刷它自己的资源，再读取结果：这样"我们的画刷"和"库内控件"必然同色，
         // 也不会再出现库内控件是新色、我们的滑杆还是旧色（或反过来）的分裂。
@@ -184,7 +185,7 @@ public sealed class ApplicationThemeCoordinator : IDisposable
             requestedAccent = systemAccent;
         }
 
-        var palette = AccentColorPolicy.Build(requestedAccent, dark, highContrast);
+        var palette = AccentColorPolicy.Build(requestedAccent, dark, highContrast, accentFromArtwork);
 
         // 强调色、主题与外观设置都没变时不做任何重应用：DWM 与系统偏好消息会出现成串重复事件。
         // 外观设置参与判断是必须的：字体只通过这一条资源回调生效。

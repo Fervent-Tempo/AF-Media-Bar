@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Utils;
@@ -23,6 +23,21 @@ public static class AccentColorPolicy
     /// <summary>悬停与按下档相对原始强调色的混合比例。/ Mix ratio of the hover and pressed shades against the raw accent.</summary>
     private const double HoverMix = 0.12;
     private const double PressedMix = 0.16;
+
+    /// <summary>
+    /// 强调色画在主题背景上的最低对比度：3:1 是 WCAG AA 对图形元素（进度条、频谱、滑块）的要求。
+    /// Minimum contrast between the accent and the theme surface: 3:1 is what WCAG AA asks of graphical objects.
+    /// </summary>
+    internal const double MinimumSurfaceContrast = 3.0;
+
+    /// <summary>对比度不足时朝背景反方向混合的上限；再高就不是封面色了。/ Upper bound of the corrective mix; beyond it the colour stops being the cover's.</summary>
+    private const double MaximumContrastMix = 0.5;
+
+    /// <summary>深色主题内容区的代表背景。/ Representative content surface of the dark theme.</summary>
+    internal static readonly Color DarkSurface = Color.FromRgb(0x1A, 0x1A, 0x1E);
+
+    /// <summary>浅色主题内容区的代表背景。/ Representative content surface of the light theme.</summary>
+    internal static readonly Color LightSurface = Color.FromRgb(0xF3, 0xF3, 0xF3);
 
     /// <summary>
     /// 外观页上直接可点的强调色预设。取值覆盖色轮的主要区段而不是 Windows 个性化里的那一组，
@@ -74,7 +89,14 @@ public static class AccentColorPolicy
     /// <param name="systemAccent">系统原始强调色（可带 alpha，函数只取其 RGB）。/ Raw system accent; only its RGB channels are used.</param>
     /// <param name="darkTheme">当前是否为深色主题，决定悬停/按下往哪个方向混合。/ Whether the theme is dark, which decides the direction of the hover and pressed mixes.</param>
     /// <param name="highContrast">是否处于高对比度；此时整套颜色改用系统高亮色。/ Whether high contrast is active, in which case the system highlight colors are used.</param>
-    public static AccentPalette Build(Color systemAccent, bool darkTheme, bool highContrast)
+    /// <param name="fromArtwork">
+    /// 强调色是否来自封面取色。是则保证它与主题背景的对比度——封面主色完全可能是整张封面的同一个色调，
+    /// 压在相近的背景上会让进度条、频谱这些细元素看不见。
+    /// Whether the accent came from the artwork. When it did, its contrast against the theme surface is guaranteed: a cover whose
+    /// dominant colour fills the whole image can otherwise sit too close to the background and make thin elements like the progress
+    /// bar and the spectrum unreadable.
+    /// </param>
+    public static AccentPalette Build(Color systemAccent, bool darkTheme, bool highContrast, bool fromArtwork = false)
     {
         if (highContrast)
         {
@@ -87,6 +109,12 @@ public static class AccentColorPolicy
         }
 
         var accent = Opaque(systemAccent);
+        // 只有封面取色需要兜底：系统色由 Windows 保证，自选色是用户自己挑的，擅自改它们会变成"选了这个颜色却显示另一个"。
+        // Only the artwork accent needs the guard: the system colour is guaranteed by Windows and a custom colour is the user's own
+        // pick, so adjusting either would mean showing a different colour than the one that was chosen.
+        if (fromArtwork)
+            accent = EnsureSurfaceContrast(accent, darkTheme ? DarkSurface : LightSurface);
+
         var toward = darkTheme ? Colors.White : Colors.Black;
         return new AccentPalette(
             accent,
@@ -94,6 +122,35 @@ public static class AccentColorPolicy
             Mix(accent, darkTheme ? Colors.Black : Colors.White, PressedMix),
             WithAlpha(accent, TintAlpha),
             ResolveOnAccent(accent));
+    }
+
+    /// <summary>
+    /// 把强调色拉到与背景成最低对比度；朝背景的反方向逐步混合，取刚好达标的最小改动，达标时原样返回。
+    /// Lifts the accent to the minimum contrast against the surface by mixing step by step away from the surface, taking the
+    /// smallest change that passes and returning the colour untouched when it already does.
+    /// </summary>
+    internal static Color EnsureSurfaceContrast(Color accent, Color surface)
+    {
+        if (ContrastRatio(accent, surface) >= MinimumSurfaceContrast)
+            return accent;
+
+        var toward = RelativeLuminance(surface) < 0.5 ? Colors.White : Colors.Black;
+        const int steps = 10;
+        for (var step = 1; step <= steps; step++)
+        {
+            var candidate = Mix(accent, toward, MaximumContrastMix * step / steps);
+            if (ContrastRatio(candidate, surface) >= MinimumSurfaceContrast)
+                return candidate;
+        }
+        return Mix(accent, toward, MaximumContrastMix);
+    }
+
+    /// <summary>两色之间的对比度（WCAG 定义）。/ Contrast ratio between two colours, as defined by WCAG.</summary>
+    internal static double ContrastRatio(Color left, Color right)
+    {
+        var first = RelativeLuminance(left);
+        var second = RelativeLuminance(right);
+        return (Math.Max(first, second) + 0.05) / (Math.Min(first, second) + 0.05);
     }
 
     /// <summary>
