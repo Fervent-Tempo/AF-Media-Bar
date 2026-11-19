@@ -13,13 +13,14 @@ internal sealed class LyricsRetryTracker<TKey>(int capacity) where TKey : notnul
         !_failures.TryGetValue(key, out var failures) || failures == 0 ||
         isPlaying && failures < MaximumFailures;
 
-    internal void RecordResult(TKey key, LyricsResult? result, string title)
+    internal TimeSpan? RecordResult(TKey key, LyricsResult? result, string title)
     {
         _failures.TryGetValue(key, out var failures);
         var next = result is null ? Math.Min(failures + 1, MaximumFailures) : 0;
         _failures.Set(key, next);
         if (next == MaximumFailures && failures < MaximumFailures)
             AppLogService.Current?.Info("Lyrics", $"自动取词已停止: title=\"{title}\" consecutiveFailures={MaximumFailures}");
+        return LyricsCacheRetentionPolicy.Lifetime(next);
     }
 
     internal void Clear() => _failures.Clear();

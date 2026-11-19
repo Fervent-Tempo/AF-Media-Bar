@@ -497,16 +497,16 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
             // to the current configuration and writing it would only make the setting look ineffective.
             if (!_disposed && !token.IsCancellationRequested && generation == _lyricsCacheGeneration)
             {
-                _lyricsRetries.RecordResult(key, result, request.Title);
-                _lyricsCache.Set(key, result, LyricsCacheRetentionPolicy.Lifetime(result));
+                var lifetime = _lyricsRetries.RecordResult(key, result, request.Title);
+                _lyricsCache.Set(key, result, lifetime);
             }
         }
         catch
         {
             if (!_disposed && !token.IsCancellationRequested && generation == _lyricsCacheGeneration)
             {
-                _lyricsRetries.RecordResult(key, null, request.Title);
-                _lyricsCache.Set(key, null, LyricsCacheRetentionPolicy.Lifetime(null));
+                var lifetime = _lyricsRetries.RecordResult(key, null, request.Title);
+                _lyricsCache.Set(key, null, lifetime);
             }
         }
         finally
