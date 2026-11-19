@@ -11,6 +11,8 @@ public sealed class MediaSourceNameFormatterTests
     [TestMethod]
     [DataRow("top.izuna.foliamajor", "Folia")]
     [DataRow("Folia.exe", "Folia")]
+    [DataRow("nons", "NONS")]
+    [DataRow("Nons.exe", "NONS")]
     [DataRow("SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify", "Spotify")]
     [DataRow("vlc.exe", "VLC")]
     [DataRow("mpv", "mpv")]
@@ -25,7 +27,25 @@ public sealed class MediaSourceNameFormatterTests
         // 首页按这个键分组并匹配「播放器支持」里的条目；漏掉映射会掉进 other，卡片显示成 top.izuna。
         Assert.AreEqual("Folia", MediaSourceNameFormatter.GetKnownSourceKey("top.izuna.foliamajor"));
         Assert.AreEqual("Folia", MediaSourceNameFormatter.GetKnownSourceKey("Folia.exe"));
+        // NonsPlayer 的 SMTC 标识就是 Nons，未登记时首页会把包名原样显示成 nons 并归到 other。
+        // NonsPlayer reports Nons as its SMTC identity; without the mapping the home page shows the bare package name and files it under other.
+        Assert.AreEqual("NONS", MediaSourceNameFormatter.GetKnownSourceKey("nons"));
+        Assert.AreEqual("NONS", MediaSourceNameFormatter.GetKnownSourceKey("Nons.exe"));
         Assert.AreEqual("other", MediaSourceNameFormatter.GetKnownSourceKey("top.someoneelse.player"));
+    }
+
+    [TestMethod]
+    public void CategoriesDriveTheMusicFirstTiering()
+    {
+        Assert.AreEqual(MediaSourceCategory.Music, MediaSourceNameFormatter.GetCategory("cloudmusic.exe"));
+        Assert.AreEqual(MediaSourceCategory.Music, MediaSourceNameFormatter.GetCategory("SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify"));
+        Assert.AreEqual(MediaSourceCategory.Music, MediaSourceNameFormatter.GetCategory("nons"));
+        Assert.AreEqual(MediaSourceCategory.Video, MediaSourceNameFormatter.GetCategory("PotPlayerMini64.exe"));
+        Assert.AreEqual(MediaSourceCategory.Video, MediaSourceNameFormatter.GetCategory("mpv"));
+        Assert.AreEqual(MediaSourceCategory.Video, MediaSourceNameFormatter.GetCategory("vlc.exe"));
+        Assert.AreEqual(MediaSourceCategory.Browser, MediaSourceNameFormatter.GetCategory("msedge"));
+        Assert.AreEqual(MediaSourceCategory.Other, MediaSourceNameFormatter.GetCategory("some-random-app.exe"));
+        Assert.AreEqual(MediaSourceCategory.Other, MediaSourceNameFormatter.GetCategory(null));
     }
 
     [TestMethod]

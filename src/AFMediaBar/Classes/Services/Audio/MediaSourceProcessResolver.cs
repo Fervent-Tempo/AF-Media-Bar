@@ -14,6 +14,7 @@ public sealed class MediaSourceProcessResolver
         (["qqmusic"], ["QQMusic"]),
         (["kugou", "kgmusic"], ["KuGou", "KuGouMusic"]),
         (["top.izuna.foliamajor"], ["Folia"]),
+        (["nons"], ["Nons"]),
         (["spotify"], ["Spotify"]),
         (["chrome"], ["chrome"]),
         (["msedge", "microsoftedge"], ["msedge"]),

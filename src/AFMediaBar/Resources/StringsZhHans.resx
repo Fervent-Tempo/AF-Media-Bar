@@ -3034,9 +3034,11 @@
   <data name="Media.Selection.Mode.Automatic" xml:space="preserve"><value>自动选择</value></data>
   <data name="Media.Selection.Mode.LatestSession" xml:space="preserve"><value>后来居上</value></data>
   <data name="Media.Selection.Mode.PreferredApplication" xml:space="preserve"><value>指定应用优先</value></data>
+  <data name="Media.Selection.Mode.MusicApplications" xml:space="preserve"><value>音乐程序优先</value></data>
   <data name="Media.Selection.Description.Automatic" xml:space="preserve"><value>最近开始或恢复播放的来源接管；全部暂停时保留当前来源。</value></data>
   <data name="Media.Selection.Description.LatestSession" xml:space="preserve"><value>新增媒体会话接管，即使处于暂停状态；切歌和恢复播放不改变先后。</value></data>
   <data name="Media.Selection.Description.PreferredApplication" xml:space="preserve"><value>优先显示指定应用，包括暂停状态；没有其媒体会话时使用自动选择。</value></data>
+  <data name="Media.Selection.Description.MusicApplications" xml:space="preserve"><value>先选纯音频播放器；没有时依次退到 PotPlayer、mpv、VLC 这类通用播放器，最后才是浏览器。同一档里优先正在播放的。</value></data>
   <data name="Media.Selection.Preferred.Title" xml:space="preserve"><value>优先应用</value></data>
   <data name="Media.Selection.Preferred.Description" xml:space="preserve"><value>从已发现的媒体来源中选择；应用离线时保留此配置。</value></data>
   <data name="Media.Selection.NoPreferred" xml:space="preserve"><value>未指定（使用自动选择）</value></data>

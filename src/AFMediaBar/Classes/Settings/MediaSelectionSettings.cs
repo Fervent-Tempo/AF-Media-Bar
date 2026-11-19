@@ -6,7 +6,9 @@ public enum MediaSelectionMode
 {
     Automatic = 0,
     LatestSession = 1,
-    PreferredApplication = 2
+    PreferredApplication = 2,
+    /// <summary>按来源类别分层：纯音频播放器 → 通用播放器 → 浏览器，层内优先正在播放的。</summary>
+    MusicApplications = 3
 }
 
 /// <summary>自动选择策略及优先应用的稳定来源标识。</summary>

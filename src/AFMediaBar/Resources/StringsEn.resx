@@ -3034,9 +3034,11 @@ Are you using a stripped-down Windows installation? Try restoring the affected s
   <data name="Media.Selection.Mode.Automatic" xml:space="preserve"><value>Automatic</value></data>
   <data name="Media.Selection.Mode.LatestSession" xml:space="preserve"><value>Newest session</value></data>
   <data name="Media.Selection.Mode.PreferredApplication" xml:space="preserve"><value>Preferred application</value></data>
+  <data name="Media.Selection.Mode.MusicApplications" xml:space="preserve"><value>Music players first</value></data>
   <data name="Media.Selection.Description.Automatic" xml:space="preserve"><value>The source that most recently starts or resumes playback takes over. Keep the current source when all are paused.</value></data>
   <data name="Media.Selection.Description.LatestSession" xml:space="preserve"><value>A newly added media session takes over, even when paused. Track changes and resuming playback do not change its order.</value></data>
   <data name="Media.Selection.Description.PreferredApplication" xml:space="preserve"><value>Prefer the selected application&apos;s media session, even when paused. Use Automatic when it has no session.</value></data>
+  <data name="Media.Selection.Description.MusicApplications" xml:space="preserve"><value>Prefers pure audio players, then general players such as PotPlayer, mpv and VLC, and finally browsers. Whatever is playing wins inside a tier.</value></data>
   <data name="Media.Selection.Preferred.Title" xml:space="preserve"><value>Preferred application</value></data>
   <data name="Media.Selection.Preferred.Description" xml:space="preserve"><value>Choose a discovered media source. The preference is kept while the application is offline.</value></data>
   <data name="Media.Selection.NoPreferred" xml:space="preserve"><value>None (use Automatic)</value></data>

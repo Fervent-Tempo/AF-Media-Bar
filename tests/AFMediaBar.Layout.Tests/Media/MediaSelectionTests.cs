@@ -199,6 +199,32 @@ public sealed class MediaSelectionTests
         Assert.AreEqual("z", f.Resolve(Source("a", true), Source("z", true))?.Key, "并列优先保留当前选择。");
     });
 
+    [TestMethod]
+    public void MusicApplicationsPreferAudioThenGeneralPlayersThenBrowsers() => Run(f =>
+    {
+        f.Settings = new(MediaSelectionMode.MusicApplications);
+        var browser = Source("browser", true, "msedge.exe");
+        var player = Source("player", true, "mpv.exe");
+        var music = Source("music", false, "cloudmusic.exe");
+        var unknown = Source("unknown", true, "some-random-app.exe");
+
+        Assert.AreEqual("music", f.Resolve(browser, player, music)?.Key, "纯音频播放器盖过正在播放的通用播放器与浏览器。");
+        Assert.AreEqual("player", f.Resolve(browser, player)?.Key, "没有音频播放器时退到通用播放器，浏览器仍排在后面。");
+        Assert.AreEqual("browser", f.Resolve(browser)?.Key);
+        Assert.AreEqual("unknown", f.Resolve(unknown)?.Key, "三层都没有时未登记来源仍可被选中。");
+    });
+
+    [TestMethod]
+    public void MusicApplicationsPickThePlayingSessionInsideATier() => Run(f =>
+    {
+        f.Settings = new(MediaSelectionMode.MusicApplications);
+        Assert.AreEqual("paused", f.Resolve(Source("paused", false, "QQMusic.exe"))?.Key);
+        Assert.AreEqual("playing", f.Resolve(Source("paused", false, "QQMusic.exe"), Source("playing", true, "Spotify.exe"))?.Key,
+            "同一档里正在播放的接管。");
+        Assert.AreEqual("playing", f.Resolve(Source("paused", false, "QQMusic.exe"), Source("playing", false, "Spotify.exe"))?.Key,
+            "都暂停时保留当前选择。");
+    });
+
     private static MediaSourceCandidate Source(string key, bool playing = false, string? app = null, bool recovering = false) =>
         new(key, app ?? key, playing, key, recovering);
 
