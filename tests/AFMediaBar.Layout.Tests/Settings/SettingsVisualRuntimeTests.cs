@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Data;
 using System.Windows.Markup;
 using System.Windows.Threading;
@@ -57,6 +58,34 @@ public sealed class SettingsVisualRuntimeTests
     [TestMethod]
     public Task BackdropRefreshCoalescesAndClosingOrDisposalRejectsQueuedWork() =>
         RunIsolatedAsync(nameof(BackdropRefreshCoalescesAndClosingOrDisposalRejectsQueuedWork), WindowBackdropRefreshChecks.VerifyLiveSelection);
+
+    [TestMethod]
+    public Task ArtworkAccentUsesSameBaseColorInWpfUiAndApplication() =>
+        RunIsolatedAsync(nameof(ArtworkAccentUsesSameBaseColorInWpfUiAndApplication), app =>
+        {
+            if (SystemParameters.HighContrast)
+                Assert.Inconclusive("高对比度模式由系统配色接管。");
+
+            byte[] pixels = [170, 240, 255, 255];
+            var cover = new CoverAccentColorService();
+            cover.Update(BitmapSource.Create(1, 1, 96, 96, PixelFormats.Bgra32, null, pixels, 4));
+            using var coordinator = new ApplicationThemeCoordinator(
+                app.Dispatcher, new ApplicationAppearanceResources(app.Resources).Apply, cover);
+            foreach (var dark in new[] { false, true })
+            {
+                coordinator.Apply(AppearanceSettings.Default with
+                {
+                    AccentColorMode = AccentColorMode.FromCover,
+                    ApplicationThemeMode = dark ? ApplicationThemeMode.Dark : ApplicationThemeMode.Light
+                });
+
+                var brush = (SolidColorBrush)app.Resources["AfAccentBrush"];
+                Assert.IsNotNull(cover.Resolve(dark));
+                if (!dark)
+                    Assert.AreNotEqual(cover.Resolve(dark).GetValueOrDefault(), brush.Color);
+                Assert.AreEqual(brush.Color, ApplicationAccentColorManager.SystemAccent);
+            }
+        });
 
     [TestMethod]
     public Task OutsideClickDismissesInactiveWindowAndKeepsOwnedPopupClicks() =>
