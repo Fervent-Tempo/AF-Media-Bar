@@ -51,6 +51,16 @@ public sealed class LyricsMetadataNormalizationTests
     }
 
     [TestMethod]
+    public void TitleVariantsTryTheOriginalBeforeTheNormalizedForm()
+    {
+        // LRCLIB 把标题和歌手分开传参，只能整轮重试；顺序必须是原写法在前，且写法相同时不产生第二次搜索。
+        var variants = LyricsSearchQueryPolicy.BuildTitleVariants(Request(HalfWidthTitle)).ToArray();
+        CollectionAssert.AreEqual(new[] { HalfWidthTitle, FullWidthTitle }, variants);
+        CollectionAssert.AreEqual(new[] { "Some Title" },
+            LyricsSearchQueryPolicy.BuildTitleVariants(Request("Some Title")).ToArray());
+    }
+
+    [TestMethod]
     public void FullWidthAsciiAndExtraWhitespaceAreFolded()
     {
         var request = new LyricsRequest("ＭｙＧＯ！！", "Ａｉｃｈｉ", "", 200, null, PlaybackSourceId: "QQMusic.exe");

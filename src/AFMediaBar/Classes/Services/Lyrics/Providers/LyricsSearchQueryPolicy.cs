@@ -32,6 +32,21 @@ internal static partial class LyricsSearchQueryPolicy
         return queries.Concat(normalized).Distinct(StringComparer.Ordinal).ToArray();
     }
 
+    /// <summary>
+    /// 标题搜索词：原写法在前，归一化写法在后，两者相同时只留一个。
+    /// 给「标题和歌手分开传参」的来源逐轮重试用，避免把两种写法混搭成一堆无效组合。
+    /// Title search terms, original spelling first and the normalized one second, deduplicated. Intended for sources that pass
+    /// title and artist as separate parameters and retry round by round instead of mixing both spellings.
+    /// </summary>
+    internal static IReadOnlyList<string> BuildTitleVariants(LyricsRequest request)
+    {
+        var title = WithoutTranslation(request.Title);
+        return new[] { title, LyricsMetadataNormalizer.Normalize(title) }
+            .Where(value => value.Length > 0)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+    }
+
     internal static IReadOnlyList<string> BuildArtists(LyricsRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.ArtistSeparators))
