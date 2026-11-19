@@ -167,8 +167,8 @@ public sealed class KuGouMediaProvider : IIndependentMediaSourceProvider, IMemor
             var result = await _lyricsService.GetLyricsAsync(new(info.Title, info.Artist, "", info.Duration, null,
                 PlaybackSourceId: KuGouSourcePolicy.SourceId), token);
             if (_isDisposed || token.IsCancellationRequested || generation != _cacheGeneration) return;
-            _lyricsRetries.RecordResult(info.Identity, result, info.Title);
-            _lyricsCache.Set(info.Identity, result, LyricsCacheRetentionPolicy.Lifetime(result));
+            var lifetime = _lyricsRetries.RecordResult(info.Identity, result, info.Title);
+            _lyricsCache.Set(info.Identity, result, lifetime);
             if (_currentInfo is { } current && current.Identity == info.Identity) Publish(current, result, false);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
@@ -176,8 +176,8 @@ public sealed class KuGouMediaProvider : IIndependentMediaSourceProvider, IMemor
         {
             if (!_isDisposed && !token.IsCancellationRequested && generation == _cacheGeneration)
             {
-                _lyricsRetries.RecordResult(info.Identity, null, info.Title);
-                _lyricsCache.Set(info.Identity, null, LyricsCacheRetentionPolicy.Lifetime(null));
+                var lifetime = _lyricsRetries.RecordResult(info.Identity, null, info.Title);
+                _lyricsCache.Set(info.Identity, null, lifetime);
                 _log?.Error("Lyrics", "酷狗来源取词失败", exception);
             }
         }

@@ -60,8 +60,10 @@ internal static partial class LyricsMetadataScore
 
     private static double Compare(string? left, string? right)
     {
-        left = left?.Trim().ToLowerInvariant() ?? string.Empty;
-        right = right?.Trim().ToLowerInvariant() ?? string.Empty;
+        // 请求侧元数据归一化：NFKC 把半角中点 ･(U+FF65) 统一到全角 ・(U+30FB)，
+        // 否则「ふ･れ…」与在线「ふ・れ…」的标题相似度只有约 0.69，会被 60 分门槛过滤。
+        left = LyricsMetadataNormalizer.Normalize(left).ToLowerInvariant();
+        right = LyricsMetadataNormalizer.Normalize(right).ToLowerInvariant();
         if (left.Length == 0 && right.Length == 0) return 1;
         if (left.Length == 0 || right.Length == 0) return 0;
         return Similarity.Similarity(left, right);

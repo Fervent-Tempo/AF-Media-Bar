@@ -57,19 +57,19 @@ public sealed class LyricsAutomaticRetryTests
 
                 Fetch(false);
                 Assert.AreEqual(1, source.Calls, "暂停时仍应首次加载歌词。");
-                clock.Advance(TimeSpan.FromSeconds(31));
-                Fetch(false);
-                Assert.AreEqual(1, source.Calls, "失败缓存到期后，暂停不能触发重试。");
-                Fetch(true);
-                Assert.AreEqual(2, source.Calls, "恢复播放后允许冷却已结束的重试。");
-                Fetch(true);
-                Assert.AreEqual(2, source.Calls, "播放中仍须遵守失败冷却。");
-
-                for (var round = 3; round <= 10; round++)
+                int[] retryDelays = [2, 4, 8, 16, 30, 30, 30, 30, 30];
+                for (var index = 0; index < retryDelays.Length; index++)
                 {
-                    clock.Advance(TimeSpan.FromSeconds(31));
+                    var delay = retryDelays[index];
+                    clock.Advance(TimeSpan.FromSeconds(delay) - TimeSpan.FromTicks(1));
                     Fetch(true);
-                    Assert.AreEqual(round, source.Calls);
+                    Assert.AreEqual(index + 1, source.Calls, $"仍在 {delay} 秒冷却期内。");
+
+                    clock.Advance(TimeSpan.FromTicks(1));
+                    Fetch(false);
+                    Assert.AreEqual(index + 1, source.Calls, "失败缓存到期后，暂停不能触发重试。");
+                    Fetch(true);
+                    Assert.AreEqual(index + 2, source.Calls, $"播放中达到 {delay} 秒即可重试。");
                 }
                 clock.Advance(TimeSpan.FromDays(1));
                 Fetch(false);
@@ -95,6 +95,22 @@ public sealed class LyricsAutomaticRetryTests
             }
             return Task.CompletedTask;
         });
+    }
+
+    [TestMethod]
+    public void ConfirmedResultResetsBackoff()
+    {
+        var tracker = new LyricsRetryTracker<string>(1);
+        const string track = "Track";
+        var source = new FailingProvider().SourceName;
+
+        foreach (var result in new[] { new LyricsResult(source, LyricDocument.Empty), LyricsResult.NoLyrics(source) })
+        {
+            Assert.AreEqual(TimeSpan.FromSeconds(2), tracker.RecordResult(track, null, track));
+            Assert.AreEqual(TimeSpan.FromSeconds(4), tracker.RecordResult(track, null, track));
+            Assert.IsNull(tracker.RecordResult(track, result, track));
+            Assert.IsTrue(tracker.CanRequest(track, isPlaying: false));
+        }
     }
 
     private sealed class FailingProvider : ILyricsProvider

@@ -14,14 +14,20 @@ public sealed class LrclibLyricsProvider : ILyricsProvider
     public async Task<LyricsResult?> GetLyricsAsync(LyricsRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Title)) return null;
-        var title = LyricsSearchQueryPolicy.WithoutTranslation(request.Title);
-        foreach (var artist in LyricsSearchQueryPolicy.BuildArtists(request))
+        // 先按标题原写法搜完所有歌手组合，全部没命中再换成归一化写法重试：
+        // 只有半角中点这类写法差异才会产生第二个标题，正常情况仍然只搜一轮。
+        // Try every artist combination with the original title first, then repeat with the normalized one: only a spelling
+        // difference such as a halfwidth middle dot yields a second title, so the usual case stays a single round.
+        foreach (var title in LyricsSearchQueryPolicy.BuildTitleVariants(request))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var candidates = await _api.Search(title, artist).ConfigureAwait(false);
-            cancellationToken.ThrowIfCancellationRequested();
-            var result = Resolve(request, candidates ?? [], cancellationToken);
-            if (result is not null) return result;
+            foreach (var artist in LyricsSearchQueryPolicy.BuildArtists(request))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var candidates = await _api.Search(title, artist).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                var result = Resolve(request, candidates ?? [], cancellationToken);
+                if (result is not null) return result;
+            }
         }
         return null;
     }
