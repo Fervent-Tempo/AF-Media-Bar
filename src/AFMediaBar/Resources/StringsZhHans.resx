@@ -2748,6 +2748,18 @@
   <data name="DisplayModes.Rest.Row.ArtworkProgress.Title" xml:space="preserve">
     <value>封面边缘进度</value>
   </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Description" xml:space="preserve">
+    <value>线条沿封面边缘描一圈；注水像充电一样从下往上把已播放的部分染亮。</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Fill" xml:space="preserve">
+    <value>注水</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Line" xml:space="preserve">
+    <value>线条</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Title" xml:space="preserve">
+    <value>进度样式</value>
+  </data>
   <data name="Media.ControlUnavailable.Body" xml:space="preserve">
     <value>请在播放器设置中打开 SMTC（系统播放控件）或类似选项。如果没有此选项，请查询软件是否支持 SMTC；不支持的媒体源无法通过本程序控制。</value>
   </data>

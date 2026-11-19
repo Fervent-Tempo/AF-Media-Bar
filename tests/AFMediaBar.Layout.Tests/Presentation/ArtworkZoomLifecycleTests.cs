@@ -384,6 +384,16 @@ public sealed class ArtworkZoomLifecycleTests
             ring.Progress = 0.73;
             Assert.AreEqual(0.73, mirror.Progress, 0.001, "放大期间播放推进时，替身的进度必须跟着真环更新。");
 
+            // 注水的水面位置来自真环那条 30fps 的相位动画。替身若保留默认的 AnimateWave，
+            // 就会再起一条独立时钟，两个相位各滚各的，换树那一帧水面明显跳一下。
+            // The fill's water surface comes from the real ring's 30 fps phase animation. A stand-in left at the
+            // default AnimateWave would start a second clock of its own; the two phases drift apart and the surface
+            // jumps on the hand-off frame.
+            Assert.IsFalse(mirror.AnimateWave, "替身不能自己再跑一条水波时钟，相位必须读真环。");
+            Assert.IsFalse(mirror.HasAnimatedProperties, "替身不该对相位施加本地动画。");
+            ring.WavePhase = 1.31;
+            Assert.AreEqual(1.31, mirror.WavePhase, 0.001, "替身的水波相位必须实时跟随真环。");
+
             Invoke(control, "HideArtworkHoverZoom", true);
             AssertRestored(control);
         }

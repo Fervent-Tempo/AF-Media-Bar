@@ -2788,6 +2788,18 @@
   <data name="DisplayModes.Rest.Row.ArtworkProgress.Title" xml:space="preserve">
     <value>Tiến độ quanh ảnh bìa</value>
   </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Description" xml:space="preserve">
+    <value>Đường viền vẽ một nét mảnh quanh mép bìa; Đổ đầy tô sáng phần đã phát từ dưới lên.</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Fill" xml:space="preserve">
+    <value>Đổ đầy</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Line" xml:space="preserve">
+    <value>Đường viền</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Title" xml:space="preserve">
+    <value>Kiểu tiến độ</value>
+  </data>
   <data name="Media.ControlUnavailable.Body" xml:space="preserve">
     <value>Bật SMTC (điều khiển phát của hệ thống) hoặc tùy chọn tương tự trong cài đặt trình phát. Nếu không có, hãy kiểm tra hỗ trợ SMTC. AF Media Bar không thể điều khiển nguồn không hỗ trợ.</value>
   </data>

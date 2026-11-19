@@ -2595,6 +2595,7 @@ namespace AFMediaBar.Components
             TaskbarRestProgress.Value = position;
             var experience = PresentationSettings.TaskbarExperience.Normalize();
             SongImageProgress.Progress = hasDuration ? position / _snapshot.Duration : 0;
+            SongImageProgress.ProgressStyle = experience.ArtworkProgressStyle;
             SongImageProgress.Visibility = _isConnected && hasDuration && experience.ArtworkProgressVisible
                 ? Visibility.Visible : Visibility.Collapsed;
             if (IsBarPresentation && !_isVertical)
