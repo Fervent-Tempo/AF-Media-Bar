@@ -295,6 +295,26 @@ public static class LyricsTextParser
     /// 解析只用于匹配的带时间戳文本（译文、音译），返回按时间升序的片段。
     /// Parses timestamped text used only for matching (translation, romanization) into fragments ordered by time.
     /// </summary>
+    internal static LyricDocument AttachRomanization(LyricDocument document, string text)
+    {
+        var fragments = ParseTimestampedText(text);
+        return fragments.Count == 0 ? document : document with
+        {
+            Lines = document.Lines.Select(line =>
+            {
+                if (line.Romanization is not null || FindNearbyText(fragments, line.Start) is not { } romanization)
+                    return line;
+                return new LyricLine(line.Start, line.End, line.Text)
+                {
+                    Words = line.Words,
+                    Translation = line.Translation,
+                    Romanization = romanization,
+                    IsBackground = line.IsBackground
+                };
+            }).ToArray()
+        };
+    }
+
     private static IReadOnlyList<(double Start, string Text)> ParseTimestampedText(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
