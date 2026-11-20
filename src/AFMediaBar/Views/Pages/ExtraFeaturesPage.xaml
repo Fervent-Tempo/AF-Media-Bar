@@ -15,6 +15,7 @@
                             <ComboBoxItem Content="{DynamicResource Loc.Media.Selection.Mode.Automatic}" Tag="{x:Static settings:MediaSelectionMode.Automatic}"/>
                             <ComboBoxItem Content="{DynamicResource Loc.Media.Selection.Mode.LatestSession}" Tag="{x:Static settings:MediaSelectionMode.LatestSession}"/>
                             <ComboBoxItem Content="{DynamicResource Loc.Media.Selection.Mode.PreferredApplication}" Tag="{x:Static settings:MediaSelectionMode.PreferredApplication}"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.Media.Selection.Mode.MusicApplications}" Tag="{x:Static settings:MediaSelectionMode.MusicApplications}"/>
                         </ComboBox>
                     </components:SettingsRow>
                     <StackPanel Visibility="{Binding ViewModel.IsPreferredApplication, Converter={StaticResource AfBooleanToVisibilityConverter}}">

@@ -9,6 +9,10 @@ internal sealed record MediaSelectionEntry(MediaSourceCandidate Source, string S
 /// <summary>媒体来源自动选择的纯排序策略。</summary>
 public static class MediaAutoSwitchPolicy
 {
+    /// <summary>分层取源的顺序；未登记的来源不在其中，只在三层都空时兜底。/ Tier order; unregistered sources are absent and only serve as the fallback.</summary>
+    private static readonly MediaSourceCategory[] CategoryPriority =
+        [MediaSourceCategory.Music, MediaSourceCategory.Video, MediaSourceCategory.Browser];
+
     internal static MediaSourceCandidate? Select(IReadOnlyList<MediaSelectionEntry> entries,
         MediaSelectionSettings settings, string? selectedKey, string? focusedSessionKey)
     {
@@ -25,6 +29,25 @@ public static class MediaAutoSwitchPolicy
 
         if (settings.Mode == MediaSelectionMode.LatestSession)
             return Rank(available, entry => entry.Added, selectedKey, focusedSessionKey)?.Source ?? current?.Source;
+
+        if (settings.Mode == MediaSelectionMode.MusicApplications)
+        {
+            // 逐层取第一个有候选的类别：纯音频播放器 → 通用播放器 → 浏览器。层内优先正在播放的，
+            // 全部暂停时保持该层里当前选中的那个，避免同层之间来回跳。
+            // Take the first non-empty tier, best tier first: pure audio, then general players, then browsers. Inside a tier,
+            // whatever is playing wins; with everything paused the current selection of that tier is kept.
+            foreach (var category in CategoryPriority)
+            {
+                var tier = available.Where(entry => MediaSourceNameFormatter.GetCategory(entry.SourceId) == category).ToArray();
+                if (tier.Length == 0) continue;
+                var tierPlaying = tier.Where(entry => entry.Source.IsPlaying).ToArray();
+                return tierPlaying.Length > 0
+                    ? Rank(tierPlaying, entry => entry.Playback, selectedKey, focusedSessionKey)?.Source
+                    : tier.FirstOrDefault(entry => entry.Source.Key == selectedKey)?.Source ??
+                      Rank(tier, _ => 0, selectedKey, focusedSessionKey)?.Source;
+            }
+            // 三层都没有候选：落到下面的通用逻辑，让未登记的来源也有机会。
+        }
 
         var playing = available.Where(entry => entry.Source.IsPlaying).ToArray();
         return playing.Length > 0

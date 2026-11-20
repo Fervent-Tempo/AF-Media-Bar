@@ -80,6 +80,7 @@ public partial class ExtraFeaturesViewModel : ObservableObject
     {
         MediaSelectionMode.LatestSession => "Media.Selection.Description.LatestSession",
         MediaSelectionMode.PreferredApplication => "Media.Selection.Description.PreferredApplication",
+        MediaSelectionMode.MusicApplications => "Media.Selection.Description.MusicApplications",
         _ => "Media.Selection.Description.Automatic"
     });
 
