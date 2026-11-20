@@ -20,8 +20,24 @@ internal interface INetEaseMemoryReader : IDisposable
 internal sealed class NetEaseMemoryReader : INetEaseMemoryReader
 {
     private const int MaximumCandidates = 8;
+    private readonly Func<string, int, IReadOnlyList<ProcessIdentity.Candidate>> _findCandidates;
     private NetEase? _reader;
     private int _processId;
+
+    public NetEaseMemoryReader()
+        : this((name, maximum) => ProcessIdentity.Find(name, maximum))
+    {
+    }
+
+    /// <summary>
+    /// 用注入的进程发现替代真实枚举，便于测试「客户端没开」这条路径而不依赖本机是否装了网易云。
+    /// </summary>
+    /// <remarks>
+    /// Uses an injected process lookup instead of the real enumeration, so the "client not running" path can be tested without
+    /// depending on whether NetEase is installed on the machine.
+    /// </remarks>
+    internal NetEaseMemoryReader(Func<string, int, IReadOnlyList<ProcessIdentity.Candidate>> findCandidates) =>
+        _findCandidates = findCandidates;
 
     public (PlayerInfo? Info, int ProcessId) Read(MediaSnapshot session)
     {
@@ -39,7 +55,14 @@ internal sealed class NetEaseMemoryReader : INetEaseMemoryReader
             Dispose();
         }
 
-        var candidates = ProcessIdentity.Find("cloudmusic.exe", MaximumCandidates);
+        var candidates = _findCandidates("cloudmusic.exe", MaximumCandidates);
+        // 客户端压根没开是正常状态，不是故障：没有候选就不上报，等它开起来再说。
+        // 报了的话每分钟都会留下一条警告，没开网易云的用户也会一直看到"读取失败"。
+        // The client simply not running is a normal state, not a failure: with no candidate there is nothing to report, and the
+        // program waits for it to start. Reporting here would leave a warning every minute for everyone who does not use it.
+        if (candidates.Count == 0)
+            return (null, 0);
+
         var collected = new List<(NetEase Reader, PlayerInfo Info, int ProcessId)>();
         foreach (var candidate in candidates)
         {
