@@ -6,6 +6,7 @@ using AFMediaBar.Classes.Models;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Services.Media.Smtc;
+using AFMediaBar.Classes.Settings;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AFMediaBar.Layout.Tests;
@@ -23,7 +24,11 @@ public sealed class LyricsRequestDeadlineTests
     public async Task ProviderSeesTheRemainingBudgetOfItsRound()
     {
         LyricsRequest? seen = null;
-        var provider = new Provider(_ => Task.FromResult<LyricsResult?>(null), request => seen = request);
+        var provider = new Provider((request, _) =>
+        {
+            seen = request;
+            return Task.FromResult<LyricsResult?>(null);
+        });
 
         await new LyricsService(provider).GetLyricsAsync(_request, CancellationToken.None);
 
@@ -86,16 +91,46 @@ public sealed class LyricsRequestDeadlineTests
         Assert.IsTrue(expired < QQMusicRomanizationProvider.MinimumUsefulWait, "剩余时间不足时不再发起补取。");
     }
 
-    private sealed class Provider(
-        Func<CancellationToken, Task<LyricsResult?>> retrieve,
-        Action<LyricsRequest> observe) : ILyricsProvider
+    [TestMethod]
+    public async Task StalledRomanizationDoesNotDiscardLyricsOrTranslation()
+    {
+        var stalled = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        const string main = "[ti:SongName]\n[5000,1000]Hello there(5000,1000)\n[7000,1000]See you again(7000,1000)";
+        const string translation = "[ti:SongName]\n[00:05.00]你好\n[00:07.00]再见";
+        var provider = new Provider((request, token) => QQMusicLyricsProvider.CompleteLyricsAsync(main, translation, 100, request, _ =>
+            {
+                started.TrySetResult();
+                return stalled.Task;
+            }, token));
+        var previous = SettingsManager.Current;
+        SettingsManager.Current = new AppSettings
+        {
+            LyricsSource = new LyricsSourceSettings([LyricsSourceCatalog.QQMusic]) { Rule = LyricsSourceRule.Manual }
+        };
+        var service = new LyricsService(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(2), provider);
+        try
+        {
+            var result = await service.GetLyricsAsync(_request, CancellationToken.None);
+            Assert.IsNotNull(result, "协调器必须收到解析结果。");
+            Assert.IsTrue(started.Task.IsCompletedSuccessfully, "测试必须进入补取。");
+            var line = result.Document.Lines.First();
+            Assert.AreEqual("Hello there", line.Text);
+            Assert.AreEqual("你好", line.Translation);
+            Assert.IsNull(line.Romanization);
+        }
+        finally
+        {
+            stalled.TrySetResult(null);
+            SettingsManager.Current = previous;
+        }
+    }
+
+    private sealed class Provider(Func<LyricsRequest, CancellationToken, Task<LyricsResult?>> retrieve) : ILyricsProvider
     {
         public string SourceName => LyricsSourceCatalog.QQMusic;
 
-        public Task<LyricsResult?> GetLyricsAsync(LyricsRequest request, CancellationToken cancellationToken)
-        {
-            observe(request);
-            return retrieve(cancellationToken);
-        }
+        public Task<LyricsResult?> GetLyricsAsync(LyricsRequest request, CancellationToken cancellationToken) =>
+            retrieve(request, cancellationToken);
     }
 }

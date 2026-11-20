@@ -91,14 +91,7 @@ internal static class QQMusicRomanizationProvider
         if (!long.TryParse(songId, out var id) || id <= 0)
             return null;
 
-        // 罗马音是附加信息：只用本轮还剩下的时间，时间不够就放弃音译，绝不拖慢主歌词取词。
-        var wait = RemainingWait(request);
-        if (wait < MinimumUsefulWait)
-            return null;
-
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(wait);
-        var token = timeout.Token;
+        var token = cancellationToken;
 
         try
         {

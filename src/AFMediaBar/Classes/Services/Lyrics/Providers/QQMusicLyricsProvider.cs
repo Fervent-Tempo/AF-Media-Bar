@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using Lyricify.Lyrics.Providers.Web.QQMusic;
@@ -41,24 +42,51 @@ public sealed class QQMusicLyricsProvider : ILyricsProvider
         var (main, translation, confirmedNoLyrics) = await FetchLyricAsync(qq, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         if (confirmedNoLyrics) return LyricsResult.NoLyrics(SourceName, match.Score);
-        if (string.IsNullOrWhiteSpace(main))
-        {
-            return null;
-        }
+        return await CompleteLyricsAsync(main, translation, match.Score, request,
+            token => QQMusicRomanizationProvider.FetchAsync(qq.Id, request, token), cancellationToken).ConfigureAwait(false);
+    }
 
-        // QQ 的在线响应只映射了正文与译文，罗马音要单独从 GetPlayLyricInfo 补取；
-        // 失败时只是没有音译行，主歌词照常返回。
-        var romanization = await QQMusicRomanizationProvider.FetchAsync(qq.Id, request, cancellationToken);
+    internal static async Task<LyricsResult?> CompleteLyricsAsync(string? main, string? translation, int score,
+        LyricsRequest request, Func<CancellationToken, Task<string?>> fetchRomanization, CancellationToken cancellationToken)
+    {
+        var document = LyricsTextParser.Parse(main, translation, request: request,
+            durationSeconds: request.DurationSeconds, filterInfoLines: request.FilterInfoLines);
         cancellationToken.ThrowIfCancellationRequested();
+        if (document.Lines.Count == 0)
+            return null;
 
-        var document = LyricsTextParser.Parse(
-            main,
-            translation,
-            romanization,
-            request: request,
-            durationSeconds: request.DurationSeconds,
-            filterInfoLines: request.FilterInfoLines);
-        return document.Lines.Count > 0 ? new LyricsResult(SourceName, document) { MatchScore = match!.Score } : null;
+        var result = new LyricsResult(LyricsSourceCatalog.QQMusic, document) { MatchScore = score };
+        var wait = QQMusicRomanizationProvider.RemainingWait(request);
+        if (wait < QQMusicRomanizationProvider.MinimumUsefulWait)
+            return result;
+
+        using var supplement = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var token = supplement.Token;
+        // 同一等待上限覆盖请求、解密和合并，即使其中某一步无法立即取消，正文也能按时返回。
+        var work = Task.Run(async () =>
+        {
+            var romanization = await fetchRomanization(token).ConfigureAwait(false);
+            token.ThrowIfCancellationRequested();
+            return string.IsNullOrWhiteSpace(romanization)
+                ? result
+                : result with { Document = LyricsTextParser.AttachRomanization(document, romanization) };
+        }, token);
+
+        try
+        {
+            return await work.WaitAsync(wait, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            Debug.WriteLine($"[QQMusic] romanization unavailable: {exception.Message}");
+            return result;
+        }
+        finally
+        {
+            supplement.Cancel();
+            _ = work.ContinueWith(static task => _ = task.Exception, CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+        }
     }
 
     private async Task<(string? Main, string? Translation, bool ConfirmedNoLyrics)> FetchLyricAsync(
