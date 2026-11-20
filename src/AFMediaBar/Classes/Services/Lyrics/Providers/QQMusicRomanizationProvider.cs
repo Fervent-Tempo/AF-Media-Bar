@@ -28,7 +28,59 @@ internal static class QQMusicRomanizationProvider
     private static SessionState? _session;
     private static DateTimeOffset _sessionFetchedAt;
 
+    /// <summary>
+    /// 补取链路的等待上限。实际用的是它与本轮剩余预算的较小者：正文已经拿到，
+    /// 剩下的时间不够跑完这条链路时直接放弃，不让音译把正文一起拖过外层超时。
+    /// </summary>
+    /// <remarks>
+    /// Wait limit for the supplementary request. What is actually used is the smaller of this and the budget left in the current
+    /// round: once the main lyrics are in hand, a round with too little time left gives the romanization up instead of letting it
+    /// push the result past the outer timeout.
+    /// </remarks>
+    private static readonly TimeSpan MaximumWait = TimeSpan.FromSeconds(6);
+
+    /// <summary>
+    /// 剩余时间低于此值就不再发起补取：一次请求的往返都用不完，拿到的是超时而不是音译。
+    /// Below this much time the request is not started at all: a round trip cannot finish, so it would only ever time out.
+    /// </summary>
+    internal static readonly TimeSpan MinimumUsefulWait = TimeSpan.FromMilliseconds(800);
+
+    /// <summary>
+    /// 留给解析与返回的余量：补取必须在截止时刻之前结束，留出解密、解析与组装正文的时间。
+    /// 外层等待与本轮截止时刻几乎同时到达，两者撞在一起时丢掉的会是已经拿到的正文。
+    /// </summary>
+    /// <remarks>
+    /// Margin reserved for parsing and returning: the supplementary request has to end before the deadline so that decrypting,
+    /// parsing and assembling the main lyrics still fit. The outer wait and this deadline expire at almost the same moment, and
+    /// when they collide it is the main lyrics that get discarded.
+    /// </remarks>
+    internal static readonly TimeSpan ReturnReserve = TimeSpan.FromMilliseconds(250);
+
     private sealed record SessionState(string Uid, string Sid, string UserIp);
+
+    /// <summary>
+    /// 本轮还能用来补取的时间：取本轮剩余预算与上限的较小者，再扣掉解析与返回要用的余量。
+    /// 剩余时间不足一次往返时返回零，调用方据此放弃补取；没有截止时刻时用上限。
+    /// </summary>
+    /// <remarks>
+    /// Time still available for the supplementary request: the smaller of the budget left in this round and the upper limit, minus
+    /// the margin reserved for parsing and returning. It comes back as zero when there is not enough time for one round trip, and
+    /// the caller gives the request up; the upper limit applies when the round has no deadline.
+    /// </remarks>
+    internal static TimeSpan RemainingWait(LyricsRequest request)
+    {
+        var budget = MaximumWait;
+        if (request.Deadline is { } deadline)
+        {
+            // GetElapsedTime 给出的是从该时刻到现在的已过时间，截止时刻在将来时它为负，取反才是剩余时间。
+            // GetElapsedTime measures the time from that point to now, which is negative for a deadline in the future.
+            var remaining = -Stopwatch.GetElapsedTime(deadline);
+            if (remaining < budget)
+                budget = remaining;
+        }
+        var usable = budget - ReturnReserve;
+        return usable < TimeSpan.Zero ? TimeSpan.Zero : usable;
+    }
 
     /// <summary>返回解密后的 QRC 音译文本；没有罗马音、接口失败或取消时返回 null / 抛取消异常。</summary>
     public static async Task<string?> FetchAsync(
@@ -39,9 +91,13 @@ internal static class QQMusicRomanizationProvider
         if (!long.TryParse(songId, out var id) || id <= 0)
             return null;
 
-        // 罗马音是附加信息：整个补取链路最多等 6 秒，超时按「没有音译」处理，绝不拖慢主歌词取词。
+        // 罗马音是附加信息：只用本轮还剩下的时间，时间不够就放弃音译，绝不拖慢主歌词取词。
+        var wait = RemainingWait(request);
+        if (wait < MinimumUsefulWait)
+            return null;
+
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(6));
+        timeout.CancelAfter(wait);
         var token = timeout.Token;
 
         try
