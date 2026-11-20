@@ -324,6 +324,9 @@ public static class SettingsSearchIndex
             ["开机", "启动", "startup", "自启", "语言", "language", "中文"]),
         Create(SettingsPageKey.Application, "Application.Group.Updates", "Search.Application.Updates.Description", language,
             ["更新", "update", "升级", "版本", "version", "检查更新", "自动更新", "下载", "安装", "安装程序", "重启", "加速", "镜像", "跳过此版本"]),
+        Create(SettingsPageKey.Application, "Application.Group.Network", "Application.Network.SourceProxy.Description", language,
+            ["网络", "網路", "network", "代理", "proxy", "歌词代理", "lyrics proxy", "直连", "direct", "LRCLIB", "Apple Music", "系统代理", "system proxy",
+                "歌词来源代理", "按来源", "测试来源", "连通性", "per source proxy", "test source", "reachability"]),
         Create(
             SettingsPageKey.Application,
             "Common.Group.SettingsFile",

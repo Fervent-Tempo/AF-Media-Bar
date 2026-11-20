@@ -1579,8 +1579,14 @@
   <data name="Lyrics.Source.SodaMusic" xml:space="preserve">
     <value>Soda Music</value>
   </data>
+  <data name="Lyrics.Source.AppleMusic" xml:space="preserve">
+    <value>Tên gốc Apple Music</value>
+  </data>
   <data name="Lyrics.Source.Unknown" xml:space="preserve">
     <value>Nguồn không xác định</value>
+  </data>
+  <data name="Lyrics.Sources.Proxy.Shortcut" xml:space="preserve">
+    <value>Mở cài đặt proxy</value>
   </data>
   <data name="Lyrics.Sources.AllDisabled.Callout" xml:space="preserve">
     <value>Tất cả nguồn lời bài hát đã bị tắt: không có yêu cầu lời bài hát nào được gửi, thanh media chỉ hiển thị tiêu đề và nghệ sĩ.</value>
@@ -2364,6 +2370,32 @@
   </data>
   <data name="Appearance.Unified.Header.Subtitle" xml:space="preserve">
     <value>Thiết lập chủ đề và phông chữ chung, cùng văn bản và nền của thanh media bar.</value>
+  </data>
+  <data name="Application.Group.Network" xml:space="preserve">
+    <value>Mạng</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Title" xml:space="preserve">
+    <value>Proxy của nguồn lời bài hát</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Description" xml:space="preserve">
+    <value>Tất cả nguồn mặc định kết nối trực tiếp; bật proxy riêng cho nguồn không kết nối được, ví dụ NetEase hoặc QQ Music
+</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Row.Description" xml:space="preserve">
+    <value>Bấm nút bên phải để kiểm tra nguồn này có kết nối được lúc này không
+</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Direct" xml:space="preserve">
+    <value>Trực tiếp</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Proxy" xml:space="preserve">
+    <value>Dùng proxy</value>
+  </data>
+  <data name="Application.Network.Test.Reachable" xml:space="preserve">
+    <value>Kết nối được HTTP {0}</value>
+  </data>
+  <data name="Application.Network.Test.Failed" xml:space="preserve">
+    <value>Thất bại {0}</value>
   </data>
   <data name="Application.Group.Updates" xml:space="preserve">
     <value>Cập nhật</value>

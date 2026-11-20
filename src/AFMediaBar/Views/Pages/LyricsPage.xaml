@@ -420,6 +420,9 @@
                             </components:SettingsCallout>
                         </StackPanel>
                     </ui:CardExpander>
+                    <WrapPanel Style="{StaticResource AfSettingsRelatedLinksStyle}">
+                        <components:SettingsNavigationButton Content="{DynamicResource Loc.Lyrics.Sources.Proxy.Shortcut}" Destination="Application" GroupId="Application.Group.Network"/>
+                    </WrapPanel>
                 </StackPanel>
             </components:SettingsGroup>
 

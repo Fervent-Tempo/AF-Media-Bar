@@ -1600,8 +1600,14 @@
   <data name="Lyrics.Source.SodaMusic" xml:space="preserve">
     <value>Soda Music</value>
   </data>
+  <data name="Lyrics.Source.AppleMusic" xml:space="preserve">
+    <value>Apple Music original names</value>
+  </data>
   <data name="Lyrics.Source.Unknown" xml:space="preserve">
     <value>Unknown source</value>
+  </data>
+  <data name="Lyrics.Sources.Proxy.Shortcut" xml:space="preserve">
+    <value>Open proxy settings</value>
   </data>
   <data name="Lyrics.Sources.AllDisabled.Callout" xml:space="preserve">
     <value>Every lyric source is off: no lyric request is sent at all, and the media bar shows the title and artist only.</value>
@@ -2582,6 +2588,32 @@
   </data>
   <data name="Interaction.Group.Wheel" xml:space="preserve">
     <value>Media bar wheel</value>
+  </data>
+  <data name="Application.Group.Network" xml:space="preserve">
+    <value>Network</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Title" xml:space="preserve">
+    <value>Lyric source proxies</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Description" xml:space="preserve">
+    <value>Every source connects directly by default; turn on the proxy per source when one cannot connect, for example NetEase or QQ Music
+</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Row.Description" xml:space="preserve">
+    <value>Click the button on the right to check whether this source is reachable right now
+</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Direct" xml:space="preserve">
+    <value>Direct</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Proxy" xml:space="preserve">
+    <value>Proxy</value>
+  </data>
+  <data name="Application.Network.Test.Reachable" xml:space="preserve">
+    <value>Reachable HTTP {0}</value>
+  </data>
+  <data name="Application.Network.Test.Failed" xml:space="preserve">
+    <value>Failed {0}</value>
   </data>
   <data name="Application.Group.Updates" xml:space="preserve">
     <value>Updates</value>

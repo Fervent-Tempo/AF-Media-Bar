@@ -1600,8 +1600,14 @@
   <data name="Lyrics.Source.SodaMusic" xml:space="preserve">
     <value>汽水音乐</value>
   </data>
+  <data name="Lyrics.Source.AppleMusic" xml:space="preserve">
+    <value>Apple Music 原名</value>
+  </data>
   <data name="Lyrics.Source.Unknown" xml:space="preserve">
     <value>未知来源</value>
+  </data>
+  <data name="Lyrics.Sources.Proxy.Shortcut" xml:space="preserve">
+    <value>前往代理设置</value>
   </data>
   <data name="Lyrics.Sources.AllDisabled.Callout" xml:space="preserve">
     <value>已关闭全部歌词来源：不会再发出任何歌词请求，媒体栏只显示标题与歌手。</value>
@@ -2582,6 +2588,32 @@
   </data>
   <data name="Interaction.Group.Wheel" xml:space="preserve">
     <value>媒体栏滚轮</value>
+  </data>
+  <data name="Application.Group.Network" xml:space="preserve">
+    <value>网络</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Title" xml:space="preserve">
+    <value>歌词来源代理</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Description" xml:space="preserve">
+    <value>全部来源默认直连；某个来源连不上时单独打开代理，比如 LRCLIB、Apple Music
+</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Row.Description" xml:space="preserve">
+    <value>点击右侧按钮，检查该来源当前能否连上
+</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Direct" xml:space="preserve">
+    <value>直连</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Proxy" xml:space="preserve">
+    <value>走代理</value>
+  </data>
+  <data name="Application.Network.Test.Reachable" xml:space="preserve">
+    <value>可达 HTTP {0}</value>
+  </data>
+  <data name="Application.Network.Test.Failed" xml:space="preserve">
+    <value>失败 {0}</value>
   </data>
   <data name="Application.Group.Updates" xml:space="preserve">
     <value>更新</value>

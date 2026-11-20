@@ -3,6 +3,7 @@ using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models.Updates;
 using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Services.Localization;
+using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Services.Updates;
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Resources;
@@ -128,6 +129,7 @@ namespace AFMediaBar.ViewModels.Pages
             // old language.
             _localization.LanguageChanged += OnLanguageChanged;
 
+            RefreshSourceProxyItems();
             ApplyState(_updateService.CurrentState);
         }
 
@@ -145,6 +147,7 @@ namespace AFMediaBar.ViewModels.Pages
         private void OnLanguageChanged(object? sender, EventArgs e)
         {
             ApplyState(_updateService.CurrentState);
+            RefreshSourceProxyItems();
             if (_startupRegistration.RegistrationStateUnknown && _startupRegistration.LastFailure is null)
                 StartupStatusText = Translations.Get("About.Status.StartupUnknown");
             OnPropertyChanged(string.Empty);
@@ -265,6 +268,64 @@ namespace AFMediaBar.ViewModels.Pages
             }
         }
 
+        /// <summary>每个歌词来源的代理模式与连通性测试行；显示名按当前语言解析，语言变化后整表重建。</summary>
+        public ObservableCollection<LyricsSourceProxyItem> SourceProxyItems { get; } = [];
+
+        /// <summary>
+        /// 按设置重建来源代理列表：模式来自 <see cref="LyricsSourceSettings.SourceProxyModes"/>，缺项按直连处理。
+        /// </summary>
+        private void RefreshSourceProxyItems()
+        {
+            var modes = SettingsManager.Current.LyricsSource.SourceProxyModes;
+            foreach (var item in SourceProxyItems) item.ModeChanged -= OnSourceProxyModeChanged;
+            SourceProxyItems.Clear();
+            foreach (var sourceId in LyricsSourceHosts.AllSourceIds)
+            {
+                var mode = modes is not null && modes.TryGetValue(sourceId, out var value)
+                    ? value
+                    : LyricsSourceProxyMode.Direct;
+                var item = new LyricsSourceProxyItem(sourceId, mode);
+                item.ModeChanged += OnSourceProxyModeChanged;
+                SourceProxyItems.Add(item);
+            }
+            OnPropertyChanged(nameof(SourceProxyItems));
+        }
+
+        /// <summary>
+        /// 把某一行的模式写回设置：只保存偏离直连默认的项，全部默认时不留表，
+        /// 设置文件因此保持干净。写入触发的 SettingsChanged 会让 RefreshSourceProxyItems 重入，由门控挡住。
+        /// </summary>
+        private void OnSourceProxyModeChanged(LyricsSourceProxyItem changed)
+        {
+            var modes = SourceProxyItems
+                .Where(item => item.ProxyMode != LyricsSourceProxyMode.Direct)
+                .ToDictionary(item => item.SourceId, item => item.ProxyMode, StringComparer.Ordinal);
+            SettingsManager.Current.LyricsSource = SettingsManager.Current.LyricsSource with
+            {
+                SourceProxyModes = modes.Count > 0 ? modes : null
+            };
+        }
+
+        /// <summary>测试一个歌词来源的网络可达性；结果写进该行右侧状态文本，测试期间按钮不可再点。</summary>
+        [RelayCommand]
+        private async Task TestSourceProxyAsync(LyricsSourceProxyItem item)
+        {
+            if (item.IsTesting) return;
+            item.IsTesting = true;
+            try
+            {
+                var result = await LyricsSourceTester.TestAsync(item.SourceId, CancellationToken.None);
+                item.TestStatus = result.Reachable
+                    ? Translations.Format("Application.Network.Test.Reachable", result.Detail)
+                    : Translations.Format("Application.Network.Test.Failed", result.Detail);
+                item.TestIcon = result.Reachable ? "Checkmark24" : "Warning24";
+            }
+            finally
+            {
+                item.IsTesting = false;
+            }
+        }
+
         /// <summary>把当前设置保存为「我的默认设置」，此后所有重置入口都以它为准。/ Saves the current settings as the user's defaults; every reset entry then uses them.</summary>
         [RelayCommand]
         private void SaveUserDefaults()
@@ -301,6 +362,7 @@ namespace AFMediaBar.ViewModels.Pages
             OnPropertyChanged(nameof(AutoCheckEnabled));
             OnPropertyChanged(nameof(LaunchAtStartup));
             OnPropertyChanged(nameof(InterfaceLanguage));
+            RefreshSourceProxyItems();
             OnPropertyChanged(nameof(HasUserDefaults));
             OnPropertyChanged(nameof(UserDefaultsStatusText));
             ApplyState(_updateService.CurrentState);

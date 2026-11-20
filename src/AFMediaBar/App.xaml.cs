@@ -20,6 +20,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using System.Reflection;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -395,6 +396,7 @@ namespace AFMediaBar
             }).Build();
 
         private ApplicationThemeCoordinator? _themeCoordinator;
+        private LyricsProxyPolicy? _lyricsProxy;
         private CoverAccentColorService? _coverAccentColors;
         private EventHandler<MediaSnapshot>? _coverAccentSnapshotHandler;
 #if DEBUG
@@ -583,6 +585,13 @@ namespace AFMediaBar
                 SettingsManager.Current.TranslucentTbCompatibilityPromptShown = true;
                 settingsPersistenceService.Flush();
             }
+            // 歌词请求的代理策略必须早于任何 HttpClient 建立：它会替换进程级的默认代理，
+            // 之后创建的客户端（包括歌词库内部自建的）都会经过它按域名分流。
+            _lyricsProxy = new LyricsProxyPolicy(HttpClient.DefaultProxy);
+            _lyricsProxy.SetSourceProxyModes(SettingsManager.Current.LyricsSource.SourceProxyModes);
+            HttpClient.DefaultProxy = _lyricsProxy;
+            SettingsManager.SettingsChanged += OnSettingsChangedForLyricsProxy;
+
             _coverAccentColors = CoverAccentColorService.Shared;
             _themeCoordinator = new ApplicationThemeCoordinator(
                 Dispatcher, new ApplicationAppearanceResources(Resources).Apply, _coverAccentColors);
@@ -648,6 +657,14 @@ namespace AFMediaBar
 #endif
         }
 
+        /// <summary>每来源的代理模式直接驱动策略本身，已经建好的客户端不必重建。/ The per-source proxy modes drive the policy object itself, so existing clients need no rebuild.</summary>
+        private void OnSettingsChangedForLyricsProxy(object? sender, SettingsChangedEventArgs e)
+        {
+            if (_lyricsProxy is null)
+                return;
+            _lyricsProxy.SetSourceProxyModes(SettingsManager.Current.LyricsSource.SourceProxyModes);
+        }
+
         private void AttachSpectrumMediaSource()
         {
             // 在组合根接通快照输入，避免媒体服务、剪枝参与者和频谱之间形成构造依赖环。
@@ -704,6 +721,7 @@ namespace AFMediaBar
 
             _exitCoordinator.ArmExitProtection();
             _startupCancellation.Cancel();
+            SettingsManager.SettingsChanged -= OnSettingsChangedForLyricsProxy;
             DetachSpectrumMediaSource();
             DetachCoverAccentSource();
             _developerToolsHost?.Dispose();
