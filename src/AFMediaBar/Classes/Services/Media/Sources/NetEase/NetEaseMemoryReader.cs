@@ -20,8 +20,25 @@ internal interface INetEaseMemoryReader : IDisposable
 internal sealed class NetEaseMemoryReader : INetEaseMemoryReader
 {
     private const int MaximumCandidates = 8;
+    private readonly Func<string, int, (IReadOnlyList<ProcessIdentity.Candidate> Candidates, int? UnreadableProcessId)> _findCandidates;
     private NetEase? _reader;
     private int _processId;
+
+    public NetEaseMemoryReader()
+        : this(ProcessIdentity.Find)
+    {
+    }
+
+    /// <summary>
+    /// 用注入的进程发现替代真实枚举，便于测试「客户端没开」这条路径而不依赖本机是否装了网易云。
+    /// </summary>
+    /// <remarks>
+    /// Uses an injected process lookup instead of the real enumeration, so the "client not running" path can be tested without
+    /// depending on whether NetEase is installed on the machine.
+    /// </remarks>
+    internal NetEaseMemoryReader(
+        Func<string, int, (IReadOnlyList<ProcessIdentity.Candidate> Candidates, int? UnreadableProcessId)> findCandidates) =>
+        _findCandidates = findCandidates;
 
     public (PlayerInfo? Info, int ProcessId) Read(MediaSnapshot session)
     {
@@ -39,7 +56,14 @@ internal sealed class NetEaseMemoryReader : INetEaseMemoryReader
             Dispose();
         }
 
-        var candidates = ProcessIdentity.Find("cloudmusic.exe", MaximumCandidates);
+        var (candidates, unreadableProcessId) = _findCandidates("cloudmusic.exe", MaximumCandidates);
+        if (candidates.Count == 0)
+        {
+            if (unreadableProcessId is { } processId)
+                MediaReadDiagnostics.Report("netease", "attach", "无法验证进程映像", processId, "cloudmusic.exe");
+            return (null, 0);
+        }
+
         var collected = new List<(NetEase Reader, PlayerInfo Info, int ProcessId)>();
         foreach (var candidate in candidates)
         {

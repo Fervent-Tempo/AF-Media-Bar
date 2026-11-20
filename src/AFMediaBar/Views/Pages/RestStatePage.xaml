@@ -1,4 +1,4 @@
-<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" x:Class="AFMediaBar.Views.Pages.RestStatePage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
+<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" xmlns:components="clr-namespace:AFMediaBar.Components" xmlns:settings="clr-namespace:AFMediaBar.Classes.Settings" x:Class="AFMediaBar.Views.Pages.RestStatePage" Foreground="{DynamicResource TextFillColorPrimaryBrush}" ScrollViewer.CanContentScroll="False">
     <Page.Resources>
         <Style TargetType="{x:Type components:SettingsRow}" BasedOn="{StaticResource AfSettingsPilotRowStyle}"/>
         <Style TargetType="{x:Type components:SettingsGroup}" BasedOn="{StaticResource AfSettingsPilotGroupStyle}"/>
@@ -29,6 +29,12 @@
                     </components:SettingsRow>
                     <components:SettingsRow Title="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkProgress.Title}" Description="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkProgress.Description}" Icon="{ui:SymbolIcon DataBarVertical24}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.ArtworkProgressVisible, Mode=TwoWay}"/>
+                    </components:SettingsRow>
+                    <components:SettingsRow Title="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkProgressStyle.Title}" Description="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkProgressStyle.Description}" Icon="{ui:SymbolIcon Options24}" IsEnabled="{Binding ViewModel.Layers.ArtworkProgressVisible}">
+                        <ComboBox MinWidth="{StaticResource AfSettingsSelectShortWidth}" SelectedValue="{Binding ViewModel.Layers.ArtworkProgressStyle, Mode=TwoWay}" SelectedValuePath="Tag">
+                            <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkProgressStyle.Line}" Tag="{x:Static settings:ArtworkProgressStyle.Line}"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.DisplayModes.Rest.Row.ArtworkProgressStyle.Fill}" Tag="{x:Static settings:ArtworkProgressStyle.Fill}"/>
+                        </ComboBox>
                     </components:SettingsRow>
                     <components:SettingsRow Title="{DynamicResource Loc.DisplayModes.Rest.Row.Progress.Title}" Description="{DynamicResource Loc.DisplayModes.Rest.Row.Progress.Description}" Icon="{ui:SymbolIcon Play24}" KeepControlInline="True">
                         <ui:ToggleSwitch IsChecked="{Binding ViewModel.Layers.RestProgressVisible, Mode=TwoWay}"/>

@@ -947,12 +947,21 @@ public partial class TaskBarMediaControl
             // 边缘进度环跟随真环：进度、描边与显隐全部用绑定挂在真元素上，播放推进与设置切换都自动同步，替身不需要任何人来刷新。
             // The edge progress ring mirrors the real one: progress, stroke, and visibility are bound straight to the real element, so
             // playback advance and setting changes follow by themselves with no one refreshing the stand-in.
-            var progress = new ArtworkProgress { IsHitTestVisible = false };
+            var progress = new ArtworkProgress { IsHitTestVisible = false, AnimateWave = false };
             Panel.SetZIndex(progress, 1);
             BindingOperations.SetBinding(progress, ArtworkProgress.ProgressProperty,
                 new Binding(nameof(ArtworkProgress.Progress)) { Source = _owner.SongImageProgress });
             BindingOperations.SetBinding(progress, ArtworkProgress.StrokeProperty,
                 new Binding(nameof(ArtworkProgress.Stroke)) { Source = _owner.SongImageProgress });
+            // 圆角、画法与水波相位也要跟：真环按封面的实际圆角描边，画法可能是线条或注水；
+            // 注水的水面位置由真环那条动画时钟推进，替身必须读它的相位而不是自己再跑一条，
+            // 否则两个时钟各滚各的，换树那一帧水面会跳。
+            BindingOperations.SetBinding(progress, ArtworkProgress.CornerRadiusProperty,
+                new Binding(nameof(ArtworkProgress.CornerRadius)) { Source = _owner.SongImageProgress });
+            BindingOperations.SetBinding(progress, ArtworkProgress.ProgressStyleProperty,
+                new Binding(nameof(ArtworkProgress.ProgressStyle)) { Source = _owner.SongImageProgress });
+            BindingOperations.SetBinding(progress, ArtworkProgress.WavePhaseProperty,
+                new Binding(nameof(ArtworkProgress.WavePhase)) { Source = _owner.SongImageProgress });
             BindingOperations.SetBinding(progress, UIElement.VisibilityProperty,
                 new Binding(nameof(UIElement.Visibility)) { Source = _owner.SongImageProgress });
             var substitute = new Border

@@ -190,8 +190,9 @@
                                     BorderBrush="Transparent"
                                     BorderThickness="0,1.25,0,0"
                                     IsHitTestVisible="False" />
-                            <!-- 封面进度与悬停提示独立叠加；放大提示按最终显示尺寸呈现。 -->
+                            <!-- 封面进度与悬停提示独立叠加；进度线沿封面轮廓走，圆角直接取封面自身的值。 -->
                             <local:ArtworkProgress x:Name="SongImageProgress" IsHitTestVisible="False" Panel.ZIndex="1"
+                                                        CornerRadius="{Binding CornerRadius.TopLeft, ElementName=SongImageBorder}"
                                                         Stroke="{DynamicResource AfAccentBrush}" Visibility="Collapsed" />
                             <Border x:Name="SongImageHoverHint"
                                     CornerRadius="5"
