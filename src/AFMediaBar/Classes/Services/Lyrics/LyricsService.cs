@@ -491,7 +491,18 @@ public sealed class LyricsService
     }
 
     private Task<LyricsResult?> TryProviderAsync(ILyricsProvider provider, LyricsRequest request, TimeSpan budget, CancellationToken token, LyricsRequestLog trace) =>
-        TryProviderAsync(provider.SourceName, cancellation => provider.GetLyricsAsync(request, cancellation), budget, token, trace);
+        TryProviderAsync(provider.SourceName, cancellation => provider.GetLyricsAsync(WithDeadline(request, budget), cancellation), budget, token, trace);
+
+    /// <summary>
+    /// 给来源填上本轮的截止时刻：来源据此知道还剩多少时间，附加内容取不到就直接放弃，
+    /// 而不是把已经拿到的正文一起拖过外层超时。预算耗尽时不填，来源按"没有时间了"处理。
+    /// Fills in the deadline for this round so the source knows how much time is left: when an extra request cannot finish in
+    /// time it gives that up instead of dragging the result it already has past the outer timeout.
+    /// </summary>
+    internal static LyricsRequest WithDeadline(LyricsRequest request, TimeSpan budget) =>
+        budget <= TimeSpan.Zero
+            ? request
+            : request with { Deadline = Stopwatch.GetTimestamp() + (long)(budget.TotalSeconds * Stopwatch.Frequency) };
 
     private async Task<LyricsResult?> TryProviderAsync(string sourceName, Func<CancellationToken, Task<LyricsResult?>> retrieve,
         TimeSpan budget, CancellationToken token, LyricsRequestLog trace)

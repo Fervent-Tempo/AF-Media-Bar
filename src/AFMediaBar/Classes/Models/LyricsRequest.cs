@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace AFMediaBar.Classes.Models;
 
 /// <summary>
@@ -25,4 +27,15 @@ public sealed record LyricsRequest(
 
     /// <summary>纯音乐曲目是否不显示“纯音乐，请欣赏”提示行，只保留标题和歌手。</summary>
     public bool HideInstrumentalLyrics { get; init; }
+
+    /// <summary>
+    /// 本轮取词剩余预算的截止时刻（<see cref="Stopwatch.GetTimestamp"/> 时间基）。
+    /// 协调器在调用来源前填入，来源据此决定还能做多少附加请求：正文已拿到但时间不够时直接返回正文，
+    /// 不让附加内容把已经取到的结果一起拖过外层超时。为 null 表示不设限制。
+    /// Deadline of the remaining budget for this lookup, on the <see cref="Stopwatch.GetTimestamp"/> timeline.
+    /// The coordinator fills it in before calling a source, and the source uses it to decide how much extra work it can still
+    /// afford: once the main lyrics are in hand but there is no time left, it returns them instead of letting the extra work
+    /// push the result past the outer timeout. Null means no limit.
+    /// </summary>
+    public long? Deadline { get; init; }
 }

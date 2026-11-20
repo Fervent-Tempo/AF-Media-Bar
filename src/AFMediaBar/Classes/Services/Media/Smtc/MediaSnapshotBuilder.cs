@@ -286,12 +286,14 @@ public sealed class MediaSnapshotBuilder : IMemoryPrunable, IDisposable
 
     /// <summary>
     /// 缓存键里的请求：时长不参与曲目身份（它会随时间轴更新变化），来源写法归一成不带 .exe 的形式。
+    /// 截止时刻同样不参与——它每轮都变，带上会让缓存永远不命中。
     /// </summary>
-    private static LyricsRequest KeyRequest(LyricsRequest request) =>
+    internal static LyricsRequest KeyRequest(LyricsRequest request) =>
         request with
         {
             DurationSeconds = null,
-            PlaybackSourceId = LyricsSourceIdentity.Normalize(request.PlaybackSourceId)
+            PlaybackSourceId = LyricsSourceIdentity.Normalize(request.PlaybackSourceId),
+            Deadline = null
         };
 
     internal LyricsResult? GetLyrics(string sessionId, string sourceId, LyricsRequest request, bool isVideo = false,
