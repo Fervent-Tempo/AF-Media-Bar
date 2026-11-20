@@ -2596,12 +2596,10 @@
     <value>Lyric source proxies</value>
   </data>
   <data name="Application.Network.SourceProxy.Description" xml:space="preserve">
-    <value>Every source connects directly by default; turn on the proxy per source when one cannot connect, for example NetEase or QQ Music
-</value>
+    <value>Every source connects directly by default; turn on the proxy per source when one cannot connect, for example NetEase or QQ Music</value>
   </data>
   <data name="Application.Network.SourceProxy.Row.Description" xml:space="preserve">
-    <value>Click the button on the right to check whether this source is reachable right now
-</value>
+    <value>Click the button on the right to check whether this source is reachable right now</value>
   </data>
   <data name="Application.Network.SourceProxy.Direct" xml:space="preserve">
     <value>Direct</value>

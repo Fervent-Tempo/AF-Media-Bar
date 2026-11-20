@@ -2378,12 +2378,10 @@
     <value>Proxy của nguồn lời bài hát</value>
   </data>
   <data name="Application.Network.SourceProxy.Description" xml:space="preserve">
-    <value>Tất cả nguồn mặc định kết nối trực tiếp; bật proxy riêng cho nguồn không kết nối được, ví dụ NetEase hoặc QQ Music
-</value>
+    <value>Tất cả nguồn mặc định kết nối trực tiếp; bật proxy riêng cho nguồn không kết nối được, ví dụ NetEase hoặc QQ Music</value>
   </data>
   <data name="Application.Network.SourceProxy.Row.Description" xml:space="preserve">
-    <value>Bấm nút bên phải để kiểm tra nguồn này có kết nối được lúc này không
-</value>
+    <value>Bấm nút bên phải để kiểm tra nguồn này có kết nối được lúc này không</value>
   </data>
   <data name="Application.Network.SourceProxy.Direct" xml:space="preserve">
     <value>Trực tiếp</value>
