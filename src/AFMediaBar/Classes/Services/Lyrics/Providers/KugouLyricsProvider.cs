@@ -1,3 +1,6 @@
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text.Json;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using Lyricify.Lyrics.Providers.Web.Kugou;
@@ -21,6 +24,11 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 public sealed class KugouLyricsProvider : ILyricsProvider
 {
     private readonly Api _api = new();
+    private readonly HttpClient? _client;
+
+    public KugouLyricsProvider() { }
+
+    internal KugouLyricsProvider(HttpClient? client) => _client = client;
 
     public string SourceName => LyricsSourceCatalog.Kugou;
 
@@ -54,7 +62,7 @@ public sealed class KugouLyricsProvider : ILyricsProvider
         string? krc;
         try
         {
-            krc = await Lyricify.Lyrics.Decrypter.Krc.Helper.GetLyricsAsync(candidate.Id, candidate.AccessKey);
+            krc = await DownloadLyricsAsync(candidate.Id, candidate.AccessKey, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -77,6 +85,19 @@ public sealed class KugouLyricsProvider : ILyricsProvider
             durationSeconds: request.DurationSeconds,
             filterInfoLines: request.FilterInfoLines);
         return document.Lines.Count > 0 ? new LyricsResult(SourceName, document) { MatchScore = match!.Score } : null;
+    }
+
+    private async Task<string?> DownloadLyricsAsync(string id, string accessKey, CancellationToken cancellationToken)
+    {
+        if (_client is null)
+            return await Lyricify.Lyrics.Decrypter.Krc.Helper.GetLyricsAsync(id, accessKey).ConfigureAwait(false);
+
+        var url = $"https://lyrics.kugou.com/download?ver=1&client=pc&id={Uri.EscapeDataString(id)}" +
+                  $"&accesskey={Uri.EscapeDataString(accessKey)}&fmt=krc&charset=utf8";
+        using var payload = await _client.GetFromJsonAsync<JsonDocument>(url, cancellationToken).ConfigureAwait(false);
+        return payload?.RootElement.TryGetProperty("content", out var value) == true && value.ValueKind == JsonValueKind.String
+            ? Lyricify.Lyrics.Decrypter.Krc.Decrypter.DecryptLyrics(value.GetString()!)
+            : null;
     }
 
     private async Task<(SearchLyricsResponse.Candidate? Candidate, bool ConfirmedNoLyrics)> FindCandidateAsync(

@@ -420,6 +420,32 @@
                             </components:SettingsCallout>
                         </StackPanel>
                     </ui:CardExpander>
+                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon PlugConnected24}">
+                        <ui:CardExpander.Header>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Application.Network.SourceProxy.Title}"/>
+                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Application.Network.SourceProxy.Description}"/>
+                            </StackPanel>
+                        </ui:CardExpander.Header>
+                        <ItemsControl ItemsSource="{Binding ViewModel.SourceProxyItems}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" Description="{DynamicResource Loc.Application.Network.SourceProxy.Row.Description}" IsNested="True" KeepControlInline="True" Title="{Binding DisplayName}">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <ComboBox MinWidth="{StaticResource AfSettingsSelectShortWidth}" MinHeight="36" VerticalAlignment="Center" SelectedValue="{Binding ProxyMode, Mode=TwoWay}" SelectedValuePath="Tag">
+                                                <ComboBoxItem Content="{DynamicResource Loc.Application.Network.SourceProxy.Proxy}" Tag="{x:Static settings:LyricsSourceProxyMode.FollowSystem}"/>
+                                                <ComboBoxItem Content="{DynamicResource Loc.Application.Network.SourceProxy.Direct}" Tag="{x:Static settings:LyricsSourceProxyMode.Direct}"/>
+                                            </ComboBox>
+                                            <ui:Button Margin="{StaticResource AfSettingsActionGap}" MinHeight="36" VerticalAlignment="Center" Command="{Binding DataContext.ViewModel.TestSourceProxyCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Style="{StaticResource AfSettingsButtonStyle}" ToolTip="{Binding TestStatus}">
+                                                <TextBlock Text="{DynamicResource Loc.Lyrics.SourceProxy.Test}"/>
+                                            </ui:Button>
+                                            <TextBlock Margin="{StaticResource AfSettingsActionGap}" VerticalAlignment="Center" Text="{Binding TestStatus}" TextTrimming="CharacterEllipsis" MaxWidth="180"/>
+                                        </StackPanel>
+                                    </components:SettingsRow>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ui:CardExpander>
                 </StackPanel>
             </components:SettingsGroup>
 

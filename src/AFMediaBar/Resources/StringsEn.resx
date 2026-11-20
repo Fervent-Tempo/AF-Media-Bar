@@ -1600,6 +1600,9 @@
   <data name="Lyrics.Source.SodaMusic" xml:space="preserve">
     <value>Soda Music</value>
   </data>
+  <data name="Lyrics.Source.AppleMusic" xml:space="preserve">
+    <value>Apple Music original names</value>
+  </data>
   <data name="Lyrics.Source.Unknown" xml:space="preserve">
     <value>Unknown source</value>
   </data>
@@ -2582,6 +2585,30 @@
   </data>
   <data name="Interaction.Group.Wheel" xml:space="preserve">
     <value>Media bar wheel</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Title" xml:space="preserve">
+    <value>Lyric source proxies</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Description" xml:space="preserve">
+    <value>Manage proxy settings for each lyric source. The default follows the system.</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Row.Description" xml:space="preserve">
+    <value>Use system proxy rules or connect directly for this source.</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Direct" xml:space="preserve">
+    <value>Direct</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Proxy" xml:space="preserve">
+    <value>Follow system</value>
+  </data>
+  <data name="Lyrics.SourceProxy.Test" xml:space="preserve">
+    <value>Test connectivity</value>
+  </data>
+  <data name="Application.Network.Test.Reachable" xml:space="preserve">
+    <value>Reachable HTTP {0}</value>
+  </data>
+  <data name="Application.Network.Test.Failed" xml:space="preserve">
+    <value>Failed {0}</value>
   </data>
   <data name="Application.Group.Updates" xml:space="preserve">
     <value>Updates</value>

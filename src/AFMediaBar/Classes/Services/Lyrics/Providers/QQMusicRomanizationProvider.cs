@@ -23,7 +23,7 @@ internal static class QQMusicRomanizationProvider
 {
     private const string Endpoint = "https://u.y.qq.com/cgi-bin/musicu.fcg";
     private static readonly TimeSpan SessionLifetime = TimeSpan.FromMinutes(20);
-    private static readonly HttpClient Client = CreateClient();
+    private static readonly HttpClient DefaultClient = new() { Timeout = TimeSpan.FromSeconds(10) };
     private static readonly SemaphoreSlim SessionGate = new(1, 1);
     private static SessionState? _session;
     private static DateTimeOffset _sessionFetchedAt;
@@ -86,16 +86,17 @@ internal static class QQMusicRomanizationProvider
     public static async Task<string?> FetchAsync(
         string? songId,
         LyricsRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        HttpClient? client)
     {
         if (!long.TryParse(songId, out var id) || id <= 0)
             return null;
 
-        var token = cancellationToken;
+        client ??= DefaultClient;
 
         try
         {
-            var session = await GetSessionAsync(token);
+            var session = await GetSessionAsync(client, cancellationToken);
             var payload = new
             {
                 comm = BuildComm(session),
@@ -125,7 +126,7 @@ internal static class QQMusicRomanizationProvider
                 }
             };
 
-            var root = await PostAsync(payload, token);
+            var root = await PostAsync(client, payload, cancellationToken);
             var data = root.GetProperty("request").GetProperty("data");
             if (!data.TryGetProperty("roma", out var roma))
                 return null;
@@ -149,7 +150,7 @@ internal static class QQMusicRomanizationProvider
         }
     }
 
-    private static async Task<SessionState> GetSessionAsync(CancellationToken cancellationToken)
+    private static async Task<SessionState> GetSessionAsync(HttpClient client, CancellationToken cancellationToken)
     {
         await SessionGate.WaitAsync(cancellationToken);
         try
@@ -157,7 +158,7 @@ internal static class QQMusicRomanizationProvider
             if (_session is not null && DateTimeOffset.UtcNow - _sessionFetchedAt < SessionLifetime)
                 return _session;
 
-            var root = await PostAsync(new
+            var root = await PostAsync(client, new
             {
                 comm = BuildComm(null),
                 request = new
@@ -182,11 +183,16 @@ internal static class QQMusicRomanizationProvider
         }
     }
 
-    private static async Task<JsonElement> PostAsync(object payload, CancellationToken cancellationToken)
+    private static async Task<JsonElement> PostAsync(HttpClient client, object payload, CancellationToken cancellationToken)
     {
         var json = JsonSerializer.Serialize(payload);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        using var response = await Client.PostAsync(Endpoint, content, cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+        request.Headers.TryAddWithoutValidation("Cookie", "tmeLoginType=-1;");
+        request.Headers.TryAddWithoutValidation("User-Agent", "okhttp/3.14.9");
+        using var response = await client.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
@@ -220,14 +226,6 @@ internal static class QQMusicRomanizationProvider
         }
 
         return comm;
-    }
-
-    private static HttpClient CreateClient()
-    {
-        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-        client.DefaultRequestHeaders.TryAddWithoutValidation("Cookie", "tmeLoginType=-1;");
-        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "okhttp/3.14.9");
-        return client;
     }
 
     private static string Base64(string? value) =>

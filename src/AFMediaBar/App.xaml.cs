@@ -20,6 +20,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
+using Lyricify.Lyrics.Providers.Web;
 using System.Reflection;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -144,11 +146,19 @@ namespace AFMediaBar
                 // 歌词提供器的顺序就是优先级：精确来源在前，模糊搜索在后；每多一个来源只增加一次未命中时的尝试。
                 // The provider order is the priority: exact sources first, fuzzy searches last. Every extra source only adds
                 // one attempt after the earlier ones miss.
-                // Apple Music 原名解析器持有 HttpClient、缓存与限流状态，随容器释放。
-                // The Apple Music original-name resolver owns its HttpClient, cache and rate limit, and is released with the container.
-                services.AddSingleton(sp => new AppleMusicOriginalMetadataResolver(sp.GetRequiredService<AppLogService>()));
-                services.AddSingleton<LyricsService>(sp =>
-                    LyricsProviderFactory.CreateDefaultService(sp.GetRequiredService<AppleMusicOriginalMetadataResolver>()));
+                services.AddSingleton(_ => new LyricsProxyPolicy(HttpClient.DefaultProxy));
+                // Lyricify 0.2.0 会修改共享客户端的默认请求头，应用自有请求使用另一客户端。
+                services.AddKeyedSingleton<HttpClient>(typeof(BaseApi), (sp, _) =>
+                    new HttpClient(new SocketsHttpHandler { Proxy = sp.GetRequiredService<LyricsProxyPolicy>() }));
+                services.AddKeyedSingleton<HttpClient>(typeof(LyricsService), (sp, _) =>
+                    new HttpClient(new SocketsHttpHandler { Proxy = sp.GetRequiredService<LyricsProxyPolicy>() })
+                    { Timeout = TimeSpan.FromSeconds(10) });
+                services.AddSingleton(sp => new LyricsSourceTester(sp.GetRequiredKeyedService<HttpClient>(typeof(LyricsService))));
+                services.AddSingleton(sp => new AppleMusicOriginalMetadataResolver(sp.GetRequiredService<AppLogService>(),
+                    sp.GetRequiredKeyedService<HttpClient>(typeof(LyricsService))));
+                services.AddSingleton(sp => LyricsProviderFactory.CreateDefaultService(
+                    sp.GetRequiredService<AppleMusicOriginalMetadataResolver>(),
+                    sp.GetRequiredKeyedService<HttpClient>(typeof(LyricsService))));
                 services.AddSingleton<MediaSourceRegistry>();
                 services.AddSingleton<MediaSessionCatalog>();
                 services.AddSingleton<MediaSessionSelectionService>();
@@ -395,6 +405,7 @@ namespace AFMediaBar
             }).Build();
 
         private ApplicationThemeCoordinator? _themeCoordinator;
+        private LyricsProxyPolicy? _lyricsProxy;
         private CoverAccentColorService? _coverAccentColors;
         private EventHandler<MediaSnapshot>? _coverAccentSnapshotHandler;
 #if DEBUG
@@ -583,6 +594,13 @@ namespace AFMediaBar
                 SettingsManager.Current.TranslucentTbCompatibilityPromptShown = true;
                 settingsPersistenceService.Flush();
             }
+            _lyricsProxy = Services.GetRequiredService<LyricsProxyPolicy>();
+            _lyricsProxy.SetSourceProxyModes(SettingsManager.Current.LyricsSource.SourceProxyModes);
+            var originalLyricifyClient = BaseApi.HttpClient;
+            BaseApi.HttpClient = Services.GetRequiredKeyedService<HttpClient>(typeof(BaseApi));
+            originalLyricifyClient.Dispose();
+            SettingsManager.SettingsChanged += OnSettingsChangedForLyricsProxy;
+
             _coverAccentColors = CoverAccentColorService.Shared;
             _themeCoordinator = new ApplicationThemeCoordinator(
                 Dispatcher, new ApplicationAppearanceResources(Resources).Apply, _coverAccentColors);
@@ -648,6 +666,13 @@ namespace AFMediaBar
 #endif
         }
 
+        /// <summary>每来源的代理模式直接驱动策略本身，已经建好的客户端不必重建。/ The per-source proxy modes drive the policy object itself, so existing clients need no rebuild.</summary>
+        private void OnSettingsChangedForLyricsProxy(object? sender, SettingsChangedEventArgs e)
+        {
+            if (e.PropertyName is null or nameof(AppSettings.LyricsSource) || e.ResetScope is not null)
+                _lyricsProxy?.SetSourceProxyModes(SettingsManager.Current.LyricsSource.SourceProxyModes);
+        }
+
         private void AttachSpectrumMediaSource()
         {
             // 在组合根接通快照输入，避免媒体服务、剪枝参与者和频谱之间形成构造依赖环。
@@ -704,6 +729,7 @@ namespace AFMediaBar
 
             _exitCoordinator.ArmExitProtection();
             _startupCancellation.Cancel();
+            SettingsManager.SettingsChanged -= OnSettingsChangedForLyricsProxy;
             DetachSpectrumMediaSource();
             DetachCoverAccentSource();
             _developerToolsHost?.Dispose();

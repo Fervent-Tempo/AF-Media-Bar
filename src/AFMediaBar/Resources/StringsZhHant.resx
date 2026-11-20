@@ -1600,6 +1600,9 @@
   <data name="Lyrics.Source.SodaMusic" xml:space="preserve">
     <value>汽水音樂</value>
   </data>
+  <data name="Lyrics.Source.AppleMusic" xml:space="preserve">
+    <value>Apple Music 原名</value>
+  </data>
   <data name="Lyrics.Source.Unknown" xml:space="preserve">
     <value>未知來源</value>
   </data>
@@ -2582,6 +2585,30 @@
   </data>
   <data name="Interaction.Group.Wheel" xml:space="preserve">
     <value>媒體列滾輪</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Title" xml:space="preserve">
+    <value>歌詞來源代理</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Description" xml:space="preserve">
+    <value>逐一設定歌詞來源的代理，預設跟隨系統。</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Row.Description" xml:space="preserve">
+    <value>採用系統代理規則，或為此來源啟用直連。</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Direct" xml:space="preserve">
+    <value>直連</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Proxy" xml:space="preserve">
+    <value>跟隨系統</value>
+  </data>
+  <data name="Lyrics.SourceProxy.Test" xml:space="preserve">
+    <value>測試連線</value>
+  </data>
+  <data name="Application.Network.Test.Reachable" xml:space="preserve">
+    <value>可達 HTTP {0}</value>
+  </data>
+  <data name="Application.Network.Test.Failed" xml:space="preserve">
+    <value>失敗 {0}</value>
   </data>
   <data name="Application.Group.Updates" xml:space="preserve">
     <value>更新</value>

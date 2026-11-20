@@ -1,4 +1,4 @@
-<!-- owner: AF Media Bar maintainers | verified_at: 791d2319 | review_by: 2027-03-05 -->
+<!-- owner: AF Media Bar maintainers | verified_at: 5f9f4e98 | review_by: 2027-03-05 -->
 
 # 设置与持久化
 
@@ -17,6 +17,7 @@
 - 未发布字段不为开发中间构建保留兼容；已发布字段变更必须说明旧数据处理、用户影响和验证，不要求一律迁移。不能把进入 main 当成已发布。
 - 新增字段在声明处提供默认值并归一化；保留 `null`、空集合和显式值的不同语义，不能随意合并。
 - `LyricsSource.EnabledSourceIds`：`null` 全部默认来源，空数组全关；排列不代表取词优先级，手动顺序另存 `PrioritySourceIds`。
+- `LyricsSource.SourceProxyModes` 只保存显式直连，缺项跟随系统。代理设置和逐来源连通性测试都归歌词来源分组。
 - `LyricsSecondaryLineSettings.Order`：`null` 使用“下一句 → 翻译 → 音译”，空数组不用第二行，非空按顺序选择有内容的项。
 - `LatinFontFamily` / `CjkFontFamily`：`null` 保留旧预设含义，空字符串跟随系统，非空为本机字体名；归一化去除首尾空白并拒绝逗号或过长值。
 - `RestComponentOrder`：封面与媒体文字是固定前缀，只排尾部；遗漏的已知组件补到末尾，等于默认尾部时写回 `null`。

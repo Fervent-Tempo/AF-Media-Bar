@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Http;
 using AFMediaBar.Classes.Abstractions;
 using AFMediaBar.Classes.Models;
 using Lyricify.Lyrics.Providers.Web.QQMusic;
@@ -18,6 +19,11 @@ namespace AFMediaBar.Classes.Services.Lyrics;
 public sealed class QQMusicLyricsProvider : ILyricsProvider
 {
     private readonly Api _api = new();
+    private readonly HttpClient? _client;
+
+    public QQMusicLyricsProvider() { }
+
+    internal QQMusicLyricsProvider(HttpClient? client) => _client = client;
 
     public string SourceName => LyricsSourceCatalog.QQMusic;
 
@@ -43,7 +49,7 @@ public sealed class QQMusicLyricsProvider : ILyricsProvider
         cancellationToken.ThrowIfCancellationRequested();
         if (confirmedNoLyrics) return LyricsResult.NoLyrics(SourceName, match.Score);
         return await CompleteLyricsAsync(main, translation, match.Score, request,
-            token => QQMusicRomanizationProvider.FetchAsync(qq.Id, request, token), cancellationToken).ConfigureAwait(false);
+            token => QQMusicRomanizationProvider.FetchAsync(qq.Id, request, token, _client), cancellationToken).ConfigureAwait(false);
     }
 
     internal static async Task<LyricsResult?> CompleteLyricsAsync(string? main, string? translation, int score,

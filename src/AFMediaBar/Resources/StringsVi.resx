@@ -1579,6 +1579,9 @@
   <data name="Lyrics.Source.SodaMusic" xml:space="preserve">
     <value>Soda Music</value>
   </data>
+  <data name="Lyrics.Source.AppleMusic" xml:space="preserve">
+    <value>Tên gốc Apple Music</value>
+  </data>
   <data name="Lyrics.Source.Unknown" xml:space="preserve">
     <value>Nguồn không xác định</value>
   </data>
@@ -2364,6 +2367,30 @@
   </data>
   <data name="Appearance.Unified.Header.Subtitle" xml:space="preserve">
     <value>Thiết lập chủ đề và phông chữ chung, cùng văn bản và nền của thanh media bar.</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Title" xml:space="preserve">
+    <value>Proxy của nguồn lời bài hát</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Description" xml:space="preserve">
+    <value>Cài đặt proxy cho từng nguồn lời bài hát. Mặc định theo hệ thống.</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Row.Description" xml:space="preserve">
+    <value>Dùng quy tắc proxy của hệ thống hoặc kết nối trực tiếp cho nguồn này.</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Direct" xml:space="preserve">
+    <value>Trực tiếp</value>
+  </data>
+  <data name="Application.Network.SourceProxy.Proxy" xml:space="preserve">
+    <value>Theo hệ thống</value>
+  </data>
+  <data name="Lyrics.SourceProxy.Test" xml:space="preserve">
+    <value>Kiểm tra kết nối</value>
+  </data>
+  <data name="Application.Network.Test.Reachable" xml:space="preserve">
+    <value>Kết nối được HTTP {0}</value>
+  </data>
+  <data name="Application.Network.Test.Failed" xml:space="preserve">
+    <value>Thất bại {0}</value>
   </data>
   <data name="Application.Group.Updates" xml:space="preserve">
     <value>Cập nhật</value>

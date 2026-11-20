@@ -22,6 +22,15 @@ public enum LyricsSourceResultMode
     FirstAvailable = 1
 }
 
+/// <summary>单个歌词来源的代理模式。/ Per-source proxy mode.</summary>
+public enum LyricsSourceProxyMode
+{
+    /// <summary>按该目标地址使用系统代理规则，默认值。</summary>
+    FollowSystem = 0,
+    /// <summary>该来源直连。</summary>
+    Direct = 1
+}
+
 /// <summary>
 /// 歌词来源开关及规则；启用集合与手动优先级分别保存。
 ///
@@ -60,6 +69,11 @@ public readonly record struct LyricsSourceSettings(IReadOnlyList<string>? Enable
     public IReadOnlyList<string>? LocalFolders { get; init; }
 
     /// <summary>
+    /// 按来源组 ID 保存直连覆盖；没有覆盖时跟随系统，未知来源的有效设置保留。
+    /// </summary>
+    public IReadOnlyDictionary<string, LyricsSourceProxyMode>? SourceProxyModes { get; init; }
+
+    /// <summary>
     /// Apple Music 播放且默认规则未取到可靠歌词时，向 Apple 曲库查询原名再取一轮；默认开启，手动规则不生效。
     /// </summary>
     public bool AppleMusicOriginalNamesEnabled { get => _appleMusicOriginalNamesEnabled ?? true; init => _appleMusicOriginalNamesEnabled = value; }
@@ -82,8 +96,17 @@ public readonly record struct LyricsSourceSettings(IReadOnlyList<string>? Enable
         ResultMode = Enum.IsDefined(ResultMode) ? ResultMode : LyricsSourceResultMode.Ordered,
         EnabledSourceIds = NormalizeIds(EnabledSourceIds),
         PrioritySourceIds = NormalizeIds(PrioritySourceIds),
-        LocalFolders = NormalizeIds(LocalFolders)
+        LocalFolders = NormalizeIds(LocalFolders),
+        SourceProxyModes = NormalizeProxyModes(SourceProxyModes)
     };
+
+    private static IReadOnlyDictionary<string, LyricsSourceProxyMode>? NormalizeProxyModes(
+        IReadOnlyDictionary<string, LyricsSourceProxyMode>? modes)
+    {
+        var direct = modes?.Where(static pair => pair.Value == LyricsSourceProxyMode.Direct)
+            .ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal);
+        return direct is { Count: > 0 } ? direct : null;
+    }
 
     private static string[]? NormalizeIds(IReadOnlyList<string>? ids) => ids?
         .Where(static value => !string.IsNullOrWhiteSpace(value))
