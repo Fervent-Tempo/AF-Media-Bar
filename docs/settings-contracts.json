@@ -198,6 +198,7 @@
     "taskbarExperience": {
       "$release": "v1.2.0",
       "arrangement": "v1.4.0",
+      "artworkProgressStyle": "unreleased",
       "artworkProgressVisible": "v1.4.0",
       "artworkVisible": "v1.3.0",
       "componentSpacingDip": "v1.2.0",
@@ -601,6 +602,21 @@
         "None": {
           "value": 3,
           "release": "v1.7.0"
+        }
+      }
+    },
+    "ArtworkProgressStyle": {
+      "paths": [
+        "settings.taskbarExperience.artworkProgressStyle"
+      ],
+      "members": {
+        "Line": {
+          "value": 0,
+          "release": "unreleased"
+        },
+        "Fill": {
+          "value": 1,
+          "release": "unreleased"
         }
       }
     },

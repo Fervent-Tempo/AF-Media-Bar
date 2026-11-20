@@ -176,6 +176,21 @@ public enum ArtworkHoverMode
     None = 3
 }
 
+/// <summary>
+/// 封面边缘进度的画法：<see cref="Line"/> 沿封面轮廓描一条细线；<see cref="Fill"/> 像注水一样从下往上
+/// 用强调色把已播放的部分染亮。
+/// How the artwork edge reports progress: <see cref="Line"/> draws a thin line along the cover outline;
+/// <see cref="Fill"/> tints the played part from the bottom up like rising water.
+/// </summary>
+public enum ArtworkProgressStyle
+{
+    /// <summary>沿封面轮廓的细线（默认）。/ Thin line along the cover outline (default).</summary>
+    Line = 0,
+
+    /// <summary>从下往上填满的注水效果。/ Water-filling effect rising from the bottom.</summary>
+    Fill = 1
+}
+
 /// <summary>任务栏三层体验设置。 / Settings for the three-layer taskbar experience.</summary>
 public readonly record struct TaskbarExperienceSettings(
     bool HoverLayerEnabled,
@@ -236,6 +251,11 @@ public readonly record struct TaskbarExperienceSettings(
     public bool ArtworkProgressVisible { get => _artworkProgressVisible ?? true; init => _artworkProgressVisible = value; }
 
     private readonly bool? _artworkProgressVisible;
+
+    /// <summary>封面边缘进度的画法；旧设置文件没有该字段时按线条显示。/ Drawing style of the artwork progress; files without the field read as a line.</summary>
+    public ArtworkProgressStyle ArtworkProgressStyle { get => _artworkProgressStyle ?? ArtworkProgressStyle.Line; init => _artworkProgressStyle = value; }
+
+    private readonly ArtworkProgressStyle? _artworkProgressStyle;
 
     /// <summary>是否显示外侧横杆；不限制封面、文字等交互打开完整面板。</summary>
     public bool FullPanelEntryVisible { get; init; } = true;
@@ -360,6 +380,7 @@ public readonly record struct TaskbarExperienceSettings(
             Density = Enum.IsDefined(Density) ? Density : defaults.Density,
             ContentLayout = Enum.IsDefined(ContentLayout) ? ContentLayout : defaults.ContentLayout,
             MediaTextAlignment = Enum.IsDefined(MediaTextAlignment) ? MediaTextAlignment : defaults.MediaTextAlignment,
+            ArtworkProgressStyle = Enum.IsDefined(ArtworkProgressStyle) ? ArtworkProgressStyle : defaults.ArtworkProgressStyle,
             Arrangement = Arrangement is { } arrangement && Enum.IsDefined(arrangement) ? arrangement : null,
             HoverAlignment = HoverAlignment is { } hoverAlignment && Enum.IsDefined(hoverAlignment) ? hoverAlignment : null,
             FullPanel = FullPanel.Normalize(),

@@ -20,6 +20,7 @@ internal static class SettingsResetPolicy
             ArtworkVisible = defaults.ArtworkVisible,
             SmallArtwork = defaults.SmallArtwork,
             ArtworkProgressVisible = defaults.ArtworkProgressVisible,
+            ArtworkProgressStyle = defaults.ArtworkProgressStyle,
             RestProgressVisible = defaults.RestProgressVisible,
             OutputDeviceVisible = defaults.OutputDeviceVisible,
             InputDeviceVisible = defaults.InputDeviceVisible,

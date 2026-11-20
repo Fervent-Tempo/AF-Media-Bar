@@ -1685,6 +1685,7 @@ namespace AFMediaBar.Components
             // wheel-tooltip timers are left alone: they run only while the pointer rests on the bar, which means the mouse has just moved and the level
             // is about to return to normal anyway.
             _progressTimer.Stop();
+            SongImageProgress.AnimateWave = false;
             if (!_isHostVisibilitySuspended && _backgroundPruneLevel < MemoryPruneLevel.DisplayOff)
             {
                 _lyrics.RefreshWebLyricsTimer();
@@ -2594,7 +2595,9 @@ namespace AFMediaBar.Components
             TaskbarRestProgress.Maximum = Math.Max(1, _snapshot.Duration);
             TaskbarRestProgress.Value = position;
             var experience = PresentationSettings.TaskbarExperience.Normalize();
+            SongImageProgress.AnimateWave = _snapshot.IsPlaying && !IsAdvancePruned;
             SongImageProgress.Progress = hasDuration ? position / _snapshot.Duration : 0;
+            SongImageProgress.ProgressStyle = experience.ArtworkProgressStyle;
             SongImageProgress.Visibility = _isConnected && hasDuration && experience.ArtworkProgressVisible
                 ? Visibility.Visible : Visibility.Collapsed;
             if (IsBarPresentation && !_isVertical)

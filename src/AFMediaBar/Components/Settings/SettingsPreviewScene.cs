@@ -83,7 +83,7 @@ public sealed class SettingsPreviewScene : ContentControl
         else { presenter.Width = 122; presenter.Height = 92; }
         return presenter;
     }
-    private Border Artwork(double size, bool progress, bool note = false)
+    private Border Artwork(double size, bool progress, bool note = false, ArtworkProgressStyle style = ArtworkProgressStyle.Line)
     {
         var content = new Grid();
         if (note)
@@ -102,7 +102,7 @@ public sealed class SettingsPreviewScene : ContentControl
                 Stretch = Stretch.Fill, Opacity = .8, Margin = new Thickness(2)
             });
         }
-        if (progress) content.Children.Add(Themed(new ArtworkProgress { Progress = .38 }, ArtworkProgress.StrokeProperty, "AfAccentBrush"));
+        if (progress) content.Children.Add(Themed(new ArtworkProgress { Progress = .38, ProgressStyle = style }, ArtworkProgress.StrokeProperty, "AfAccentBrush"));
         return new Border { Width = size, Height = size, Child = content, ClipToBounds = true, CornerRadius = new CornerRadius(5.5) };
     }
     private T PlayerForeground<T>(T element, DependencyProperty property) where T : FrameworkElement
@@ -226,7 +226,8 @@ public sealed class SettingsPreviewScene : ContentControl
             {
                 var size = model.IsVertical ? crossSize - 4 : 40 * model.ThicknessScale;
                 if (model.Experience.SmallArtwork && !model.ShowIdle) size *= .8;
-                visual = Artwork(size, !model.ShowIdle && model.Experience.ArtworkProgressVisible, model.ShowIdle);
+                visual = Artwork(size, !model.ShowIdle && model.Experience.ArtworkProgressVisible, model.ShowIdle,
+                    model.Experience.ArtworkProgressStyle);
             }
             else if (item.Component == TaskbarRestComponent.MediaText) visual = (FrameworkElement)BuildMetadata(model);
             else if (item.Component == TaskbarRestComponent.Spectrum) visual = (FrameworkElement)BuildSpectrum(model, crossSize);

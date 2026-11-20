@@ -1133,7 +1133,7 @@
     <value>Title and artist layout</value>
   </data>
   <data name="DisplayModes.Rest.Row.Progress.Description" xml:space="preserve">
-    <value>Show read-only progress along the media bar edge; hide it when duration is unavailable.</value>
+    <value>Show read-only progress at the bottom of the horizontal media bar. Hide it when duration is unavailable.</value>
   </data>
   <data name="DisplayModes.Rest.Row.Artwork.Description" xml:space="preserve">
     <value>Show artwork while media is connected; the idle note has its own setting.</value>
@@ -1151,7 +1151,7 @@
     <value>Turn on "Show artwork" first</value>
   </data>
   <data name="DisplayModes.Rest.Row.Progress.Title" xml:space="preserve">
-    <value>Show playback progress</value>
+    <value>Show playback progress below lyrics</value>
   </data>
   <data name="DisplayModes.Rest.Row.VolumeButton.Description" xml:space="preserve">
     <value>Keep the volume button visible, using text space; click for its menu or scroll to adjust volume.</value>
@@ -2773,10 +2773,22 @@
     <value>Download</value>
   </data>
   <data name="DisplayModes.Rest.Row.ArtworkProgress.Description" xml:space="preserve">
-    <value>Show playback progress around the artwork, following its size and hover zoom.</value>
+    <value>Show playback progress on the artwork, following its size and hover zoom.</value>
   </data>
   <data name="DisplayModes.Rest.Row.ArtworkProgress.Title" xml:space="preserve">
-    <value>Artwork edge progress</value>
+    <value>Edge progress</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Description" xml:space="preserve">
+    <value>Edge progress traces the artwork edge. Fill tints the played part from the bottom up.</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Fill" xml:space="preserve">
+    <value>Fill</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Line" xml:space="preserve">
+    <value>Edge progress</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Title" xml:space="preserve">
+    <value>Progress style</value>
   </data>
   <data name="Media.ControlUnavailable.Body" xml:space="preserve">
     <value>Enable SMTC (system media controls) or a similar option in the player settings. If no such option exists, check whether the player supports SMTC. Unsupported sources cannot be controlled by AF Media Bar.</value>

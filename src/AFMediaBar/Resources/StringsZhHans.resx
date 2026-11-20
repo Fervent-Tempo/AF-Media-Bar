@@ -1133,7 +1133,7 @@
     <value>标题与歌手显示方式</value>
   </data>
   <data name="DisplayModes.Rest.Row.Progress.Description" xml:space="preserve">
-    <value>在媒体栏边缘显示只读进度；无时长时隐藏。</value>
+    <value>在横向媒体栏底部显示只读进度，无时长时隐藏。</value>
   </data>
   <data name="DisplayModes.Rest.Row.Artwork.Description" xml:space="preserve">
     <value>有媒体时显示封面；不影响无媒体时的小音符。</value>
@@ -1151,7 +1151,7 @@
     <value>需先开启显示封面</value>
   </data>
   <data name="DisplayModes.Rest.Row.Progress.Title" xml:space="preserve">
-    <value>显示播放进度</value>
+    <value>显示歌词底部播放进度</value>
   </data>
   <data name="DisplayModes.Rest.Row.VolumeButton.Description" xml:space="preserve">
     <value>常驻音量按钮，占用文字空间；点击打开菜单，滚动调节音量。</value>
@@ -2773,10 +2773,22 @@
     <value>下载</value>
   </data>
   <data name="DisplayModes.Rest.Row.ArtworkProgress.Description" xml:space="preserve">
-    <value>沿封面边缘显示播放进度，随封面尺寸和悬停放大调整。</value>
+    <value>在封面上显示播放进度，随封面尺寸和悬停放大调整。</value>
   </data>
   <data name="DisplayModes.Rest.Row.ArtworkProgress.Title" xml:space="preserve">
-    <value>封面边缘进度</value>
+    <value>边缘进度</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Description" xml:space="preserve">
+    <value>边缘进度沿封面描边，注水从下往上染亮已播放的部分。</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Fill" xml:space="preserve">
+    <value>注水</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Line" xml:space="preserve">
+    <value>边缘进度</value>
+  </data>
+  <data name="DisplayModes.Rest.Row.ArtworkProgressStyle.Title" xml:space="preserve">
+    <value>进度样式</value>
   </data>
   <data name="Media.ControlUnavailable.Body" xml:space="preserve">
     <value>请在播放器设置中打开 SMTC（系统播放控件）或类似选项。如果没有此选项，请查询软件是否支持 SMTC；不支持的媒体源无法通过本程序控制。</value>
