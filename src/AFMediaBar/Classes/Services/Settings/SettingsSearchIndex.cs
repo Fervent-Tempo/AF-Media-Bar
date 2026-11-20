@@ -177,7 +177,7 @@ public static class SettingsSearchIndex
             "Settings.RestState.Visible",
             "Search.DisplayModes.RestLayer.Description",
             language,
-            ["静置", "静置层", "靜置層", "常驻", "常驻状态", "常駐狀態", "rest", "rest layer", "always-on view", "进度", "播放进度", "progress", "设备按钮", "输出设备", "音量按钮", "显示频谱", "显示性能", "显示电量", "小封面", "封面边缘进度", "small artwork"], "Common.RestLayer"),
+            ["静置", "静置层", "靜置層", "常驻", "常驻状态", "常駐狀態", "rest", "rest layer", "always-on view", "进度", "播放进度", "progress", "设备按钮", "输出设备", "音量按钮", "显示频谱", "显示性能", "显示电量", "小封面", "封面边缘进度", "边缘进度", "邊緣進度", "歌词底部播放进度", "歌詞底部播放進度", "small artwork", "edge progress", "progress below lyrics", "进度样式", "注水", "线条", "progress style", "fill", "outline"], "Common.RestLayer"),
         Create(SettingsPageKey.RestState, "Settings.RestState.Idle", "Settings.RestState.IdleDescription", language,
             ["没有媒体", "无媒体", "空闲", "idle", "隐藏", "保留组件", "小音符", "without media"]),
         Create(SettingsPageKey.RestState, "Common.Group.ComponentOrder", "Common.ComponentOrder.Description", language,

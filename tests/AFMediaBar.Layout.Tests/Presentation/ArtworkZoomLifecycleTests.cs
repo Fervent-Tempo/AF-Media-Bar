@@ -352,6 +352,33 @@ public sealed class ArtworkZoomLifecycleTests
     });
 
     [TestMethod]
+    public void FillWaveStopsOnPauseAndResumesFromItsPhase() => RunIsolated(nameof(FillWaveStopsOnPauseAndResumesFromItsPhase), (control, _) =>
+    {
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+        {
+            ArtworkProgressVisible = true,
+            ArtworkProgressStyle = ArtworkProgressStyle.Fill
+        };
+        var snapshot = MediaSnapshot.Disconnected with { IsConnected = true, IsPlaying = true, Position = 50, Duration = 100 };
+        var ring = (ArtworkProgress)control.FindName("SongImageProgress");
+        control.UpdateSongInfo(snapshot);
+        var allowsMotion = MotionPolicy.ResolveCurrent().UseContinuousMotion;
+        Assert.AreEqual(allowsMotion, ring.HasAnimatedProperties);
+
+        var phase = ring.WavePhase;
+        control.UpdateSongInfo(snapshot with { IsPlaying = false });
+        Assert.IsFalse(ring.HasAnimatedProperties);
+        Assert.AreEqual(phase, ring.WavePhase, 0.001);
+        Assert.AreEqual(0.5, ring.Progress, 0.001);
+
+        control.UpdateSongInfo(snapshot);
+        Assert.AreEqual(allowsMotion, ring.HasAnimatedProperties);
+        control.ApplyHostVisibilitySuspension(true);
+        Assert.IsFalse(ring.HasAnimatedProperties);
+        return Task.CompletedTask;
+    });
+
+    [TestMethod]
     public void ZoomSubstituteCarriesTheEdgeProgressRing() => RunIsolated(nameof(ZoomSubstituteCarriesTheEdgeProgressRing), (control, dispatcher) =>
     {
         // 控件每 250ms 按快照重算真环的进度与显隐：不先停掉，下面写入的值可能被下一拍覆盖，结果取决于时序。
@@ -383,6 +410,16 @@ public sealed class ArtworkZoomLifecycleTests
 
             ring.Progress = 0.73;
             Assert.AreEqual(0.73, mirror.Progress, 0.001, "放大期间播放推进时，替身的进度必须跟着真环更新。");
+
+            // 注水的水面位置来自真环那条 30fps 的相位动画。替身若保留默认的 AnimateWave，
+            // 就会再起一条独立时钟，两个相位各滚各的，换树那一帧水面明显跳一下。
+            // The fill's water surface comes from the real ring's 30 fps phase animation. A stand-in left at the
+            // default AnimateWave would start a second clock of its own; the two phases drift apart and the surface
+            // jumps on the hand-off frame.
+            Assert.IsFalse(mirror.AnimateWave, "替身不能自己再跑一条水波时钟，相位必须读真环。");
+            Assert.IsFalse(mirror.HasAnimatedProperties, "替身不该对相位施加本地动画。");
+            ring.WavePhase = 1.31;
+            Assert.AreEqual(1.31, mirror.WavePhase, 0.001, "替身的水波相位必须实时跟随真环。");
 
             Invoke(control, "HideArtworkHoverZoom", true);
             AssertRestored(control);

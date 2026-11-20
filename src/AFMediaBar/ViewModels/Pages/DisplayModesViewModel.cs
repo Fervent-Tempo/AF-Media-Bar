@@ -147,6 +147,13 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         set => UpdateExperience(_configuration.Current.TaskbarExperience with { ArtworkProgressVisible = value });
     }
 
+    /// <summary>封面边缘进度的画法：线条或注水。/ Drawing style of the artwork progress: line or fill.</summary>
+    public ArtworkProgressStyle ArtworkProgressStyle
+    {
+        get => _configuration.Current.TaskbarExperience.ArtworkProgressStyle;
+        set => UpdateExperience(_configuration.Current.TaskbarExperience with { ArtworkProgressStyle = value });
+    }
+
     public bool RestProgressVisible
     {
         get => _configuration.Current.TaskbarExperience.RestProgressVisible;
@@ -786,6 +793,7 @@ public partial class DisplayModesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(FullPanelEntryHoverDelaySeconds));
         OnPropertyChanged(nameof(RestProgressVisible));
         OnPropertyChanged(nameof(ArtworkProgressVisible));
+        OnPropertyChanged(nameof(ArtworkProgressStyle));
         OnPropertyChanged(nameof(RestArtworkVisible));
         OnPropertyChanged(nameof(SmallArtwork));
         OnPropertyChanged(nameof(SpectrumVisible)); OnPropertyChanged(nameof(PerformanceVisible));
