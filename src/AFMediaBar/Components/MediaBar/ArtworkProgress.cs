@@ -1,8 +1,10 @@
-// 绘制封面边缘的只读进度；尺寸和缩放由封面宿主提供，不持有计时器或媒体资源。
+// 绘制封面进度；本控件拥有水波时钟，卸载时撤销动画并解除系统动效订阅。
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using AFMediaBar.Classes.Services;
 using AFMediaBar.Classes.Settings;
+using AFMediaBar.Classes.Utils;
 
 namespace AFMediaBar.Components;
 
@@ -15,14 +17,14 @@ public sealed class ArtworkProgress : FrameworkElement
 {
     public ArtworkProgress()
     {
-        Loaded += (_, _) => UpdateWaveAnimation();
-        Unloaded += (_, _) => UpdateWaveAnimation();
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
         IsVisibleChanged += (_, _) => UpdateWaveAnimation();
     }
 
     public static readonly DependencyProperty ProgressProperty = DependencyProperty.Register(
         nameof(Progress), typeof(double), typeof(ArtworkProgress),
-        new FrameworkPropertyMetadata(0d, FrameworkPropertyMetadataOptions.AffectsRender, OnProgressChanged));
+        new FrameworkPropertyMetadata(0d, FrameworkPropertyMetadataOptions.AffectsRender, OnWaveStateChanged));
 
     public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register(
         nameof(Stroke), typeof(Brush), typeof(ArtworkProgress),
@@ -36,7 +38,7 @@ public sealed class ArtworkProgress : FrameworkElement
     /// <summary>进度的画法：细线或注水。/ How the progress is drawn: a thin line or a rising fill.</summary>
     public static readonly DependencyProperty ProgressStyleProperty = DependencyProperty.Register(
         nameof(ProgressStyle), typeof(ArtworkProgressStyle), typeof(ArtworkProgress),
-        new FrameworkPropertyMetadata(ArtworkProgressStyle.Line, FrameworkPropertyMetadataOptions.AffectsRender, OnProgressStyleChanged));
+        new FrameworkPropertyMetadata(ArtworkProgressStyle.Line, FrameworkPropertyMetadataOptions.AffectsRender, OnWaveStateChanged));
 
     /// <summary>水波相位（弧度）：注水样式下决定水面起伏的位置。默认由本元素自己的动画推进；替身封面关掉
     /// <see cref="AnimateWave"/> 后把这个属性绑定到真环，换树那一帧两层水波才对得上。</summary>
@@ -47,7 +49,7 @@ public sealed class ArtworkProgress : FrameworkElement
     /// <summary>是否自己驱动水波动画。默认开；镜像真环相位的替身关掉它，否则两个独立时钟会各滚各的。</summary>
     public static readonly DependencyProperty AnimateWaveProperty = DependencyProperty.Register(
         nameof(AnimateWave), typeof(bool), typeof(ArtworkProgress),
-        new FrameworkPropertyMetadata(true, OnAnimateWaveChanged));
+        new FrameworkPropertyMetadata(true, OnWaveStateChanged));
 
     public double Progress
     {
@@ -85,46 +87,45 @@ public sealed class ArtworkProgress : FrameworkElement
         set => SetValue(AnimateWaveProperty, value);
     }
 
+    private bool _waveLoaded;
     private bool _waveRunning;
 
-    private static void OnProgressChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
+    private static void OnWaveStateChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
         ((ArtworkProgress)d).UpdateWaveAnimation();
 
-    private static void OnProgressStyleChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
-        ((ArtworkProgress)d).UpdateWaveAnimation();
-
-    private static void OnAnimateWaveChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        var control = (ArtworkProgress)d;
-        // 交给外部相位时先卸掉自己那条动画：动画的优先级高于绑定，不卸掉会一直压着真环传来的值。
-        if (!(bool)e.NewValue)
-            control.BeginAnimation(WavePhaseProperty, null);
-        control.UpdateWaveAnimation();
+        _waveLoaded = true;
+        SystemParameters.StaticPropertyChanged += OnMotionEnvironmentChanged;
+        RenderCapability.TierChanged += OnMotionEnvironmentChanged;
+        UpdateWaveAnimation();
     }
 
-    /// <summary>
-    /// 注水时让水波滚动。线条样式、不可见、未加载、进度停在两头（0 / 100%）或相位已交给外部时停下，
-    /// 免得为一个看不见的波浪持续重绘。停的时候保留当前相位，重新可见/继续播放时接着滚，
-    /// 否则每次搬进搬出 Popup 都会跳回起点。
-    /// </summary>
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        _waveLoaded = false;
+        SystemParameters.StaticPropertyChanged -= OnMotionEnvironmentChanged;
+        RenderCapability.TierChanged -= OnMotionEnvironmentChanged;
+        StopWaveAnimation();
+    }
+
+    private void OnMotionEnvironmentChanged(object? sender, EventArgs e) =>
+        DispatcherHelper.Run(Dispatcher, UpdateWaveAnimation);
+
     private void UpdateWaveAnimation()
     {
-        var shouldRun = AnimateWave && ProgressStyle == ArtworkProgressStyle.Fill && IsLoaded && IsVisible &&
-                        double.IsFinite(Progress) && Progress > 0 && Progress < 1;
-        if (shouldRun == _waveRunning)
-            return;
-
-        _waveRunning = shouldRun;
+        var shouldRun = AnimateWave && ProgressStyle == ArtworkProgressStyle.Fill && _waveLoaded && IsVisible &&
+                        double.IsFinite(Progress) && Progress > 0 && Progress < 1 &&
+                        MotionPolicy.ResolveCurrent().UseContinuousMotion;
         if (!shouldRun)
         {
-            if (!AnimateWave)
-                return;
-            var resting = double.IsFinite(WavePhase) ? WavePhase % TwoPi : 0;
-            BeginAnimation(WavePhaseProperty, null);
-            SetCurrentValue(WavePhaseProperty, resting);
+            StopWaveAnimation();
             return;
         }
+        if (_waveRunning)
+            return;
 
+        _waveRunning = true;
         // 从当前相位接上：真封面在放大/缩回时会先离树再入树，每次从 0 重启会让水面明显跳一下。
         var from = double.IsFinite(WavePhase) ? WavePhase % TwoPi : 0;
         var animation = new DoubleAnimation(from, from + TwoPi, new Duration(TimeSpan.FromSeconds(WavePeriodSeconds)))
@@ -134,6 +135,18 @@ public sealed class ArtworkProgress : FrameworkElement
         // 水波 30fps 已经够顺，没必要跟着 60fps 每帧重绘。
         Timeline.SetDesiredFrameRate(animation, 30);
         BeginAnimation(WavePhaseProperty, animation);
+    }
+
+    private void StopWaveAnimation()
+    {
+        if (!_waveRunning)
+            return;
+
+        _waveRunning = false;
+        // 暂停、挂起或换树后继续使用当前相位，避免恢复时水面跳动。
+        var resting = double.IsFinite(WavePhase) ? WavePhase % TwoPi : 0;
+        BeginAnimation(WavePhaseProperty, null);
+        SetCurrentValue(WavePhaseProperty, resting);
     }
 
     private Size _pathSize;

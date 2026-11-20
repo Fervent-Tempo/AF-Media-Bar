@@ -352,6 +352,33 @@ public sealed class ArtworkZoomLifecycleTests
     });
 
     [TestMethod]
+    public void FillWaveStopsOnPauseAndResumesFromItsPhase() => RunIsolated(nameof(FillWaveStopsOnPauseAndResumesFromItsPhase), (control, _) =>
+    {
+        SettingsManager.Current.TaskbarExperience = SettingsManager.Current.TaskbarExperience with
+        {
+            ArtworkProgressVisible = true,
+            ArtworkProgressStyle = ArtworkProgressStyle.Fill
+        };
+        var snapshot = MediaSnapshot.Disconnected with { IsConnected = true, IsPlaying = true, Position = 50, Duration = 100 };
+        var ring = (ArtworkProgress)control.FindName("SongImageProgress");
+        control.UpdateSongInfo(snapshot);
+        var allowsMotion = MotionPolicy.ResolveCurrent().UseContinuousMotion;
+        Assert.AreEqual(allowsMotion, ring.HasAnimatedProperties);
+
+        var phase = ring.WavePhase;
+        control.UpdateSongInfo(snapshot with { IsPlaying = false });
+        Assert.IsFalse(ring.HasAnimatedProperties);
+        Assert.AreEqual(phase, ring.WavePhase, 0.001);
+        Assert.AreEqual(0.5, ring.Progress, 0.001);
+
+        control.UpdateSongInfo(snapshot);
+        Assert.AreEqual(allowsMotion, ring.HasAnimatedProperties);
+        control.ApplyHostVisibilitySuspension(true);
+        Assert.IsFalse(ring.HasAnimatedProperties);
+        return Task.CompletedTask;
+    });
+
+    [TestMethod]
     public void ZoomSubstituteCarriesTheEdgeProgressRing() => RunIsolated(nameof(ZoomSubstituteCarriesTheEdgeProgressRing), (control, dispatcher) =>
     {
         // 控件每 250ms 按快照重算真环的进度与显隐：不先停掉，下面写入的值可能被下一拍覆盖，结果取决于时序。
