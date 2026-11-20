@@ -267,7 +267,7 @@ public static class SettingsSearchIndex
             "Common.Group.LyricsSources",
             "Search.Lyrics.Sources.Description",
             language,
-            ["来源", "歌词来源", "source", "sources", "网易云", "网易云音乐", "netease", "qq 音乐", "qqmusic", "酷狗", "kugou", "汽水", "soda", "lrclib", "搜索", "search", "匹配", "match", "艺术家分隔符", "artist separators", "默认规则", "手动规则", "权重", "优先级", "顺序优先", "先到先得", "逐个尝试", "并发尝试", "manual", "priority", "parallel", "sequential", "first available", "手動", "並行", "優先", "thủ công", "song song", "lần lượt",
+            ["歌词代理", "跟随系统", "直连", "连通性", "lyrics proxy", "follow system", "connectivity", "来源", "歌词来源", "source", "sources", "网易云", "网易云音乐", "netease", "qq 音乐", "qqmusic", "酷狗", "kugou", "汽水", "soda", "lrclib", "搜索", "search", "匹配", "match", "艺术家分隔符", "artist separators", "默认规则", "手动规则", "权重", "优先级", "顺序优先", "先到先得", "逐个尝试", "并发尝试", "manual", "priority", "parallel", "sequential", "first available", "手動", "並行", "優先", "thủ công", "song song", "lần lượt",
                 "apple music", "itunes", "原名", "译名", "譯名", "original title", "tên gốc"]),
 
         // ---- 外观 / Appearance ----
@@ -324,9 +324,6 @@ public static class SettingsSearchIndex
             ["开机", "启动", "startup", "自启", "语言", "language", "中文"]),
         Create(SettingsPageKey.Application, "Application.Group.Updates", "Search.Application.Updates.Description", language,
             ["更新", "update", "升级", "版本", "version", "检查更新", "自动更新", "下载", "安装", "安装程序", "重启", "加速", "镜像", "跳过此版本"]),
-        Create(SettingsPageKey.Application, "Application.Group.Network", "Application.Network.SourceProxy.Description", language,
-            ["网络", "網路", "network", "代理", "proxy", "歌词代理", "lyrics proxy", "直连", "direct", "LRCLIB", "Apple Music", "系统代理", "system proxy",
-                "歌词来源代理", "按来源", "测试来源", "连通性", "per source proxy", "test source", "reachability"]),
         Create(
             SettingsPageKey.Application,
             "Common.Group.SettingsFile",

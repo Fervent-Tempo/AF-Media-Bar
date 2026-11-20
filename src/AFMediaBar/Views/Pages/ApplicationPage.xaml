@@ -24,35 +24,6 @@
                     </components:SettingsRow>
                 </StackPanel>
             </components:SettingsGroup>
-            <components:SettingsGroup GroupId="Application.Group.Network" Header="{DynamicResource Loc.Application.Group.Network}" Icon="{ui:SymbolIcon PlugConnected24}">
-                <StackPanel>
-                    <ui:CardExpander Style="{StaticResource AfSettingsExpanderStyle}" Icon="{ui:SymbolIcon PlugConnected24}">
-                        <ui:CardExpander.Header>
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource AfSettingsRowTitleStyle}" Text="{DynamicResource Loc.Application.Network.SourceProxy.Title}"/>
-                                <TextBlock Style="{StaticResource AfSettingsRowDescriptionStyle}" Text="{DynamicResource Loc.Application.Network.SourceProxy.Description}"/>
-                            </StackPanel>
-                        </ui:CardExpander.Header>
-                        <ItemsControl ItemsSource="{Binding ViewModel.SourceProxyItems}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <components:SettingsRow Style="{StaticResource AfSettingsListItemStyle}" Description="{DynamicResource Loc.Application.Network.SourceProxy.Row.Description}" IsNested="True" KeepControlInline="True" Title="{Binding DisplayName}">
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <ComboBox MinWidth="{StaticResource AfSettingsSelectShortWidth}" MinHeight="36" VerticalAlignment="Center" SelectedValue="{Binding ProxyMode, Mode=TwoWay}" SelectedValuePath="Tag">
-                                                <ComboBoxItem Content="{DynamicResource Loc.Application.Network.SourceProxy.Direct}" Tag="{x:Static memory:LyricsSourceProxyMode.Direct}"/>
-                                                <ComboBoxItem Content="{DynamicResource Loc.Application.Network.SourceProxy.Proxy}" Tag="{x:Static memory:LyricsSourceProxyMode.Proxy}"/>
-                                            </ComboBox>
-                                            <ui:Button Margin="{StaticResource AfSettingsActionGap}" MinHeight="36" VerticalAlignment="Center" Command="{Binding DataContext.ViewModel.TestSourceProxyCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Style="{StaticResource AfSettingsButtonStyle}" ToolTip="{Binding TestStatus}">
-                                                <ui:SymbolIcon Symbol="{Binding TestIcon}"/>
-                                            </ui:Button>
-                                        </StackPanel>
-                                    </components:SettingsRow>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ui:CardExpander>
-                </StackPanel>
-            </components:SettingsGroup>
             <components:SettingsGroup GroupId="Application.Group.Updates" Header="{DynamicResource Loc.Application.Group.Updates}" Icon="{ui:SymbolIcon ArrowSync24}">
                 <StackPanel>
                     <components:SettingsRow Description="{DynamicResource Loc.About.Row.Version.Description}" Icon="{ui:SymbolIcon Info24}" Title="{DynamicResource Loc.About.Row.Version.Title}">

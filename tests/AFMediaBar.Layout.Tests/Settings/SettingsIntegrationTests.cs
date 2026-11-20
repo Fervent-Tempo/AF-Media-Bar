@@ -2,6 +2,7 @@
 using System.Text.Json;
 using AFMediaBar.Classes.Models.Settings;
 using AFMediaBar.Classes.Services;
+using AFMediaBar.Classes.Services.Lyrics;
 using AFMediaBar.Classes.Services.Localization;
 using AFMediaBar.Classes.Services.Settings;
 using AFMediaBar.Classes.Settings;
@@ -15,6 +16,36 @@ namespace AFMediaBar.Layout.Tests;
 [DoNotParallelize]
 public sealed class SettingsIntegrationTests
 {
+    [TestMethod]
+    public void LyricsPageSavesOnlyExplicitDirectOverrides()
+    {
+        StaTest.Run(_ =>
+        {
+            var previous = SettingsManager.Current;
+            using var context = new SettingsPageContext();
+            using var localization = new LocalizationService();
+            try
+            {
+                SettingsManager.Current = new AppSettings();
+                using var viewModel = new LyricsViewModel(localization, new LegacySettingsConfiguration(context));
+                var source = viewModel.SourceProxyItems.Single(item => item.SourceId == LyricsSourceCatalog.QQMusic);
+                Assert.AreEqual(LyricsSourceProxyMode.FollowSystem, source.ProxyMode);
+
+                source.ProxyMode = LyricsSourceProxyMode.Direct;
+                Assert.AreEqual(LyricsSourceProxyMode.Direct,
+                    SettingsManager.Current.LyricsSource.SourceProxyModes![LyricsSourceCatalog.QQMusic]);
+
+                source.ProxyMode = LyricsSourceProxyMode.FollowSystem;
+                Assert.IsNull(SettingsManager.Current.LyricsSource.SourceProxyModes);
+                context.Deactivate();
+                source.ProxyMode = LyricsSourceProxyMode.Direct;
+                Assert.IsNull(SettingsManager.Current.LyricsSource.SourceProxyModes);
+            }
+            finally { SettingsManager.Current = previous; }
+            return Task.CompletedTask;
+        });
+    }
+
     [TestMethod]
     public void ChineseConversionOnlyRefreshesRelatedBindingsAndHonorsInactiveContext()
     {

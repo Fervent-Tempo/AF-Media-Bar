@@ -21,6 +21,7 @@ using Microsoft.Extensions.Hosting;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using Lyricify.Lyrics.Providers.Web;
 using System.Reflection;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -145,11 +146,19 @@ namespace AFMediaBar
                 // 歌词提供器的顺序就是优先级：精确来源在前，模糊搜索在后；每多一个来源只增加一次未命中时的尝试。
                 // The provider order is the priority: exact sources first, fuzzy searches last. Every extra source only adds
                 // one attempt after the earlier ones miss.
-                // Apple Music 原名解析器持有 HttpClient、缓存与限流状态，随容器释放。
-                // The Apple Music original-name resolver owns its HttpClient, cache and rate limit, and is released with the container.
-                services.AddSingleton(sp => new AppleMusicOriginalMetadataResolver(sp.GetRequiredService<AppLogService>()));
-                services.AddSingleton<LyricsService>(sp =>
-                    LyricsProviderFactory.CreateDefaultService(sp.GetRequiredService<AppleMusicOriginalMetadataResolver>()));
+                services.AddSingleton(_ => new LyricsProxyPolicy(HttpClient.DefaultProxy));
+                // Lyricify 0.2.0 会修改共享客户端的默认请求头，应用自有请求使用另一客户端。
+                services.AddKeyedSingleton<HttpClient>(typeof(BaseApi), (sp, _) =>
+                    new HttpClient(new SocketsHttpHandler { Proxy = sp.GetRequiredService<LyricsProxyPolicy>() }));
+                services.AddKeyedSingleton<HttpClient>(typeof(LyricsService), (sp, _) =>
+                    new HttpClient(new SocketsHttpHandler { Proxy = sp.GetRequiredService<LyricsProxyPolicy>() })
+                    { Timeout = TimeSpan.FromSeconds(10) });
+                services.AddSingleton(sp => new LyricsSourceTester(sp.GetRequiredKeyedService<HttpClient>(typeof(LyricsService))));
+                services.AddSingleton(sp => new AppleMusicOriginalMetadataResolver(sp.GetRequiredService<AppLogService>(),
+                    sp.GetRequiredKeyedService<HttpClient>(typeof(LyricsService))));
+                services.AddSingleton(sp => LyricsProviderFactory.CreateDefaultService(
+                    sp.GetRequiredService<AppleMusicOriginalMetadataResolver>(),
+                    sp.GetRequiredKeyedService<HttpClient>(typeof(LyricsService))));
                 services.AddSingleton<MediaSourceRegistry>();
                 services.AddSingleton<MediaSessionCatalog>();
                 services.AddSingleton<MediaSessionSelectionService>();
@@ -585,11 +594,11 @@ namespace AFMediaBar
                 SettingsManager.Current.TranslucentTbCompatibilityPromptShown = true;
                 settingsPersistenceService.Flush();
             }
-            // 歌词请求的代理策略必须早于任何 HttpClient 建立：它会替换进程级的默认代理，
-            // 之后创建的客户端（包括歌词库内部自建的）都会经过它按域名分流。
-            _lyricsProxy = new LyricsProxyPolicy(HttpClient.DefaultProxy);
+            _lyricsProxy = Services.GetRequiredService<LyricsProxyPolicy>();
             _lyricsProxy.SetSourceProxyModes(SettingsManager.Current.LyricsSource.SourceProxyModes);
-            HttpClient.DefaultProxy = _lyricsProxy;
+            var originalLyricifyClient = BaseApi.HttpClient;
+            BaseApi.HttpClient = Services.GetRequiredKeyedService<HttpClient>(typeof(BaseApi));
+            originalLyricifyClient.Dispose();
             SettingsManager.SettingsChanged += OnSettingsChangedForLyricsProxy;
 
             _coverAccentColors = CoverAccentColorService.Shared;
@@ -660,9 +669,8 @@ namespace AFMediaBar
         /// <summary>每来源的代理模式直接驱动策略本身，已经建好的客户端不必重建。/ The per-source proxy modes drive the policy object itself, so existing clients need no rebuild.</summary>
         private void OnSettingsChangedForLyricsProxy(object? sender, SettingsChangedEventArgs e)
         {
-            if (_lyricsProxy is null)
-                return;
-            _lyricsProxy.SetSourceProxyModes(SettingsManager.Current.LyricsSource.SourceProxyModes);
+            if (e.PropertyName is null or nameof(AppSettings.LyricsSource) || e.ResetScope is not null)
+                _lyricsProxy?.SetSourceProxyModes(SettingsManager.Current.LyricsSource.SourceProxyModes);
         }
 
         private void AttachSpectrumMediaSource()

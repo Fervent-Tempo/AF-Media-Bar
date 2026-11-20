@@ -1,3 +1,4 @@
+using System.Net.Http;
 using AFMediaBar.Classes.Abstractions;
 
 namespace AFMediaBar.Classes.Services.Lyrics;
@@ -12,15 +13,17 @@ public static class LyricsProviderFactory
     /// 按权威目录创建 Provider；不会在这里内联查询策略。
     /// Creates providers in catalogue order without embedding dispatch policy.
     /// </summary>
-    public static IReadOnlyList<ILyricsProvider> CreateDefault()
+    public static IReadOnlyList<ILyricsProvider> CreateDefault() => CreateDefault(null);
+
+    private static IReadOnlyList<ILyricsProvider> CreateDefault(HttpClient? client)
     {
         var providers = new Dictionary<string, ILyricsProvider>(StringComparer.Ordinal)
         {
             [LyricsSourceCatalog.NetEase] = new NetEaseLyricsProvider(),
             [LyricsSourceCatalog.NetEaseSearch] = new NetEaseSearchLyricsProvider(),
             [LyricsSourceCatalog.Lrclib] = new LrclibLyricsProvider(),
-            [LyricsSourceCatalog.QQMusic] = new QQMusicLyricsProvider(),
-            [LyricsSourceCatalog.Kugou] = new KugouLyricsProvider(),
+            [LyricsSourceCatalog.QQMusic] = new QQMusicLyricsProvider(client),
+            [LyricsSourceCatalog.Kugou] = new KugouLyricsProvider(client),
             [LyricsSourceCatalog.SodaMusic] = new SodaMusicLyricsProvider()
         };
 
@@ -46,6 +49,9 @@ public static class LyricsProviderFactory
 
     /// <summary>同上，并为 Apple Music 接入原名解析器；解析器由组合根持有和释放。</summary>
     public static LyricsService CreateDefaultService(AppleMusicOriginalMetadataResolver originalNames) =>
+        CreateDefaultService(originalNames, null);
+
+    internal static LyricsService CreateDefaultService(AppleMusicOriginalMetadataResolver originalNames, HttpClient? client) =>
         new(LyricsService.DefaultPerSourceBudget, LyricsService.DefaultTotalBudget, LyricsService.DefaultOriginalNameBudget,
-            new LocalFileLyricsProvider(), originalNames, [.. CreateDefault()]);
+            new LocalFileLyricsProvider(), originalNames, [.. CreateDefault(client)]);
 }

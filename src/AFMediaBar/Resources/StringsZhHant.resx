@@ -1606,9 +1606,6 @@
   <data name="Lyrics.Source.Unknown" xml:space="preserve">
     <value>未知來源</value>
   </data>
-  <data name="Lyrics.Sources.Proxy.Shortcut" xml:space="preserve">
-    <value>前往代理設定</value>
-  </data>
   <data name="Lyrics.Sources.AllDisabled.Callout" xml:space="preserve">
     <value>已關閉全部歌詞來源：不會再發出任何歌詞請求，媒體列只顯示標題與歌手。</value>
   </data>
@@ -2589,23 +2586,23 @@
   <data name="Interaction.Group.Wheel" xml:space="preserve">
     <value>媒體列滾輪</value>
   </data>
-  <data name="Application.Group.Network" xml:space="preserve">
-    <value>網路</value>
-  </data>
   <data name="Application.Network.SourceProxy.Title" xml:space="preserve">
     <value>歌詞來源代理</value>
   </data>
   <data name="Application.Network.SourceProxy.Description" xml:space="preserve">
-    <value>全部來源預設直連；某個來源連不上時單獨開啟代理，例如網易雲音樂、LRCLIB</value>
+    <value>逐一設定歌詞來源的代理，預設跟隨系統。</value>
   </data>
   <data name="Application.Network.SourceProxy.Row.Description" xml:space="preserve">
-    <value>點擊右側按鈕，檢查該來源目前能否連上</value>
+    <value>採用系統代理規則，或為此來源啟用直連。</value>
   </data>
   <data name="Application.Network.SourceProxy.Direct" xml:space="preserve">
     <value>直連</value>
   </data>
   <data name="Application.Network.SourceProxy.Proxy" xml:space="preserve">
-    <value>走代理</value>
+    <value>跟隨系統</value>
+  </data>
+  <data name="Lyrics.SourceProxy.Test" xml:space="preserve">
+    <value>測試連線</value>
   </data>
   <data name="Application.Network.Test.Reachable" xml:space="preserve">
     <value>可達 HTTP {0}</value>

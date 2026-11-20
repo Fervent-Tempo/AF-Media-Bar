@@ -54,14 +54,15 @@ internal static class LyricsSourceHosts
         return null;
     }
 
-    /// <summary>该来源用于连通性测试的主机名，即组内第一个域名；不在表里返回 null。/ Host used for the connectivity probe, the first host of the group; null when unlisted.</summary>
-    public static string? ProbeHostFor(string sourceId)
+    /// <summary>探测实际取词 API 的地址，HTTP 响应只表示该地址可达。</summary>
+    public static string? TestEndpointFor(string sourceId) => sourceId switch
     {
-        foreach (var (group, hosts) in Groups)
-        {
-            if (string.Equals(group, sourceId, StringComparison.Ordinal))
-                return hosts[0];
-        }
-        return null;
-    }
+        LyricsSourceCatalog.NetEase => "https://music.163.com/api/song/lyric",
+        LyricsSourceCatalog.QQMusic => "https://u.y.qq.com/cgi-bin/musicu.fcg",
+        LyricsSourceCatalog.Kugou => "https://lyrics.kugou.com/download",
+        LyricsSourceCatalog.SodaMusic => "https://api.qishui.com/luna/pc/search/track",
+        LyricsSourceCatalog.Lrclib => "https://lrclib.net/api/search",
+        AppleMusic => "https://itunes.apple.com/search",
+        _ => null
+    };
 }

@@ -21,6 +21,7 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
 
     private readonly LocalizationService _localization;
     private readonly ISettingsConfiguration _configuration;
+    private readonly LyricsSourceTester? _sourceTester;
     private bool _disposed;
 
     // 与 ExtraFeaturesViewModel 同理：设置写入可能来自后台线程，而来源列表与第二行列表绑定到界面，
@@ -43,14 +44,16 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
     /// Creates the lyrics page view model.
     /// </summary>
     /// <param name="localization">语言服务，用于在语言变化时重建来源显示名 / Localization service, used to rebuild source display names after a language change.</param>
-    public LyricsViewModel(LocalizationService localization, ISettingsConfiguration configuration)
+    public LyricsViewModel(LocalizationService localization, ISettingsConfiguration configuration, LyricsSourceTester? sourceTester = null)
     {
         _localization = localization;
         _configuration = configuration;
+        _sourceTester = sourceTester;
         configuration.Activated += OnActivated;
         SettingsManager.SettingsChanged += OnSettingsChanged;
         _localization.LanguageChanged += OnLanguageChanged;
         RefreshSourceEntries();
+        RefreshSourceProxyItems();
         RefreshSecondaryLineEntries();
     }
 
@@ -346,6 +349,59 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
     public bool CanConfigureLongLineScroll =>
         _configuration.Current.TaskbarExperience.LengthMode == TaskbarLengthMode.FollowContent;
 
+    /// <summary>歌词来源的代理设置和连通性检查。</summary>
+    public ObservableCollection<LyricsSourceProxyItem> SourceProxyItems { get; } = [];
+
+    private void RefreshSourceProxyItems()
+    {
+        var modes = _configuration.Current.LyricsSource.SourceProxyModes;
+        foreach (var item in SourceProxyItems) item.ModeChanged -= OnSourceProxyModeChanged;
+        SourceProxyItems.Clear();
+        foreach (var sourceId in LyricsSourceHosts.AllSourceIds)
+        {
+            var mode = modes?.GetValueOrDefault(sourceId) ?? LyricsSourceProxyMode.FollowSystem;
+            var item = new LyricsSourceProxyItem(sourceId, mode);
+            item.ModeChanged += OnSourceProxyModeChanged;
+            SourceProxyItems.Add(item);
+        }
+    }
+
+    private void OnSourceProxyModeChanged(LyricsSourceProxyItem item)
+    {
+        if (_disposed || !_configuration.IsActive) return;
+        item.TestStatus = string.Empty;
+        var current = _configuration.Current.LyricsSource;
+        var modes = current.SourceProxyModes is { } saved
+            ? new Dictionary<string, LyricsSourceProxyMode>(saved, StringComparer.Ordinal)
+            : new Dictionary<string, LyricsSourceProxyMode>(StringComparer.Ordinal);
+        if (item.ProxyMode == LyricsSourceProxyMode.Direct)
+            modes[item.SourceId] = LyricsSourceProxyMode.Direct;
+        else
+            modes.Remove(item.SourceId);
+
+        _isSavingSources = true;
+        try { _configuration.SetLyricsSourceSettings(current with { SourceProxyModes = modes.Count == 0 ? null : modes }); }
+        finally { _isSavingSources = false; }
+    }
+
+    [RelayCommand]
+    private async Task TestSourceProxyAsync(LyricsSourceProxyItem item)
+    {
+        if (_sourceTester is null || _disposed || !_configuration.IsActive || item.IsTesting) return;
+        var token = ContextCancellationToken;
+        var mode = item.ProxyMode;
+        item.IsTesting = true;
+        try
+        {
+            var result = await _sourceTester.TestAsync(item.SourceId, token);
+            if (token.IsCancellationRequested || _disposed || item.ProxyMode != mode || !SourceProxyItems.Contains(item)) return;
+            item.TestStatus = Translations.Format(
+                result.Reachable ? "Application.Network.Test.Reachable" : "Application.Network.Test.Failed", result.Detail);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        finally { item.IsTesting = false; }
+    }
+
     public void ResetLyrics() => _configuration.Reset(SettingsResetScope.Lyrics);
     public void ResetTextAndLyrics() => _configuration.Reset(SettingsResetScope.TextAndLyrics);
 
@@ -364,6 +420,7 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         {
             OnPropertyChanged(nameof(ArtistSeparatorsText));
             RefreshSourceEntries();
+            RefreshSourceProxyItems();
             RefreshSecondaryLineEntries();
             RaiseAll();
             return;
@@ -372,6 +429,7 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         if (e.PropertyName == nameof(AppSettings.LyricsSource) && !_isSavingSources)
         {
             RefreshSourceEntries();
+            RefreshSourceProxyItems();
         }
 
         if (e.PropertyName == nameof(AppSettings.LyricsSecondaryLine))
@@ -402,6 +460,7 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
         RefreshSourceEntries();
+        RefreshSourceProxyItems();
         RefreshSecondaryLineEntries();
     }
 
@@ -663,7 +722,13 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
 
         SaveSecondaryLineEntries();
     }
-    private void OnActivated(object? sender, EventArgs e) { RefreshSourceEntries(); RefreshSecondaryLineEntries(); RaiseAll(); }
+    private void OnActivated(object? sender, EventArgs e)
+    {
+        RefreshSourceEntries();
+        RefreshSourceProxyItems();
+        RefreshSecondaryLineEntries();
+        RaiseAll();
+    }
     /// <summary>Releases settings and language subscriptions for this cached editor.</summary>
     public void Dispose()
     {
@@ -672,6 +737,7 @@ public partial class LyricsViewModel : ObservableObject, IDisposable
         SettingsManager.SettingsChanged -= OnSettingsChanged;
         _localization.LanguageChanged -= OnLanguageChanged;
         _configuration.Activated -= OnActivated;
+        foreach (var item in SourceProxyItems) item.ModeChanged -= OnSourceProxyModeChanged;
         foreach (var item in SourceEntries) item.EnabledChanged -= OnSourceEnabledChanged;
     }
 

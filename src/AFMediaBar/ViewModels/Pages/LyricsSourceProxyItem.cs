@@ -1,4 +1,4 @@
-// 应用页「歌词来源代理」列表中的一行：来源名、代理模式与连通性测试结果。
+// 歌词页代理列表的一行，持有模式和最近一次连通性测试结果。
 using AFMediaBar.Classes.Settings;
 using AFMediaBar.Classes.Services.Lyrics;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -27,10 +27,6 @@ public partial class LyricsSourceProxyItem : ObservableObject
     /// <summary>最近一次连通性测试的详情；空表示还没测过，作为按钮的悬停提示。</summary>
     [ObservableProperty]
     private string _testStatus = string.Empty;
-
-    /// <summary>测试按钮上的图标：没测过时是放大镜，测完变成对勾或警告。</summary>
-    [ObservableProperty]
-    private string _testIcon = "Search24";
 
     /// <summary>测试进行中，按钮不可再点。</summary>
     [ObservableProperty]
