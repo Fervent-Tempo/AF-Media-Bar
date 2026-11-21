@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using AFMediaBar.Classes.Models;
 using Lyricify.Lyrics.Helpers;
 using Lyricify.Lyrics.Helpers.Optimization;
@@ -17,22 +18,30 @@ internal readonly record struct LyricsParseResult(LyricDocument Document, bool N
 /// Parses raw lyric text from any source into the unified lyric document.
 ///
 /// 解析由 Lyricify 承担：先用 <see cref="LyricsFormatDetector.Detect"/> 按内容识别真实格式（LRC、YRC、QRC、KRC、Lyricify Syllable、TTML 等），
-/// 再用 <see cref="ParseHelper"/> 得到行与音节模型，最后在这里映射成项目的不可变模型，并在映射过程中完成三件事：
-/// 1. 丢弃作者/作曲/制作等信息行（静置层只有两行位置，见 <see cref="LyricInfoLinePolicy"/>）；
-/// 2. 把独立传入的译文与音译文本按时间戳贴到对应行（容差 500 毫秒，对不上就不沿用上一句）；
-/// 3. 补齐行与音节的结束时间（<see cref="LyricTimingPolicy"/>）。
+/// 再用 <see cref="ParseHelper"/> 得到行与音节模型，最后在这里映射成项目的不可变模型，并在映射过程中完成四件事：
+/// 1. 把双语歌词里同时间戳的成组行拆成主歌词、译文、音译三份文本，交给既有的按时间戳贴合流程（见 <see cref="SplitBilingualLines"/>）；
+/// 2. 丢弃作者/作曲/制作等信息行（静置层只有两行位置，见 <see cref="LyricInfoLinePolicy"/>）；
+/// 3. 把独立传入的译文与音译文本按时间戳贴到对应行（容差 500 毫秒，对不上就不沿用上一句）；
+/// 4. 补齐行与音节的结束时间（<see cref="LyricTimingPolicy"/>）。
 /// The heavy lifting belongs to Lyricify: <see cref="LyricsFormatDetector.Detect"/> identifies the real format from the content and
 /// <see cref="ParseHelper"/>
-/// yields the line and syllable model, and this type maps that into the project's immutable model while doing three things:
-/// dropping credit lines (the rest layer only has two rows, see <see cref="LyricInfoLinePolicy"/>), attaching separately supplied
-/// translation and romanization text by timestamp with a 500 ms tolerance (never carrying a previous line forward), and
-/// completing line and syllable end times (<see cref="LyricTimingPolicy"/>).
+/// yields the line and syllable model, and this type maps that into the project's immutable model while doing four things:
+/// merging the same-timestamp groups bilingual lyrics use for original, translation, and romanization into three texts that
+/// feed the existing timestamp-matching pass (before parsing, see
+/// <see cref="SplitBilingualLines"/>), dropping credit lines (the rest layer only has two rows, see <see cref="LyricInfoLinePolicy"/>),
+/// attaching separately supplied translation and romanization text by timestamp with a 500 ms tolerance (never carrying a
+/// previous line forward), and completing line and syllable end times (<see cref="LyricTimingPolicy"/>).
 /// </summary>
-public static class LyricsTextParser
+public static partial class LyricsTextParser
 {
     /// <summary>独立译文文本与主行匹配时允许的最大时间差（秒）。
     /// Maximum time difference in seconds allowed when matching separately supplied translation text to a main line.</summary>
     public const double TranslationMatchToleranceSeconds = 0.5;
+
+    /// <summary>带 LRC 时间戳的行：一个或多个时间戳标签加正文。元数据标签（[ar:…]）不匹配。
+    /// A line carrying LRC timestamp tags followed by its text; metadata tags such as [ar:…] do not match.</summary>
+    [GeneratedRegex(@"^(?<tags>(?:\[\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?\])+)(?<content>.*)$")]
+    private static partial Regex TimedLine();
 
     /// <summary>
     /// 解析歌词文本。
@@ -78,10 +87,17 @@ public static class LyricsTextParser
         // 只用枚举名做格式标识：库的显示名辅助在不同版本里位置不同，诊断不依赖它。
         // The enum name alone identifies the format: the library's display-name helper moved between versions, and diagnostics
         // must not depend on it.
-        var (data, rawType) = ParsePayload(rawText);
+        var (mainText, embeddedTranslation, embeddedRomanization, pairs, triplets) = SplitBilingualLines(rawText);
+        var (data, rawType) = ParsePayload(mainText);
         if (rawType == LyricsRawTypes.Unknown)
             return new LyricsParseResult(LyricDocument.Empty, false, false);
         var formatName = rawType.ToString();
+        if (pairs + triplets > 0)
+        {
+            // 双语歌词的拆分结果要能在日志里看到：哪份文件、二合一还是三合一、各多少组。
+            AppLogService.Current?.Info("Lyrics",
+                $"双语歌词: title=\"{request?.Title}\" format={formatName} pairs={pairs} triplets={triplets}");
+        }
         if (data?.Lines is not { Count: > 0 })
         {
             return new LyricsParseResult(new LyricDocument([], LyricsSyncType.Unsynced, formatName), false, false);
@@ -95,8 +111,9 @@ public static class LyricsTextParser
         // body lines at the edges and is deliberately not used here.
         var directInfoLines = ResolveDirectInfoLines(data.Lines, track);
         var hasBody = false;
-        var translations = ParseTimestampedText(translationText);
-        var romanizations = ParseTimestampedText(romanizationText);
+        // 文件内嵌的译文与音译和同目录的附件走同一条按时间戳贴合的路；外部附件写了就以外部为准。
+        var translations = ParseTimestampedText(translationText ?? embeddedTranslation);
+        var romanizations = ParseTimestampedText(romanizationText ?? embeddedRomanization);
         var resolvedDuration = durationSeconds ?? request?.DurationSeconds ?? 0d;
 
         // 网易云纯音乐载荷是"署名行 + 纯音乐提示"：署名比例过高时信息行过滤会整体放弃，占位提示再被丢弃，
@@ -342,6 +359,113 @@ public static class LyricsTextParser
         fragments.Sort(static (left, right) => left.Start.CompareTo(right.Start));
         return fragments;
     }
+
+    /// <summary>
+    /// 把双语歌词拆成主歌词、译文、音译三份文本，各自沿用原来的时间戳，交给既有的「主歌词 + 附件」链路。
+    ///
+    /// 这类文件把原文、译文、音译写成同时间戳的两三行，第一行是原文。解析器会按时间戳重排，同时间戳的先后顺序
+    /// 不保证保留——实测同一份文件里有的组顺序对、有的组对调——所以只能按行序在解析前拆开，不能等解析后再认。
+    ///
+    /// 只处理带 LRC 时间戳的行；逐字格式的时间戳不是这个写法，天然跳过。成组行不到一半时按个别重复处理——
+    /// 长句拆行、对唱重叠都会出现同时间戳，那不是译文。
+    /// </summary>
+    private static (string Main, string? Translation, string? Romanization, int Pairs, int Triplets) SplitBilingualLines(string text)
+    {
+        var lines = text.Split('\n');
+        var tags = new string?[lines.Length];
+        var bodies = new string?[lines.Length];
+        var timedLines = 0;
+        for (var index = 0; index < lines.Length; index++)
+        {
+            var match = TimedLine().Match(lines[index].TrimEnd('\r'));
+            if (!match.Success)
+            {
+                continue;
+            }
+
+            tags[index] = match.Groups["tags"].Value;
+            bodies[index] = match.Groups["content"].Value;
+            timedLines++;
+        }
+
+        var main = new List<string>(lines.Length);
+        var translation = new List<string>();
+        var romanization = new List<string>();
+        var pairs = 0;
+        var triplets = 0;
+        for (var index = 0; index < lines.Length; index++)
+        {
+            var groupEnd = index;
+            while (tags[index] is not null && groupEnd + 1 < lines.Length && tags[groupEnd + 1] == tags[index])
+            {
+                groupEnd++;
+            }
+
+            // 两行是原文加译文，三行是原文、译文、音译；再多就分不清各自归属，保持原样不猜。组内有空行也不拆。
+            var groupSize = groupEnd - index + 1;
+            var texts = groupSize is 2 or 3 ? GroupTexts(bodies, index, groupEnd) : null;
+            if (texts is not null && tags[index] is { } tag)
+            {
+                if (groupSize == 2) pairs++;
+                else triplets++;
+                main.Add(tag + texts[0]);
+                translation.Add(tag + texts[1]);
+                if (texts.Length == 3)
+                {
+                    romanization.Add(tag + texts[2]);
+                }
+            }
+            else
+            {
+                // 统一去掉行尾的 \r：重建出来的文本整体按 \n 连接，不该混着两种行尾。
+                for (var line = index; line <= groupEnd; line++)
+                {
+                    main.Add(lines[line].TrimEnd('\r'));
+                }
+            }
+
+            index = groupEnd;
+        }
+
+        // 成组行不到一半时按个别重复处理：长句拆行、对唱重叠都会出现同时间戳，那不是译文。
+        var groupedLines = pairs * 2 + triplets * 3;
+        if (groupedLines == 0 || groupedLines * 2 < timedLines)
+        {
+            return (text, null, null, 0, 0);
+        }
+
+        return (string.Join('\n', main),
+            translation.Count > 0 ? string.Join('\n', translation) : null,
+            romanization.Count > 0 ? string.Join('\n', romanization) : null,
+            pairs,
+            triplets);
+    }
+
+    /// <summary>
+    /// 组内各行的文本，顺序是原文、译文、音译；组内有空行时返回 null。
+    /// 三行时按写法校正后两行：罗马音一定是拉丁转写，若第二行是拉丁而第三行不是，说明文件把音译放在了译文前面。
+    /// </summary>
+    private static string[]? GroupTexts(string?[] bodies, int start, int end)
+    {
+        var texts = new string[end - start + 1];
+        for (var line = start; line <= end; line++)
+        {
+            if (string.IsNullOrWhiteSpace(bodies[line])) return null;
+            texts[line - start] = bodies[line]!;
+        }
+
+        if (texts.Length == 3 && LooksLikeLatinScript(texts[1]) && !LooksLikeLatinScript(texts[2]))
+        {
+            (texts[1], texts[2]) = (texts[2], texts[1]);
+        }
+
+        return texts;
+    }
+
+    /// <summary>拉丁转写判断：不含汉字、假名与谚文。英文译文与罗马音都是拉丁，此时无法区分，保持文件顺序。
+    /// Latin-script test: no Han, kana, or Hangul. An English translation looks the same as a romanization, so the file order wins.</summary>
+    private static bool LooksLikeLatinScript(string text) =>
+        !text.Any(static c => c is >= '\u3040' and <= '\u30FF' or >= '\u3400' and <= '\u9FFF' or >= '\uAC00' and <= '\uD7AF');
 
     private static (LyricsData? Data, LyricsRawTypes Type) ParsePayload(string text)
     {
